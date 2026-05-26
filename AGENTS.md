@@ -66,3 +66,38 @@ As the project grows, you may add **skills, MCP servers, and subagents** to stre
 - **Always get approval first.** Propose the addition — what it is, why it helps, what it touches — and wait for a yes before installing or wiring it in.
 - **Same rule for project dependencies.** Don't add packages to `package.json` without approval (e.g. the `playwright` devDependency added for screenshot verification).
 - **Keep the toolchain lean.** Prefer existing tools; add a new one only when a task recurs and the tool clearly pays for itself.
+
+---
+
+## Development Workflow
+
+**Branch + PR, never push to `main` directly.** `main` is protected and auto-deploys to `rufatmalikov.com` via Cloudflare Pages. Every change ships through a PR that the maintainer (Rufat) merges.
+
+### The loop
+
+1. **Branch** off `main` — `feat/…`, `fix/…`, `chore/…`, or `content/…`.
+2. **Make the change**, then locally: `npm run typecheck` and `npm run test:e2e` (and for visual/UI work, screenshot via `tasks/shot.mjs`).
+3. **Push** the branch — the `pre-push` hook runs `npm run build` first, so a broken build never leaves the machine.
+4. **Open a PR** against `main`. This triggers:
+   - **CI** (`.github/workflows/ci.yml`) — typecheck + Playwright e2e; **must pass** to merge.
+   - **Cloudflare** — a preview deployment URL for the branch.
+   - **GitHub Copilot** — its automated PR review comments.
+5. **Independent local review** — run an independent code review (the `code-review` skill or a separate code-reviewer agent, *not* the author) against the PR diff.
+6. **Address everything** — fix all independent-review findings **and** verify + address every GitHub Copilot comment. Push fixes, which re-runs CI.
+7. **Repeat 5–6** until the independent reviewer approves and CI is green.
+8. **Rufat merges.** Cloudflare deploys `main` to production.
+
+### Adding a project (Projects page)
+
+- Edit **both** locales: `src/content/docs/en/projects/index.md` and `src/content/docs/az/projects/index.md`.
+- Match the existing entry format: `## Title — descriptor`, a short intro, a `**What's inside:**` bullet list, then links.
+- **Verify features from the repo/code, never infer from names or descriptions** (see `tasks/lessons.md`). Describe only what's confirmed; flag AI/LLM features as optional if that's what they are.
+- Update the e2e `expectedOrder` in `tests/e2e/site.spec.ts` if the Projects ordering changes.
+
+### Verify checklist (before requesting merge)
+
+- [ ] `npm run typecheck` clean
+- [ ] `npm run test:e2e` green
+- [ ] For UI changes: screenshot reviewed (light + dark)
+- [ ] Independent review approved; all Copilot comments resolved
+- [ ] No secrets, build output, or `tasks/` scratch committed
