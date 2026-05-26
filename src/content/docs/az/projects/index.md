@@ -58,6 +58,22 @@ Python ilə qurulub.
 
 [Koda bax →](https://github.com/TesterBaku/softeng-study-quiz)
 
+## 5-ci sinif riyaziyyatı — interaktiv dərslər və testlər
+
+Riyaziyyat və rus dili müəllimi olan (texniki olmayan) bacım üçün qurduğum müstəqil riyaziyyat tətbiqi. O — və ya şagirdləri — tətbiqi yükləyib, arxivdən çıxarıb bir cüt kliklə başlada bilər; terminal lazım deyil. 5-ci sinif riyaziyyat kurrikulumunu rus dilində əhatə edir.
+
+**İçərisində nə var:**
+
+- **8 fəsil üzrə 57 dərs** — vizual nümunələrlə izahlar
+- **Pilləli testlər** — asan / orta / çətin / qarışıq, hər səhv üçün rəylə
+- **1 710 sual** — hər dərsdə hər pillə üçün 10 sual, hər sessiyada təsadüfi
+- **Texniki olmayan istifadə üçün** — başlamaq üçün bir cüt klik, brauzerdə lokal işləyir
+- **Test olunub** — quiz məntiqi üçün unit testlər və brauzer (end-to-end) testləri
+
+TypeScript və Next.js ilə qurulub (Docker-a hazır).
+
+[Koda bax →](https://github.com/TesterBaku/math-teacher-prototype)
+
 ## BrauzerLab — interaktiv Playwright məşqçisi
 
 Azərbaycan dilində pulsuz, brauzer əsaslı Playwright kursu. Brauzerdaxili redaktorda real Playwright (JavaScript/TypeScript) kodu yazırsınız, simulyasiya olunmuş səhifənin reaksiyasını görürsünüz və dərhal keç/keçmə rəyi alırsınız — quraşdırma tələb olunmur. Tapşırıqları və yoxlama mühərrikini sıfırdan qurmuşam.

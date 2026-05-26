@@ -54,6 +54,22 @@ Built with Python.
 
 [View the code →](https://github.com/TesterBaku/softeng-study-quiz)
 
+## Grade 5 Math — interactive lessons & quizzes
+
+A self-contained math app I built for my sister, a (non-technical) math and Russian-language tutor. She — or her students — can download it, unzip, and start it with a double-click; no command line. It covers the Grade 5 mathematics curriculum, in Russian.
+
+**What's inside:**
+
+- **57 lessons across 8 chapters** — explanations with visual examples
+- **Tiered quizzes** — easy / medium / hard / mixed, with per-mistake feedback
+- **1,710 questions** — 10 per tier per lesson, randomised each session
+- **Made for non-technical use** — double-click to launch, runs locally in the browser
+- **Tested** — unit tests for the quiz logic plus end-to-end browser tests
+
+Built with TypeScript and Next.js (Docker-ready).
+
+[View the code →](https://github.com/TesterBaku/math-teacher-prototype)
+
 ## BrauzerLab — interactive Playwright trainer
 
 A free, browser-based Playwright course in Azerbaijani. You write real Playwright (JavaScript/TypeScript) in an in-browser editor, watch a simulated page react, and get instant pass/fail feedback — no install, no setup. I built the missions and the validation engine from scratch.
