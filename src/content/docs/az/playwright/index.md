@@ -23,4 +23,4 @@ HTML, CSS və JavaScript-in əsasları ilə rahat olan, Playwright ilə brauzer 
 
 ## İndi başla
 
-Canlıdır — **[BrauzerLab-ı aç →](https://brauzerlab.rufatmalikov.com)** — pulsuz, brauzerinizdə, ingilis və Azərbaycan dillərində.
+Canlıdır — **[BrauzerLab-ı aç →](https://brauzerlab.rufatmalikov.com/az/)** — pulsuz, brauzerinizdə, ingilis və Azərbaycan dillərində.

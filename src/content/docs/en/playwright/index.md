@@ -25,4 +25,4 @@ Anyone comfortable with basic HTML, CSS, and JavaScript who wants to learn brows
 
 ## Start now
 
-It's live — **[Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com)** — free, in your browser, in English and Azerbaijani.
+It's live — **[Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com/en/)** — free, in your browser, in English and Azerbaijani.
