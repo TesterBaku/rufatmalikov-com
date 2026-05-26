@@ -20,7 +20,7 @@ A free, browser-based Playwright course, available in English and Azerbaijani. Y
 
 Available in English and Azerbaijani.
 
-[Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com) · [More about it →](/en/playwright/)
+[Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com/en/) · [More about it →](/en/playwright/)
 
 ## Universal Appliances Repair — client website
 

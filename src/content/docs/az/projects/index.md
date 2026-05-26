@@ -20,7 +20,7 @@ Qurub paylaşdığım layihələr. Hər biri inkişaf etdikcə öz yazısını a
 
 İngilis və Azərbaycan dillərində mövcuddur.
 
-[BrauzerLab-ı aç →](https://brauzerlab.rufatmalikov.com) · [Ətraflı →](/az/playwright/)
+[BrauzerLab-ı aç →](https://brauzerlab.rufatmalikov.com/az/) · [Ətraflı →](/az/playwright/)
 
 ## Universal Appliances Repair — müştəri vebsaytı
 
