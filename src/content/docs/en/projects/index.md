@@ -1,9 +1,41 @@
 ---
 title: Projects
-description: Projects I build and share — starting with an SDET/QA interview trainer.
+description: Projects I build and share — QA training tools, AI-assisted study apps, and client websites.
 ---
 
 Projects I'm building and sharing. Each gets its own write-up as it grows.
+
+## BrauzerLab — interactive Playwright trainer
+
+A free, browser-based Playwright course in Azerbaijani. You write real Playwright (JavaScript/TypeScript) in an in-browser editor, watch a simulated page react, and get instant pass/fail feedback — no install, no setup. I built the missions and the validation engine from scratch.
+
+**What's inside:**
+
+- **50 hands-on missions** across 7 progressive modules
+- **Locators** — roles, text, labels, test-ids, filters, and positional selectors (including Shadow DOM and dynamic IDs)
+- **Actions & auto-waiting** — clicks, typing, forms, drag-and-drop, plus reliable waits without flaky `sleep`
+- **Assertions & strict mode** — auto-waiting `expect` and clean handling of ambiguous locators
+- **Network interception** — block, mock, and stub requests with `page.route`
+- **In-browser editor** — CodeMirror-based, with a custom validation engine for instant feedback
+
+Currently in Azerbaijani; an English version may follow.
+
+[Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com) · [More about it →](/en/playwright/)
+
+## Universal Appliances Repair — client website
+
+A static marketing website I built for Universal Appliances Repair, an appliance repair service in Orange County, CA. It's live in production and shows the testing-and-automation workflow I enjoy: every change ships through a PR gated by automated checks.
+
+**What's inside:**
+
+- **Multi-page marketing site** — home, services, about, contact, FAQ, testimonials, and a blog (hand-built HTML + Tailwind CSS, no framework, no build step)
+- **Automated tests** — an internal link checker and Puppeteer visual screenshot tests that must pass before any merge
+- **PR-gated workflow** — Husky pre-push hooks; no direct commits to `master`
+- **Automated SEO content** — Claude Code routines research, write, and publish 3 new local-SEO articles every Mon/Wed/Fri, plus a quarterly SEO audit that opens a fix-up PR
+
+Built with HTML + Tailwind CSS.
+
+[Visit the site →](https://fixappliancesfast.com/) · [View the code →](https://github.com/TesterBaku/appliance-repair-website)
 
 ## SDET Interview Trainer
 
@@ -19,24 +51,6 @@ A practice app for QA and SDET interview prep. I'm getting ready for interviews 
 For now it runs without a backend, so it's quick to use on desktop or mobile. It's an early proof of concept — a starting point I'll keep building on.
 
 [Open the trainer →](https://sdet-interview-trainer.vercel.app/) · [View the code →](https://github.com/TesterBaku/sdet-interview-trainer)
-
-## Quiz Formatter — PDF-to-quiz study helper
-
-A study helper I built for my niece, a student at UNEC (Azerbaijan) who studies in Russian — so the app is in Russian. Her course materials arrive as PDFs of questions with an answer key; this tool turns them into practice quizzes.
-
-It's tuned to the specific layout of those UNEC course PDFs — a study tool for that format rather than a general-purpose PDF parser, so other document layouts may need adjusting.
-
-**What's inside:**
-
-- **PDF parsing** — pulls questions and answer choices straight out of the course PDF
-- **Configurable quizzes** — randomized quizzes with a chosen number of questions (`--count`)
-- **Instant grading** — checks your answers and explains mistakes using the answer key embedded in the PDF
-- **Saved results** — keeps your attempt history between sessions
-- **Runs anywhere** — a terminal, a local web UI, or a standalone Windows `.exe`
-
-Built with Python.
-
-[Watch the how-to video →](https://youtu.be/qLmmXnKrZoI) · [View the code →](https://github.com/TesterBaku/quiz_formatter_with_chatgpt)
 
 ## Study Quiz — exam prep from course materials
 
@@ -70,37 +84,23 @@ Built with TypeScript and Next.js (Docker-ready).
 
 [View the code →](https://github.com/TesterBaku/math-teacher-prototype)
 
-## BrauzerLab — interactive Playwright trainer
+## Quiz Formatter — PDF-to-quiz study helper
 
-A free, browser-based Playwright course in Azerbaijani. You write real Playwright (JavaScript/TypeScript) in an in-browser editor, watch a simulated page react, and get instant pass/fail feedback — no install, no setup. I built the missions and the validation engine from scratch.
+A study helper I built for my niece, a student at UNEC (Azerbaijan) who studies in Russian — so the app is in Russian. Her course materials arrive as PDFs of questions with an answer key; this tool turns them into practice quizzes.
 
-**What's inside:**
-
-- **50 hands-on missions** across 7 progressive modules
-- **Locators** — roles, text, labels, test-ids, filters, and positional selectors (including Shadow DOM and dynamic IDs)
-- **Actions & auto-waiting** — clicks, typing, forms, drag-and-drop, plus reliable waits without flaky `sleep`
-- **Assertions & strict mode** — auto-waiting `expect` and clean handling of ambiguous locators
-- **Network interception** — block, mock, and stub requests with `page.route`
-- **In-browser editor** — CodeMirror-based, with a custom validation engine for instant feedback
-
-Currently in Azerbaijani; an English version may follow.
-
-[Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com) · [More about it →](/en/playwright/)
-
-## Universal Appliances Repair — client website
-
-A static marketing website I built for Universal Appliances Repair, an appliance repair service in Orange County, CA. It's live in production and shows the testing-and-automation workflow I enjoy: every change ships through a PR gated by automated checks.
+It's tuned to the specific layout of those UNEC course PDFs — a study tool for that format rather than a general-purpose PDF parser, so other document layouts may need adjusting.
 
 **What's inside:**
 
-- **Multi-page marketing site** — home, services, about, contact, FAQ, testimonials, and a blog (hand-built HTML + Tailwind CSS, no framework, no build step)
-- **Automated tests** — an internal link checker and Puppeteer visual screenshot tests that must pass before any merge
-- **PR-gated workflow** — Husky pre-push hooks; no direct commits to `master`
-- **Automated SEO content** — Claude Code routines research, write, and publish 3 new local-SEO articles every Mon/Wed/Fri, plus a quarterly SEO audit that opens a fix-up PR
+- **PDF parsing** — pulls questions and answer choices straight out of the course PDF
+- **Configurable quizzes** — randomized quizzes with a chosen number of questions (`--count`)
+- **Instant grading** — checks your answers and explains mistakes using the answer key embedded in the PDF
+- **Saved results** — keeps your attempt history between sessions
+- **Runs anywhere** — a terminal, a local web UI, or a standalone Windows `.exe`
 
-Built with HTML + Tailwind CSS.
+Built with Python.
 
-[Visit the site →](https://fixappliancesfast.com/) · [View the code →](https://github.com/TesterBaku/appliance-repair-website)
+[Watch the how-to video →](https://youtu.be/qLmmXnKrZoI) · [View the code →](https://github.com/TesterBaku/quiz_formatter_with_chatgpt)
 
 ## RMC Tow — towing company website
 
