@@ -69,6 +69,18 @@ As the project grows, you may add **skills, MCP servers, and subagents** to stre
 
 ---
 
+## Operating Model
+
+Work here is orchestrated by Opus and executed by cheaper models:
+
+- **Opus — orchestrator / architect / senior engineer.** Planning, architecture, strategy, design decisions, code review and integration, and communication with Rufat. Decisive and root-cause oriented; keeps process ceremony proportional to the change.
+- **Sonnet — implementer.** Delegated development and non-trivial, multi-step research, run via subagents.
+- **Haiku — assistant.** Simple or cheap research, lookups, and mechanical tasks, run via subagents.
+
+Delegate any task that can be delegated; reserve Opus for high-leverage thinking. Trivial one-off edits don't need a subagent. Always review delegated output before integrating (trust but verify).
+
+---
+
 ## Development Workflow
 
 **Branch + PR, never push to `main` directly.** `main` is protected and auto-deploys to `rufatmalikov.com` via Cloudflare Pages. Every change ships through a PR that the maintainer (Rufat) merges.
