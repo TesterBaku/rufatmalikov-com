@@ -1,0 +1,136 @@
+/*
+  Rufat Malikov — "Editorial Slate + Rust" brand theme for Starlight.
+  Slate ink, warm rust accent, Fraunces (display) + Inter (body).
+  Rules here are intentionally unlayered so they win over Starlight's
+  @layer starlight.* defaults without needing inflated specificity.
+*/
+
+/* ---------- Brand tokens + typography ---------- */
+/* Accent stays Starlight's blue; the brand identity is carried by the
+   serif display type, hero treatment, and card styling below. */
+:root {
+	--brand-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+
+	/* Body / UI font */
+	--sl-font: 'Inter', var(--sl-font-system);
+}
+
+/* ---------- Headings: serif display ---------- */
+h1#_top,
+.sl-markdown-content h1,
+.sl-markdown-content h2 {
+	font-family: var(--brand-display);
+	font-weight: 600;
+	letter-spacing: -0.015em;
+}
+
+/* Section rule under content h2 — a quiet editorial divider. */
+.sl-markdown-content h2 {
+	padding-bottom: 0.3rem;
+	border-bottom: 1px solid var(--sl-color-hairline-light);
+}
+
+/* ---------- Site title (top-left brand) ---------- */
+.site-title {
+	font-family: var(--brand-display);
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+/* ---------- Links in prose ---------- */
+.sl-markdown-content a {
+	text-underline-offset: 0.2em;
+	text-decoration-thickness: 1px;
+	text-decoration-color: color-mix(in srgb, var(--sl-color-text-accent) 45%, transparent);
+	transition: text-decoration-color 150ms ease, color 150ms ease;
+}
+.sl-markdown-content a:hover {
+	text-decoration-color: currentColor;
+}
+
+/* ---------- Hero / splash ---------- */
+.hero h1 {
+	font-family: var(--brand-display);
+	font-weight: 600;
+	letter-spacing: -0.025em;
+	line-height: 1.04;
+}
+
+.hero .tagline {
+	color: var(--sl-color-gray-2);
+	line-height: 1.5;
+	text-wrap: balance;
+}
+
+/* Solid accent primary CTA in both themes (white text for strong contrast). */
+.sl-link-button.primary {
+	background: var(--sl-color-accent);
+	border-color: var(--sl-color-accent);
+	color: #fff;
+	border-radius: 0.55rem;
+	padding: 0.6rem 1.25rem;
+	font-weight: 600;
+	box-shadow: var(--sl-shadow-sm);
+	transition: background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+.sl-link-button.primary:hover {
+	background: color-mix(in srgb, var(--sl-color-accent) 82%, #000);
+	border-color: color-mix(in srgb, var(--sl-color-accent) 82%, #000);
+	color: #fff;
+	transform: translateY(-1px);
+	box-shadow: var(--sl-shadow-md);
+}
+
+/* Secondary CTA: outlined slate that warms to the accent on hover. */
+.sl-link-button.secondary,
+.sl-link-button.minimal {
+	border-radius: 0.55rem;
+	padding: 0.6rem 1.1rem;
+	font-weight: 600;
+	color: var(--sl-color-white);
+	border-color: var(--sl-color-gray-5);
+	transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+.sl-link-button.secondary:hover,
+.sl-link-button.minimal:hover {
+	color: var(--sl-color-text-accent);
+	border-color: var(--sl-color-text-accent);
+	background: color-mix(in srgb, var(--sl-color-accent) 8%, transparent);
+}
+
+/* ---------- Cards (homepage CardGrid) ---------- */
+/* Replace Starlight's per-position color cycling with a unified slate+rust look. */
+.card {
+	--sl-card-border: var(--sl-color-accent);
+	background-color: var(--sl-color-bg);
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.85rem;
+	transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+.card:hover {
+	border-color: var(--sl-color-accent);
+	transform: translateY(-3px);
+	box-shadow: var(--sl-shadow-md);
+}
+.card .title {
+	font-family: var(--brand-display);
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+.card .icon {
+	color: var(--sl-color-text-accent);
+	border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
+	background: color-mix(in srgb, var(--sl-color-accent) 12%, transparent);
+}
+
+/* ---------- Accents & focus ---------- */
+::selection {
+	background: color-mix(in srgb, var(--sl-color-accent) 28%, transparent);
+}
+
+a:focus-visible,
+button:focus-visible,
+.sl-link-button:focus-visible {
+	outline: 2px solid var(--sl-color-accent);
+	outline-offset: 0.2rem;
+}
