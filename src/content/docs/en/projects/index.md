@@ -87,4 +87,19 @@ Currently in Azerbaijani; an English version may follow.
 
 [Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com) · [More about it →](/en/playwright/)
 
+## Universal Appliances Repair — client website
+
+A static marketing website I built for Universal Appliances Repair, an appliance repair service in Orange County, CA. It's live in production and shows the testing-and-automation workflow I enjoy: every change ships through a PR gated by automated checks.
+
+**What's inside:**
+
+- **Multi-page marketing site** — home, services, about, contact, FAQ, testimonials, and a blog (hand-built HTML + Tailwind CSS, no framework, no build step)
+- **Automated tests** — an internal link checker and Puppeteer visual screenshot tests that must pass before any merge
+- **PR-gated workflow** — Husky pre-push hooks; no direct commits to `master`
+- **Automated SEO content** — Claude Code routines research, write, and publish 3 new local-SEO articles every Mon/Wed/Fri, plus a quarterly SEO audit that opens a fix-up PR
+
+Built with HTML + Tailwind CSS.
+
+[Visit the site →](https://fixappliancesfast.com/) · [View the code →](https://github.com/TesterBaku/appliance-repair-website)
+
 Want to collaborate? [rufat@rufatmalikov.com](mailto:rufat@rufatmalikov.com)

@@ -91,4 +91,19 @@ Hazırda Azərbaycan dilindədir; ingilis versiyası gələ bilər.
 
 [BrauzerLab-ı aç →](https://brauzerlab.rufatmalikov.com) · [Ətraflı →](/az/playwright/)
 
+## Universal Appliances Repair — müştəri vebsaytı
+
+Orange County, Kaliforniyada yerləşən Universal Appliances Repair adlı məişət texnikası təmiri xidməti üçün qurduğum statik marketinq vebsaytı. Sayt canlı işləyir və sevdiyim test-və-avtomatlaşdırma iş axınını nümayiş etdirir: hər dəyişiklik avtomatik yoxlamalarla qorunan PR vasitəsilə yayımlanır.
+
+**İçərisində nə var:**
+
+- **Çoxsəhifəli marketinq saytı** — ana səhifə, xidmətlər, haqqında, əlaqə, FAQ, rəylər və bloq (əl ilə qurulmuş HTML + Tailwind CSS, freymvork yoxdur, build addımı yoxdur)
+- **Avtomatlaşdırılmış testlər** — daxili keçid yoxlayıcısı və hər birləşmədən əvvəl keçməli olan Puppeteer vizual skrinşot testləri
+- **PR ilə qorunan iş axını** — Husky pre-push hook-ları; `master`-a birbaşa commit yoxdur
+- **Avtomatlaşdırılmış SEO məzmunu** — Claude Code rutinləri hər Bazar ertəsi/Çərşənbə/Cümə 3 yeni lokal SEO məqaləsi araşdırır, yazır və yayımlayır; üstəlik rüblük SEO auditi düzəliş PR-i açır
+
+HTML + Tailwind CSS ilə qurulub.
+
+[Sayta bax →](https://fixappliancesfast.com/) · [Koda bax →](https://github.com/TesterBaku/appliance-repair-website)
+
 Birgə işləmək istəyirsiniz? [rufat@rufatmalikov.com](mailto:rufat@rufatmalikov.com)
