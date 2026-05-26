@@ -7,7 +7,10 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "typecheck": "astro check",
+    "test:e2e": "playwright test",
+    "prepare": "husky"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.39.2",
@@ -15,6 +18,10 @@
     "sharp": "^0.34.5"
   },
   "devDependencies": {
-    "playwright": "^1.60.0"
+    "@astrojs/check": "^0.9.9",
+    "@playwright/test": "^1.60.0",
+    "husky": "^9.1.7",
+    "playwright": "^1.60.0",
+    "typescript": "^6.0.3"
   }
 }
