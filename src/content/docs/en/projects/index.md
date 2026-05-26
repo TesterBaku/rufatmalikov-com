@@ -7,7 +7,7 @@ Projects I'm building and sharing. Each gets its own write-up as it grows.
 
 ## BrauzerLab — interactive Playwright trainer
 
-A free, browser-based Playwright course in Azerbaijani. You write real Playwright (JavaScript/TypeScript) in an in-browser editor, watch a simulated page react, and get instant pass/fail feedback — no install, no setup. I built the missions and the validation engine from scratch.
+A free, browser-based Playwright course, available in English and Azerbaijani. You write real Playwright (JavaScript/TypeScript) in an in-browser editor, watch a simulated page react, and get instant pass/fail feedback — no install, no setup. I built the missions and the validation engine from scratch.
 
 **What's inside:**
 
@@ -18,7 +18,7 @@ A free, browser-based Playwright course in Azerbaijani. You write real Playwrigh
 - **Network interception** — block, mock, and stub requests with `page.route`
 - **In-browser editor** — CodeMirror-based, with a custom validation engine for instant feedback
 
-Currently in Azerbaijani; an English version may follow.
+Available in English and Azerbaijani.
 
 [Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com) · [More about it →](/en/playwright/)
 

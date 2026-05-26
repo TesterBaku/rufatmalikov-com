@@ -7,7 +7,7 @@ Qurub paylaşdığım layihələr. Hər biri inkişaf etdikcə öz yazısını a
 
 ## BrauzerLab — interaktiv Playwright məşqçisi
 
-Azərbaycan dilində pulsuz, brauzer əsaslı Playwright kursu. Brauzerdaxili redaktorda real Playwright (JavaScript/TypeScript) kodu yazırsınız, simulyasiya olunmuş səhifənin reaksiyasını görürsünüz və dərhal keç/keçmə rəyi alırsınız — quraşdırma tələb olunmur. Tapşırıqları və yoxlama mühərrikini sıfırdan qurmuşam.
+İngilis və Azərbaycan dillərində pulsuz, brauzer əsaslı Playwright kursu. Brauzerdaxili redaktorda real Playwright (JavaScript/TypeScript) kodu yazırsınız, simulyasiya olunmuş səhifənin reaksiyasını görürsünüz və dərhal keç/keçmə rəyi alırsınız — quraşdırma tələb olunmur. Tapşırıqları və yoxlama mühərrikini sıfırdan qurmuşam.
 
 **İçərisində nə var:**
 
@@ -18,7 +18,7 @@ Azərbaycan dilində pulsuz, brauzer əsaslı Playwright kursu. Brauzerdaxili re
 - **Şəbəkə müdaxiləsi** — `page.route` ilə sorğuları bloklamaq, mock etmək və əvəzləmək
 - **Brauzerdaxili redaktor** — CodeMirror əsaslı, dərhal rəy üçün xüsusi yoxlama mühərriki ilə
 
-Hazırda Azərbaycan dilindədir; ingilis versiyası gələ bilər.
+İngilis və Azərbaycan dillərində mövcuddur.
 
 [BrauzerLab-ı aç →](https://brauzerlab.rufatmalikov.com) · [Ətraflı →](/az/playwright/)
 

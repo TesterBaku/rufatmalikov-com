@@ -1,11 +1,11 @@
 ---
 title: Playwright Course
-description: BrauzerLab — a free, interactive, browser-based Playwright trainer in Azerbaijani.
+description: BrauzerLab — a free, interactive, browser-based Playwright trainer, available in English and Azerbaijani.
 ---
 
 This section is home to **BrauzerLab**, a free, interactive Playwright trainer. You write real Playwright (JavaScript/TypeScript) code in your browser, watch a simulated page react, and get instant pass/fail feedback — no installation, no setup.
 
-> Currently in Azerbaijani. An English version may follow.
+> Available in English and Azerbaijani.
 
 ## What you'll practice
 
@@ -25,4 +25,4 @@ Anyone comfortable with basic HTML, CSS, and JavaScript who wants to learn brows
 
 ## Start now
 
-It's live — **[Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com)** — free, in your browser, in Azerbaijani.
+It's live — **[Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com)** — free, in your browser, in English and Azerbaijani.

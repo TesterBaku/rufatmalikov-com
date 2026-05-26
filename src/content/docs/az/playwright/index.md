@@ -1,6 +1,6 @@
 ---
 title: Playwright Kursu
-description: BrauzerLab — pulsuz, interaktiv, brauzer əsaslı Playwright məşqçisi (Azərbaycan dilində).
+description: BrauzerLab — pulsuz, interaktiv, brauzer əsaslı Playwright məşqçisi (ingilis və Azərbaycan dillərində).
 ---
 
 Bu bölmə **BrauzerLab**-ın evidir — pulsuz, interaktiv Playwright məşqçisi. Brauzerinizdə real Playwright (JavaScript/TypeScript) kodu yazırsınız, simulyasiya olunmuş səhifənin necə reaksiya verdiyini görürsünüz və dərhal keç/keçmə rəyi alırsınız — quraşdırma və ya hazırlıq tələb olunmur.
@@ -23,4 +23,4 @@ HTML, CSS və JavaScript-in əsasları ilə rahat olan, Playwright ilə brauzer 
 
 ## İndi başla
 
-Canlıdır — **[BrauzerLab-ı aç →](https://brauzerlab.rufatmalikov.com)** — pulsuz, brauzerinizdə, Azərbaycan dilində.
+Canlıdır — **[BrauzerLab-ı aç →](https://brauzerlab.rufatmalikov.com)** — pulsuz, brauzerinizdə, ingilis və Azərbaycan dillərində.
