@@ -40,7 +40,18 @@ Built with Python.
 
 ## BrauzerLab — interactive Playwright trainer
 
-A free, browser-based Playwright course in Azerbaijani: 50 hands-on missions with an in-browser editor and a custom validation engine that gives instant feedback. Live now.
+A free, browser-based Playwright course in Azerbaijani. You write real Playwright (JavaScript/TypeScript) in an in-browser editor, watch a simulated page react, and get instant pass/fail feedback — no install, no setup. I built the missions and the validation engine from scratch.
+
+**What's inside:**
+
+- **50 hands-on missions** across 7 progressive modules
+- **Locators** — roles, text, labels, test-ids, filters, and positional selectors (including Shadow DOM and dynamic IDs)
+- **Actions & auto-waiting** — clicks, typing, forms, drag-and-drop, plus reliable waits without flaky `sleep`
+- **Assertions & strict mode** — auto-waiting `expect` and clean handling of ambiguous locators
+- **Network interception** — block, mock, and stub requests with `page.route`
+- **In-browser editor** — CodeMirror-based, with a custom validation engine for instant feedback
+
+Currently in Azerbaijani; an English version may follow.
 
 [Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com) · [More about it →](/en/playwright/)
 

@@ -62,24 +62,14 @@ h1#_top,
 	text-wrap: balance;
 }
 
-/* No hero image yet: override Starlight's reserved 2-column (image) grid with
-   a single centered column, and tighten the tall default vertical padding.
-   When a portrait is added later, drop this block to restore the left/right
-   split. */
+/* No hero image yet: collapse Starlight's reserved 2-column (image) grid to a
+   single full-width column — this keeps the default LEFT alignment without the
+   empty right-hand image gap — and tighten the tall default vertical padding.
+   Remove this block when a portrait is added to restore the left/right split. */
 @media (min-width: 50rem) {
 	.hero {
 		grid-template-columns: 1fr;
 		padding-block: clamp(2rem, 6vmin, 4.5rem);
-	}
-	.hero .stack {
-		text-align: center;
-		align-items: center;
-	}
-	.hero .copy {
-		align-items: center;
-	}
-	.hero .actions {
-		justify-content: center;
 	}
 }
 
