@@ -76,7 +76,7 @@ As the project grows, you may add **skills, MCP servers, and subagents** to stre
 ### The loop
 
 1. **Branch** off `main` — `feat/…`, `fix/…`, `chore/…`, or `content/…`.
-2. **Make the change**, then locally: `npm run typecheck` and `npm run test:e2e` (and for visual/UI work, screenshot via `tasks/shot.mjs`).
+2. **Make the change**, then locally: `npm run typecheck` and `npm run test:e2e` (and for visual/UI work, review a screenshot of the page — a local `tasks/shot.mjs` helper exists for this; note `tasks/` is gitignored, so it and any notes under it are machine-local, not in the repo).
 3. **Push** the branch — the `pre-push` hook runs `npm run build` first, so a broken build never leaves the machine.
 4. **Open a PR** against `main`. This triggers:
    - **CI** (`.github/workflows/ci.yml`) — typecheck + Playwright e2e; **must pass** to merge.
@@ -91,7 +91,7 @@ As the project grows, you may add **skills, MCP servers, and subagents** to stre
 
 - Edit **both** locales: `src/content/docs/en/projects/index.md` and `src/content/docs/az/projects/index.md`.
 - Match the existing entry format: `## Title — descriptor`, a short intro, a `**What's inside:**` bullet list, then links.
-- **Verify features from the repo/code, never infer from names or descriptions** (see `tasks/lessons.md`). Describe only what's confirmed; flag AI/LLM features as optional if that's what they are.
+- **Verify features from the repo/code, never infer from names or descriptions** — this has caused inaccurate copy before. Describe only what's confirmed; flag AI/LLM features as optional if that's what they are.
 - Update the e2e `expectedOrder` in `tests/e2e/site.spec.ts` if the Projects ordering changes.
 
 ### Verify checklist (before requesting merge)
