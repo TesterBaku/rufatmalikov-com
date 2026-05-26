@@ -42,6 +42,22 @@ Python ilə qurulub.
 
 [Necə istifadə olunduğunu izlə →](https://youtu.be/qLmmXnKrZoI) · [Koda bax →](https://github.com/TesterBaku/quiz_formatter_with_chatgpt)
 
+## Study Quiz — kurs materiallarından imtahan hazırlığı
+
+İtaliyada proqram mühəndisliyi üzrə magistr təhsili alan qardaşım oğlu üçün qurduğum lokal imtahan-hazırlıq köməkçisi. O, mühazirə slaydları və laboratoriya materiallarından faydalı məşq testləri yaratmaq üçün NotebookLM-i sınamış, lakin istədiyi nəticəni ala bilməmişdi — ona görə də mən materialları parse edib bunu edən bir alət qurdum. Tamamilə onun kompüterində işləyir və istənilən kursa uyğunlaşdıra biləcəyi bir şablon kimi istifadə oluna bilər.
+
+**İçərisində nə var:**
+
+- **Sənəd təhlili** — kurs qovluğundakı PowerPoint (`.pptx`), Word (`.docx`) və PDF mühazirə/laboratoriya fayllarından strukturlaşdırılmış məzmun çıxarır
+- **Təkrar xülasələri** — əlaqəli mühazirə və laboratoriyalar arasında çarpaz istinadlarla qısa mövzu xülasələri
+- **Test yaratma** — deterministik, mövzuya yönəlmiş çoxseçimli suallar, defolt olaraq tamamilə oflayn
+- **Opsional LLM rejimi** — daha zəngin suallar üçün OpenAI-uyğun endpoint qoşun; uğursuzluq halında avtomatik olaraq lokal yaratmaya keçir
+- **Lokal veb interfeys** — testləri brauzerdə həll edin; nəticələri istəyə görə CSV-yə saxlayın
+
+Python ilə qurulub.
+
+[Koda bax →](https://github.com/TesterBaku/softeng-study-quiz)
+
 ## BrauzerLab — interaktiv Playwright məşqçisi
 
 Azərbaycan dilində pulsuz, brauzer əsaslı Playwright kursu. Brauzerdaxili redaktorda real Playwright (JavaScript/TypeScript) kodu yazırsınız, simulyasiya olunmuş səhifənin reaksiyasını görürsünüz və dərhal keç/keçmə rəyi alırsınız — quraşdırma tələb olunmur. Tapşırıqları və yoxlama mühərrikini sıfırdan qurmuşam.

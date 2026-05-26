@@ -38,6 +38,22 @@ Built with Python.
 
 [Watch the how-to video →](https://youtu.be/qLmmXnKrZoI) · [View the code →](https://github.com/TesterBaku/quiz_formatter_with_chatgpt)
 
+## Study Quiz — exam prep from course materials
+
+A local exam-prep helper I built for my nephew, a software-engineering master's student in Italy. He'd tried NotebookLM to turn his lecture slides and lab handouts into useful practice quizzes and couldn't get there — so I parsed the study materials and built a tool that does. It runs entirely on his machine and works as a blueprint he can adapt to any course.
+
+**What's inside:**
+
+- **Document parsing** — pulls structured content from PowerPoint (`.pptx`), Word (`.docx`), and PDF lecture/lab files in a course folder
+- **Revision summaries** — short topic recaps with cross-references between related lectures and labs
+- **Quiz generation** — deterministic, topic-focused multiple-choice questions, fully offline by default
+- **Optional LLM mode** — plug in an OpenAI-compatible endpoint for richer questions, with automatic fallback to local generation
+- **Local web UI** — take quizzes in the browser; optionally save results to CSV
+
+Built with Python.
+
+[View the code →](https://github.com/TesterBaku/softeng-study-quiz)
+
 ## BrauzerLab — interactive Playwright trainer
 
 A free, browser-based Playwright course in Azerbaijani. You write real Playwright (JavaScript/TypeScript) in an in-browser editor, watch a simulated page react, and get instant pass/fail feedback — no install, no setup. I built the missions and the validation engine from scratch.
