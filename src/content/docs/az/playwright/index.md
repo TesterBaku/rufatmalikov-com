@@ -21,6 +21,6 @@ Bu bölmə **BrauzerLab**-ın evidir — pulsuz, interaktiv Playwright məşqçi
 
 HTML, CSS və JavaScript-in əsasları ilə rahat olan, Playwright ilə brauzer avtomatlaşdırmasını öyrənmək istəyən hər kəs — əvvəlcədən Playwright təcrübəsi tələb olunmur.
 
-## Status
+## İndi başla
 
-Qurulub və son ön-buraxılış yoxlamalarındadır — tezliklə işə düşür.
+Canlıdır — **[BrauzerLab-ı aç →](https://brauzerlab.rufatmalikov.com)** — pulsuz, brauzerinizdə, Azərbaycan dilində.

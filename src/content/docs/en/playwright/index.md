@@ -23,6 +23,6 @@ This section is home to **BrauzerLab**, a free, interactive Playwright trainer. 
 
 Anyone comfortable with basic HTML, CSS, and JavaScript who wants to learn browser automation with Playwright — no prior Playwright experience needed.
 
-## Status
+## Start now
 
-Built and in final pre-launch checks — launching soon.
+It's live — **[Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com)** — free, in your browser, in Azerbaijani.

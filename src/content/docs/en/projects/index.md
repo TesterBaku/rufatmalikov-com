@@ -40,8 +40,8 @@ Built with Python.
 
 ## BrauzerLab — interactive Playwright trainer
 
-A free, browser-based Playwright course in Azerbaijani: 50 hands-on missions with an in-browser editor and a custom validation engine that gives instant feedback. Built — launching soon.
+A free, browser-based Playwright course in Azerbaijani: 50 hands-on missions with an in-browser editor and a custom validation engine that gives instant feedback. Live now.
 
-[More about it →](/en/playwright/)
+[Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com) · [More about it →](/en/playwright/)
 
 Want to collaborate? [rufat@rufatmalikov.com](mailto:rufat@rufatmalikov.com)

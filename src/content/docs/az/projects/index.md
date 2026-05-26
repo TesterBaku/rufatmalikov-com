@@ -44,8 +44,8 @@ Python ilə qurulub.
 
 ## BrauzerLab — interaktiv Playwright məşqçisi
 
-Azərbaycan dilində pulsuz, brauzer əsaslı Playwright kursu: brauzerdaxili redaktor və dərhal rəy verən xüsusi yoxlama mühərriki ilə 50 praktiki tapşırıq. Qurulub — tezliklə işə düşür.
+Azərbaycan dilində pulsuz, brauzer əsaslı Playwright kursu: brauzerdaxili redaktor və dərhal rəy verən xüsusi yoxlama mühərriki ilə 50 praktiki tapşırıq. İndi canlıdır.
 
-[Ətraflı →](/az/playwright/)
+[BrauzerLab-ı aç →](https://brauzerlab.rufatmalikov.com) · [Ətraflı →](/az/playwright/)
 
 Birgə işləmək istəyirsiniz? [rufat@rufatmalikov.com](mailto:rufat@rufatmalikov.com)
