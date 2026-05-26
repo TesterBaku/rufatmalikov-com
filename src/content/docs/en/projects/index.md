@@ -63,7 +63,7 @@ A self-contained math app I built for my sister, a (non-technical) math and Russ
 - **57 lessons across 8 chapters** — explanations with visual examples
 - **Tiered quizzes** — easy / medium / hard / mixed, with per-mistake feedback
 - **1,710 questions** — 10 per tier per lesson, randomised each session
-- **Made for non-technical use** — double-click to launch, runs locally in the browser
+- **Made for non-technical use** — double-click to launch; the script installs what it needs on first run, then opens in the browser
 - **Tested** — unit tests for the quiz logic plus end-to-end browser tests
 
 Built with TypeScript and Next.js (Docker-ready).

@@ -44,7 +44,7 @@ Python ilə qurulub.
 
 ## Study Quiz — kurs materiallarından imtahan hazırlığı
 
-İtaliyada proqram mühəndisliyi üzrə magistr təhsili alan qardaşım oğlu üçün qurduğum lokal imtahan-hazırlıq köməkçisi. O, mühazirə slaydları və laboratoriya materiallarından faydalı məşq testləri yaratmaq üçün NotebookLM-i sınamış, lakin istədiyi nəticəni ala bilməmişdi — ona görə də mən materialları parse edib bunu edən bir alət qurdum. Tamamilə onun kompüterində işləyir və istənilən kursa uyğunlaşdıra biləcəyi bir şablon kimi istifadə oluna bilər.
+İtaliyada proqram mühəndisliyi üzrə magistr təhsili alan bacım oğlu üçün qurduğum lokal imtahan-hazırlıq köməkçisi. O, mühazirə slaydları və laboratoriya materiallarından faydalı məşq testləri yaratmaq üçün NotebookLM-i sınamış, lakin istədiyi nəticəni ala bilməmişdi — ona görə də mən materialları parse edib bunu edən bir alət qurdum. Tamamilə onun kompüterində işləyir və istənilən kursa uyğunlaşdıra biləcəyi bir şablon kimi istifadə oluna bilər.
 
 **İçərisində nə var:**
 
@@ -67,7 +67,7 @@ Riyaziyyat və rus dili müəllimi olan (texniki olmayan) bacım üçün qurduğ
 - **8 fəsil üzrə 57 dərs** — vizual nümunələrlə izahlar
 - **Pilləli testlər** — asan / orta / çətin / qarışıq, hər səhv üçün rəylə
 - **1 710 sual** — hər dərsdə hər pillə üçün 10 sual, hər sessiyada təsadüfi
-- **Texniki olmayan istifadə üçün** — başlamaq üçün bir cüt klik, brauzerdə lokal işləyir
+- **Texniki olmayan istifadə üçün** — başlamaq üçün bir cüt klik; skript ilk işə salındıqda lazım olanı quraşdırır, sonra brauzerdə açılır
 - **Test olunub** — quiz məntiqi üçün unit testlər və brauzer (end-to-end) testləri
 
 TypeScript və Next.js ilə qurulub (Docker-a hazır).
