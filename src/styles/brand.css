@@ -62,6 +62,27 @@ h1#_top,
 	text-wrap: balance;
 }
 
+/* No hero image yet: override Starlight's reserved 2-column (image) grid with
+   a single centered column, and tighten the tall default vertical padding.
+   When a portrait is added later, drop this block to restore the left/right
+   split. */
+@media (min-width: 50rem) {
+	.hero {
+		grid-template-columns: 1fr;
+		padding-block: clamp(2rem, 6vmin, 4.5rem);
+	}
+	.hero .stack {
+		text-align: center;
+		align-items: center;
+	}
+	.hero .copy {
+		align-items: center;
+	}
+	.hero .actions {
+		justify-content: center;
+	}
+}
+
 /* Solid accent primary CTA in both themes (white text for strong contrast). */
 .sl-link-button.primary {
 	background: var(--sl-color-accent);
