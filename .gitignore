@@ -28,3 +28,6 @@ pnpm-debug.log*
 .claude/
 personal-site-conversation-summary.docx
 *.log
+
+# local working notes (only needed for multi-device / collaborators)
+tasks/
