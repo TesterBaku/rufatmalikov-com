@@ -102,4 +102,16 @@ Built with HTML + Tailwind CSS.
 
 [Visit the site →](https://fixappliancesfast.com/) · [View the code →](https://github.com/TesterBaku/appliance-repair-website)
 
+## RMC Tow — towing company website
+
+A small static marketing site I built and handed off for RMC Tow LLC, a towing and roadside-assistance business serving Corona and the Inland Empire, CA.
+
+**What's inside:**
+
+- **Four pages** — home, services, about, contact — hand-built in static HTML
+- **Conversion-focused** — prominent click-to-call CTA and a clear services breakdown (emergency towing, flatbed transport, roadside assistance)
+- **Mobile-friendly + SEO basics** — `tel:` links, sitemap, and `robots.txt`, ready to rank locally
+
+[Visit the site →](https://www.rmctow.com/)
+
 Want to collaborate? [rufat@rufatmalikov.com](mailto:rufat@rufatmalikov.com)

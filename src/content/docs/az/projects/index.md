@@ -106,4 +106,16 @@ HTML + Tailwind CSS ilə qurulub.
 
 [Sayta bax →](https://fixappliancesfast.com/) · [Koda bax →](https://github.com/TesterBaku/appliance-repair-website)
 
+## RMC Tow — yedək xidməti vebsaytı
+
+Corona və Inland Empire (Kaliforniya) bölgəsində fəaliyyət göstərən RMC Tow LLC yedək və yol kənarı yardım biznesi üçün qurub təhvil verdiyim kiçik statik marketinq saytı.
+
+**İçərisində nə var:**
+
+- **Dörd səhifə** — ana səhifə, xidmətlər, haqqında, əlaqə — statik HTML ilə əl ilə qurulub
+- **Konversiyaya yönəlik** — qabarıq "zəng et" düyməsi və aydın xidmət bölgüsü (təcili yedəkləmə, flatbed daşıma, yol kənarı yardım)
+- **Mobil-uyğun + SEO əsasları** — `tel:` keçidləri, sitemap və `robots.txt` ilə lokal axtarışa hazır
+
+[Sayta bax →](https://www.rmctow.com/)
+
 Birgə işləmək istəyirsiniz? [rufat@rufatmalikov.com](mailto:rufat@rufatmalikov.com)
