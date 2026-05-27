@@ -7,24 +7,24 @@ interface Props {
 const { id, title = 'Video' } = Astro.props;
 ---
 
-<div class="video-wrapper">
-	{id ? (
-		<iframe
-			src={`https://www.youtube-nocookie.com/embed/${id}`}
-			title={title}
-			loading="lazy"
-			allowfullscreen
-			allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-		></iframe>
-	) : (
-		<div class="video-placeholder">
-			<span>Video tezliklə əlavə olunacaq</span>
+{
+	id ? (
+		<div class="video-embed">
+			<iframe
+				src={`https://www.youtube-nocookie.com/embed/${id}`}
+				title={title}
+				loading="lazy"
+				allowfullscreen
+				allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+			/>
 		</div>
-	)}
-</div>
+	) : (
+		<p class="video-placeholder">🎬 Video tezliklə əlavə olunacaq</p>
+	)
+}
 
 <style>
-	.video-wrapper {
+	.video-embed {
 		position: relative;
 		width: 100%;
 		aspect-ratio: 16 / 9;
@@ -34,7 +34,7 @@ const { id, title = 'Video' } = Astro.props;
 		margin-block: 1.5rem;
 	}
 
-	.video-wrapper iframe {
+	.video-embed iframe {
 		position: absolute;
 		inset: 0;
 		width: 100%;
@@ -42,16 +42,18 @@ const { id, title = 'Video' } = Astro.props;
 		border: none;
 	}
 
+	/* Compact, low-key notice while no video is attached yet. */
 	.video-placeholder {
-		position: absolute;
-		inset: 0;
-		display: flex;
+		display: inline-flex;
 		align-items: center;
-		justify-content: center;
-		border: 2px dashed var(--sl-color-gray-5);
+		gap: 0.5rem;
+		padding: 0.5rem 0.85rem;
+		margin-block: 1rem;
+		border: 1px dashed var(--sl-color-gray-5);
 		border-radius: 0.5rem;
 		color: var(--sl-color-gray-3);
-		font-size: 1rem;
+		font-size: 0.875rem;
 		font-style: italic;
+		background-color: var(--sl-color-bg-nav);
 	}
 </style>
