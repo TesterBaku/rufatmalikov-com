@@ -1,0 +1,485 @@
+---
+title: "Modul 8: Fixtures və test datası"
+description: "Playwright fixture-ların login şablonunu necə aradan qaldırdığı və testləri izolyasiya etdiyi — daxili fixture-lar, base.extend, page-object fixture-ları, worker scope, faker ilə test datası yaratmaq, .env sirləri və setup/teardown strategiyası."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+Hər test suitesi eyni divarla üzləşir: əllidən çox testiniz var və hər biri eyni səkkiz sətirlik login şablonu ilə başlayır. Fixture-lar Playwright-ın bu problemə cavabıdır — testlər üçün resursları yaradan, təqdim edən və bağlayan bir dependency injection sistemi. Bütün bunlar testlərin içindəki heç bir təkrarlanan setup kodu olmadan hər test (ya da hər worker) üçün bir dəfə baş verir.
+
+<Video title="Modul 8: Fixtures və test datası" />
+
+---
+
+## Daxili fixture-lar: `page`, `context`, `browser`, `request`
+
+Playwright hər testin pulsuz istifadə edə biləcəyi beş fixture ilə gəlir. İlk moduldan bəri `page`-i istifadə edirsiniz — budur tam mənzərə.
+
+| Fixture | Scope | Nə təmin edir |
+|---------|-------|--------------|
+| `page` | test | Bu test üçün izolyasiya edilmiş təzə bir brauzer səhifəsi |
+| `context` | test | Səhifəyə sahib olan `BrowserContext` |
+| `browser` | worker | Eyni worker-dəki bütün testlər arasında paylaşılan tək brauzer instansiyası |
+| `request` | test | Brauzer olmadan HTTP çağırışları üçün `APIRequestContext` |
+| `playwright` | worker | Xam Playwright kitabxanasına giriş (nadir hallarda birbaşa lazım olur) |
+
+**Test-scoped** fixture-lar hər test üçün yenidən yaradılır və test bitdikdə ləğv edilir. **Worker-scoped** fixture-lar hər worker prosesi üçün bir dəfə yaradılır və həmin worker-da işləyən bütün testlər arasında yenidən istifadə edilir.
+
+```typescript
+// page və request hər ikisi test-scoped-dur — heç bir setup lazım deyil
+test('API vasitəsilə məhsul əlavə et, UI-da yoxla', async ({ page, request }) => {
+  // request: birbaşa HTTP — brauzer yükü yoxdur
+  const response = await request.post('/api/products', {
+    data: { name: 'Simsiz Siçan', price: 29.99 },
+  });
+  expect(response.status()).toBe(201);
+
+  // page: tam brauzer qarşılıqlı əlaqəsi
+  await page.goto('/products');
+  await expect(page.locator('.product-card').filter({ hasText: 'Simsiz Siçan' })).toBeVisible();
+});
+```
+
+---
+
+## `base.extend` ilə fərdi fixture-lar
+
+Fərdi fixture-lar `test.extend()` ilə müəyyən edilir. Hər fixture-a ad və bir async funksiya verirsiniz. Funksiya birinci arqument kimi digər fixture-ları, ikinci kimi isə bir `use` callback-i alır. `await use(...)` çağırışından əvvəlki hər şey setup-dur; sonrakı hər şey teardown-dur.
+
+```typescript
+// fixtures/auth.fixture.ts
+import { test as base, expect } from '@playwright/test';
+import path from 'path';
+import fs from 'fs';
+
+const AUTH_DIR = path.join(__dirname, '..', 'auth');
+
+// Daxili test-i bir customerPage fixture-ı ilə genişləndir
+export const test = base.extend<{ customerPage: import('@playwright/test').Page }>({
+  customerPage: async ({ browser }, use) => {
+    const authFile = path.join(AUTH_DIR, 'customer.json');
+
+    if (!fs.existsSync(authFile)) {
+      // İlk işləmə: brauzer vasitəsilə daxil ol və sessiyanı keşlə
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await page.goto('http://localhost:3000/auth/login');
+      await page.locator('#email').fill('customer@test.io');
+      await page.locator('#password').fill('customer123');
+      await page.locator('button[type="submit"]').click();
+      await page.locator('.alert.alert-success').waitFor();
+      await context.storageState({ path: authFile });
+      await context.close(); // bitti — bu kontekst yalnız login üçün lazım idi
+    }
+
+    // Keşlənmiş işləmə: sessiyanı saxlanmış JSON-dan bərpa et
+    const context = await browser.newContext({ storageState: authFile });
+    const page = await context.newPage();
+    await use(page); // ← səhifəni testə ver
+    await context.close(); // teardown test bitdikdən sonra işləyir
+  },
+});
+
+export { expect };
+```
+
+Bu fayldan idxal edən test heç vaxt login kodu yazmır:
+
+```typescript
+import { test, expect } from '../fixtures/auth.fixture';
+
+test('autentifikasiya edilmiş istifadəçi dashboard-u görür', async ({ customerPage }) => {
+  await customerPage.goto('/dashboard');
+  await expect(customerPage.locator('h1')).toContainText('Mənim Dashboard-um');
+});
+```
+
+İlk işləmə ~2 saniyə çəkir (brauzer başlatma + forma doldurma). Sonrakı hər işləmə keşlənmiş `auth/customer.json`-dan ~200 ms-də yüklənir.
+
+---
+
+## Fixture-lar vasitəsilə page object-lərin inject edilməsi
+
+Fixture-lar və Page Object Model təbii birləşir. Hər testdə page object-lər qurmaq əvəzinə, onları fixture kimi müəyyən edin və Playwright-a inject etməyi buraxın.
+
+```typescript
+// fixtures/pages.fixture.ts
+import { test as base } from '@playwright/test';
+import { LoginPage } from '../pages/LoginPage';
+import { ProductsPage } from '../pages/ProductsPage';
+import { CartPage } from '../pages/CartPage';
+
+type PageFixtures = {
+  loginPage: LoginPage;
+  productsPage: ProductsPage;
+  cartPage: CartPage;
+};
+
+export const test = base.extend<PageFixtures>({
+  loginPage: async ({ page }, use) => {
+    await use(new LoginPage(page));
+  },
+  productsPage: async ({ page }, use) => {
+    await use(new ProductsPage(page));
+  },
+  cartPage: async ({ page }, use) => {
+    await use(new CartPage(page));
+  },
+});
+```
+
+Testlər əməliyyatların təmiz siyahısına çevrilir — konstruksiya yoxdur, fərdi səhifə sinifləri idxal edilmir:
+
+```typescript
+import { test, expect } from '../fixtures/pages.fixture';
+
+test('səbətə əlavə et və sayı yoxla', async ({ loginPage, productsPage, cartPage }) => {
+  await loginPage.goto();
+  await loginPage.login('customer@test.io', 'customer123');
+  await productsPage.goto();
+  await productsPage.addFirstItemToCart();
+  await cartPage.goto();
+  expect(await cartPage.getItemCount()).toBe(1);
+});
+```
+
+---
+
+## Test-scoped vs worker-scoped fixture-lar
+
+`scope` seçimi bir fixture-ın nə vaxt yaradıldığını və ləğv edildiyini idarə edir.
+
+```typescript
+export const test = base.extend<{}, { sharedApiClient: ApiClient }>({
+  // Worker-scoped: bir dəfə yaradılır, bu worker-dakı bütün testlər arasında yenidən istifadə edilir
+  sharedApiClient: [
+    async ({}, use) => {
+      const client = await ApiClient.connect('http://localhost:3000');
+      await use(client);
+      await client.disconnect(); // worker bağlandıqda bir dəfə çağırılır
+    },
+    { scope: 'worker' },
+  ],
+
+  // Test-scoped (standart): hər test üçün yenidən yaradılır
+  isolatedPage: async ({ browser }, use) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await use(page);
+    await context.close();
+  },
+});
+```
+
+**Worker scope-u nə vaxt istifadə etməli:**
+
+- Yaratmaq üçün bahalı resurslar (verilənlər bazası əlaqələri, brauzer instansiyaları).
+- Paylaşmaq üçün təhlükəsiz olan yalnız oxunan resurslar (sessiya vəziyyəti olmayan HTTP müştəriləri).
+
+**Test-scoped (standart) nə vaxt saxlamalı:**
+
+- Testlər arasında vəziyyət daşıyan hər şey: brauzer kontekstləri, autentifikasiya edilmiş səhifələr, verilənlər bazası qeydləri.
+- Şübhə olduqda test-scoped saxlayın. Worker scope incə testlərarası çirklənməyə səbəb ola bilər.
+
+---
+
+## Test datası yaratmaq
+
+Sabit kodlanmış stringlər testlər arasında görünməz asılılıq yaradır. `@faker-js/faker` hər işlədilmədə real görünüşlü təsadüfi data yaradır, beləliklə testlər heç vaxt xüsusi bir dəyərə təsadüfən güvənmir.
+
+```bash
+npm install --save-dev @faker-js/faker
+```
+
+Həsr edilmiş test-data fixture-ı bütün data yaratmanı mərkəzləşdirir:
+
+```typescript
+// fixtures/test-data.fixture.ts
+import { test as base } from '@playwright/test';
+import { faker } from '@faker-js/faker';
+
+type User = { email: string; password: string; name: string };
+type Product = { name: string; price: number; category: string };
+
+type TestDataFixtures = {
+  newUser: () => User;
+  newProduct: () => Product;
+};
+
+export const test = base.extend<TestDataFixtures>({
+  newUser: async ({}, use) => {
+    const factory = (): User => ({
+      email: faker.internet.email(),
+      password: faker.internet.password({ length: 12 }),
+      name: faker.person.fullName(),
+    });
+    await use(factory);
+  },
+
+  newProduct: async ({}, use) => {
+    const factory = (): Product => ({
+      name: faker.commerce.productName(),
+      price: parseFloat(faker.commerce.price({ min: 5, max: 200 })),
+      category: faker.commerce.department(),
+    });
+    await use(factory);
+  },
+});
+```
+
+Bir testdə factory istifadəsi:
+
+```typescript
+import { test, expect } from '../fixtures/test-data.fixture';
+
+test('yeni istifadəçi qeydiyyatdan keçə bilər', async ({ page, newUser }) => {
+  const user = newUser();
+
+  await page.goto('/auth/register');
+  await page.locator('#name').fill(user.name);
+  await page.locator('#email').fill(user.email);
+  await page.locator('#password').fill(user.password);
+  await page.locator('button[type="submit"]').click();
+
+  await expect(page.locator('.flash-success')).toBeVisible();
+});
+```
+
+Eyni testdə `newUser()` iki dəfə çağırmaq iki fərqli istifadəçi yaradır — toqquşma olmur.
+
+---
+
+## Sirlər və mühit konfiqurasiyası üçün `.env` istifadəsi
+
+Kimlik məlumatları və əsas URL-lər heç vaxt test fayllarında sabit kodlanmamalıdır. Onları `.env`-də saxlayın və `dotenv` ilə yükləyin.
+
+```bash
+npm install --save-dev dotenv
+```
+
+**.env** (git-ignore edilmiş):
+
+```
+BASE_URL=http://localhost:3000
+CUSTOMER_EMAIL=customer@test.io
+CUSTOMER_PASSWORD=customer123
+ADMIN_EMAIL=admin@test.io
+ADMIN_PASSWORD=admin123
+```
+
+**playwright.config.ts** — faylı bir dəfə yükləyin, hər hansı test işləməzdən əvvəl:
+
+```typescript
+import { defineConfig } from '@playwright/test';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+export default defineConfig({
+  use: {
+    baseURL: process.env.BASE_URL,
+  },
+});
+```
+
+**Fixture-larda** — `process.env`-dən oxuyun, heç vaxt literallardan deyil:
+
+```typescript
+customerPage: async ({ browser }, use) => {
+  // ...
+  await page.locator('#email').fill(process.env.CUSTOMER_EMAIL!);
+  await page.locator('#password').fill(process.env.CUSTOMER_PASSWORD!);
+  // ...
+},
+```
+
+CI üçün eyni dəyişənləri pipeline sirləri kimi qoyun (GitHub Actions `env:` bloku, GitLab CI dəyişənləri və s.). Test kodu hər mühitdə eynidir.
+
+---
+
+## Setup və cleanup strategiyası
+
+### Fixture həyat dövrü
+
+```
+test başlayır
+  │
+  ├─ fixture A setup (await use()-dən əvvəl)
+  │     ├─ fixture B setup  ← əgər A B-dən asılıdırsa
+  │     └─ fixture B teardown (B-dəki use()-dən sonra)
+  ├─ fixture A teardown (await use()-dən sonra)
+  │
+test biter
+```
+
+`await use(value)` çağırışından **əvvəlki** kod test başlamazdan əvvəl işləyir. **Sonraki** kod test bitdikdən sonra işləyir. Bu bütün setup/teardown modelidir:
+
+```typescript
+export const test = base.extend({
+  cleanDatabase: async ({ request }, use) => {
+    // SETUP: testdən əvvəl verilənlər bazasını sıfırla
+    await request.post('/api/test/reset');
+
+    await use(undefined); // ← test burada işləyir
+
+    // TEARDOWN: lazım olduqda sonra təmizlə
+    // (növbəti test hər halda sıfırlayırsa çox vaxt lazım deyil)
+  },
+});
+```
+
+### Verilənlər bazası sıfırlama nümunəsi
+
+Tam test izolyasiyası üçün, test faylının içindəki before/after hook-larında deyil, bir fixture vasitəsilə hər testdən əvvəl verilənlər bazasını API çağırışı ilə sıfırlayın:
+
+```typescript
+apiHelper: async ({ request }, use) => {
+  // Bu fixture-ı tələb edən HƏR testdən əvvəl işləyir
+  const api = new ApiHelper(request);
+  await api.resetDatabase();
+  await use(api);
+  // Lazım olduqda burada teardown
+},
+```
+
+Sıfırlamanı fixture içinə qoymaq onu zəmanətli edir, hətta test yarıda uğursuz olsa belə heç bir `afterEach` blokuna çatmadan işləyəcəkdir.
+
+### Fixture-ları birləşdirmək
+
+Bir neçə fixture faylı tək bir idxala birləşdirilə bilər:
+
+```typescript
+// fixtures/index.ts — testlərinizin idxal etdiyi "birləşdirilmiş fixture"
+import { mergeTests } from '@playwright/test';
+import { test as authTest } from './auth.fixture';
+import { test as dataTest } from './test-data.fixture';
+
+export const test = mergeTests(authTest, dataTest);
+export { expect } from '@playwright/test';
+```
+
+```typescript
+import { test, expect } from '../fixtures';
+
+test('tam iş axışı', async ({ customerPage, newProduct, apiHelper }) => {
+  const product = newProduct();
+  await apiHelper.createProduct(product);
+  await customerPage.goto('/products');
+  await expect(customerPage.locator('table')).toContainText(product.name);
+});
+```
+
+---
+
+## Tapşırıqlar
+
+Bu tapşırıqlar yerli TestMarket tətbiqini istifadə edir. `capstone-app/` qovluğunda `npm start` ilə başladın.
+
+---
+
+### Tapşırıq 1: Page-object fixture qurun
+
+`tests/starter/fixtures/pages.fixture.ts` yaradın.
+
+- `base`-i `loginPage`, `productsPage` və `cartPage` ilə genişləndir.
+- Hər fixture müvafiq page object-i testin `page` fixture-ı ilə qurmalıdır.
+- Hər üçünü istifadə edən bir test yazın. Təzə login sonrasında `cartPage`-in sıfır element göstərdiyini iddia edin.
+
+---
+
+### Tapşırıq 2: `storageState` ilə auth fixture qurun
+
+`tests/starter/fixtures/auth.fixture.ts` yaradın.
+
+- Sessiyanı `auth/customer.json`-da keşləyən `customerPage` fixture-ı müəyyən edin.
+- İlk işləmə: brauzer UI vasitəsilə daxil olun və vəziyyəti saxlayın.
+- Sonrakı işlədilmələr: keş faylından yükləyin.
+- Eyni nümunəni istifadə edərək admin kimlik məlumatları ilə `adminPage` fixture-ı müəyyən edin.
+- `customerPage` ilə bir test və `adminPage` ilə bir test yazın. Hər ikisinin test gövdəsindəki heç bir login kodu olmadan autentifikasiya edildiyini yoxlayın.
+
+---
+
+### Tapşırıq 3: Auth fixture-ına `apiRequest` əlavə edin
+
+Tapşırıq 2-dən fixture faylını aşağıdakını əlavə etmək üçün genişləndir:
+
+```typescript
+apiRequest: async ({ playwright }, use) => {
+  const ctx = await playwright.request.newContext({
+    baseURL: process.env.BASE_URL ?? 'http://localhost:3000',
+  });
+  await use(ctx);
+  await ctx.dispose();
+},
+```
+
+`customerPage` və `apiRequest`-i birlikdə istifadə edən bir test yazın: `apiRequest` vasitəsilə verilənlər bazasını sıfırlayın, sonra məhsullar səhifəsinə keçin və standart seed datanın mövcud olduğunu təsdiqləyin.
+
+---
+
+### Tapşırıq 4: Yaradılmış istifadəçilərlə test-data fixture
+
+`tests/starter/fixtures/test-data.fixture.ts` yaradın:
+
+- `newUser` fixture: faker istifadə edərək `{ email, password, name }` qaytaran factory.
+- `newProduct` fixture: faker istifadə edərək `{ name, price, category }` qaytaran factory.
+
+Qeydiyyat forması vasitəsilə yeni yaradılmış bir istifadəçini qeydiyyatdan keçirən və xoş gəldiniz mesajını iddia edən bir test yazın. Eyni testdə `newUser()` iki dəfə çağırmaq iki fərqli e-poçt ünvanı verməlidir.
+
+---
+
+### Tapşırıq 5: Worker-scoped vs test-scoped — fərqi müşahidə edin
+
+Worker-scoped `requestCounter` fixture-ı əlavə edin:
+
+```typescript
+requestCounter: [
+  async ({}, use) => {
+    let count = 0;
+    await use({ increment: () => ++count, value: () => count });
+  },
+  { scope: 'worker' },
+],
+```
+
+Hər biri `requestCounter.increment()` çağıran və `requestCounter.value()` loq edən üç test yazın. `--workers=1` ilə işlədin və sayın artan olduğunu müşahidə edin. `--workers=3` ilə işlədin və hər worker-ın öz sayacına sahib olduğunu müşahidə edin. Bu, worker-scoped fixture-ların worker-lar arasında paylaşılmadığını təsdiqləyir.
+
+---
+
+### Tapşırıq 6: Avtomatik verilənlər bazası sıfırlama fixture-ı
+
+`tests/starter/fixtures/clean-db.fixture.ts` yaradın:
+
+- Auth fixture-ını genişləndir.
+- `await use(api)` çağırışından əvvəl `api.resetDatabase()` çağıran `apiHelper` fixture-ı əlavə edin.
+- Fixture testin özünün içindəki heç bir çağırışa ehtiyac duymamalıdır.
+
+Verilənlər bazasını dəyişdirən üç testlə bir describe bloku yazın. Hər testin başlanğıc məhsul sayının həmişə eyni seed dəyəri olduğunu iddia edərək təmiz vəziyyətlə başladığını təsdiqləyin.
+
+---
+
+### Tapşırıq 7: `.env` sirləri
+
+Bütün kimlik məlumatlarını fixture fayllarından `.env` faylına köçürün. `dotenv.config()` vasitəsilə `playwright.config.ts`-də yükləyin. `auth.fixture.ts`-i `process.env`-dən oxumaq üçün yeniləyin. Fixture kodunda heç bir literal olmadan testlərin hələ də keçdiyini təsdiqləyin.
+
+---
+
+### Tapşırıq 8: `mergeTests` ilə fixture-ları birləşdirin
+
+`mergeTests` istifadə edərək auth fixture-ı və test-data fixture-ı birləşdirən `tests/starter/fixtures/index.ts` yaradın. Bütün spec fayllarınızı fərdi fixture faylları yerinə `../fixtures` (index) idxal etmək üçün yeniləyin. Bütün testlərin hələ də keçdiyini yoxlayın.
+
+---
+
+## Əsas nəticələr
+
+1. **Beş daxili fixture pulsuz gəlir.** `page`, `context`, `browser`, `request` və `playwright` test ehtiyaclarının böyük hissəsini ödəyir.
+2. **`base.extend()` genişlənmə nöqtəsidir.** Hər fərdi fixture burada müəyyən edilir. `use` callback setup ilə teardown arasındakı sərhəddir.
+3. **`storageState` ən sürətli auth nümunəsidir.** Sessiyanı ilk işlədilmədə keşlə; sonrakı hər işlədilmədə JSON-dan yenidən qur. UI login-dən on dəfə sürətlidir.
+4. **Fixture-lar page object-lərini inject edir.** POM siniflərini fixture kimi müəyyən etmək testlərdəki bütün konstruksiya şablonunu aradan qaldırır.
+5. **Test-scoped təhlükəsiz standartdır.** Worker scope-u yalnız həqiqətən vəziyyətsiz, yaratması bahalı resurslar üçün istifadə edin.
+6. **Kimlik məlumatlarını və əsas URL-ləri heç vaxt sabit kodlamayın.** `.env` + `process.env` sirləri mənbə nəzarətindən kənarda saxlayır və testləri daşınan edir.
+7. **Fixture-da verilənlər bazasını sıfırlayın, `beforeEach`-də deyil.** Fixture, hətta test yarıda uğursuz olsa belə, cleanup-ı zəmanətləyir.
+8. **`mergeTests` fixture fayllarını təmiz şəkildə birləşdirir.** Hər spec faylında bir idxal — təkrarlanan fixture tərifi yoxdur.

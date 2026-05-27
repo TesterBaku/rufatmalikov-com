@@ -1,0 +1,485 @@
+---
+title: "Module 8: Fixtures & Test Data"
+description: "How Playwright fixtures eliminate login boilerplate and keep tests isolated — built-in fixtures, base.extend, page-object fixtures, worker scope, test-data generation with faker, .env secrets, and setup/teardown strategy."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+Every test suite eventually hits the same wall: you have fifty tests and each one starts with the same eight lines of login boilerplate. Fixtures are Playwright's answer — a dependency-injection system that creates, provides, and tears down resources for you, once per test (or once per worker), with zero repeated setup code inside tests.
+
+<Video title="Module 8: Fixtures & Test Data" />
+
+---
+
+## Built-in fixtures: `page`, `context`, `browser`, `request`
+
+Playwright ships with five fixtures every test can request for free. You've been using `page` since the first module — here is the full picture.
+
+| Fixture | Scope | What it provides |
+|---------|-------|-----------------|
+| `page` | test | A fresh browser page, isolated to this test |
+| `context` | test | The `BrowserContext` that owns the page |
+| `browser` | worker | A single browser instance shared across all tests in the same worker |
+| `request` | test | An `APIRequestContext` for HTTP calls without a browser |
+| `playwright` | worker | Access to the raw Playwright library (rarely needed directly) |
+
+**Test-scoped** fixtures are created fresh for each test and torn down when the test ends. **Worker-scoped** fixtures are created once per worker process and reused across all tests that run in that worker.
+
+```typescript
+// page and request are both test-scoped — no setup needed
+test('add product via API, verify in UI', async ({ page, request }) => {
+  // request: direct HTTP — no browser overhead
+  const response = await request.post('/api/products', {
+    data: { name: 'Wireless Mouse', price: 29.99 },
+  });
+  expect(response.status()).toBe(201);
+
+  // page: full browser interaction
+  await page.goto('/products');
+  await expect(page.locator('.product-card').filter({ hasText: 'Wireless Mouse' })).toBeVisible();
+});
+```
+
+---
+
+## Custom fixtures with `base.extend`
+
+Custom fixtures are defined with `test.extend()`. You give each fixture a name and an async function. The function receives other fixtures as its first argument, and a `use` callback as its second. Everything before `await use(...)` is setup; everything after is teardown.
+
+```typescript
+// fixtures/auth.fixture.ts
+import { test as base, expect } from '@playwright/test';
+import path from 'path';
+import fs from 'fs';
+
+const AUTH_DIR = path.join(__dirname, '..', 'auth');
+
+// Extend the built-in test with a customerPage fixture
+export const test = base.extend<{ customerPage: import('@playwright/test').Page }>({
+  customerPage: async ({ browser }, use) => {
+    const authFile = path.join(AUTH_DIR, 'customer.json');
+
+    if (!fs.existsSync(authFile)) {
+      // First run: log in via the browser and cache the session
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await page.goto('http://localhost:3000/auth/login');
+      await page.locator('#email').fill('customer@test.io');
+      await page.locator('#password').fill('customer123');
+      await page.locator('button[type="submit"]').click();
+      await page.locator('.alert.alert-success').waitFor();
+      await context.storageState({ path: authFile });
+      await context.close(); // done — only needed this context for login
+    }
+
+    // Cached run: reconstruct the session from the saved JSON
+    const context = await browser.newContext({ storageState: authFile });
+    const page = await context.newPage();
+    await use(page); // ← hand the page to the test
+    await context.close(); // teardown runs after the test
+  },
+});
+
+export { expect };
+```
+
+A test that imports from this file never writes login code:
+
+```typescript
+import { test, expect } from '../fixtures/auth.fixture';
+
+test('authenticated user sees dashboard', async ({ customerPage }) => {
+  await customerPage.goto('/dashboard');
+  await expect(customerPage.locator('h1')).toContainText('My Dashboard');
+});
+```
+
+The first run takes ~2 seconds (browser launch + form fill). Every subsequent run loads from the cached `auth/customer.json` in ~200 ms.
+
+---
+
+## Injecting page objects via fixtures
+
+Fixtures and the Page Object Model combine naturally. Instead of constructing page objects inside every test, define them as fixtures and let Playwright inject them.
+
+```typescript
+// fixtures/pages.fixture.ts
+import { test as base } from '@playwright/test';
+import { LoginPage } from '../pages/LoginPage';
+import { ProductsPage } from '../pages/ProductsPage';
+import { CartPage } from '../pages/CartPage';
+
+type PageFixtures = {
+  loginPage: LoginPage;
+  productsPage: ProductsPage;
+  cartPage: CartPage;
+};
+
+export const test = base.extend<PageFixtures>({
+  loginPage: async ({ page }, use) => {
+    await use(new LoginPage(page));
+  },
+  productsPage: async ({ page }, use) => {
+    await use(new ProductsPage(page));
+  },
+  cartPage: async ({ page }, use) => {
+    await use(new CartPage(page));
+  },
+});
+```
+
+Tests become a clean list of actions — no construction, no imports of individual page classes:
+
+```typescript
+import { test, expect } from '../fixtures/pages.fixture';
+
+test('add to cart and verify count', async ({ loginPage, productsPage, cartPage }) => {
+  await loginPage.goto();
+  await loginPage.login('customer@test.io', 'customer123');
+  await productsPage.goto();
+  await productsPage.addFirstItemToCart();
+  await cartPage.goto();
+  expect(await cartPage.getItemCount()).toBe(1);
+});
+```
+
+---
+
+## Test-scoped vs worker-scoped fixtures
+
+The `scope` option controls when a fixture is created and torn down.
+
+```typescript
+export const test = base.extend<{}, { sharedApiClient: ApiClient }>({
+  // Worker-scoped: created once, reused across all tests in this worker
+  sharedApiClient: [
+    async ({}, use) => {
+      const client = await ApiClient.connect('http://localhost:3000');
+      await use(client);
+      await client.disconnect(); // called once when the worker shuts down
+    },
+    { scope: 'worker' },
+  ],
+
+  // Test-scoped (default): created fresh for every test
+  isolatedPage: async ({ browser }, use) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await use(page);
+    await context.close();
+  },
+});
+```
+
+**When to use worker scope:**
+
+- Resources that are expensive to create (database connections, browser instances).
+- Resources that are read-only and safe to share (HTTP clients with no session state).
+
+**When to stay test-scoped (the default):**
+
+- Anything that carries state between tests: browser contexts, authenticated pages, database records.
+- When in doubt, keep it test-scoped. Worker scope can cause subtle cross-test pollution.
+
+---
+
+## Test-data generation
+
+Hard-coded strings create invisible coupling between tests. `@faker-js/faker` generates realistic random data on every run, so tests never accidentally depend on a specific value.
+
+```bash
+npm install --save-dev @faker-js/faker
+```
+
+A dedicated test-data fixture centralises all data creation:
+
+```typescript
+// fixtures/test-data.fixture.ts
+import { test as base } from '@playwright/test';
+import { faker } from '@faker-js/faker';
+
+type User = { email: string; password: string; name: string };
+type Product = { name: string; price: number; category: string };
+
+type TestDataFixtures = {
+  newUser: () => User;
+  newProduct: () => Product;
+};
+
+export const test = base.extend<TestDataFixtures>({
+  newUser: async ({}, use) => {
+    const factory = (): User => ({
+      email: faker.internet.email(),
+      password: faker.internet.password({ length: 12 }),
+      name: faker.person.fullName(),
+    });
+    await use(factory);
+  },
+
+  newProduct: async ({}, use) => {
+    const factory = (): Product => ({
+      name: faker.commerce.productName(),
+      price: parseFloat(faker.commerce.price({ min: 5, max: 200 })),
+      category: faker.commerce.department(),
+    });
+    await use(factory);
+  },
+});
+```
+
+Using the factory in a test:
+
+```typescript
+import { test, expect } from '../fixtures/test-data.fixture';
+
+test('new user can register', async ({ page, newUser }) => {
+  const user = newUser();
+
+  await page.goto('/auth/register');
+  await page.locator('#name').fill(user.name);
+  await page.locator('#email').fill(user.email);
+  await page.locator('#password').fill(user.password);
+  await page.locator('button[type="submit"]').click();
+
+  await expect(page.locator('.flash-success')).toBeVisible();
+});
+```
+
+Calling `newUser()` twice in the same test produces two different users — no collision.
+
+---
+
+## `.env` usage for secrets and environment config
+
+Credentials and base URLs must never be hard-coded in test files. Store them in `.env` and load them with `dotenv`.
+
+```bash
+npm install --save-dev dotenv
+```
+
+**.env** (git-ignored):
+
+```
+BASE_URL=http://localhost:3000
+CUSTOMER_EMAIL=customer@test.io
+CUSTOMER_PASSWORD=customer123
+ADMIN_EMAIL=admin@test.io
+ADMIN_PASSWORD=admin123
+```
+
+**playwright.config.ts** — load the file once, before any test runs:
+
+```typescript
+import { defineConfig } from '@playwright/test';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+export default defineConfig({
+  use: {
+    baseURL: process.env.BASE_URL,
+  },
+});
+```
+
+**In fixtures** — read from `process.env`, never from literals:
+
+```typescript
+customerPage: async ({ browser }, use) => {
+  // ...
+  await page.locator('#email').fill(process.env.CUSTOMER_EMAIL!);
+  await page.locator('#password').fill(process.env.CUSTOMER_PASSWORD!);
+  // ...
+},
+```
+
+For CI, set the same variables as pipeline secrets (GitHub Actions `env:` block, GitLab CI variables, etc.). The test code is identical in every environment.
+
+---
+
+## Setup & cleanup strategy
+
+### The fixture lifecycle
+
+```
+test starts
+  │
+  ├─ fixture A setup (before await use())
+  │     ├─ fixture B setup  ← if A depends on B
+  │     └─ fixture B teardown (after use() in B)
+  ├─ fixture A teardown (after await use())
+  │
+test ends
+```
+
+Code **before** `await use(value)` runs before the test. Code **after** runs after. This is the entire setup/teardown model:
+
+```typescript
+export const test = base.extend({
+  cleanDatabase: async ({ request }, use) => {
+    // SETUP: reset DB before the test
+    await request.post('/api/test/reset');
+
+    await use(undefined); // ← test runs here
+
+    // TEARDOWN: optionally clean up after
+    // (often not needed if the next test resets anyway)
+  },
+});
+```
+
+### Database reset pattern
+
+For full test isolation, reset the database before every test via an API call — not a before/after hook inside the test file:
+
+```typescript
+apiHelper: async ({ request }, use) => {
+  // Runs before EVERY test that requests this fixture
+  const api = new ApiHelper(request);
+  await api.resetDatabase();
+  await use(api);
+  // Teardown here if needed
+},
+```
+
+Keeping the reset inside the fixture means it is guaranteed to run, even if a test fails mid-way and never reaches any `afterEach` block.
+
+### Combining fixtures
+
+Multiple fixture files can be composed into a single import:
+
+```typescript
+// fixtures/index.ts — the "combined fixture" your tests import from
+import { mergeTests } from '@playwright/test';
+import { test as authTest } from './auth.fixture';
+import { test as dataTest } from './test-data.fixture';
+
+export const test = mergeTests(authTest, dataTest);
+export { expect } from '@playwright/test';
+```
+
+```typescript
+import { test, expect } from '../fixtures';
+
+test('full workflow', async ({ customerPage, newProduct, apiHelper }) => {
+  const product = newProduct();
+  await apiHelper.createProduct(product);
+  await customerPage.goto('/products');
+  await expect(customerPage.locator('table')).toContainText(product.name);
+});
+```
+
+---
+
+## Exercises
+
+These exercises use the local TestMarket app. Start it with `npm start` in the `capstone-app/` directory.
+
+---
+
+### Exercise 1: Build a page-object fixture
+
+Create `tests/starter/fixtures/pages.fixture.ts`.
+
+- Extend `base` with `loginPage`, `productsPage`, and `cartPage`.
+- Each fixture should construct the corresponding page object with the test's `page` fixture.
+- Write a test that uses all three. Assert `cartPage` shows zero items after a fresh login.
+
+---
+
+### Exercise 2: Build an auth fixture with `storageState`
+
+Create `tests/starter/fixtures/auth.fixture.ts`.
+
+- Define a `customerPage` fixture that caches the session in `auth/customer.json`.
+- First run: log in via the browser UI and save state.
+- Subsequent runs: load from the cache file.
+- Define an `adminPage` fixture using the same pattern with admin credentials.
+- Write one test with `customerPage` and one with `adminPage`. Verify both are authenticated without any login code in the test body.
+
+---
+
+### Exercise 3: Add `apiRequest` to the auth fixture
+
+Extend the fixture file from Exercise 2 to add:
+
+```typescript
+apiRequest: async ({ playwright }, use) => {
+  const ctx = await playwright.request.newContext({
+    baseURL: process.env.BASE_URL ?? 'http://localhost:3000',
+  });
+  await use(ctx);
+  await ctx.dispose();
+},
+```
+
+Write a test that uses `customerPage` and `apiRequest` together: reset the database via `apiRequest`, then navigate to the products page and confirm the default seed data is present.
+
+---
+
+### Exercise 4: Test-data fixture with generated users
+
+Create `tests/starter/fixtures/test-data.fixture.ts`:
+
+- `newUser` fixture: factory that returns `{ email, password, name }` using faker.
+- `newProduct` fixture: factory that returns `{ name, price, category }` using faker.
+
+Write a test that registers a newly generated user via the registration form and asserts the welcome message. Calling `newUser()` twice in the same test must produce two distinct email addresses.
+
+---
+
+### Exercise 5: Worker-scoped vs test-scoped — observe the difference
+
+Add a `requestCounter` fixture scoped to `worker`:
+
+```typescript
+requestCounter: [
+  async ({}, use) => {
+    let count = 0;
+    await use({ increment: () => ++count, value: () => count });
+  },
+  { scope: 'worker' },
+],
+```
+
+Write three tests that each call `requestCounter.increment()` and log `requestCounter.value()`. Run with `--workers=1` and observe that the count accumulates. Run with `--workers=3` and observe each worker has its own counter. This confirms worker-scoped fixtures are not shared across workers.
+
+---
+
+### Exercise 6: Automatic DB reset fixture
+
+Create `tests/starter/fixtures/clean-db.fixture.ts`:
+
+- Extend the auth fixture.
+- Add an `apiHelper` fixture that calls `api.resetDatabase()` before `await use(api)`.
+- The fixture should NOT need any call inside the test itself.
+
+Write a describe block with three tests that all modify the database. Confirm that each test starts with a clean state by asserting the initial product count is always the same seeded value.
+
+---
+
+### Exercise 7: `.env` secrets
+
+Move all credentials out of fixture files into a `.env` file. Load it in `playwright.config.ts` via `dotenv.config()`. Update your `auth.fixture.ts` to read from `process.env`. Confirm the tests still pass with no literals in the fixture code.
+
+---
+
+### Exercise 8: Combine fixtures with `mergeTests`
+
+Create `tests/starter/fixtures/index.ts` that merges the auth fixture and the test-data fixture using `mergeTests`. Update all your spec files to import from `../fixtures` (the index) instead of individual fixture files. Verify that all tests still pass.
+
+---
+
+## Key takeaways
+
+1. **Five built-in fixtures ship free.** `page`, `context`, `browser`, `request`, and `playwright` cover the majority of test needs.
+2. **`base.extend()` is the extension point.** Every custom fixture is defined here. The `use` callback is the boundary between setup and teardown.
+3. **`storageState` is the fastest auth pattern.** Cache the session on first run; reconstruct from JSON on every subsequent run. Ten times faster than UI login.
+4. **Fixtures inject page objects.** Defining POM classes as fixtures eliminates all construction boilerplate from tests.
+5. **Test-scoped is the safe default.** Use worker scope only for truly stateless, expensive-to-create resources.
+6. **Never hard-code credentials or base URLs.** `.env` + `process.env` keeps secrets out of source control and makes tests portable.
+7. **Reset the database in a fixture, not in `beforeEach`.** The fixture guarantees cleanup even when a test fails partway through.
+8. **`mergeTests` composes fixture files cleanly.** One import in every spec file — no duplicated fixture definitions.
