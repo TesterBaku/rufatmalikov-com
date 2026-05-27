@@ -1,0 +1,207 @@
+---
+title: "Modul 0: Kurs xəritəsi və quraşdırma"
+description: "Playwright kursunun ilk modulu: alət zəncirinizi qurun və ilk testinizi yazın."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+Xoş gəldiniz! Bu modul kursun başlanğıc nöqtəsidir. Heç bir əvvəlki Playwright təcrübəsi olmadan, bu modulun sonunda işləyən bir test yazacaq və onu öz kompüterinizdə işlədəcəksiniz.
+
+<Video title="Modul 0: Kurs xəritəsi və quraşdırma" />
+
+---
+
+## Playwright nədir və niyə vacibdir
+
+Playwright — Microsoft tərəfindən hazırlanmış açıq mənbəli brauzər avtomatlaşdırma freymvorkudur. Chromium, Firefox və WebKit (Safari) brauzerlərini dəstəkləyir, yəni bir test bütün əsas brauzerlərdə işləyə bilər.
+
+Niyə Playwright seçilir?
+
+- **Sürətlidir** — testlər paralel işləyir
+- **Etibarlıdır** — avtomatik gözləmə sayəsində `sleep()` yazmazsınız
+- **Güclüdür** — API testi, şəbəkə müdaxiləsi, auth vəziyyəti, mobil emulasiya — hamısı daxildir
+- **Azərbaycan dilində resurslar var** — BrauzerLab məhz bunun üçün yaradılıb
+
+---
+
+## Kurs boyu nə quracağıq
+
+Bu kurs boyu real, işlənən bir avtomatlaşdırma layihəsi quracağıq. Hər modul bir yeni qat əlavə edir:
+
+- **Modul 0–3:** Əsaslar — quraşdırma, lokatorlar, əməliyyatlar
+- **Modul 4–6:** Keyfiyyət — iddialar, flaky test qarşısının alınması, konfiqurasiya
+- **Modul 7–10:** Miqyas — POM, fixtures, API, auth
+- **Modul 11–13:** Peşəkar səviyyə — vizual test, CI, yekun layihə
+
+---
+
+## Manual QA-dan avtomatlaşdırmaya keçid (düşüncə tərzi)
+
+Manual QA-da siz hər addımı özünüz əllə icra edirsiniz: "Bu düyməyə basıram, bu mətn görünür, bu URL dəyişir." Avtomatlaşdırmada isə həmin addımları kod şəklində yazırsınız.
+
+**Əsas fərq:** Manual test bir dəfədir. Avtomatik test yüzlərlə dəfə, saniyələr içində, heç bir insan müdaxiləsi olmadan işləyə bilər.
+
+Keçid zamanı yadda saxlayın:
+- Kod yazmaq öyrənilir — siz artıq test düşüncə tərzinə sahibsiniz
+- Kod xətaları normaldır — hər kəsin kodu ilk dəfə işləmir
+- Playwright API-si oxunaqlıdır — `page.click('Login')` nə edəcəyini açıq göstərir
+
+---
+
+## Node, VS Code və Git-in quraşdırılması
+
+Bu üç aləti quraşdıracağıq. Hər addım modulun videosunda da göstərilir — addımın yanındakı vaxt nişanına klikləyərək birbaşa həmin hissəyə keçə bilərsiniz.
+
+<Steps>
+
+1. **Node.js — LTS versiyası.** [nodejs.org](https://nodejs.org) saytına keçin və **LTS** versiyasını yükləyin (Current yox). Quraşdırıcıda bütün addımlarda standart seçimləri saxlayın. Sonra terminalda yoxlayın:
+
+   ```bash
+   node --version   # v20.x.x və ya daha yüksək
+   npm --version    # v10.x.x və ya daha yüksək
+   ```
+
+   🎬 Videoda: _tezliklə əlavə olunacaq_
+
+   <Deck href="/course/decks/node-install/" title="Node.js quraşdırma — slayd təlimatı" />
+
+2. **VS Code.** [code.visualstudio.com](https://code.visualstudio.com) saytından Stable versiyasını yükləyin. Quraşdırdıqdan sonra bu əlavələri qurun: **Playwright Test for VSCode** (testləri redaktordan birbaşa işlətmək üçün) və **ESLint** (kod keyfiyyəti üçün).
+
+   🎬 Videoda: _tezliklə əlavə olunacaq_
+
+   <Deck href="/course/decks/vscode-install/" title="VS Code quraşdırma — slayd təlimatı" />
+
+3. **Git.** [git-scm.com](https://git-scm.com) saytından yükləyin və quraşdırmada standart seçimləri qəbul edin. Sonra yoxlayın:
+
+   ```bash
+   git --version
+   ```
+
+   🎬 Videoda: _tezliklə əlavə olunacaq_
+
+   <Deck href="/course/decks/git-install/" title="Git quraşdırma — slayd təlimatı" />
+
+</Steps>
+
+:::note[Əməliyyat sistemi üzrə qeydlər]
+- **Windows:** `.exe` quraşdırıcılarını ikiqat klikləyin və standart addımları izləyin; yoxlama əmrlərini PowerShell-də işlədin.
+- **macOS:** `.pkg` quraşdırıcılarından (Homebrew bilirsinizsə: `brew install node git`) istifadə edin.
+- **Linux:** paket menecerindən (`apt`, `dnf` və s.) və ya rəsmi saytlardan istifadə edin.
+:::
+
+Brauzerlərə gəlincə: Playwright onları özü ayrıca quraşdırır (növbəti addımda) — sistem brauzerləri ilə qarışdırmayın.
+
+---
+
+## Playwright-in quraşdırılması
+
+Yeni bir qovluq yaradın və Playwright-i quraşdırın:
+
+```bash
+mkdir playwright-kurs
+cd playwright-kurs
+npm init playwright@latest
+```
+
+Quraşdırma zamanı bu suallar çıxacaq:
+
+- **TypeScript or JavaScript?** — `TypeScript` seçin (kurs boyu TypeScript istifadə edirik)
+- **tests folder name?** — `tests` daxil edin (standart)
+- **GitHub Actions workflow?** — hələlik `false`
+- **Install Playwright browsers?** — `true` (mütləq lazımdır)
+
+Brauzerlərin yüklənməsi bir neçə dəqiqə çəkə bilər — bu normaldır.
+
+---
+
+## İlk Playwright layihəsinin yaradılması
+
+Quraşdırma tamamlandıqdan sonra layihə strukturuna baxaq:
+
+```bash
+ls
+```
+
+Aşağıdakı faylları görmüş olacaqsınız:
+
+```
+playwright-kurs/
+├── tests/
+│   └── example.spec.ts
+├── playwright.config.ts
+├── package.json
+└── node_modules/
+```
+
+---
+
+## `package.json`, `tests/` və `playwright.config.ts` strukturu
+
+### `package.json`
+
+Layihənizin "identifikasiya kartı"dır. Asılılıqları, skriptləri və metadata-nı saxlayır. Playwright skripti belə görünür:
+
+```json
+{
+  "scripts": {
+    "test": "playwright test"
+  }
+}
+```
+
+### `tests/` qovluğu
+
+Bütün `.spec.ts` fayllarınız burada yaşayır. Playwright bu qovluqdakı bütün test fayllarını avtomatik tapır.
+
+### `playwright.config.ts`
+
+Playwright-in əsas konfiqurasiya faylıdır. Buradan:
+
+- Hansı brauzerlər işlədilsin
+- Bütün testlər üçün `baseURL` nə olsun
+- Testlər paralel işləsinmi
+- Uğursuz testlər yenidən cəhd etsinmi
+
+kimi parametrləri tənzimləyirsiniz.
+
+---
+
+## İlk testin işə salınması
+
+Playwright-in hazır nümunə testini işlədin:
+
+```bash
+npx playwright test
+```
+
+Konsolda belə bir çıxış görməlisiniz:
+
+```
+Running 6 tests using 6 workers
+  6 passed (8s)
+```
+
+Uğurla keçdi! Playwright üç brauzerdə (`chromium`, `firefox`, `webkit`) iki test ssenarisini işlətdi.
+
+---
+
+## HTML hesabatının açılması
+
+Playwright test nəticələrini gözəl bir HTML hesabatında göstərə bilər:
+
+```bash
+npx playwright show-report
+```
+
+Bu əmr brauzeri açır və hər testin:
+- Keçdi/uğursuz oldu statusunu
+- İcra müddətini
+- Skrinşotlar və izlərini (uğursuzluq zamanı)
+
+göstərir. CI mühitlərində bu hesabat artifakt kimi saxlanılır.
+

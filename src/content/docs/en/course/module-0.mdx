@@ -1,0 +1,205 @@
+---
+title: "Module 0: Course roadmap and setup"
+description: "The first module of the Playwright course: set up your toolchain and write your first test."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+Welcome! This module is the starting point of the course. With no prior Playwright experience, by the end of this module you'll have a working test running on your own machine.
+
+<Video title="Module 0: Course roadmap and setup" />
+
+---
+
+## What is Playwright and why does it matter
+
+Playwright is an open-source browser automation framework built by Microsoft. It supports Chromium, Firefox, and WebKit (Safari), which means one test can run across all major browsers.
+
+Why choose Playwright?
+
+- **Fast** — tests run in parallel
+- **Reliable** — auto-waiting means you never write `sleep()`
+- **Powerful** — API testing, network interception, auth state, mobile emulation — all built in
+- **Beginner-friendly** — the API reads like plain English
+
+---
+
+## What we'll build throughout the course
+
+Over the course of these modules, we'll build a real, working automation project. Each module adds a new layer:
+
+- **Modules 0–3:** Foundations — setup, locators, actions
+- **Modules 4–6:** Quality — assertions, flaky test prevention, configuration
+- **Modules 7–10:** Scale — POM, fixtures, API, auth
+- **Modules 11–13:** Professional level — visual testing, CI, final project
+
+---
+
+## Shifting from manual QA to automation (a mindset change)
+
+In manual QA you execute every step yourself: "I click this button, this text appears, this URL changes." In automation, you write those same steps as code.
+
+**The key difference:** a manual test runs once. An automated test can run hundreds of times, in seconds, with no human involvement.
+
+Keep in mind as you make the shift:
+
+- Writing code is a skill you learn — you already have the testing mindset
+- Code errors are normal — nobody's code works the first time
+- The Playwright API is readable — `page.click('Login')` makes it obvious what it does
+
+---
+
+## Installing Node, VS Code, and Git
+
+We'll install these three tools. Each step is also shown in the module video — click the timestamp next to the step to jump directly to that part.
+
+<Steps>
+
+1. **Node.js — LTS version.** Go to [nodejs.org](https://nodejs.org) and download the **LTS** version (not Current). Accept all default options in the installer. Then verify in your terminal:
+
+   ```bash
+   node --version   # v20.x.x or higher
+   npm --version    # v10.x.x or higher
+   ```
+
+   🎬 In the video: _coming soon_
+
+   <Deck href="/course/decks/node-install-en/" title="Node.js installation — slide guide" locale="en" />
+
+2. **VS Code.** Download the Stable version from [code.visualstudio.com](https://code.visualstudio.com). After installing, add these extensions: **Playwright Test for VSCode** (to run tests directly from the editor) and **ESLint** (for code quality).
+
+   🎬 In the video: _coming soon_
+
+   <Deck href="/course/decks/vscode-install-en/" title="VS Code installation — slide guide" locale="en" />
+
+3. **Git.** Download from [git-scm.com](https://git-scm.com) and accept the default options in the installer. Then verify:
+
+   ```bash
+   git --version
+   ```
+
+   🎬 In the video: _coming soon_
+
+   <Deck href="/course/decks/git-install-en/" title="Git installation — slide guide" locale="en" />
+
+</Steps>
+
+:::note[OS-specific notes]
+- **Windows:** Double-click the `.exe` installers and follow the default steps; run the verification commands in PowerShell.
+- **macOS:** Use the `.pkg` installers (or if you know Homebrew: `brew install node git`).
+- **Linux:** Use your package manager (`apt`, `dnf`, etc.) or the official websites.
+:::
+
+As for browsers: Playwright installs its own browsers separately (in the next step) — don't confuse them with your system browsers.
+
+---
+
+## Installing Playwright
+
+Create a new folder and install Playwright:
+
+```bash
+mkdir playwright-course
+cd playwright-course
+npm init playwright@latest
+```
+
+During installation you'll be asked a few questions:
+
+- **TypeScript or JavaScript?** — choose `TypeScript` (we use TypeScript throughout the course)
+- **tests folder name?** — enter `tests` (the default)
+- **GitHub Actions workflow?** — `false` for now
+- **Install Playwright browsers?** — `true` (required)
+
+Downloading the browsers may take a few minutes — that's normal.
+
+---
+
+## Creating your first Playwright project
+
+Once installation is complete, take a look at the project structure:
+
+```bash
+ls
+```
+
+You should see the following files:
+
+```
+playwright-course/
+├── tests/
+│   └── example.spec.ts
+├── playwright.config.ts
+├── package.json
+└── node_modules/
+```
+
+---
+
+## The `package.json`, `tests/`, and `playwright.config.ts` structure
+
+### `package.json`
+
+This is your project's "ID card." It stores dependencies, scripts, and metadata. The Playwright script looks like this:
+
+```json
+{
+  "scripts": {
+    "test": "playwright test"
+  }
+}
+```
+
+### The `tests/` folder
+
+All your `.spec.ts` files live here. Playwright automatically discovers every test file in this folder.
+
+### `playwright.config.ts`
+
+This is Playwright's main configuration file. From here you control:
+
+- Which browsers to run
+- What `baseURL` to use for all tests
+- Whether tests run in parallel
+- Whether failing tests should be retried
+
+---
+
+## Running your first test
+
+Run Playwright's built-in example test:
+
+```bash
+npx playwright test
+```
+
+In the console you should see output like this:
+
+```
+Running 6 tests using 6 workers
+  6 passed (8s)
+```
+
+Success! Playwright ran two test scenarios across three browsers (`chromium`, `firefox`, `webkit`).
+
+---
+
+## Opening the HTML report
+
+Playwright can display test results in a beautiful HTML report:
+
+```bash
+npx playwright show-report
+```
+
+This command opens the browser and shows, for each test:
+- Passed / failed status
+- Execution time
+- Screenshots and traces (on failure)
+
+In CI environments this report is saved as an artifact.

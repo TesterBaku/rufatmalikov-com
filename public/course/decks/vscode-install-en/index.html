@@ -1,0 +1,966 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How to Install VS Code on Windows — AI with Rufat</title>
+  <style>
+    /* ===========================================================
+       Deck framework — DO NOT EDIT the rules in this <style> block.
+       =========================================================== */
+    :root {
+      /* SLOT: theme tokens — AI with Rufat brand */
+      --bg:      oklch(9% 0.06 255);
+      --fg:      oklch(97% 0.006 255);
+      --muted:   oklch(52% 0.05 255);
+      --accent:  oklch(72% 0.23 210);
+      --accent2: oklch(58% 0.28 265);
+      --surface: oklch(14% 0.08 255);
+      --border:  oklch(22% 0.10 255);
+      --shell:   oklch(5% 0.03 252);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--shell);
+      color: var(--fg);
+      font: 18px/1.5 -apple-system, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .deck-shell {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+    .deck-stage {
+      width: 1920px;
+      height: 1080px;
+      background: var(--bg);
+      position: relative;
+      transform-origin: top left;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+    }
+    .slide {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+    .slide:not(.active) { display: none !important; }
+    :where(.slide.active) { display: flex; flex-direction: column; }
+    .deck-counter {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(10, 14, 26, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font: 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.18em;
+      z-index: 1000;
+    }
+    .deck-counter button {
+      width: 36px; height: 36px;
+      background: transparent;
+      color: #fff;
+      border: 0;
+      border-radius: 50%;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 0.15s;
+    }
+    .deck-counter button:hover { background: rgba(255, 255, 255, 0.12); }
+    .deck-counter button[disabled] { opacity: 0.3; cursor: default; }
+    .deck-counter .deck-count {
+      padding: 0 14px;
+      letter-spacing: 0.22em;
+    }
+    .deck-counter .deck-count .total { color: rgba(255, 255, 255, 0.5); }
+    .deck-hint {
+      position: fixed;
+      bottom: 26px;
+      right: 28px;
+      color: rgba(255, 255, 255, 0.4);
+      font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      z-index: 999;
+      pointer-events: none;
+    }
+    @media print {
+      @page { size: 1920px 1080px; margin: 0; }
+      html, body {
+        width: 1920px !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
+      }
+      .deck-shell {
+        position: static !important;
+        display: block !important;
+        inset: auto !important;
+      }
+      .deck-stage {
+        width: 1920px !important;
+        height: auto !important;
+        transform: none !important;
+        box-shadow: none !important;
+        position: static !important;
+      }
+      .slide {
+        display: flex !important;
+        position: relative !important;
+        inset: auto !important;
+        width: 1920px !important;
+        height: 1080px !important;
+        page-break-after: always;
+        break-after: page;
+      }
+      .slide:last-child { page-break-after: auto; break-after: auto; }
+      .deck-counter, .deck-hint { display: none !important; }
+    }
+  </style>
+  <style>
+    /* SLOT: per-deck styles */
+
+    .circuit-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 60% at 8% 50%,  oklch(22% 0.16 265 / 0.35) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 92% 40%, oklch(28% 0.20 220 / 0.28) 0%, transparent 55%),
+        radial-gradient(ellipse 45% 40% at 50% 110%, oklch(15% 0.10 250 / 0.4) 0%, transparent 50%);
+    }
+
+    .grad-text {
+      background: linear-gradient(135deg, oklch(84% 0.25 200) 0%, oklch(62% 0.30 265) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-bar {
+      position: absolute;
+      bottom: 44px;
+      right: 64px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10;
+    }
+    .brand-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .brand-name {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: oklch(70% 0.04 252);
+    }
+    .brand-name strong {
+      background: linear-gradient(135deg, oklch(84% 0.25 200), oklch(62% 0.30 265));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .step-badge {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 32px;
+    }
+    .step-num {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, oklch(72% 0.23 210), oklch(58% 0.28 265));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; font-weight: 900; color: #fff;
+      box-shadow: 0 0 28px oklch(72% 0.23 210 / 0.5);
+      flex-shrink: 0;
+    }
+    .step-label {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    /* Title */
+    .s-title {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px;
+    }
+    .s-title .kicker {
+      font-size: 26px; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 28px;
+    }
+    .s-title .headline {
+      font-size: 100px; font-weight: 900;
+      line-height: 1.0; letter-spacing: -0.03em;
+      max-width: 1400px;
+      margin-bottom: 36px;
+    }
+    .s-title .subtitle {
+      font-size: 34px; font-weight: 400;
+      color: var(--muted);
+      max-width: 860px; line-height: 1.4;
+    }
+    .s-title .pills { display: flex; gap: 16px; margin-top: 48px; }
+    .pill {
+      padding: 10px 30px;
+      border-radius: 999px;
+      border: 1px solid oklch(30% 0.10 255);
+      font-size: 22px; font-weight: 500;
+      color: var(--muted);
+      background: oklch(12% 0.06 255 / 0.5);
+    }
+
+    /* Intro */
+    .s-intro {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      height: 100%;
+      padding: 80px 100px;
+      gap: 80px;
+    }
+    .intro-heading {
+      font-size: 80px; font-weight: 900;
+      line-height: 1.0; letter-spacing: -0.03em;
+      margin-bottom: 32px;
+    }
+    .intro-subtext {
+      font-size: 30px; line-height: 1.55;
+      color: oklch(70% 0.04 255);
+    }
+    .feature-cards { display: flex; flex-direction: column; gap: 20px; }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 32px;
+      display: flex; align-items: center; gap: 22px;
+    }
+    .feature-icon { font-size: 36px; flex-shrink: 0; }
+    .feature-card h3 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+    .feature-card p  { font-size: 20px; color: var(--muted); }
+
+    /* Step layout */
+    .s-step {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      height: 100%;
+    }
+    .step-left {
+      padding: 80px 64px 80px 96px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .step-right {
+      display: flex; align-items: center; justify-content: center;
+      padding: 48px 64px; position: relative;
+    }
+    .step-headline {
+      font-size: 68px; font-weight: 800;
+      line-height: 1.08; letter-spacing: -0.025em;
+      margin-bottom: 28px;
+    }
+    .step-body {
+      font-size: 30px; line-height: 1.55;
+      color: oklch(74% 0.04 255);
+      max-width: 680px; margin-bottom: 28px;
+    }
+    .step-tip {
+      display: flex; align-items: flex-start; gap: 16px;
+      padding: 20px 28px;
+      background: oklch(72% 0.23 210 / 0.10);
+      border: 1px solid oklch(72% 0.23 210 / 0.28);
+      border-radius: 12px;
+      font-size: 25px; line-height: 1.45;
+      color: oklch(80% 0.10 210);
+      max-width: 680px;
+    }
+    .tip-icon { font-size: 26px; flex-shrink: 0; margin-top: 2px; }
+
+    .url-bar {
+      display: flex; align-items: center; gap: 14px;
+      background: oklch(94% 0.005 255);
+      border-radius: 8px; padding: 18px 24px;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 26px;
+      border: 2px solid oklch(72% 0.23 210);
+      box-shadow: 0 0 0 4px oklch(72% 0.23 210 / 0.15);
+      color: #111;
+    }
+    .url-highlight { color: oklch(38% 0.28 265); font-weight: 700; }
+
+    /* Windows mockup */
+    .win-dialog {
+      border-radius: 8px; overflow: hidden;
+      box-shadow: 0 28px 72px rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .win-titlebar {
+      height: 34px; background: #1a1a2e;
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: 0; position: relative;
+    }
+    .win-titlebar .title-text {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      font-size: 13px; color: #aaa; white-space: nowrap;
+    }
+    .win-btn { width: 46px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #ccc; }
+    .win-btn.close-btn { background: #c42b1c; color: #fff; }
+    .win-body { background: #fff; color: #111; padding: 28px 32px; }
+    .win-body h4 { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: #111; }
+    .win-body p  { font-size: 13px; color: #555; margin-bottom: 14px; }
+    .win-next-btn { display: inline-flex; align-items: center; padding: 9px 28px; background: #0050ef; color: #fff; border-radius: 4px; font-size: 14px; font-weight: 600; }
+    .win-back-btn { display: inline-flex; align-items: center; padding: 9px 22px; border: 1px solid #bbb; color: #555; border-radius: 4px; font-size: 14px; }
+    .win-btn-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .radio-on { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #0050ef; background: #0050ef; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .radio-on::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+    .radio-off { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #bbb; background: #fff; flex-shrink: 0; }
+    .win-radio-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-size: 15px; color: #222; }
+    .chk-on { width: 18px; height: 18px; border-radius: 3px; background: #0050ef; border: 2px solid #0050ef; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .chk-off { width: 18px; height: 18px; border-radius: 3px; border: 2px solid #bbb; background: #fff; flex-shrink: 0; }
+    .chk-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 14px; color: #333; }
+    .setup-progress-track { background: #e0e0e0; border-radius: 4px; height: 20px; overflow: hidden; margin: 14px 0; }
+    .setup-progress-fill { height: 100%; background: #0050ef; border-radius: 4px; width: 68%; }
+
+    .dl-btn { display: inline-flex; align-items: center; gap: 14px; background: #0078d4; color: #fff; padding: 26px 52px; border-radius: 6px; font-size: 32px; font-weight: 700; box-shadow: 0 8px 36px rgba(0,120,212,0.45); }
+
+    .explorer-row { display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-radius: 6px; }
+    .explorer-row.selected { background: #cce5f7; border: 2px solid #0078d4; }
+    .explorer-row.dim { opacity: 0.35; }
+
+    /* Done */
+    .s-done { align-items: center; justify-content: center; text-align: center; padding: 80px; }
+    .done-icon { font-size: 110px; margin-bottom: 28px; filter: drop-shadow(0 0 36px oklch(72% 0.23 210)); }
+    .done-head { font-size: 92px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.0; margin-bottom: 22px; }
+    .done-sub  { font-size: 34px; color: var(--muted); margin-bottom: 52px; }
+    .next-cards { display: flex; gap: 24px; }
+    .next-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 36px; text-align: left; width: 340px; }
+    .next-card .nc-icon  { font-size: 38px; margin-bottom: 14px; }
+    .next-card .nc-title { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+    .next-card .nc-desc  { font-size: 20px; color: var(--muted); line-height: 1.4; }
+
+    /* Outro */
+    .s-outro { align-items: center; justify-content: center; text-align: center; padding: 80px; }
+    .sub-badge { display: inline-flex; align-items: center; gap: 12px; background: #ff0000; color: #fff; font-size: 24px; font-weight: 800; padding: 14px 44px; border-radius: 8px; letter-spacing: 0.06em; margin-bottom: 40px; }
+    .outro-head { font-size: 86px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.0; margin-bottom: 24px; }
+    .outro-sub  { font-size: 34px; color: var(--muted); margin-bottom: 52px; }
+    .social-row { display: flex; gap: 20px; justify-content: center; }
+    .social-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 16px 36px; font-size: 26px; font-weight: 600; display: flex; align-items: center; gap: 12px; }
+  </style>
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Beginner Guide · Windows 10 / 11</div>
+        <h1 class="headline">How to Install<br><span class="grad-text">VS Code</span><br>on Windows</h1>
+        <p class="subtitle">A step-by-step walkthrough — no experience needed</p>
+        <div class="pills">
+          <span class="pill">Free</span>
+          <span class="pill">5 Minutes</span>
+          <span class="pill">Beginner Friendly</span>
+          <span class="pill">Windows 10 &amp; 11</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 What is VS Code -->
+      <section class="slide s-intro" data-screen-label="02 What Is VS Code">
+        <div class="circuit-bg"></div>
+        <div>
+          <p style="font-size:22px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:20px;">Before We Start</p>
+          <h2 class="intro-heading">What is<br><span class="grad-text">VS Code?</span></h2>
+          <p class="intro-subtext">Visual Studio Code is a free, lightweight code editor built by Microsoft. It's the #1 tool used by developers worldwide — and it's the perfect place for beginners to start.</p>
+        </div>
+        <div class="feature-cards">
+          <div class="feature-card">
+            <span class="feature-icon">🆓</span>
+            <div><h3>Completely Free</h3><p>No subscription, no hidden cost — ever</p></div>
+          </div>
+          <div class="feature-card">
+            <span class="feature-icon">⚡</span>
+            <div><h3>Fast &amp; Lightweight</h3><p>Opens in seconds, runs on any Windows PC</p></div>
+          </div>
+          <div class="feature-card">
+            <span class="feature-icon">🌐</span>
+            <div><h3>Works with Everything</h3><p>Python, HTML, JavaScript, and 100s more</p></div>
+          </div>
+          <div class="feature-card">
+            <span class="feature-icon">🏆</span>
+            <div><h3>Used by Millions</h3><p>The most popular code editor in the world</p></div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 Step 1 -->
+      <section class="slide s-step" data-screen-label="03 Step 1 Open Browser">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge">
+            <div class="step-num">1</div>
+            <div class="step-label">Step One</div>
+          </div>
+          <h2 class="step-headline">Open Your<br><span class="grad-text">Browser</span></h2>
+          <p class="step-body">Open Chrome, Edge, or Firefox and type this address in the URL bar:</p>
+          <div class="url-bar">
+            <span style="color:#888;">🔒</span>
+            <span class="url-highlight">code.visualstudio.com</span>
+          </div>
+          <div class="step-tip" style="margin-top:28px;">
+            <span class="tip-icon">💡</span>
+            <span>You can also Google <em>"Download VS Code"</em> — the official site is always the first result.</span>
+          </div>
+        </div>
+        <div class="step-right">
+          <div style="width:700px;border-radius:10px;overflow:hidden;box-shadow:0 28px 72px rgba(0,0,0,0.55);">
+            <div style="height:44px;background:#2c2c2c;display:flex;align-items:center;padding:0 16px;gap:8px;">
+              <div style="width:12px;height:12px;border-radius:50%;background:#ff5f57;"></div>
+              <div style="width:12px;height:12px;border-radius:50%;background:#febc2e;"></div>
+              <div style="width:12px;height:12px;border-radius:50%;background:#28c840;"></div>
+              <div style="flex:1;margin-left:12px;background:#3c3c3c;border-radius:6px;height:26px;display:flex;align-items:center;padding:0 12px;font-size:14px;color:#ccc;font-family:monospace;">🔒 code.visualstudio.com</div>
+            </div>
+            <div style="background:#1e1e1e;padding:48px;text-align:center;">
+              <svg width="72" height="72" viewBox="0 0 100 100" style="margin-bottom:16px;">
+                <defs><linearGradient id="vscg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0078d4"/><stop offset="100%" stop-color="#007acc"/></linearGradient></defs>
+                <rect width="100" height="100" rx="18" fill="url(#vscg)"/>
+                <text x="50" y="68" font-size="52" font-weight="900" fill="white" text-anchor="middle" font-family="system-ui">&lt;/&gt;</text>
+              </svg>
+              <div style="color:#fff;font-size:26px;font-weight:700;margin-bottom:6px;">Visual Studio Code</div>
+              <div style="color:#888;font-size:16px;margin-bottom:28px;">Code editing. Redefined.</div>
+              <div style="display:inline-flex;align-items:center;gap:10px;background:#0078d4;color:#fff;padding:16px 36px;border-radius:6px;font-size:20px;font-weight:700;box-shadow:0 4px 20px rgba(0,120,212,0.5);">⬇ Download for Windows</div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 04 Step 2 -->
+      <section class="slide s-step" data-screen-label="04 Step 2 Download">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge">
+            <div class="step-num">2</div>
+            <div class="step-label">Step Two</div>
+          </div>
+          <h2 class="step-headline">Click<br><span class="grad-text">Download</span></h2>
+          <p class="step-body">On the VS Code website you'll see a big blue button. Click it — the site automatically detects you're on Windows.</p>
+          <div class="step-tip">
+            <span class="tip-icon">💡</span>
+            <span>The button already says <strong>"Download for Windows"</strong> — no need to choose anything. Just click it!</span>
+          </div>
+        </div>
+        <div class="step-right">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:32px;">
+            <div class="dl-btn">⬇&nbsp; Download for Windows</div>
+            <div style="color:var(--muted);font-size:22px;text-align:center;line-height:1.6;">
+              User Installer · x64 · ~100 MB<br>
+              <span style="font-size:18px;opacity:0.6;">Free · No account required</span>
+            </div>
+            <div style="width:480px;background:var(--surface);border-radius:12px;padding:22px 28px;border:1px solid var(--border);">
+              <div style="font-size:18px;color:var(--muted);margin-bottom:12px;font-family:monospace;">VSCodeUserSetup-x64.exe</div>
+              <div style="background:oklch(18% 0.06 255);border-radius:4px;height:8px;overflow:hidden;">
+                <div style="width:100%;height:100%;background:linear-gradient(90deg,oklch(72% 0.23 210),oklch(58% 0.28 265));border-radius:4px;"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:17px;">
+                <span style="color:oklch(72% 0.23 210);">✓ Download complete</span>
+                <span style="color:var(--muted);">97.4 MB</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 05 Step 3 -->
+      <section class="slide s-step" data-screen-label="05 Step 3 Run Installer">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge">
+            <div class="step-num">3</div>
+            <div class="step-label">Step Three</div>
+          </div>
+          <h2 class="step-headline">Run the<br><span class="grad-text">Installer</span></h2>
+          <p class="step-body">Open your Downloads folder and <strong style="color:var(--fg);">double-click</strong> the file named:</p>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 24px;font-family:monospace;font-size:26px;color:oklch(84% 0.25 200);margin-bottom:28px;">VSCodeUserSetup-x64.exe</div>
+          <div class="step-tip">
+            <span class="tip-icon">💡</span>
+            <span>Windows may ask <em>"Allow this app to make changes?"</em> — click <strong>Yes</strong>. This is normal and completely safe.</span>
+          </div>
+        </div>
+        <div class="step-right">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+            <div style="width:680px;border-radius:8px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.55);">
+              <div style="height:36px;background:#1c1c2e;display:flex;align-items:center;padding:0 14px;gap:8px;">
+                <div style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></div>
+                <div style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></div>
+                <div style="width:10px;height:10px;border-radius:50%;background:#28c840;"></div>
+                <span style="color:#aaa;font-size:13px;margin-left:10px;">Downloads</span>
+              </div>
+              <div style="background:#f3f3f3;padding:20px;display:flex;flex-direction:column;gap:4px;">
+                <div class="explorer-row selected">
+                  <span style="font-size:28px;">📦</span>
+                  <div>
+                    <div style="font-size:18px;font-weight:700;color:#111;">VSCodeUserSetup-x64.exe</div>
+                    <div style="font-size:13px;color:#666;">Application · 97.3 MB · Just now</div>
+                  </div>
+                  <div style="margin-left:auto;font-size:13px;color:#0078d4;font-weight:700;">Open ↗</div>
+                </div>
+                <div class="explorer-row dim"><span style="font-size:26px;">📄</span><div><div style="font-size:17px;color:#333;">notes.txt</div></div></div>
+                <div class="explorer-row dim"><span style="font-size:26px;">🖼️</span><div><div style="font-size:17px;color:#333;">screenshot.png</div></div></div>
+              </div>
+            </div>
+            <div style="color:var(--accent);font-size:26px;font-weight:600;">↑ Double-click this file to begin</div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 06 Step 4 -->
+      <section class="slide s-step" data-screen-label="06 Step 4 Accept License">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge">
+            <div class="step-num">4</div>
+            <div class="step-label">Step Four</div>
+          </div>
+          <h2 class="step-headline">Accept the<br><span class="grad-text">License</span></h2>
+          <p class="step-body">The installer opens. Select <strong style="color:var(--fg);">"I accept the agreement"</strong> then click <strong style="color:var(--fg);">Next</strong>.</p>
+          <div class="step-tip">
+            <span class="tip-icon">⚠️</span>
+            <span>"I do not accept" is pre-selected by default — make sure you switch to <strong>"I accept"</strong> before clicking Next!</span>
+          </div>
+        </div>
+        <div class="step-right">
+          <div class="win-dialog" style="width:640px;">
+            <div class="win-titlebar">
+              <span class="title-text">Setup — Visual Studio Code</span>
+              <div class="win-btn">─</div><div class="win-btn">☐</div><div class="win-btn close-btn">✕</div>
+            </div>
+            <div class="win-body">
+              <h4>License Agreement</h4>
+              <p>Please read the following important information before continuing.</p>
+              <div style="border:1px solid #ccc;border-radius:4px;padding:12px;height:130px;overflow:hidden;background:#fafafa;font-size:12px;color:#444;line-height:1.55;margin-bottom:18px;">
+                MIT License<br>Copyright (c) 2015 – present Microsoft Corporation<br><br>
+                All rights reserved. Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files...
+              </div>
+              <div class="win-radio-row"><div class="radio-on"></div><span style="font-weight:700;color:#000;">I accept the agreement</span></div>
+              <div class="win-radio-row" style="color:#999;"><div class="radio-off"></div><span>I do not accept the agreement</span></div>
+              <div class="win-btn-row"><div class="win-next-btn">Next &gt;</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 07 Step 5 -->
+      <section class="slide s-step" data-screen-label="07 Step 5 Install Location">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge">
+            <div class="step-num">5</div>
+            <div class="step-label">Step Five</div>
+          </div>
+          <h2 class="step-headline">Choose<br><span class="grad-text">Location</span></h2>
+          <p class="step-body">The next screen asks where to install VS Code. <strong style="color:var(--fg);">Leave it as is</strong> — the default folder is perfect.</p>
+          <p class="step-body">Just click <strong style="color:var(--fg);">Next</strong>.</p>
+          <div class="step-tip">
+            <span class="tip-icon">💡</span>
+            <span>Changing the install path can cause permission errors later. Always keep the default unless you have a specific reason.</span>
+          </div>
+        </div>
+        <div class="step-right">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+            <div class="win-dialog" style="width:640px;">
+              <div class="win-titlebar">
+                <span class="title-text">Setup — Visual Studio Code</span>
+                <div class="win-btn">─</div><div class="win-btn">☐</div><div class="win-btn close-btn">✕</div>
+              </div>
+              <div class="win-body">
+                <h4>Select Destination Location</h4>
+                <p>Where should Visual Studio Code be installed?</p>
+                <div style="border:1px solid #bbb;border-radius:4px;padding:10px 14px;font-size:13px;color:#222;background:#f8f8f8;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span>C:\Users\YourName\AppData\Local\Programs\Microsoft VS Code</span>
+                  <span style="color:#0050ef;font-size:12px;white-space:nowrap;margin-left:8px;">Browse...</span>
+                </div>
+                <p style="font-size:11px;color:#999;">At least 380 MB of free disk space is required.</p>
+                <div class="win-btn-row"><div class="win-back-btn">Back</div><div class="win-next-btn">Next &gt;</div></div>
+              </div>
+            </div>
+            <div style="color:var(--accent);font-size:24px;font-weight:600;">✓ Keep default — just click Next</div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 08 Step 6 — KEY STEP -->
+      <section class="slide s-step" data-screen-label="08 Step 6 Extra Tasks">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge">
+            <div class="step-num">6</div>
+            <div class="step-label">Important!</div>
+          </div>
+          <h2 class="step-headline">Select<br><span class="grad-text">Extra Options</span></h2>
+          <p class="step-body">This is the most important screen. Make sure these two boxes are checked:</p>
+          <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:24px;">
+            <div style="display:flex;align-items:center;gap:16px;font-size:30px;font-weight:700;color:var(--fg);">
+              <span style="color:oklch(72% 0.23 210);font-size:28px;">✓</span> Add to PATH
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;font-size:30px;font-weight:700;color:var(--fg);">
+              <span style="color:oklch(72% 0.23 210);font-size:28px;">✓</span> Create a desktop icon
+            </div>
+          </div>
+          <div class="step-tip">
+            <span class="tip-icon">⚠️</span>
+            <span><strong>Add to PATH</strong> lets you type <code style="background:oklch(12% 0.06 255);padding:2px 8px;border-radius:4px;">code .</code> in any terminal to instantly open VS Code — very useful later!</span>
+          </div>
+        </div>
+        <div class="step-right">
+          <div class="win-dialog" style="width:640px;">
+            <div class="win-titlebar">
+              <span class="title-text">Setup — Visual Studio Code</span>
+              <div class="win-btn">─</div><div class="win-btn">☐</div><div class="win-btn close-btn">✕</div>
+            </div>
+            <div class="win-body">
+              <h4>Select Additional Tasks</h4>
+              <p>Which additional tasks should be performed?</p>
+              <div style="margin-bottom:10px;">
+                <div style="font-size:12px;font-weight:600;color:#444;margin-bottom:6px;">Additional icons:</div>
+                <div class="chk-row"><div class="chk-on">✓</div><span style="font-weight:600;color:#111;">Create a desktop icon</span></div>
+              </div>
+              <div>
+                <div style="font-size:12px;font-weight:600;color:#444;margin-bottom:6px;">Other:</div>
+                <div class="chk-row" style="color:#aaa;"><div class="chk-off"></div><span>Add "Open with Code" action to file context menu</span></div>
+                <div class="chk-row" style="color:#aaa;"><div class="chk-off"></div><span>Add "Open with Code" action to directory context menu</span></div>
+                <div class="chk-row" style="background:#fff8e1;border-radius:4px;padding:8px 10px;border:2px solid #f0a500;">
+                  <div class="chk-on">✓</div>
+                  <span style="font-weight:700;color:#111;">Add to PATH <span style="color:#c97a00;font-weight:400;">(recommended)</span></span>
+                </div>
+              </div>
+              <div class="win-btn-row"><div class="win-back-btn">Back</div><div class="win-next-btn">Next &gt;</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 09 Step 7 -->
+      <section class="slide s-step" data-screen-label="09 Step 7 Install">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge">
+            <div class="step-num">7</div>
+            <div class="step-label">Step Seven</div>
+          </div>
+          <h2 class="step-headline">Click<br><span class="grad-text">Install!</span></h2>
+          <p class="step-body">You'll see a summary of your choices. Click <strong style="color:var(--fg);">Install</strong> and wait about 60 seconds while VS Code installs.</p>
+          <div class="step-tip">
+            <span class="tip-icon">⏱️</span>
+            <span>The progress bar fills automatically. Don't close the window — it usually finishes in under a minute.</span>
+          </div>
+        </div>
+        <div class="step-right">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:24px;">
+            <div class="win-dialog" style="width:640px;">
+              <div class="win-titlebar">
+                <span class="title-text">Setup — Visual Studio Code</span>
+                <div class="win-btn">─</div><div class="win-btn">☐</div><div class="win-btn close-btn">✕</div>
+              </div>
+              <div class="win-body">
+                <h4>Installing</h4>
+                <p>Please wait while Setup installs Visual Studio Code on your computer.</p>
+                <div style="font-size:13px;color:#555;margin-bottom:8px;">Extracting files...</div>
+                <div class="setup-progress-track"><div class="setup-progress-fill"></div></div>
+                <div style="font-size:12px;color:#999;">Installing: vscode-win32-x64-archive-1.95.3</div>
+              </div>
+            </div>
+            <div style="color:var(--muted);font-size:22px;">⏱️ Usually completes in 30–60 seconds</div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 10 Step 8 -->
+      <section class="slide s-step" data-screen-label="10 Step 8 Launch">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge">
+            <div class="step-num">8</div>
+            <div class="step-label">Final Step</div>
+          </div>
+          <h2 class="step-headline">Launch<br><span class="grad-text">VS Code!</span></h2>
+          <p class="step-body">When it finishes, you'll see "Completing Setup." Make sure <strong style="color:var(--fg);">"Launch Visual Studio Code"</strong> is checked, then click <strong style="color:var(--fg);">Finish</strong>.</p>
+          <div class="step-tip">
+            <span class="tip-icon">🎉</span>
+            <span>VS Code opens automatically — you'll see the Welcome tab. You're in!</span>
+          </div>
+        </div>
+        <div class="step-right">
+          <div class="win-dialog" style="width:640px;">
+            <div class="win-titlebar">
+              <span class="title-text">Setup — Visual Studio Code</span>
+              <div class="win-btn">─</div><div class="win-btn">☐</div><div class="win-btn close-btn">✕</div>
+            </div>
+            <div class="win-body">
+              <h4>Completing the Visual Studio Code Setup Wizard</h4>
+              <p>Setup has finished installing Visual Studio Code on your computer. Click Finish to exit.</p>
+              <div class="chk-row" style="margin:18px 0;font-size:16px;"><div class="chk-on">✓</div><span style="font-weight:700;color:#111;font-size:16px;">Launch Visual Studio Code</span></div>
+              <div class="win-btn-row"><div class="win-next-btn" style="padding:10px 40px;font-size:16px;">Finish</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 11 First Launch -->
+      <section class="slide s-step" data-screen-label="11 First Launch">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge">
+            <div class="step-num">🎉</div>
+            <div class="step-label">You're In!</div>
+          </div>
+          <h2 class="step-headline">VS Code is<br><span class="grad-text">Open!</span></h2>
+          <p class="step-body">This is VS Code's <strong style="color:var(--fg);">Welcome tab</strong> — the first thing you see when it launches. Everything is ready to go.</p>
+          <div class="step-tip" style="margin-bottom:20px;">
+            <span class="tip-icon">💡</span>
+            <span>The <strong>Activity Bar</strong> on the left gives you access to files, search, extensions, and more. We'll explore it in the next tutorial.</span>
+          </div>
+          <div class="step-tip">
+            <span class="tip-icon">⌨️</span>
+            <span>Press <code style="background:oklch(12% 0.06 255);padding:2px 8px;border-radius:4px;">Ctrl+`</code> to open the built-in terminal — you'll need it for Node.js!</span>
+          </div>
+        </div>
+        <div class="step-right">
+          <!-- VS Code first-launch mockup -->
+          <div style="width:760px;border-radius:8px;overflow:hidden;box-shadow:0 28px 72px rgba(0,0,0,0.65);border:1px solid rgba(255,255,255,0.06);">
+            <!-- Title bar -->
+            <div style="height:38px;background:#1a1a2e;display:flex;align-items:center;padding:0 14px;gap:8px;position:relative;">
+              <div style="display:flex;gap:7px;">
+                <div style="width:12px;height:12px;border-radius:50%;background:#ff5f57;"></div>
+                <div style="width:12px;height:12px;border-radius:50%;background:#febc2e;"></div>
+                <div style="width:12px;height:12px;border-radius:50%;background:#28c840;"></div>
+              </div>
+              <div style="position:absolute;left:50%;transform:translateX(-50%);font-size:13px;color:#888;white-space:nowrap;">Welcome — Visual Studio Code</div>
+              <div style="margin-left:auto;display:flex;gap:6px;">
+                <div style="width:40px;height:28px;border-radius:4px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;">─</div>
+                <div style="width:40px;height:28px;border-radius:4px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;">☐</div>
+                <div style="width:40px;height:28px;border-radius:4px;background:#c42b1c;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;">✕</div>
+              </div>
+            </div>
+            <!-- Menu bar -->
+            <div style="height:30px;background:#1e1e1e;display:flex;align-items:center;padding:0 12px;gap:18px;border-bottom:1px solid #333;">
+              <span style="font-size:13px;color:#ccc;">File</span>
+              <span style="font-size:13px;color:#ccc;">Edit</span>
+              <span style="font-size:13px;color:#ccc;">View</span>
+              <span style="font-size:13px;color:#ccc;">Terminal</span>
+              <span style="font-size:13px;color:#ccc;">Help</span>
+            </div>
+            <!-- Editor body -->
+            <div style="display:grid;grid-template-columns:52px 200px 1fr;height:360px;background:#1e1e1e;">
+              <!-- Activity bar -->
+              <div style="background:#333;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:10px;">
+                <div style="width:36px;height:36px;background:#007acc;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;">📄</div>
+                <div style="width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#888;">🔍</div>
+                <div style="width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#888;">⎇</div>
+                <div style="width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#888;">🐛</div>
+                <div style="width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#888;">🧩</div>
+              </div>
+              <!-- Sidebar -->
+              <div style="background:#252526;padding:12px 0;border-right:1px solid #333;">
+                <div style="font-size:11px;font-weight:700;color:#bbb;padding:0 12px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Explorer</div>
+                <div style="padding:8px 16px;font-size:14px;color:#ccc;display:flex;align-items:center;gap:8px;"><span>📂</span> Open Folder</div>
+                <div style="padding:8px 16px;font-size:14px;color:#ccc;display:flex;align-items:center;gap:8px;"><span>📄</span> New File</div>
+                <div style="padding:8px 16px;font-size:14px;color:#888;display:flex;align-items:center;gap:8px;opacity:0.6;"><span>🕐</span> Recent</div>
+              </div>
+              <!-- Welcome tab -->
+              <div style="background:#1e1e1e;padding:24px 28px;overflow:hidden;">
+                <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:4px;display:flex;align-items:center;gap:10px;">
+                  <svg width="22" height="22" viewBox="0 0 100 100"><rect width="100" height="100" rx="12" fill="#007acc"/><text x="50" y="68" font-size="52" font-weight="900" fill="white" text-anchor="middle" font-family="system-ui">&lt;/&gt;</text></svg>
+                  Welcome
+                </div>
+                <div style="font-size:13px;color:#888;margin-bottom:20px;">Visual Studio Code</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                  <div>
+                    <div style="font-size:12px;font-weight:600;color:#aaa;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Start</div>
+                    <div style="font-size:14px;color:#4fc3f7;margin-bottom:6px;">+ New File</div>
+                    <div style="font-size:14px;color:#4fc3f7;margin-bottom:6px;">Open Folder...</div>
+                    <div style="font-size:14px;color:#4fc3f7;">Clone Git Repository...</div>
+                  </div>
+                  <div>
+                    <div style="font-size:12px;font-weight:600;color:#aaa;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">Recent</div>
+                    <div style="font-size:13px;color:#888;font-style:italic;">No recent folders</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Status bar -->
+            <div style="height:26px;background:#007acc;display:flex;align-items:center;padding:0 14px;gap:20px;">
+              <span style="font-size:12px;color:#fff;font-weight:600;">⎇ main</span>
+              <span style="font-size:12px;color:rgba(255,255,255,0.7);">Ln 1, Col 1</span>
+              <span style="margin-left:auto;font-size:12px;color:rgba(255,255,255,0.8);">UTF-8</span>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 12 Done -->
+      <section class="slide s-done" data-screen-label="12 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">✅</div>
+        <h2 class="done-head">VS Code is<br><span class="grad-text">Installed!</span></h2>
+        <p class="done-sub">You're ready to code. Here's what to do next:</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🟢</div>
+            <div class="nc-title">Install Node.js</div>
+            <div class="nc-desc">Go to nodejs.org and install Node.js — you'll need it for Playwright</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🧩</div>
+            <div class="nc-title">Get Extensions</div>
+            <div class="nc-desc">Press Ctrl+Shift+X and search for your programming language</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">📁</div>
+            <div class="nc-title">Open a Project</div>
+            <div class="nc-desc">File → Open Folder to open any project folder on your computer</div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 13 Outro -->
+      <section class="slide s-outro" data-screen-label="13 Outro">
+        <div class="circuit-bg"></div>
+        <div class="sub-badge">▶ SUBSCRIBE</div>
+        <h2 class="outro-head">Enjoyed this guide?<br><span class="grad-text">Subscribe for more!</span></h2>
+        <p class="outro-sub">New beginner guides every week — AI tools, coding, and more</p>
+        <div class="social-row">
+          <div class="social-chip"><span>▶</span> AI with Rufat</div>
+          <div class="social-chip"><span>🔔</span> Hit the bell</div>
+          <div class="social-chip"><span>👍</span> Like &amp; share</div>
+        </div>
+        <div style="position:absolute;bottom:52px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;">
+          <div class="brand-dot"></div>
+          <span class="brand-name" style="font-size:26px;"><strong>AI</strong> with Rufat</span>
+          <div class="brand-dot"></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script>
+    (function () {
+      var stage = document.getElementById('deck-stage');
+      var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+      var prev = document.getElementById('deck-prev');
+      var next = document.getElementById('deck-next');
+      var cur = document.getElementById('deck-cur');
+      var total = document.getElementById('deck-total');
+      var STORE = 'deck:idx:' + (location.pathname || '/');
+      var idx = 0;
+
+      function fit() {
+        var sw = window.innerWidth;
+        var sh = window.innerHeight;
+        var pad = 32;
+        var s = Math.min((sw - pad) / 1920, (sh - pad) / 1080);
+        if (!isFinite(s) || s <= 0) s = 1;
+        var tx = (sw - 1920 * s) / 2;
+        var ty = (sh - 1080 * s) / 2;
+        stage.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + s + ')';
+      }
+
+      function pad2(n) { return (n < 10 ? '0' : '') + n; }
+      function paint() {
+        slides.forEach(function (el, i) { el.classList.toggle('active', i === idx); });
+        if (cur) cur.textContent = pad2(idx + 1);
+        if (total) total.textContent = pad2(slides.length);
+        if (prev) prev.toggleAttribute('disabled', idx <= 0);
+        if (next) next.toggleAttribute('disabled', idx >= slides.length - 1);
+      }
+      function go(i) {
+        idx = Math.max(0, Math.min(slides.length - 1, i));
+        paint();
+        try { localStorage.setItem(STORE, String(idx)); } catch (_) {}
+      }
+      function onKey(e) {
+        var t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(idx + 1); }
+        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(idx - 1); }
+        else if (e.key === 'Home') { e.preventDefault(); go(0); }
+        else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+      }
+      window.addEventListener('keydown', onKey, true);
+      document.addEventListener('keydown', onKey, true);
+      if (prev) prev.addEventListener('click', function () { go(idx - 1); });
+      if (next) next.addEventListener('click', function () { go(idx + 1); });
+
+      document.body.setAttribute('tabindex', '-1');
+      document.body.style.outline = 'none';
+      function focusDeck() { try { window.focus(); document.body.focus({ preventScroll: true }); } catch (_) {} }
+      document.addEventListener('mousedown', focusDeck);
+      window.addEventListener('load', focusDeck);
+
+      try {
+        var saved = parseInt(localStorage.getItem(STORE) || '0', 10);
+        if (!isNaN(saved) && saved >= 0 && saved < slides.length) idx = saved;
+      } catch (_) {}
+
+      window.addEventListener('resize', fit);
+      fit();
+      paint();
+      focusDeck();
+    })();
+  </script>
+</body>
+</html>

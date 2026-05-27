@@ -1,0 +1,33 @@
+---
+import { Aside } from '@astrojs/starlight/components';
+
+interface Props {
+	missions: string[];
+	locale?: string;
+}
+
+const { missions, locale = 'az' } = Astro.props;
+
+const title = locale === 'en' ? 'Practice on BrauzerLab' : 'BrauzerLab-də məşq et';
+const intro =
+	locale === 'en'
+		? 'Practice these concepts in the browser:'
+		: 'Bu konsepsiyaları brauzerdə məşq et:';
+---
+
+<Aside type="tip" title={title}>
+	<p>{intro}</p>
+	<ul>
+		{missions.map((key) => (
+			<li>
+				<a
+					href={`https://brauzerlab.rufatmalikov.com/${locale}/playwright-lab/mission/${key}/`}
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					{key}
+				</a>
+			</li>
+		))}
+	</ul>
+</Aside>
