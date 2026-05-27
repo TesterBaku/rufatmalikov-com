@@ -1,0 +1,473 @@
+---
+title: "Module 5: Auto-waiting & Flaky Tests"
+description: "How Playwright auto-waits for actionability before every action, why waitForTimeout is always an anti-pattern, the smart-waiting APIs (waitForURL, waitForResponse, waitForLoadState), and a systematic approach to diagnosing and fixing flaky tests."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+You already know how to write web-first assertions that retry automatically. Now let's look at the other side of reliability: what Playwright does **before** it runs any action — and how to replace every remaining `waitForTimeout` call with something that actually works.
+
+<Video title="Module 5: Auto-waiting & Flaky Tests" />
+
+---
+
+## How Playwright auto-waits before every action
+
+Every Playwright action — `click()`, `fill()`, `hover()`, `press()`, `selectOption()`, `check()`, `uncheck()` — performs a set of **actionability checks** before it actually executes. These checks happen automatically; you don't write them.
+
+The checks are:
+
+| Check | What it means |
+|-------|--------------|
+| **Attached** | The element exists in the DOM |
+| **Visible** | The element is not hidden (`display:none`, `visibility:hidden`, `opacity:0`, zero size) |
+| **Stable** | The element has not moved for at least two animation frames (500 ms) |
+| **Receives events** | No other element is covering the target (no overlay, modal, or tooltip blocking it) |
+| **Enabled** | The element is not `disabled` |
+
+Playwright checks all five conditions in a loop, polling every ~50 ms, until they all pass — or until the action timeout expires (default: 30 seconds).
+
+```javascript
+// Playwright waits until the button is attached, visible, stable,
+// receives events, AND enabled — then clicks.
+await page.getByRole('button', { name: 'Place Order' }).click();
+
+// You do NOT need to write this yourself:
+// await page.waitForSelector('button', { state: 'visible' }); // redundant
+// await page.waitForTimeout(500); // anti-pattern
+```
+
+**What this means in practice:**
+
+- If the button is initially behind a loading overlay, `click()` waits for the overlay to disappear.
+- If the button starts as `disabled` and becomes enabled after a form fills, `click()` waits.
+- If the element is currently animating (sliding in, fading in), `click()` waits for it to settle.
+
+This is why most explicit waits are unnecessary with Playwright.
+
+---
+
+## `waitForTimeout` is always an anti-pattern
+
+`page.waitForTimeout(N)` does exactly one thing: it pauses the test for N milliseconds. It does **not** check any condition. It does not know when the app is ready. It is always wrong.
+
+```javascript
+// ANTI-PATTERN — never do this
+await page.click('#submit');
+await page.waitForTimeout(3000); // hoping the page loaded in 3 seconds
+const text = await page.locator('h1').textContent();
+expect(text).toContain('Confirmed');
+
+// CORRECT — waits for the actual condition
+await page.click('#submit');
+await expect(page.locator('h1')).toContainText('Confirmed');
+```
+
+**Why `waitForTimeout` makes tests flaky:**
+
+1. Your machine might be fast enough that 3000 ms is plenty. The CI server is 4× slower. The test fails in CI.
+2. The app gets faster in the next release. Your 3000 ms sleep now wastes 2 seconds on every run.
+3. The app gets slower due to a regression. Your sleep is now too short. The test flips to red.
+
+`waitForTimeout` couples your test to hardware speed. Web-first assertions and smart-wait APIs couple your test to app behavior. The latter never breaks for the wrong reasons.
+
+**The only acceptable use of `waitForTimeout`** is in debugging — temporarily slowing a test down to see what the browser is doing. Remove it before committing.
+
+```javascript
+// OK temporarily, while debugging
+await page.waitForTimeout(5000); // REMOVE THIS BEFORE COMMITTING
+
+// The comment is your reminder. Actually remove it.
+```
+
+---
+
+## `expect` auto-retrying — a reminder
+
+From Module 4: `expect(locator)` assertions retry automatically. This is relevant here because **the most common reason developers reach for `waitForTimeout` is that they're using a non-retrying assertion**.
+
+```javascript
+// Non-retrying — one shot, will fail on slow pages
+const text = await page.locator('.status').textContent();
+expect(text).toBe('Ready');
+
+// Auto-retrying — retries until the condition passes or timeout expires
+await expect(page.locator('.status')).toHaveText('Ready');
+```
+
+If you find yourself writing a `waitForTimeout` before checking text, a count, a URL, or a visibility state — replace the check with its web-first equivalent. The sleep disappears automatically.
+
+---
+
+## `waitForURL`
+
+`page.waitForURL()` waits until the browser's current URL matches the expected value. It accepts a string, a glob pattern, or a regular expression.
+
+```javascript
+// Wait for an exact URL
+await page.waitForURL('https://example.com/dashboard');
+
+// Wait for a glob pattern
+await page.waitForURL('**/orders/**');
+
+// Wait for a regex — useful for dynamic IDs
+await page.waitForURL(/\/orders\/\d+/);
+```
+
+**The critical pattern: trigger then wait.** Don't wait for the URL first — the navigation may have already happened. The `waitForURL` call should follow the action that triggers it.
+
+```javascript
+await page.getByRole('button', { name: 'Place Order' }).click();
+await page.waitForURL(/\/orders\/\d+/);
+// URL is now something like /orders/1042
+```
+
+**`waitForURL` vs `expect(page).toHaveURL()`:**
+
+Both work. The difference is intent:
+
+- `waitForURL` is an explicit wait: "I am waiting for a navigation to happen."
+- `expect(page).toHaveURL()` is an assertion: "I am verifying the navigation happened."
+
+In practice they are nearly identical — `toHaveURL` also retries. Prefer `toHaveURL` in test assertions, and `waitForURL` in helper methods or page objects where you're not directly asserting.
+
+```javascript
+// In a test — use the assertion form
+await checkoutPage.placeOrder();
+await expect(page).toHaveURL(/\/orders\/\d+/);
+
+// In a page object helper — use the wait form
+async placeOrder() {
+  await this.placeOrderBtn.click();
+  await this.page.waitForURL(/\/orders\/\d+/);
+}
+```
+
+---
+
+## `waitForResponse`
+
+`page.waitForResponse()` waits for a specific HTTP response to be received by the browser. Use it when an action triggers a network request and you need to verify the response before proceeding.
+
+**The critical pattern: `Promise.all`.**
+
+If you call `waitForResponse` after the action, you may miss the response — it could have completed before your listener was registered. Always start the listener before triggering the action, using `Promise.all`:
+
+```javascript
+// WRONG — may miss the response if it fires before the listener
+await page.click('.load-more');
+const response = await page.waitForResponse('**/api/products');
+
+// CORRECT — listener registered before the click
+const [response] = await Promise.all([
+  page.waitForResponse('**/api/products'),
+  page.click('.load-more'),
+]);
+expect(response.ok()).toBeTruthy();
+```
+
+**Matching patterns:** You can match by URL string, glob, or a function that receives the response object.
+
+```javascript
+// Match by glob
+const [response] = await Promise.all([
+  page.waitForResponse('**/api/products**'),
+  page.click('.load-products'),
+]);
+
+// Match by function — useful for status code checks
+const [response] = await Promise.all([
+  page.waitForResponse(
+    (resp) => resp.url().includes('/api/products') && resp.status() === 200
+  ),
+  page.click('.load-products'),
+]);
+
+// Inspect the response body
+const body = await response.json();
+expect(body.products).toHaveLength(10);
+```
+
+**When to use `waitForResponse`:**
+
+- After clicking "load more" — wait for the API response before asserting new items
+- After submitting a form — wait for the POST response before asserting the confirmation message
+- When testing network error handling — wait for a 4xx or 5xx response
+
+---
+
+## `waitForLoadState`
+
+`page.waitForLoadState()` waits for the page to reach a specific load state. There are three states:
+
+| State | When it fires |
+|-------|--------------|
+| `'load'` | The `load` event fired (all resources downloaded) |
+| `'domcontentloaded'` | The `DOMContentLoaded` event fired (HTML parsed, no images yet) |
+| `'networkidle'` | No network requests for 500 ms |
+
+```javascript
+// Wait for the page to fully load
+await page.goto('/dashboard');
+await page.waitForLoadState('load'); // usually redundant — goto() already waits
+
+// Wait for DOM to be parsed (faster than 'load')
+await page.waitForLoadState('domcontentloaded');
+
+// Wait for network to settle
+await page.waitForLoadState('networkidle');
+```
+
+**Important:** `page.goto()` already waits for `'load'` by default, so calling `waitForLoadState('load')` after `goto()` is almost always redundant.
+
+---
+
+## `networkidle` caveats
+
+`networkidle` sounds like the safest option — "wait until everything is done." In reality it has serious problems:
+
+**Problem 1: It may never fire.** Modern SPAs make background requests continuously — analytics pings, heartbeat polling, WebSocket reconnects. If the app keeps sending requests, `networkidle` waits forever (until timeout).
+
+**Problem 2: It is slow.** Even on quiet pages, `networkidle` always waits a minimum of 500 ms after the last request. Multiply this across hundreds of tests.
+
+**Problem 3: It waits for the wrong thing.** You usually care about a specific response, not "all network activity." A response from a different background request firing at the right moment could unlock `networkidle` before the response you actually care about has arrived.
+
+```javascript
+// FRAGILE — fires when network quiets, not when your data is ready
+await page.click('.load-products');
+await page.waitForLoadState('networkidle');
+await expect(page.locator('.product-card')).toHaveCount(10);
+
+// ROBUST — fires when the specific response arrives
+const [response] = await Promise.all([
+  page.waitForResponse('**/api/products'),
+  page.click('.load-products'),
+]);
+await expect(page.locator('.product-card')).toHaveCount(10);
+```
+
+**When `networkidle` is acceptable:**
+
+- Loading a simple static page with no background requests
+- Tests on legacy apps with no SPA routing
+- As a last resort when no better signal exists — and even then, add a comment explaining why
+
+---
+
+## Diagnosing flaky tests
+
+A test is **flaky** when it passes sometimes and fails other times without any code change. Flakiness almost always has a root cause — find it.
+
+### Step 1: Check for sleeps
+
+The most common cause. Search for `waitForTimeout` in the test file. Replace every instance with the appropriate web-first alternative.
+
+```javascript
+// Before
+await page.click('#submit');
+await page.waitForTimeout(2000);
+const text = await page.locator('.result').textContent();
+
+// After
+await page.click('#submit');
+await expect(page.locator('.result')).toHaveText(/success/i);
+```
+
+### Step 2: Check for non-retrying assertions
+
+Look for assertions built from `await`-ed values instead of locators.
+
+```javascript
+// Flaky — evaluates once
+const visible = await page.locator('.banner').isVisible();
+expect(visible).toBe(true);
+
+// Stable — auto-retries
+await expect(page.locator('.banner')).toBeVisible();
+```
+
+### Step 3: Check for unguarded URL or response checks
+
+```javascript
+// Flaky — page.url() is synchronous, no retry
+expect(page.url()).toContain('/dashboard');
+
+// Stable — auto-retries
+await expect(page).toHaveURL('/dashboard');
+```
+
+### Step 4: Check for race conditions in `waitForResponse`
+
+The most subtle cause. If `waitForResponse` is called after the triggering action, it can miss the response.
+
+```javascript
+// Flaky — response may have arrived before the listener
+await page.click('.search');
+const resp = await page.waitForResponse('**/api/search');
+
+// Stable — listener registered before the trigger
+const [resp] = await Promise.all([
+  page.waitForResponse('**/api/search'),
+  page.click('.search'),
+]);
+```
+
+### Step 5: Check for `{ force: true }` on clicks
+
+`click({ force: true })` skips all five actionability checks. It forces a click even if the element is covered, disabled, or hidden. This hides real issues.
+
+```javascript
+// Code smell — why is this element not normally clickable?
+await page.locator('.submit-btn').click({ force: true });
+
+// Fix: find and handle whatever is blocking the click
+await expect(page.locator('.modal')).not.toBeVisible(); // wait for modal to close
+await page.locator('.submit-btn').click();
+```
+
+### Flaky test diagnostic table
+
+| Symptom | Root cause | Fix |
+|---------|-----------|-----|
+| Passes locally, fails in CI | `waitForTimeout` tuned to fast machine | Replace with web-first assertion |
+| Fails ~20% of the time on the same machine | Non-retrying assertion, race condition | Find the non-retrying check |
+| Fails only when tests run in parallel | Shared state, test ordering dependency | Isolate test data; use `test.describe.serial` only if necessary |
+| Fails after a deploy with no test changes | Locator is too brittle (depends on text, position) | Switch to role-based or `data-testid` locators |
+| Passes when you add a `console.log` | Race condition exposed by extra microtask tick | Add proper awaiting or `Promise.all` |
+| Always fails on the same step | Real bug, not flakiness | Fix the app or fix the assertion logic |
+
+---
+
+## Custom action timeouts
+
+By default, every action waits up to **30 seconds** for actionability checks. You can override this globally or per-action.
+
+```javascript
+// Per-action timeout (milliseconds)
+await page.getByRole('button', { name: 'Slow action' }).click({ timeout: 60_000 });
+
+// Global action timeout in playwright.config.js
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  use: {
+    actionTimeout: 10_000, // 10 seconds for all actions
+  },
+});
+```
+
+**Reduce the timeout when you know something should be fast.** If a button click should trigger navigation within 2 seconds but you have a 30-second timeout, a real regression may go undetected for 30 seconds before the test fails.
+
+---
+
+<Practice missions={['custom-timeout','wait-for-selector','auto-waiting','wait-for-url','wait-for-response','click-actionability','fix-flaky-test','wait-for-load-state']} locale="en" />
+
+---
+
+## Exercises
+
+These exercises use TestMarket Lab running locally at `http://localhost:3000`.
+
+---
+
+### Exercise 1: Replace fixed waits with web-first assertions
+
+Refactor this test — remove every `waitForTimeout` and replace it with the correct web-first alternative:
+
+```javascript
+// BEFORE (flaky)
+test('search products', async ({ page }) => {
+  await page.goto('/products');
+  await page.waitForTimeout(1500);
+
+  await page.fill('#search', 'widget');
+  await page.waitForTimeout(800);
+
+  await page.click('#search-btn');
+  await page.waitForTimeout(3000);
+
+  const count = await page.locator('.product-card').count();
+  expect(count).toBeGreaterThan(0);
+
+  await page.waitForTimeout(500);
+  expect(page.url()).toContain('?q=widget');
+});
+```
+
+| Replace | With |
+|---------|------|
+| `waitForTimeout(1500)` | Remove — `fill()` already auto-waits for element |
+| `waitForTimeout(800)` | Remove — `click()` already auto-waits |
+| `waitForTimeout(3000)` + `count()` | `expect(locator).toHaveCount(greaterThan(0))` |
+| `waitForTimeout(500)` + `page.url()` | `expect(page).toHaveURL(/\?q=widget/)` |
+
+---
+
+### Exercise 2: Fix a flaky navigation test
+
+The following test flakes because URL is checked synchronously. Rewrite it.
+
+```javascript
+// BEFORE
+test('checkout redirects to order page', async ({ page }) => {
+  await page.goto('/checkout');
+  await fillCheckoutForm(page);
+  await page.click('#place-order');
+  await page.waitForTimeout(2000);
+  expect(page.url()).toMatch(/\/orders\/\d+/);
+});
+```
+
+Replace the sleep and synchronous URL check with `waitForURL` or `toHaveURL`.
+
+---
+
+### Exercise 3: Wait for a network response
+
+Write a test that:
+1. Navigates to `/products`
+2. Clicks a "Load More" button
+3. Waits for the `/api/products` response using `Promise.all`
+4. Asserts that more product cards appeared
+
+```javascript
+test('load more adds products', async ({ page }) => {
+  await page.goto('/products');
+  const initial = await page.locator('.product-card').count();
+
+  const [response] = await Promise.all([
+    page.waitForResponse('**/api/products**'),
+    page.click('.load-more-btn'),
+  ]);
+
+  expect(response.ok()).toBeTruthy();
+  await expect(page.locator('.product-card')).toHaveCount(initial + 10);
+});
+```
+
+---
+
+## Self-check questions
+
+1. What are the five actionability checks Playwright performs before every action?
+2. Why does `waitForTimeout` make tests flaky on CI even when they pass locally?
+3. What is the `Promise.all` pattern for `waitForResponse`, and why is it necessary?
+4. What is the difference between `waitForURL` and `expect(page).toHaveURL()`?
+5. Why is `networkidle` unreliable for SPAs?
+6. You see a test with `click({ force: true })`. What does this tell you about the test?
+7. How would you diagnose a test that passes locally but fails 20% of the time in CI?
+8. What is the action timeout default, and how do you change it per-action?
+
+---
+
+## Key takeaways
+
+1. **Auto-waiting is built in.** Every Playwright action waits for the element to be attached, visible, stable, unblocked, and enabled. You rarely need to write explicit waits before actions.
+2. **`waitForTimeout` is always wrong.** It does not check any condition. Replace every sleep with a web-first assertion or a smart-wait API.
+3. **`Promise.all` for `waitForResponse`.** Register the listener before the triggering action — never after.
+4. **Avoid `networkidle` on SPAs.** It waits for silence that may never come. Wait for a specific URL or response instead.
+5. **Flakiness has a root cause.** Work through the diagnostic checklist: sleeps, non-retrying assertions, synchronous URL checks, missing `Promise.all`, or `{ force: true }`.
