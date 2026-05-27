@@ -1,0 +1,404 @@
+---
+title: "Module 9: API Testing & Network"
+description: "Learn how to use Playwright's built-in HTTP client for API testing, hybrid API+UI tests, and network interception — blocking, mocking, and simulating errors."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+Welcome to Module 9. Here you'll step away from the browser and test the backend directly — then combine both worlds. You'll also learn to intercept and manipulate the network from inside your tests.
+
+<Video title="Module 9: API Testing & Network" />
+
+---
+
+## Why API testing matters
+
+Browser UI tests are valuable, but they are slow: a single login + create workflow can take 3–5 seconds. The same operation over HTTP takes under 200 ms.
+
+API testing gives you three key advantages:
+
+- **Speed** — 10–50× faster than equivalent UI tests
+- **Precision** — test a single endpoint in isolation, not the whole stack
+- **Data setup** — seed or reset state before a UI test without clicking through the UI
+
+> A common pattern in professional test suites: use the API to **set up** data, then use the browser to **verify** it renders correctly.
+
+---
+
+## The `request` fixture and `APIRequestContext`
+
+Playwright ships a built-in HTTP client. You get it by destructuring `request` in any test:
+
+```ts
+import { test, expect } from '@playwright/test';
+
+test('GET products returns 200', async ({ request }) => {
+  const res = await request.get('https://your-app.com/api/products');
+  expect(res.status()).toBe(200);
+});
+```
+
+`request` is an instance of `APIRequestContext`. It exposes:
+
+| Method | HTTP verb |
+|---|---|
+| `request.get(url, options?)` | GET |
+| `request.post(url, options?)` | POST |
+| `request.put(url, options?)` | PUT |
+| `request.delete(url, options?)` | DELETE |
+| `request.patch(url, options?)` | PATCH |
+
+You can set a `baseURL` for the context in `playwright.config.ts` so you only write `/api/products` in tests instead of the full URL.
+
+---
+
+## GET and POST requests
+
+### GET — reading data
+
+```ts
+test('GET /api/products returns an array', async ({ request }) => {
+  const res = await request.get('/api/products');
+  expect(res.status()).toBe(200);
+
+  const body = await res.json();
+  expect(Array.isArray(body)).toBe(true);
+  expect(body.length).toBeGreaterThan(0);
+});
+```
+
+### POST — creating data
+
+```ts
+test('POST /api/products creates a product', async ({ request }) => {
+  const res = await request.post('/api/products', {
+    data: { name: 'Keyboard', price: 49.99, category: 'electronics' },
+  });
+  expect(res.status()).toBe(201);
+
+  const body = await res.json();
+  expect(body).toHaveProperty('id');
+  expect(body.name).toBe('Keyboard');
+});
+```
+
+Pass request body as `data` in the options object. Playwright automatically sets `Content-Type: application/json`.
+
+---
+
+## PUT and DELETE requests
+
+### PUT — updating data
+
+```ts
+test('PUT /api/products/:id updates a product', async ({ request }) => {
+  // First create a product to update
+  const created = await request.post('/api/products', {
+    data: { name: 'Old Name', price: 10, category: 'tools' },
+  });
+  const { id } = await created.json();
+
+  // Now update it
+  const res = await request.put(`/api/products/${id}`, {
+    data: { name: 'New Name', price: 19.99 },
+  });
+  expect(res.status()).toBe(200);
+  const body = await res.json();
+  expect(body.name).toBe('New Name');
+});
+```
+
+### DELETE — removing data
+
+```ts
+test('DELETE /api/products/:id deletes a product', async ({ request }) => {
+  const created = await request.post('/api/products', {
+    data: { name: 'To Delete', price: 5, category: 'misc' },
+  });
+  const { id } = await created.json();
+
+  const res = await request.delete(`/api/products/${id}`);
+  expect(res.status()).toBe(200);
+  expect((await res.json()).message).toBe('Product deleted');
+});
+```
+
+The chained pattern — **create → capture ID → operate** — is the foundation of reliable API test data management.
+
+---
+
+## Asserting status codes and JSON body
+
+Playwright gives you two helpers on the response object:
+
+```ts
+// Status code assertion
+expect(res.status()).toBe(201);
+
+// ok() is true for any 2xx
+expect(res.ok()).toBeTruthy();
+
+// JSON body assertions
+const body = await res.json();
+expect(body).toHaveProperty('id');
+expect(body.email).toBe('user@example.com');
+expect(body).not.toHaveProperty('password'); // security check!
+```
+
+Always test **both** the status and the body shape. A broken API can return 200 with an error message inside — `status()` alone won't catch that.
+
+---
+
+## Hybrid API + UI tests
+
+The most powerful pattern: use the API to set up state, then verify it through the browser.
+
+```ts
+test('product created via API appears in UI', async ({ page, request }) => {
+  // 1. Seed data via API (fast)
+  const res = await request.post('/api/products', {
+    data: { name: 'E2E Widget', price: 29.99, category: 'widgets' },
+  });
+  expect(res.status()).toBe(201);
+
+  // 2. Verify it renders in the browser (the real test)
+  await page.goto('/products');
+  await expect(page.getByText('E2E Widget')).toBeVisible();
+});
+```
+
+You have access to both `page` and `request` in the same test — they come from the same test context and share cookies/auth state.
+
+---
+
+## Network interception with `page.route`
+
+Playwright can intercept any network request made by the page before it reaches the server. Use `page.route(pattern, handler)`:
+
+```ts
+// Intercept all requests to /api/analytics and abort them
+await page.route('**/api/analytics', route => route.abort());
+
+await page.goto('/dashboard');
+// Analytics requests were never sent to the server
+```
+
+The `pattern` accepts:
+- Glob strings: `'**/api/**'`
+- Full URLs: `'https://api.example.com/track'`
+- Regular expressions: `/analytics/`
+
+---
+
+## Blocking requests (analytics, images)
+
+Blocking third-party analytics or large images speeds up tests significantly:
+
+```ts
+test('page loads without analytics', async ({ page }) => {
+  // Block analytics and tracking scripts
+  await page.route('**/*analytics*', route => route.abort());
+  await page.route('**/*tracking*', route => route.abort());
+
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
+});
+
+test('page loads without images (faster)', async ({ page }) => {
+  await page.route('**/*.{png,jpg,jpeg,gif,webp,svg}', route => route.abort());
+  await page.goto('/products');
+  // Test text content without waiting for images
+  await expect(page.getByText('Keyboard')).toBeVisible();
+});
+```
+
+---
+
+## Mocking responses with `route.fulfill`
+
+Replace a real network response with a fake one using `route.fulfill`:
+
+```ts
+test('shows product list from mocked API', async ({ page }) => {
+  await page.route('**/api/products', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        { id: 1, name: 'Mock Product', price: 9.99 },
+      ]),
+    })
+  );
+
+  await page.goto('/products');
+  await expect(page.getByText('Mock Product')).toBeVisible();
+});
+```
+
+`route.fulfill` lets you control:
+- `status` — HTTP status code
+- `contentType` — MIME type
+- `body` — response body as string
+- `headers` — custom response headers
+
+---
+
+## Modifying responses
+
+Sometimes you want to let the real request go through but change the response before the browser sees it. Use `route.fetch()` then `route.fulfill()`:
+
+```ts
+test('adds extra field to API response', async ({ page }) => {
+  await page.route('**/api/products', async route => {
+    // Let the real request go through
+    const response = await route.fetch();
+    const body = await response.json();
+
+    // Modify the response
+    const modified = body.map((p: any) => ({ ...p, badge: 'NEW' }));
+
+    await route.fulfill({
+      response,
+      body: JSON.stringify(modified),
+    });
+  });
+
+  await page.goto('/products');
+  // Now test how the UI handles the extra badge field
+});
+```
+
+---
+
+## Simulating errors (500) and slow networks
+
+### Simulate a server error
+
+```ts
+test('shows error message when API returns 500', async ({ page }) => {
+  await page.route('**/api/products', route =>
+    route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Internal Server Error' }),
+    })
+  );
+
+  await page.goto('/products');
+  await expect(page.getByText('Something went wrong')).toBeVisible();
+});
+```
+
+This pattern is essential for testing error boundaries, fallback UIs, and retry logic — you cannot reliably trigger a real 500 in a test environment.
+
+### Simulate a slow network
+
+```ts
+test('shows loading state during slow API', async ({ page }) => {
+  await page.route('**/api/products', async route => {
+    // Delay the response by 2 seconds
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await route.continue();
+  });
+
+  await page.goto('/products');
+  // Check that a loading spinner appears
+  await expect(page.getByTestId('loading-spinner')).toBeVisible();
+});
+```
+
+---
+
+## `page.waitForResponse`
+
+When you need to wait for a specific response to arrive before asserting, use `page.waitForResponse`:
+
+```ts
+test('waits for products API before asserting', async ({ page }) => {
+  // Start listening BEFORE the action that triggers the request
+  const responsePromise = page.waitForResponse('**/api/products');
+
+  await page.goto('/products');
+
+  const response = await responsePromise;
+  expect(response.status()).toBe(200);
+
+  // Now the data is loaded — safe to assert UI
+  await expect(page.getByRole('list')).toBeVisible();
+});
+```
+
+Always set up the `waitForResponse` promise **before** the action that triggers the request. If you set it up after, the response may have already arrived and you'll wait forever.
+
+You can also use `page.waitForResponse` with a predicate function for more complex matching:
+
+```ts
+const response = await page.waitForResponse(
+  res => res.url().includes('/api/products') && res.status() === 200
+);
+```
+
+<Practice
+  missions={['block-analytics', 'empty-data-edge-case', 'simulate-500', 'mock-api', 'combo-block-mock', 'slow-network']}
+  locale="en"
+/>
+
+---
+
+## Exercises
+
+### Exercise 1 — Build an `ApiHelper` class (15 min)
+
+Create `tests/utils/api-helper.ts` that wraps the application's API endpoints.
+
+Requirements:
+- Constructor receives Playwright's `request` (`APIRequestContext`) and stores it
+- Methods: `resetDatabase()`, `login(email, password)`, `register(name, email, password)`, `getProducts(params?)`, `createProduct(data)`, `updateProduct(id, data)`, `deleteProduct(id)`, `getOrders()`, `getUsers()`
+- Each method returns `{ status, body }` (or a boolean for `resetDatabase`)
+- Use `URLSearchParams` to build query strings for `getProducts`
+
+### Exercise 2 — Wire up a fixture (10 min)
+
+Create a `test-data.fixture.ts` that:
+- Extends `baseTest` with an `apiHelper` fixture
+- Calls `api.resetDatabase()` automatically before each test (inside the fixture, not in the test itself)
+- Passes the `ApiHelper` instance to the test via `use(api)`
+
+### Exercise 3 — Auth API tests (15 min)
+
+Write tests covering all login and registration states:
+- `POST /api/auth/login` → 200 with `{ id, email, role }`
+- Login with wrong password → 401 with `error`
+- Login with empty fields → 400 with `error`
+- `POST /api/auth/register` → 201 with `role: 'customer'`
+- Duplicate email registration → 409 with `error`
+- Short password (< 6 chars) → 400 with `error`
+
+### Exercise 4 — Products CRUD (20 min)
+
+Write tests for the full product lifecycle:
+- `GET /api/products` → 200, array with `id`, `name`, `price`
+- `GET /api/products?category=electronics` → all results have `category: 'electronics'`
+- `POST /api/products` → 201 with new `id`
+- `PUT /api/products/:id` → chain: create → update → assert new values
+- `DELETE /api/products/:id` → chain: create → delete → assert `{ message: 'Product deleted' }`
+- `DELETE` with non-existent id → 404
+
+### Exercise 5 — Orders, users, and the API+UI combo (15 min)
+
+**Part A:**
+- `GET /api/orders` → array length ≥ 1
+- `GET /api/users` → users do **not** have `password` property (security check)
+
+**Part B (combo):**
+- Create a product via `apiHelper.createProduct()`
+- Navigate to `/products` with `page.goto()`
+- Assert the product name is visible on the page
+
+### Bonus — Error schema helper
+
+Write a `expectError(response, expectedStatus)` helper that checks both the status code and that `body.error` is a non-empty string. Refactor all your error-case tests to use it.
