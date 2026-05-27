@@ -1,0 +1,206 @@
+---
+title: "Modul 0: Kurs xəritəsi və quraşdırma"
+description: "Playwright kursunun ilk modulu: alət zəncirinizi qurun, ilk testinizi yazın və BrauzerLab-da məşqə başlayın."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+# Modul 0: Kurs xəritəsi və quraşdırma
+
+Xoş gəldiniz! Bu modul kursun başlanğıc nöqtəsidir. Heç bir əvvəlki Playwright təcrübəsi olmadan, bu modulun sonunda işləyən bir test yazacaq və onu öz kompüterinizdə işlədəcəksiniz.
+
+<Video title="Modul 0: Kurs xəritəsi və quraşdırma" />
+
+---
+
+## Playwright nədir və niyə vacibdir
+
+Playwright — Microsoft tərəfindən hazırlanmış açıq mənbəli brauzər avtomatlaşdırma freymvorkudur. Chromium, Firefox və WebKit (Safari) brauzerlərini dəstəkləyir, yəni bir test bütün əsas brauzerlərdə işləyə bilər.
+
+Niyə Playwright seçilir?
+
+- **Sürətlidir** — testlər paralel işləyir
+- **Etibarlıdır** — avtomatik gözləmə sayəsində `sleep()` yazmazsınız
+- **Güclüdür** — API testi, şəbəkə müdaxiləsi, auth vəziyyəti, mobil emulasiya — hamısı daxildir
+- **Azərbaycan dilindəki resurslar var** — BrauzerLab məhz bunun üçün yaradılıb
+
+---
+
+## Kurs boyu nə quracağıq
+
+Bu kurs boyu real, işlənən bir avtomatlaşdırma layihəsi quracağıq. Hər modul bir yeni qat əlavə edir:
+
+- **Modul 0–3:** Əsaslar — quraşdırma, lokatorlar, əməliyyatlar
+- **Modul 4–6:** Keyfiyyət — iddialar, flaky test qarşısının alınması, konfiqurasiya
+- **Modul 7–10:** Miqyas — POM, fixtures, API, auth
+- **Modul 11–13:** Peşəkar səviyyə — vizual test, CI, yekun layihə
+
+---
+
+## Manual QA-dan avtomatlaşdırmaya keçid (düşüncə tərzi)
+
+Manual QA-da siz hər addımı öz başınızla düşünürsünüz: "Bu düyməyə basıram, bu mətn görünür, bu URL dəyişir." Avtomatlaşdırmada isə bu düşüncə prosesini kod şəklindəyazırsınız.
+
+**Əsas fərq:** Manual test bir dəfədir. Avtomatik test yüzlərlə dəfə, saniyələr içində, heç bir insan müdaxiləsi olmadan işləyə bilər.
+
+Keçid zamanı yadda saxlayın:
+- Kod yazmaq öyrənilir — siz artıq test düşüncə tərzinə sahibsiniz
+- Kod xətaları normaldır — hər kəsin kodu ilk dəfə işləmir
+- Playwright API-si oxunaqlıdır — `page.click('Login')` nə edəcəyini açıq göstərir
+
+---
+
+## Node LTS, VS Code, Git və brauzerlərin quraşdırılması
+
+Başlamaq üçün bu alətlər lazımdır:
+
+### Node.js (LTS versiyası)
+
+[nodejs.org](https://nodejs.org) saytından **LTS** versiyasını yükləyin. Quraşdırmadan sonra yoxlayın:
+
+```bash
+node --version   # v20.x.x və ya daha yüksək
+npm --version    # v10.x.x və ya daha yüksək
+```
+
+### VS Code
+
+[code.visualstudio.com](https://code.visualstudio.com) saytından yükləyin. Tövsiyə olunan əlavələr:
+
+- **Playwright Test for VSCode** — testləri redaktordən birbaşa işlətmək üçün
+- **ESLint** — kod keyfiyyəti üçün
+
+### Git
+
+[git-scm.com](https://git-scm.com) saytından yükləyin. Yoxlayın:
+
+```bash
+git --version
+```
+
+### Brauzerlər
+
+Playwright öz brauzer versiyalarını ayrıca quraşdırır (növbəti addımda görəcəksiniz). Sistem brauzerləri ilə qarışıq salmayın.
+
+---
+
+## Playwright-in quraşdırılması
+
+Yeni bir qovluq yaradın və Playwright-i quraşdırın:
+
+```bash
+mkdir playwright-kurs
+cd playwright-kurs
+npm init playwright@latest
+```
+
+Quraşdırma zamanı bu suallar çıxacaq:
+
+- **TypeScript or JavaScript?** — `TypeScript` seçin (kurs boyu TypeScript istifadə edirik)
+- **tests folder name?** — `tests` daxil edin (standart)
+- **GitHub Actions workflow?** — hələlik `false`
+- **Install Playwright browsers?** — `true` (mütləq lazımdır)
+
+Brauzerlərin yüklənməsi bir neçə dəqiqə çəkə bilər — bu normaldır.
+
+---
+
+## İlk Playwright layihəsinin yaradılması
+
+Quraşdırma tamamlandıqdan sonra layihə strukturuna baxaq:
+
+```bash
+ls
+```
+
+Aşağıdakı faylları görmüş olacaqsınız:
+
+```
+playwright-kurs/
+├── tests/
+│   └── example.spec.ts
+├── playwright.config.ts
+├── package.json
+└── node_modules/
+```
+
+---
+
+## `package.json`, `tests/` və `playwright.config.ts` strukturu
+
+### `package.json`
+
+Layihənizin "identifikasiya kartı"dır. Asılılıqları, skriptləri və metadata-nı saxlayır. Playwright skripti belə görünür:
+
+```json
+{
+  "scripts": {
+    "test": "playwright test"
+  }
+}
+```
+
+### `tests/` qovluğu
+
+Bütün `.spec.ts` fayllarınız burada yaşayır. Playwright bu qovluqdakı bütün test fayllarını avtomatik tapır.
+
+### `playwright.config.ts`
+
+Playwright-in əsas konfiqurasiya faylıdır. Buradan:
+
+- Hansı brauzerlər işlədilsin
+- Bütün testlər üçün `baseURL` nə olsun
+- Testlər paralel işləsinmi
+- Uğursuz testlər yenidən cəhd etsinmi
+
+kimi parametrləri tənzimləyirsiniz.
+
+---
+
+## İlk testin işə salınması
+
+Playwright-in hazır nümunə testini işlədin:
+
+```bash
+npx playwright test
+```
+
+Konsolda belə bir çıxış görməlisiniz:
+
+```
+Running 6 tests using 6 workers
+  6 passed (8s)
+```
+
+Uğurla keçdi! Playwright üç brauzerdə (`chromium`, `firefox`, `webkit`) iki test ssenarisini işlətdi.
+
+---
+
+## HTML hesabatının açılması
+
+Playwright test nəticələrini gözəl bir HTML hesabatında göstərə bilər:
+
+```bash
+npx playwright show-report
+```
+
+Bu əmr brauzeri açır və hər testin:
+- Keçdi/uğursuz oldu statusunu
+- İcra müddətini
+- Skrinşotlar və izlərini (uğursuzluq zamanı)
+
+göstərir. CI mühitlərində bu hesabat artifact kimi saxlanılır.
+
+---
+
+## BrauzerLab ilə ilk brauzer məşqi
+
+İndi öyrəndiklərinizi praktikada tətbiq etməyin vaxtıdır. BrauzerLab-da `first-click` tapşırığı sizi Playwright-in ilk fundamental əməliyyatı ilə — bir elementə kliklə tanış edəcək.
+
+Aşağıdakı linkə klikləyin, tapşırığı oxuyun və həll etməyə çalışın. Əgər ilişib qalsanız, ipucu düyməsindən istifadə edin.
+
+<Practice missions={['first-click']} />
