@@ -1,0 +1,839 @@
+---
+title: "Module 3: Actions & User Interaction"
+description: "Every user action Playwright can perform — click, fill vs type, keyboard, checkboxes, dropdowns, hover, date pickers, drag & drop, file upload, dialogs, and iframes."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+You've mastered locators. Now it's time to actually interact with the page. This module covers every user action you'll write in a real Playwright test — from a simple click to handling a browser dialog or uploading a file inside an iframe.
+
+<Video title="Module 3: Actions & User Interaction" />
+
+---
+
+## Click actions
+
+`.click()` is the most common action in Playwright. Before clicking, Playwright automatically waits for the element to be visible, enabled, stable, and not obscured. You don't need a manual `waitFor()` before most clicks.
+
+```javascript
+// Basic click — the bread and butter of every test
+await page.getByRole('button', { name: 'Log In' }).click();
+
+// Click a link
+await page.getByRole('link', { name: 'Register' }).click();
+
+// Click a product card
+await page.locator('.product-card').filter({ hasText: 'Wireless Mouse' }).click();
+```
+
+### Double-click
+
+Used for inline editing UIs and other elements that distinguish single from double click.
+
+```javascript
+// Double-click an editable table cell
+await page.locator('.editable-cell').dblclick();
+```
+
+### Right-click
+
+Right-click opens the browser context menu or triggers `contextmenu` event listeners in the app.
+
+```javascript
+// Right-click to trigger a context menu
+await page.locator('.product-card').click({ button: 'right' });
+```
+
+### Force click
+
+Bypasses Playwright's actionability checks. Use sparingly — only when you know the element is present but Playwright's checks are blocking a legitimate interaction.
+
+```javascript
+// Force click — bypasses visibility / actionability checks
+await page.locator('#hidden-trigger').click({ force: true });
+```
+
+**Playwright's auto-wait** means: in 95% of real tests, a plain `.click()` is all you need. Save the options for edge cases.
+
+---
+
+## `fill()` vs `type()`
+
+This is both a common interview question and a daily design decision.
+
+### `fill()`
+
+- Clears the field first (no need to triple-click first)
+- Dispatches a single `input` event — instantaneous
+- Preferred for 95% of form fields
+
+```javascript
+// fill() — clears then sets the value in one operation
+await page.locator('#email').fill('customer@test.io');
+await page.locator('#password').fill('customer123');
+
+// Works on any element that accepts text input
+await page.getByLabel('Shipping Name').fill('Jane Doe');
+await page.getByLabel('Shipping Address').fill('123 Main Street');
+await page.getByLabel('Shipping City').fill('Portland');
+await page.getByLabel('Shipping Zip Code').fill('97201');
+```
+
+### `type()`
+
+- Types character by character, firing `keydown`, `keypress`, `keyup` for each character
+- Does **not** clear the field first — appends to existing text
+- Slower — use only when `fill()` doesn't trigger the right behavior
+
+```javascript
+// type() — simulates real keystrokes, character by character
+await page.locator('#email').type('customer@test.io', { delay: 30 });
+
+// Common use case: search fields with autocomplete / debounced handlers
+await page.locator('#search').type('Wire', { delay: 50 });
+// Each keystroke fires events that the autocomplete component listens for
+```
+
+**When `type()` is necessary:** React-Select, typeahead components, rich text editors, or any input that reacts to each individual keystroke rather than the final value.
+
+**Gotcha:** If a field already has pre-filled text, `type()` appends to it. `fill()` always clears first.
+
+```javascript
+// Field starts with "old value" — type() appends:
+await page.locator('#name').type(' new suffix'); // result: "old value new suffix"
+
+// fill() ignores whatever was there before:
+await page.locator('#name').fill('fresh value'); // result: "fresh value"
+```
+
+---
+
+## Keyboard `press()`
+
+`.press()` sends a single key press to a focused element. `page.keyboard.press()` sends the key globally, regardless of which element has focus.
+
+```javascript
+// Press Enter to submit a form (locator-scoped)
+await page.locator('#password').press('Enter');
+
+// Press Tab to move to the next focusable field
+await page.locator('#shipping_name').press('Tab');
+
+// Escape to close a modal or dropdown
+await page.keyboard.press('Escape');
+
+// Backspace to delete characters
+await page.keyboard.press('Backspace');
+
+// Arrow keys for navigation
+await page.keyboard.press('ArrowDown');
+await page.keyboard.press('ArrowUp');
+```
+
+### Key combinations
+
+Use `+` to combine modifier keys with other keys:
+
+```javascript
+// Select all text in the focused element
+await page.keyboard.press('Control+A');
+
+// Copy selected text
+await page.keyboard.press('Control+C');
+
+// Paste
+await page.keyboard.press('Control+V');
+
+// Delete selected text
+await page.keyboard.press('Control+A');
+await page.keyboard.press('Delete');
+```
+
+**Key name casing matters:** The correct names are `'Control'`, `'Shift'`, `'Alt'`, `'Meta'` — not `'ctrl'` or `'shift'`.
+
+### Shift+Click and hold-down patterns
+
+```javascript
+// Hold Shift, click multiple items for multi-selection
+await page.keyboard.down('Shift');
+await page.locator('.list-item').nth(3).click();
+await page.keyboard.up('Shift');
+```
+
+**Accessibility tip:** `Tab` navigation is a powerful tool for testing keyboard accessibility. Navigate through a form without touching the mouse to verify the tab order is logical.
+
+---
+
+## Checkboxes & radio buttons
+
+Use `.check()` and `.uncheck()` rather than `.click()` — they read like documentation and validate intent.
+
+```javascript
+// Check a checkbox
+await page.getByLabel('Remember me').check();
+
+// Uncheck a checkbox
+await page.getByLabel('Subscribe to newsletter').uncheck();
+
+// Set checkbox to a specific state regardless of current state
+await page.getByLabel('Terms and conditions').setChecked(true);
+await page.getByLabel('Marketing emails').setChecked(false);
+```
+
+**Difference:** `.check()` throws if the checkbox is already checked (self-validating). `.click()` toggles regardless. `.setChecked(true/false)` sets a specific state without throwing.
+
+### Radio buttons
+
+Radio groups share the same `name` attribute. Use `.check()` on the option you want to select.
+
+```javascript
+// Select a radio button
+await page.getByLabel('Express Shipping').check();
+await page.getByLabel('Standard Shipping').check();
+
+// Assert which radio is currently selected
+await expect(page.getByLabel('Express Shipping')).toBeChecked();
+```
+
+### Assertions for checkboxes and radios
+
+```javascript
+// Assert a checkbox is checked
+await expect(page.getByLabel('Remember me')).toBeChecked();
+
+// Assert a checkbox is NOT checked
+await expect(page.getByLabel('Newsletter')).not.toBeChecked();
+```
+
+---
+
+## Native `<select>` dropdowns
+
+`selectOption()` is specifically for native HTML `<select>` elements. It dispatches the proper change events that the browser and frameworks expect.
+
+```javascript
+// Select by value (the option's `value` attribute)
+await page.locator('#category').selectOption('electronics');
+
+// Select by visible label text
+await page.locator('#category').selectOption({ label: 'Electronics' });
+
+// Select by index (0-based)
+await page.locator('#sort').selectOption({ index: 2 });
+
+// Multiple selection — pass an array
+await page.locator('#tags').selectOption(['javascript', 'testing', 'playwright']);
+```
+
+**Capstone app example — filter products:**
+
+```javascript
+await page.goto('/products');
+
+// Filter by category
+await page.locator('#category').selectOption('electronics');
+
+// Sort by price descending
+await page.locator('#sort').selectOption('price_desc');
+
+// Apply the filters
+await page.locator('button:has-text("Apply Filters")').click();
+```
+
+**Assert the current selection:**
+
+```javascript
+await expect(page.locator('#category')).toHaveValue('electronics');
+await expect(page.locator('#sort')).toHaveValue('price_desc');
+```
+
+**Common mistake:** `selectOption('Electronics')` with a capital E when the value attribute is `'electronics'` (lowercase). Values are case-sensitive.
+
+---
+
+## Custom dropdowns
+
+Not all dropdowns are native `<select>` elements. Modern UI frameworks (React-Select, Headless UI, Material UI) build their own. You cannot use `selectOption()` on these.
+
+**How to tell the difference:** Open DevTools → Elements tab. If you see `<select>` with `<option>` children → use `selectOption()`. If you see `<div>`, `<button>`, `<ul>` with `<li>` → custom dropdown.
+
+**The pattern for custom dropdowns is always:**
+
+```javascript
+// Step 1: Click to open the dropdown
+await page.locator('.dropdown-trigger').click();
+
+// Step 2: Wait for the menu to appear (it may animate in)
+await page.locator('.dropdown-menu').waitFor({ state: 'visible' });
+
+// Step 3: Click the option you want
+await page.locator('.dropdown-option:has-text("Option Name")').click();
+
+// Step 4 (optional): verify the menu is now closed
+await expect(page.locator('.dropdown-menu')).toBeHidden();
+```
+
+**Debugging custom dropdowns:**
+
+- Menu animating? Add `await page.waitForTimeout(300)` after the trigger click
+- Option outside the viewport? Scroll before clicking
+- Menu closing before you can click? Try `{ force: true }` on the option click
+
+```javascript
+// Force click the option when click-away behavior interferes
+await page.locator('.dropdown-option:has-text("Option Name")').click({ force: true });
+```
+
+---
+
+## Hover & tooltips
+
+`.hover()` moves the mouse over an element, triggering `mouseenter` and `mousemove` events. Tooltips, dropdown menus, and info popups revealed on hover all become testable.
+
+```javascript
+// Hover over a product card to reveal the "Quick View" button
+await page.locator('.product-card').filter({ hasText: 'Wireless Mouse' }).hover();
+
+// After hovering, the tooltip/revealed element is visible
+await expect(page.locator('#hover-tooltip')).toBeVisible();
+await expect(page.locator('#hover-tooltip')).toContainText('Tooltip content');
+
+// Move away — tooltip hides
+await page.locator('h1').hover();
+await expect(page.locator('#hover-tooltip')).toBeHidden();
+```
+
+**Positioned hover** — hover at specific coordinates within an element (useful for charts or image maps):
+
+```javascript
+// Hover at exact pixel offset within the element
+await page.locator('.chart-area').hover({ position: { x: 100, y: 50 } });
+```
+
+**After hovering, wait for the revealed element:**
+
+```javascript
+await page.locator('#info-icon').hover();
+
+// Tooltip has a CSS transition — wait for it to be visible
+await page.locator('.tooltip').waitFor({ state: 'visible' });
+await expect(page.locator('.tooltip')).toContainText('Additional info');
+```
+
+---
+
+## Date pickers
+
+### Native `<input type="date">`
+
+Fill with an ISO format string (`YYYY-MM-DD`). This is the most reliable approach.
+
+```javascript
+// Native date input — use ISO format, always works
+await page.locator('#start-date').fill('2025-06-15');
+await page.locator('#end-date').fill('2025-07-31');
+```
+
+### Custom date picker widgets
+
+For React DatePicker, flatpickr, Pikaday, or similar — you must interact with the widget's UI: click the trigger, navigate months, click a day cell.
+
+```javascript
+// Step 1: Open the calendar
+await page.locator('[data-testid="date-trigger"]').click();
+
+// Step 2: Navigate to the correct month
+// The target: June 2025. Current month may be different.
+await page.locator('button[aria-label="Next month"]').click();
+
+// Step 3: Click the day cell
+await page.locator('.calendar-day:has-text("15")').click();
+
+// Step 4: Verify selection
+await expect(page.locator('#start-date')).toHaveValue('2025-06-15');
+```
+
+**For navigating multiple months programmatically:**
+
+```javascript
+// Navigate forward until we reach the target month/year heading
+const target = 'June 2025';
+while (!(await page.locator('.calendar-header').textContent()).includes(target)) {
+  await page.locator('button[aria-label="Next month"]').click();
+}
+await page.locator('.calendar-day:has-text("15")').click();
+```
+
+---
+
+## Drag & drop
+
+Playwright offers three approaches. Start with `dragTo()` — fall back to the manual sequence if the framework doesn't respond correctly.
+
+### Method 1: `dragTo()` (simplest)
+
+```javascript
+// Drag an element to a target
+await page.locator('#drag-item').dragTo(page.locator('#drop-zone'));
+```
+
+### Method 2: Manual mouse sequence (most reliable)
+
+Some drag-and-drop libraries (react-beautiful-dnd, SortableJS, Angular CDK) use custom event handling that `dragTo()` doesn't fire correctly. The manual sequence fires `mousedown`, `mousemove`, `mouseup` — which these libraries listen for.
+
+```javascript
+const source = page.locator('.drag-handle').nth(0);
+const target = page.locator('.drop-target');
+
+const sourceBox = await source.boundingBox();
+const targetBox = await target.boundingBox();
+
+await page.mouse.move(
+  sourceBox.x + sourceBox.width / 2,
+  sourceBox.y + sourceBox.height / 2
+);
+await page.mouse.down();
+await page.mouse.move(
+  targetBox.x + targetBox.width / 2,
+  targetBox.y + targetBox.height / 2,
+  { steps: 10 } // smooth movement — some libraries need this
+);
+await page.mouse.up();
+```
+
+### Method 3: `dragTo()` with coordinates
+
+```javascript
+// Drag to a specific position within the target
+await page.locator('#drag-item').dragTo(page.locator('#drop-zone'), {
+  targetPosition: { x: 10, y: 10 },
+});
+```
+
+**When `dragTo()` fails:** Check the browser console for errors. If the DnD library uses synthetic events, switch to Method 2.
+
+---
+
+## File upload
+
+`setInputFiles()` replaces OS file dialogs entirely. No AutoIT, no Robot class, no OS-level automation.
+
+```javascript
+// Upload a single file by path
+await page.locator('input[type="file"]').setInputFiles('/path/to/file.pdf');
+
+// Upload multiple files
+await page.locator('input[type="file"]').setInputFiles([
+  '/path/to/file1.txt',
+  '/path/to/file2.txt',
+]);
+
+// Upload from a Buffer — no physical file needed
+await page.locator('input[type="file"]').setInputFiles({
+  name: 'data.csv',
+  mimeType: 'text/csv',
+  buffer: Buffer.from('id,name,price\n1,Widget,9.99\n2,Gadget,19.99'),
+});
+
+// Clear the file selection
+await page.locator('input[type="file"]').setInputFiles([]);
+```
+
+**Portable paths** — use `path.join` so tests work on any OS:
+
+```javascript
+const path = require('path');
+
+await page.locator('input[type="file"]').setInputFiles(
+  path.join(__dirname, '..', 'fixtures', 'test-upload.txt')
+);
+```
+
+**Hidden file input:** If the `<input type="file">` is styled with `display: none` or `opacity: 0`, use `{ force: true }`:
+
+```javascript
+await page.locator('input[type="file"]').setInputFiles('file.pdf', { force: true });
+```
+
+**Verify the file was selected:**
+
+```javascript
+const files = await page.locator('input[type="file"]').evaluate(el =>
+  Array.from(el.files).map(f => f.name)
+);
+expect(files).toContain('test-upload.txt');
+```
+
+---
+
+## Dialogs & popups
+
+`page.on('dialog')` is an event listener. It **must** be registered **before** the action that triggers the dialog. If you register it after clicking the delete button, the dialog has already fired and was dismissed automatically.
+
+```javascript
+// ✅ CORRECT — register before the triggering action
+page.on('dialog', async (dialog) => {
+  await dialog.accept(); // accept / confirm
+});
+await page.locator('button:has-text("Delete")').click();
+
+// ❌ WRONG — dialog fires before this handler is registered
+await page.locator('button:has-text("Delete")').click();
+page.on('dialog', async (dialog) => {
+  await dialog.accept(); // too late
+});
+```
+
+### Dialog types and handling
+
+```javascript
+// Accept a confirm dialog
+page.on('dialog', async (dialog) => {
+  expect(dialog.message()).toContain('Are you sure');
+  await dialog.accept();
+});
+
+// Dismiss (cancel) a confirm dialog
+page.on('dialog', async (dialog) => {
+  await dialog.dismiss();
+});
+
+// Respond to a prompt dialog with input text
+page.on('dialog', async (dialog) => {
+  await dialog.accept('typed input here');
+});
+
+// Handle different dialog types selectively
+page.on('dialog', async (dialog) => {
+  if (dialog.type() === 'confirm') {
+    await dialog.accept();
+  } else if (dialog.type() === 'prompt') {
+    await dialog.accept('test input');
+  } else {
+    await dialog.dismiss(); // alert
+  }
+});
+```
+
+**Best practice:** Register the dialog handler in `beforeEach` or inside your page object constructor — not inside individual test functions. This ensures the handler is always ready before any dialog-triggering action.
+
+```javascript
+// In a page object constructor
+class AdminProductsPage {
+  constructor(page) {
+    this.page = page;
+    // Auto-accept all delete confirmations
+    page.on('dialog', async (dialog) => {
+      await dialog.accept();
+    });
+  }
+}
+```
+
+---
+
+## Iframes
+
+`page.frameLocator()` returns a `FrameLocator` — all Playwright locator methods are available on it. Use it exactly as you would use `page` for locators.
+
+```javascript
+// Get a FrameLocator for the iframe
+const frame = page.frameLocator('#payment-iframe');
+
+// Use all normal locator methods inside the iframe
+await frame.getByLabel('Card number').fill('4111 1111 1111 1111');
+await frame.getByLabel('Expiry date').fill('12/28');
+await frame.getByLabel('CVV').fill('123');
+await frame.getByRole('button', { name: 'Pay Now' }).click();
+```
+
+**Finding the iframe selector:**
+
+```javascript
+// iframe with an id
+const frame = page.frameLocator('#my-iframe');
+
+// iframe without an id — use src or other attribute
+const frame = page.frameLocator('iframe[src="/payment"]');
+const frame = page.frameLocator('iframe[title="Payment form"]');
+```
+
+**Nested iframes:**
+
+```javascript
+// Chain frameLocators for iframes inside iframes
+const innerFrame = page.frameLocator('#outer-frame').frameLocator('#inner-frame');
+await innerFrame.locator('#card-number').fill('4111...');
+```
+
+**What `frameLocator` does NOT have:** `goto()`, `evaluate()` — it is not a `Page` object. For those operations, use `page.frame()`:
+
+```javascript
+// page.frame() by name or URL — for advanced scenarios
+const frame = page.frame({ url: /payment/ });
+await frame.evaluate(() => document.title);
+```
+
+**Cross-origin iframes:** Playwright handles these transparently. `frameLocator()` works regardless of the iframe's origin.
+
+---
+
+<Practice missions={['click-variants','fill-form','type-vs-fill','press-keys','select-option','drag-and-drop','date-picker','hover-tooltip-click','file-upload']} locale="en" />
+
+---
+
+## Exercises
+
+These exercises use TestMarket Lab running locally at `http://localhost:3000`.
+
+---
+
+### Exercise 1: Login form — `fill()` vs `type()`
+
+Create `tests/starter/tests/actions/login-actions.spec.js`:
+
+```javascript
+const { test, expect } = require('@playwright/test');
+
+test.describe('Login form actions', () => {
+
+  test('fill() — fast, single event', async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('customer@test.io');
+    await page.locator('#password').fill('customer123');
+    await page.locator('button[type="submit"]').click();
+    await expect(page.locator('.alert.alert-success')).toBeVisible();
+  });
+
+  test('type() — character by character', async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').type('customer@test.io', { delay: 30 });
+    await page.locator('#password').type('customer123', { delay: 30 });
+    await page.locator('button[type="submit"]').click();
+    await expect(page.locator('.alert.alert-success')).toBeVisible();
+  });
+
+  test('press Enter to submit', async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('customer@test.io');
+    await page.locator('#password').fill('customer123');
+    await page.locator('#password').press('Enter');
+    await expect(page.locator('.alert.alert-success')).toBeVisible();
+  });
+});
+```
+
+**Tasks:**
+- Run with `npx playwright test --headed` and observe typing speed: `fill()` is instantaneous, `type()` types character by character
+- Comment out `{ delay: 30 }` and run again — what changes?
+- Try `type()` without clearing first on a pre-filled field to see the append behavior
+
+---
+
+### Exercise 2: Checkout form — fill & submit
+
+Create `tests/starter/tests/actions/checkout-actions.spec.js`. The `beforeEach` logs in, adds a product to the cart, and navigates to `/checkout`.
+
+```javascript
+test('fill all shipping fields and place order', async ({ page }) => {
+  const checkoutPage = new CheckoutPage(page);
+  await checkoutPage.fillShippingDetails({
+    name: 'Jane Doe',
+    address: '123 Main Street',
+    city: 'Portland',
+    zip: '97201',
+  });
+  await checkoutPage.placeOrder();
+  await expect(page).toHaveURL(/\/orders\/\d+/);
+  await expect(page.locator('h1')).toContainText('Order');
+});
+
+test('Tab through fields and type values', async ({ page }) => {
+  await page.locator('#shipping_name').type('John Smith', { delay: 20 });
+  await page.locator('#shipping_name').press('Tab');
+  await page.locator('#shipping_address').type('456 Oak Ave', { delay: 20 });
+  await page.locator('#shipping_address').press('Tab');
+  await page.locator('#shipping_city').type('Seattle', { delay: 20 });
+  await page.locator('#shipping_city').press('Tab');
+  await page.locator('#shipping_zip').type('98101', { delay: 20 });
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/orders\/\d+/);
+});
+
+test('submit empty form — HTML5 validation blocks', async ({ page }) => {
+  const checkoutPage = new CheckoutPage(page);
+  await checkoutPage.submitEmptyForm();
+  await expect(page).toHaveURL('/checkout');
+});
+```
+
+**Reference:** `tests/final/pages/CheckoutPage.js`
+
+---
+
+### Exercise 3: Product filter — `selectOption()`
+
+Create `tests/starter/tests/actions/product-filter-actions.spec.js`:
+
+```javascript
+test('filter by category using selectOption', async ({ page }) => {
+  await page.goto('/products');
+  await page.locator('#category').selectOption('electronics');
+  await page.locator('button:has-text("Apply Filters")').click();
+  expect(await page.locator('.product-card').count()).toBeGreaterThan(0);
+});
+
+test('select by visible label', async ({ page }) => {
+  await page.goto('/products');
+  await page.locator('#category').selectOption({ label: 'Electronics' });
+  await page.locator('button:has-text("Apply Filters")').click();
+  expect(await page.locator('.product-card').count()).toBeGreaterThan(0);
+});
+
+test('combine search + filter + sort', async ({ page }) => {
+  await page.goto('/products');
+  await page.locator('#search').fill('Wireless');
+  await page.locator('#category').selectOption('electronics');
+  await page.locator('#sort').selectOption('price_asc');
+  await page.locator('button:has-text("Apply Filters")').click();
+  await expect(page.locator('.product-card, p:has-text("No products found")'))
+    .toBeVisible();
+});
+```
+
+**Tasks:**
+- Open DevTools → Elements, find `<select id="category">`, expand its `<option>` nodes — note the `value` attributes
+- Try `selectOption('nonexistent')` — what error does Playwright throw?
+- Try `selectOption('Electronics')` with capital E — does it match?
+
+---
+
+### Exercise 4: Date input & keyboard shortcuts
+
+Create `tests/starter/tests/actions/date-input-actions.spec.js`:
+
+```javascript
+test('fill date format into a text input', async ({ page }) => {
+  await page.goto('/auth/register');
+  await page.locator('#name').fill('Order-2025-06-15');
+  await page.locator('#name').click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+  expect(await page.locator('#name').inputValue()).toBe('');
+});
+
+test('select all, copy, paste with keyboard', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.locator('#email').fill('customer@test.io');
+  await page.locator('#email').click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Control+C');
+  await page.locator('#email').press('Tab');
+  await page.keyboard.press('Control+V');
+  expect(await page.locator('#password').inputValue()).toBe('customer@test.io');
+});
+
+test('backspace deletes characters', async ({ page }) => {
+  await page.goto('/auth/register');
+  await page.locator('#name').fill('Product Launch Event');
+  for (let i = 0; i < 6; i++) {
+    await page.keyboard.press('Backspace');
+  }
+  expect(await page.locator('#name').inputValue()).toBe('Product Launch');
+});
+```
+
+---
+
+### Exercise 5: File upload — `setInputFiles()`
+
+Create `tests/starter/tests/actions/file-upload-actions.spec.js`:
+
+```javascript
+const { test, expect } = require('@playwright/test');
+const path = require('path');
+const fs = require('fs');
+
+test('upload a file via path', async ({ page }) => {
+  await page.goto('/auth/register');
+
+  const tmpDir = path.join(__dirname, '..', '..', 'tmp');
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+  const testFile = path.join(tmpDir, 'test-upload.txt');
+  fs.writeFileSync(testFile, 'Hello from Playwright!');
+
+  // Inject a file input (the capstone register page has none)
+  await page.evaluate(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.id = 'test-file-upload';
+    document.body.appendChild(input);
+  });
+
+  await page.locator('#test-file-upload').setInputFiles(testFile);
+
+  const files = await page.locator('#test-file-upload').evaluate(el =>
+    Array.from(el.files).map(f => f.name)
+  );
+  expect(files).toContain('test-upload.txt');
+
+  fs.unlinkSync(testFile);
+});
+
+test('upload from Buffer — no file on disk', async ({ page }) => {
+  await page.goto('/auth/register');
+
+  await page.evaluate(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.id = 'test-buffer-upload';
+    document.body.appendChild(input);
+  });
+
+  await page.locator('#test-buffer-upload').setInputFiles({
+    name: 'data.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('id,name,price\n1,Widget,9.99\n2,Gadget,19.99'),
+  });
+
+  const fileName = await page.locator('#test-buffer-upload').evaluate(el =>
+    el.files[0].name
+  );
+  expect(fileName).toBe('data.csv');
+});
+```
+
+**Tasks:**
+- Observe that `setInputFiles()` never opens an OS file dialog
+- Try uploading a non-existent file path — what error does Playwright throw?
+- Try the multi-file variant: pass an array of two paths
+
+---
+
+## Self-check questions
+
+1. What is the fundamental difference between `fill()` and `type()`?
+2. When would you use `selectOption()` vs the click → wait → click pattern?
+3. How does `setInputFiles()` differ from using an OS file dialog?
+4. Why must `page.on('dialog', handler)` be registered **before** clicking the button that triggers the dialog?
+5. What method do you use to interact with elements inside an iframe?
+6. What happens if you call `selectOption('nonexistent_value')`?
+7. How do you simulate Ctrl+A (select all) in Playwright?
+8. What is the difference between `.check()` and `.setChecked(true)`?
+
+---
+
+## Key takeaways
+
+Four rules to carry into every test:
+
+1. **`fill()` for forms, `type()` for special cases** — `fill()` is faster, always clears first, and triggers the right events for 95% of inputs
+2. **Native `<select>` = `selectOption()`, custom dropdown = click → wait → click** — always check the DOM before deciding
+3. **`setInputFiles()` replaces OS file dialogs entirely** — it works with file paths, arrays, and Buffer objects
+4. **Dialogs need listeners before triggers; iframes use `frameLocator()`** — register dialog handlers before the action that opens them
+
+Module 4 covers assertions — you'll learn the full `expect()` API and how to write assertions that are both precise and resilient to timing.
