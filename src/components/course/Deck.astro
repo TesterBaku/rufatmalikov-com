@@ -2,16 +2,18 @@
 interface Props {
 	href: string;
 	title: string;
+	locale?: string;
 }
 
-const { href, title } = Astro.props;
+const { href, title, locale = 'az' } = Astro.props;
+const subLabel = locale === 'en' ? 'Slides — opens in a new tab' : 'Slaydlar — yeni pəncərədə açılır';
 ---
 
 <a class="deck-card" href={href} target="_blank" rel="noopener noreferrer">
 	<span class="deck-icon" aria-hidden="true">📊</span>
 	<span class="deck-body">
 		<span class="deck-title">{title}</span>
-		<span class="deck-sub">Slaydlar — yeni pəncərədə açılır</span>
+		<span class="deck-sub">{subLabel}</span>
 	</span>
 	<span class="deck-arrow" aria-hidden="true">↗</span>
 </a>
