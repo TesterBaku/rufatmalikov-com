@@ -47,6 +47,11 @@ export default defineConfig({
 			],
 			sidebar: [
 				{
+					label: 'Course',
+					translations: { az: 'Kurs' },
+					items: [{ autogenerate: { directory: 'course' } }],
+				},
+				{
 					label: 'Playwright',
 					items: [{ autogenerate: { directory: 'playwright' } }],
 				},
