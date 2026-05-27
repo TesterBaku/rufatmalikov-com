@@ -24,10 +24,10 @@ test('apex redirects to a locale home', async ({ page }) => {
 	await expect(page).toHaveURL(/\/(en|az)\//);
 });
 
-test('home hero CTA links to the BrauzerLab subdomain', async ({ page }) => {
+test('home hero CTA links to the course overview', async ({ page }) => {
 	await page.goto('/en/');
 	const cta = page.getByRole('link', { name: /start the playwright course/i });
-	await expect(cta).toHaveAttribute('href', 'https://brauzerlab.rufatmalikov.com/en/');
+	await expect(cta).toHaveAttribute('href', '/en/course/');
 });
 
 test('projects page lists all entries in importance order', async ({ page }) => {
