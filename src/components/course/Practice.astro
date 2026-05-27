@@ -7,10 +7,16 @@ interface Props {
 }
 
 const { missions, locale = 'az' } = Astro.props;
+
+const title = locale === 'en' ? 'Practice on BrauzerLab' : 'BrauzerLab-də məşq et';
+const intro =
+	locale === 'en'
+		? 'Practice these concepts in the browser:'
+		: 'Bu konsepsiyaları brauzerdə məşq et:';
 ---
 
-<Aside type="tip" title="BrauzerLab-də məşq et">
-	<p>Bu konsepsiyaları brauzerdə məşq et:</p>
+<Aside type="tip" title={title}>
+	<p>{intro}</p>
 	<ul>
 		{missions.map((key) => (
 			<li>

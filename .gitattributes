@@ -1,3 +1,6 @@
 # Keep shell hooks LF so they run under sh on any platform
 .husky/** text eol=lf
 *.sh text eol=lf
+
+# Slide decks are generated artifacts — collapse them in diffs
+public/course/decks/**/*.html linguist-generated=true
