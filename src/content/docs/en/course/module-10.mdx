@@ -1,0 +1,514 @@
+---
+title: "Module 10: Authentication & Storage State"
+description: "Log in once, reuse the auth state across hundreds of tests. Master storageState, setup projects, project dependencies, multiple roles, fixtures, and API login."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+Welcome to Module 10. You've built POMs, fixtures, API tests, and CI pipelines. Now we tackle the single biggest performance bottleneck in a real test suite: **logging in before every test**.
+
+By the end of this module you'll log in **once**, save the browser state to disk, and reuse it across your entire suite — eliminating both the time cost and the flakiness that login flows introduce.
+
+<Video title="Module 10: Authentication & Storage State" />
+
+---
+
+## Why logging in every test is slow and brittle
+
+Most test suites start with a `beforeEach` that navigates to the login page, fills credentials, and submits the form. It feels safe and predictable. In practice it creates two serious problems.
+
+**The time problem.** A typical UI login takes 1–3 seconds. Multiply that by 50 tests and you lose 2–3 minutes per run before a single assertion fires. At 200 tests the overhead exceeds 10 minutes.
+
+**The flakiness problem.** Every login attempt crosses the network, fills form fields, waits for redirects, and depends on the server responding within a tight timeout. Each of those steps can fail independently. A flaky login is not a test bug — it looks like one, though, and every debug session traces back to the same place.
+
+The solution Playwright provides is `storageState`: capture the browser's authenticated state once, write it to a JSON file, and load that file at the start of every subsequent context. The browser thinks it already went through the login flow because the cookies and localStorage that prove authentication are already present.
+
+---
+
+## The `storageState` concept
+
+When a user logs in through a browser, the server sends back proof of identity — typically one or more of these:
+
+- A **session cookie** set via `Set-Cookie` response header
+- A **JWT token** stored in `localStorage` or a non-HTTP-only cookie
+- A combination of both
+
+Playwright's `storageState` serialises all of that proof into a single JSON file with two top-level keys:
+
+```json
+{
+  "cookies": [
+    {
+      "name": "session",
+      "value": "abc123...",
+      "domain": "localhost",
+      "path": "/"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        { "name": "token", "value": "eyJhbGciOi..." }
+      ]
+    }
+  ]
+}
+```
+
+**Saving state** is done after a successful login:
+
+```ts
+await page.context().storageState({ path: 'auth/customer.json' });
+```
+
+Note the call is on `page.context()`, not on `page` — `storageState` is a `BrowserContext` method.
+
+**Loading state** is done when you create a new context (or through config, which does it automatically):
+
+```ts
+const context = await browser.newContext({
+  storageState: 'auth/customer.json',
+});
+```
+
+Before any page loads in that context, Playwright pre-populates cookies and localStorage from the file. The app sees an already-authenticated browser.
+
+**Important caveat.** `storageState` captures cookies accessible via `document.cookie` and `localStorage`. It does **not** capture HTTP-only cookies (set with the `HttpOnly` flag). If your app uses HTTP-only session cookies exclusively, see the API login section below for a workaround.
+
+---
+
+## Capturing auth state once — global setup and the setup project
+
+There are two main strategies for running login exactly once per suite run. Both achieve the same outcome; they differ in how explicit and CI-friendly they are.
+
+### Strategy 1: `globalSetup` function
+
+In `playwright.config.ts` you can point to a module that runs once before any test worker starts:
+
+```ts
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  globalSetup: require.resolve('./global.setup.ts'),
+  use: {
+    storageState: 'auth/customer.json',
+  },
+});
+```
+
+```ts
+// global.setup.ts
+import { chromium } from '@playwright/test';
+
+export default async function globalSetup() {
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+
+  await page.goto('http://localhost:3000/auth/login');
+  await page.fill('#email', 'customer@test.io');
+  await page.fill('#password', 'customer123');
+  await page.click('button[type="submit"]');
+
+  await page.context().storageState({ path: 'auth/customer.json' });
+  await browser.close();
+}
+```
+
+This is the simplest form. Every test in the suite inherits `storageState: 'auth/customer.json'` and starts authenticated.
+
+### Strategy 2: setup project (recommended)
+
+The setup project approach defines a special Playwright project whose only job is to run the auth setup file. Other projects declare it as a dependency and wait for it to finish.
+
+```ts
+// playwright.config.ts
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  projects: [
+    {
+      name: 'setup',
+      testMatch: /auth\.setup\.ts/,
+    },
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'auth/customer.json',
+      },
+      dependencies: ['setup'],
+    },
+  ],
+});
+```
+
+```ts
+// tests/setup/auth.setup.ts
+import { test as setup, expect } from '@playwright/test';
+
+setup('authenticate as customer', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.fill('#email', 'customer@test.io');
+  await page.fill('#password', 'customer123');
+  await page.click('button[type="submit"]');
+  await expect(page.locator('.alert-success')).toBeVisible();
+
+  await page.context().storageState({ path: 'auth/customer.json' });
+});
+```
+
+The advantages over `globalSetup`:
+
+- The setup test appears in the HTML reporter — you can see traces and screenshots if it fails
+- The dependency graph is explicit and visible: `chromium` runs only after `setup` passes
+- Multiple projects can depend on the same setup project
+
+---
+
+## Reusing auth state across tests
+
+Once the auth file exists and is wired through the config, your tests need no login code at all:
+
+```ts
+// tests/dashboard.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('account link is visible', async ({ page }) => {
+  await page.goto('/');
+  // Already authenticated — no login step needed
+  await expect(page.locator('a[href="/account"]')).toBeVisible();
+});
+```
+
+Every worker that runs tests in the `chromium` project receives a fresh browser context pre-loaded with the cookies and localStorage from `auth/customer.json`. The login page is never visited.
+
+---
+
+## The `setup` project and project dependencies pattern
+
+The `dependencies` key in a project definition is the key to orchestrating execution order:
+
+```ts
+projects: [
+  // Runs first — no dependencies
+  { name: 'setup', testMatch: /auth\.setup\.ts/ },
+
+  // Runs only after 'setup' completes successfully
+  {
+    name: 'chromium',
+    use: { storageState: 'auth/customer.json' },
+    dependencies: ['setup'],
+  },
+  {
+    name: 'firefox',
+    use: { storageState: 'auth/customer.json' },
+    dependencies: ['setup'],
+  },
+],
+```
+
+Projects without `dependencies` run in parallel. Projects that declare `dependencies` wait for every listed project to finish and pass before they start. If the `setup` project fails, the dependent projects are skipped — you won't see misleading failures caused by a missing auth file.
+
+**When running a single test file** you may need to run setup first explicitly:
+
+```bash
+npx playwright test --project=setup
+npx playwright test tests/dashboard.spec.ts --project=chromium
+```
+
+Or combine them in one command — Playwright respects the dependency order automatically when you run the full suite:
+
+```bash
+npx playwright test
+```
+
+---
+
+## Multiple roles — admin vs user storage states
+
+Real applications have multiple user roles with different permissions. Each role needs its own auth file.
+
+```ts
+// tests/setup/auth.setup.ts
+import { test as setup, expect } from '@playwright/test';
+import path from 'path';
+
+const authDir = path.join(process.cwd(), 'auth');
+
+setup('authenticate as customer', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.fill('#email', 'customer@test.io');
+  await page.fill('#password', 'customer123');
+  await page.click('button[type="submit"]');
+  await expect(page.locator('.alert-success')).toBeVisible();
+  await page.context().storageState({ path: path.join(authDir, 'customer.json') });
+});
+
+setup('authenticate as admin', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.fill('#email', 'admin@test.io');
+  await page.fill('#password', 'admin123');
+  await page.click('button[type="submit"]');
+  await expect(page.locator('.alert-success')).toBeVisible();
+  await page.context().storageState({ path: path.join(authDir, 'admin.json') });
+});
+```
+
+The config then wires each role to a separate project:
+
+```ts
+projects: [
+  { name: 'setup', testMatch: /auth\.setup\.ts/ },
+  {
+    name: 'chromium',
+    use: { storageState: 'auth/customer.json' },
+    dependencies: ['setup'],
+  },
+  {
+    name: 'admin-chromium',
+    use: { storageState: 'auth/admin.json' },
+    dependencies: ['setup'],
+  },
+],
+```
+
+Tests for customer features run under the `chromium` project; tests for admin features run under `admin-chromium`. Both share a single setup run.
+
+---
+
+## Per-test auth via fixtures
+
+The setup project approach sets auth state for an entire project. Sometimes you need individual tests to switch roles within the same test file. A fixture handles this cleanly:
+
+```ts
+// fixtures/auth.fixture.ts
+import { test as base, expect } from '@playwright/test';
+import fs from 'fs';
+
+type AuthFixtures = {
+  customerPage: Page;
+  adminPage: Page;
+};
+
+export const test = base.extend<AuthFixtures>({
+  customerPage: async ({ browser }, use) => {
+    const context = await browser.newContext({
+      storageState: 'auth/customer.json',
+    });
+    const page = await context.newPage();
+    await use(page);
+    await context.close();
+  },
+
+  adminPage: async ({ browser }, use) => {
+    const context = await browser.newContext({
+      storageState: 'auth/admin.json',
+    });
+    const page = await context.newPage();
+    await use(page);
+    await context.close();
+  },
+});
+```
+
+Usage in a test:
+
+```ts
+import { test } from '../fixtures/auth.fixture';
+import { expect } from '@playwright/test';
+
+test('admin can see management panel', async ({ adminPage }) => {
+  await adminPage.goto('/admin');
+  await expect(adminPage.locator('h1')).toContainText('Admin');
+});
+
+test('customer cannot reach admin panel', async ({ customerPage }) => {
+  await customerPage.goto('/admin');
+  await expect(customerPage).toHaveURL(/\/unauthorized|\/login/);
+});
+```
+
+The fixture approach trades setup project visibility (traces appear per test rather than as a separate project phase) for per-test flexibility.
+
+**When to use which:**
+
+| Concern | Setup project | Auth fixture |
+|---|---|---|
+| Best for | CI, large suites | Local dev, role-switching tests |
+| Config change needed | Yes | No |
+| Visible in HTML reporter | Yes (own phase) | Yes (per test) |
+| Multi-role support | One project per role | One fixture per role |
+| Execution order guarantee | Explicit via `dependencies` | Lazy (on first test use) |
+
+---
+
+## Token and cookie-based auth via API login
+
+UI login is convenient but slow (~1–3 seconds). If your application exposes a login API endpoint, you can bypass the browser form entirely and log in programmatically in ~200 ms.
+
+```ts
+// tests/setup/auth.api.setup.ts
+import { test as setup, expect } from '@playwright/test';
+
+setup('authenticate via API', async ({ request, browser }) => {
+  // 1. POST credentials to the auth endpoint
+  const response = await request.post('http://localhost:3000/api/auth/login', {
+    data: {
+      email: 'customer@test.io',
+      password: 'customer123',
+    },
+  });
+  expect(response.ok()).toBeTruthy();
+
+  const { token } = await response.json();
+
+  // 2. Inject the token into a browser context as a cookie
+  const context = await browser.newContext();
+  await context.addCookies([{
+    name: 'token',
+    value: token,
+    domain: 'localhost',
+    path: '/',
+    httpOnly: false,
+    sameSite: 'Lax',
+  }]);
+
+  // 3. Save state exactly as with UI login
+  await context.storageState({ path: 'auth/customer.json' });
+  await context.close();
+});
+```
+
+The resulting `auth/customer.json` has the same structure as one produced by UI login. All downstream tests are unaffected.
+
+**When API login is the right choice:**
+- High-volume setups where setup time is measurable in CI
+- Applications with long, multi-step UI login flows
+- Environments where the login form is deliberately slow (rate limiting, CAPTCHAs in staging)
+
+**When to stick with UI login:**
+- SSO, OAuth2, or multi-factor auth flows where there is no direct API endpoint
+- When verifying the actual login UI is part of the module's test coverage requirement
+
+<Practice missions={["login-with-validation"]} locale="en" />
+
+---
+
+## Security — do not commit real credentials
+
+Auth state files contain live authentication tokens. Treat them like passwords.
+
+**Add `auth/` to `.gitignore`:**
+
+```
+# .gitignore
+auth/
+```
+
+**Use `.env` for credentials, never hard-code them:**
+
+```ts
+// .env
+CUSTOMER_EMAIL=customer@test.io
+CUSTOMER_PASSWORD=customer123
+```
+
+```ts
+// auth.setup.ts
+import 'dotenv/config';
+
+setup('authenticate as customer', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.fill('#email', process.env.CUSTOMER_EMAIL!);
+  await page.fill('#password', process.env.CUSTOMER_PASSWORD!);
+  // ...
+});
+```
+
+**In CI,** set credentials as encrypted environment variables in your provider (GitHub Actions Secrets, GitLab CI/CD Variables, etc.) and let the setup project generate fresh auth files at the start of each pipeline run. Never commit `auth/*.json` to the repository.
+
+---
+
+## Exercises
+
+These exercises mirror the worksheet exercises for this module. Work through them against the training application at BrauzerLab.
+
+### Exercise 1 — Create customer auth state
+
+Write `tests/starter/setup/auth.setup.ts`. The setup test should:
+
+1. Navigate to `/auth/login`
+2. Fill `#email` with `customer@test.io` and `#password` with `customer123`
+3. Click `button[type="submit"]`
+4. Assert `.alert-success` is visible
+5. Call `page.context().storageState({ path: 'auth/customer.json' })`
+
+Run it: `npx playwright test tests/starter/setup/auth.setup.ts`
+
+Verify `auth/customer.json` exists and contains `cookies` and `origins` keys.
+
+### Exercise 2 — Create admin auth state
+
+Extend the same setup file with a second test for `admin@test.io` / `admin123`. Output path: `auth/admin.json`.
+
+Compare the two files — token values differ because the server encodes different roles.
+
+### Exercise 3 — Wire the config
+
+Update `tests/starter/playwright.config.ts`:
+
+- Add a `setup` project with `testMatch: /auth\.setup\.ts/`
+- Add a `chromium` project with `storageState: 'auth/customer.json'` and `dependencies: ['setup']`
+- Add an `admin-chromium` project with `storageState: 'auth/admin.json'` and `dependencies: ['setup']`
+
+Run the full suite: `npx playwright test` — setup runs first, then both browser projects in parallel.
+
+### Exercise 4 — Write authenticated tests (no login code)
+
+Create `tests/starter/tests/dashboard.spec.ts`:
+
+```ts
+import { test, expect } from '@playwright/test';
+
+test('account link visible after auth state load', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('a[href="/account"]')).toBeVisible();
+});
+```
+
+Run with `--project=chromium`. There should be no `page.fill('#email', ...)` in your test.
+
+### Exercise 5 — Keep one UI login test
+
+Maintain `tests/starter/tests/login.spec.ts` that performs a full browser login without `storageState`. This test protects you from silent breakage in the login form:
+
+```ts
+test('login flow works end-to-end', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.fill('#email', 'customer@test.io');
+  await page.fill('#password', 'customer123');
+  await page.click('button[type="submit"]');
+  await expect(page.locator('.alert-success')).toBeVisible();
+});
+```
+
+### Challenge — API login
+
+Replace the UI login in `auth.setup.ts` with an API POST to `/api/auth/login`. Measure the time difference. Verify the resulting `auth/customer.json` has the same structure.
+
+### Self-check questions
+
+1. What does `context.storageState({ path })` actually save to disk?
+2. What is the difference between using `globalSetup` and a setup project for auth?
+3. What does `dependencies: ['setup']` prevent?
+4. Why should `auth/` be in `.gitignore`?
+5. When would you prefer an auth fixture over a setup project?
+6. What happens if `auth/customer.json` is missing when a test tries to use it?
+7. What is the primary reason HTTP-only cookies are not captured by `storageState`?
+8. Why is it valuable to keep one UI login test even when all other tests use `storageState`?

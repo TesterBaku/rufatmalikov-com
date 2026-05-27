@@ -1,0 +1,514 @@
+---
+title: "Modul 10: Auth və saxlama vəziyyəti"
+description: "Bir dəfə daxil olun, auth vəziyyətini yüzlərlə test üzrə yenidən istifadə edin. storageState, setup layihəsi, layihə asılılıqları, çoxsaylı rollar, fixtures və API login — hamısını öyrənin."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+Modul 10-a xoş gəldiniz. POM-lar, fixtures, API testləri və CI pipeline-ları qurdunuz. İndi isə real test paketinin ən böyük performans tıxacını — **hər testdən əvvəl sistemə daxil olmağı** aradan qaldırırıq.
+
+Bu modulun sonunda bir dəfə daxil olacaq, brauzerin vəziyyətini diskə saxlayacaq və bütün paket üzrə yenidən istifadə edəcəksiniz — həm vaxt itkisini, həm də login axınlarının gətirdiyi sabitlik problemlərini tamamilə aradan qaldıracaqsınız.
+
+<Video title="Modul 10: Auth və saxlama vəziyyəti" />
+
+---
+
+## Hər testdə login niyə yavaş və qeyri-sabitdir
+
+Çox test dəstləri `beforeEach` bloku ilə başlayır: login səhifəsinə keçid, istifadəçi adı/şifrə doldurma, forma göndərmə. Bu güvənli görünür, amma praktikada iki ciddi problem yaradır.
+
+**Vaxt problemi.** Tipik UI login 1–3 saniyə çəkir. Bunu 50 testlə vurun — paketi işə salmadan əvvəl 2–3 dəqiqəni yalnız loginə sərf edirsiniz. 200 testdə bu yük 10 dəqiqəni keçir.
+
+**Qeyri-sabitlik problemi.** Hər login cəhdi şəbəkəni keçir, forma sahələrini doldurur, yönləndirmələri gözləyir və serverin dar vaxt çərçivəsində cavab verməsindən asılıdır. Bu addımların hər biri müstəqil uğursuz ola bilər. Qeyri-sabit login bir test xətası deyil — amma elə görünür, hər debug sessiyası isə eyni nöqtəyə gəlib çıxır.
+
+Playwright-in təqdim etdiyi həll `storageState`-dir: brauzerin doğrulanmış vəziyyətini bir dəfə əldə edin, JSON faylına yazın, sonrakı hər context-in başlanğıcında həmin faylı yükləyin. Brauzerin artıq login axınından keçdiyini düşünür, çünki autentifikasiyaı sübut edən kukilər və localStorage artıq mövcuddur.
+
+---
+
+## `storageState` konsepsiyası
+
+İstifadəçi brauzer vasitəsilə daxil olduqda server kimlik sübutu geri göndərir — adətən bunlardan biri və ya bir neçəsi:
+
+- `Set-Cookie` cavab başlığı ilə göndərilən **sessiya kuki**
+- `localStorage`-da və ya HTTP-only olmayan kukidə saxlanılan **JWT token**
+- İkisinin birləşməsi
+
+Playwright-in `storageState`-i bu sübutun hamısını iki üst açarlı bir JSON faylına çevirir:
+
+```json
+{
+  "cookies": [
+    {
+      "name": "session",
+      "value": "abc123...",
+      "domain": "localhost",
+      "path": "/"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        { "name": "token", "value": "eyJhbGciOi..." }
+      ]
+    }
+  ]
+}
+```
+
+**Vəziyyəti saxlamaq** uğurlu logindən sonra edilir:
+
+```ts
+await page.context().storageState({ path: 'auth/customer.json' });
+```
+
+Diqqət: çağırış `page`-də deyil, `page.context()`-dədir — `storageState` `BrowserContext` metodudur.
+
+**Vəziyyəti yükləmək** yeni context yaradanda edilir (və ya konfiqurasiya vasitəsilə — bu avtomatik edir):
+
+```ts
+const context = await browser.newContext({
+  storageState: 'auth/customer.json',
+});
+```
+
+Həmin context-də hər hansı səhifə yüklənmədən əvvəl Playwright fayldan kukiləri və localStorage-ı öncədən doldurur. Tətbiq artıq doğrulanmış bir brauzer görür.
+
+**Vacib qeyd.** `storageState` yalnız `document.cookie` vasitəsilə əlçatan kukiLəri və `localStorage`-ı saxlayır. HTTP-only kukiLəri (`HttpOnly` bayrağı ilə) saxlamır. Tətbiqiniz yalnız HTTP-only sessiya kukiLərindən istifadə edirsə, aşağıdakı API login bölməsinə baxın.
+
+---
+
+## Auth vəziyyətini bir dəfə əldə etmək — qlobal quraşdırma və setup layihəsi
+
+Paket işləməsindən əvvəl login əməliyyatını tam olaraq bir dəfə işlətmək üçün iki əsas strategiya var. İkisi də eyni nəticəyə çatır; fərq nə qədər açıq-aydın və CI-dostu olduqlarındadır.
+
+### Strategiya 1: `globalSetup` funksiyası
+
+`playwright.config.ts`-də hər hansı test işçisi başlamazdan əvvəl bir dəfə işləyən bir modul göstərə bilərsiniz:
+
+```ts
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  globalSetup: require.resolve('./global.setup.ts'),
+  use: {
+    storageState: 'auth/customer.json',
+  },
+});
+```
+
+```ts
+// global.setup.ts
+import { chromium } from '@playwright/test';
+
+export default async function globalSetup() {
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+
+  await page.goto('http://localhost:3000/auth/login');
+  await page.fill('#email', 'customer@test.io');
+  await page.fill('#password', 'customer123');
+  await page.click('button[type="submit"]');
+
+  await page.context().storageState({ path: 'auth/customer.json' });
+  await browser.close();
+}
+```
+
+Bu ən sadə formadır. Pakettəki hər test `storageState: 'auth/customer.json'`-ı miras alır və doğrulanmış vəziyyətdə başlayır.
+
+### Strategiya 2: setup layihəsi (tövsiyə olunur)
+
+Setup layihəsi yanaşması xüsusi bir Playwright layihəsi müəyyən edir ki, onun yeganə işi auth setup faylını işlətməkdir. Digər layihələr onu asılılıq kimi elan edir və bitməsini gözləyir.
+
+```ts
+// playwright.config.ts
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  projects: [
+    {
+      name: 'setup',
+      testMatch: /auth\.setup\.ts/,
+    },
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'auth/customer.json',
+      },
+      dependencies: ['setup'],
+    },
+  ],
+});
+```
+
+```ts
+// tests/setup/auth.setup.ts
+import { test as setup, expect } from '@playwright/test';
+
+setup('müştəri kimi doğrula', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.fill('#email', 'customer@test.io');
+  await page.fill('#password', 'customer123');
+  await page.click('button[type="submit"]');
+  await expect(page.locator('.alert-success')).toBeVisible();
+
+  await page.context().storageState({ path: 'auth/customer.json' });
+});
+```
+
+`globalSetup`-dan üstünlükləri:
+
+- Setup testi HTML reporter-da görünür — uğursuz olduqda iz (trace) və skrinşotlara baxa bilərsiniz
+- Asılılıq qrafiki açıq-aydındır: `chromium` yalnız `setup` keçdikdən sonra işləyir
+- Bir neçə layihə eyni setup layihəsindən asılı ola bilər
+
+---
+
+## Auth vəziyyətini testlər üzrə yenidən istifadə etmək
+
+Auth faylı mövcud olduqda və konfiqurasiya vasitəsilə qoşulduqda, testlərinizdə heç bir login kodu lazım deyil:
+
+```ts
+// tests/dashboard.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('hesab linki görünür', async ({ page }) => {
+  await page.goto('/');
+  // Artıq doğrulanmış — login addımı lazım deyil
+  await expect(page.locator('a[href="/account"]')).toBeVisible();
+});
+```
+
+`chromium` layihəsindəki testləri işlədən hər işçi `auth/customer.json`-dan kukilər və localStorage ilə əvvəlcədən yüklənmiş yeni browser context alır. Login səhifəsinə heç vaxt müraciət edilmir.
+
+---
+
+## `setup` layihəsi və layihə asılılıqları nümunəsi
+
+Bir layihə tərifindəki `dependencies` açarı icra sırasını idarə etmək üçün əsasdır:
+
+```ts
+projects: [
+  // Əvvəl işləyir — asılılıq yoxdur
+  { name: 'setup', testMatch: /auth\.setup\.ts/ },
+
+  // Yalnız 'setup' uğurla tamamlandıqdan sonra işləyir
+  {
+    name: 'chromium',
+    use: { storageState: 'auth/customer.json' },
+    dependencies: ['setup'],
+  },
+  {
+    name: 'firefox',
+    use: { storageState: 'auth/customer.json' },
+    dependencies: ['setup'],
+  },
+],
+```
+
+`dependencies`-siz layihələr paralel işləyir. `dependencies` elan edən layihələr, siyahıdakı hər layihə bitib keçənə qədər gözləyir. `setup` layihəsi uğursuz olarsa, asılı layihələr ötürülür — mövcud olmayan auth faylından qaynaqlanan çaşdırıcı uğursuzluqlar görməzsiniz.
+
+**Tək bir test faylı işlədərkən** setup-ı əvvəlcə açıq şəkildə işlətmək lazım ola bilər:
+
+```bash
+npx playwright test --project=setup
+npx playwright test tests/dashboard.spec.ts --project=chromium
+```
+
+Yaxud tam paketi işlədərkən hər ikisini bir əmrdə birləşdirin — Playwright asılılıq sırasına avtomatik hörmət edir:
+
+```bash
+npx playwright test
+```
+
+---
+
+## Çoxsaylı rollar — admin vs istifadəçi saxlama vəziyyətləri
+
+Real tətbiqlərdə müxtəlif icazələrə malik çoxsaylı istifadəçi rolları var. Hər rol öz auth faylına ehtiyac duyur.
+
+```ts
+// tests/setup/auth.setup.ts
+import { test as setup, expect } from '@playwright/test';
+import path from 'path';
+
+const authDir = path.join(process.cwd(), 'auth');
+
+setup('müştəri kimi doğrula', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.fill('#email', 'customer@test.io');
+  await page.fill('#password', 'customer123');
+  await page.click('button[type="submit"]');
+  await expect(page.locator('.alert-success')).toBeVisible();
+  await page.context().storageState({ path: path.join(authDir, 'customer.json') });
+});
+
+setup('admin kimi doğrula', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.fill('#email', 'admin@test.io');
+  await page.fill('#password', 'admin123');
+  await page.click('button[type="submit"]');
+  await expect(page.locator('.alert-success')).toBeVisible();
+  await page.context().storageState({ path: path.join(authDir, 'admin.json') });
+});
+```
+
+Konfiqurasiya sonra hər rolu ayrıca layihəyə bağlayır:
+
+```ts
+projects: [
+  { name: 'setup', testMatch: /auth\.setup\.ts/ },
+  {
+    name: 'chromium',
+    use: { storageState: 'auth/customer.json' },
+    dependencies: ['setup'],
+  },
+  {
+    name: 'admin-chromium',
+    use: { storageState: 'auth/admin.json' },
+    dependencies: ['setup'],
+  },
+],
+```
+
+Müştəri xüsusiyyətlərinin testləri `chromium` layihəsi altında; admin xüsusiyyətlərinin testləri isə `admin-chromium` altında işləyir. İkisi də tək bir setup işindən istifadə edir.
+
+---
+
+## Fixtures vasitəsilə test başına auth
+
+Setup layihəsi yanaşması bütün layihə üçün auth vəziyyəti təyin edir. Bəzən fərdi testlərin eyni test faylında rolları dəyişdirməsi lazım olur. Bir fixture bunu səliqəli şəkildə həll edir:
+
+```ts
+// fixtures/auth.fixture.ts
+import { test as base } from '@playwright/test';
+import type { Page } from '@playwright/test';
+
+type AuthFixtures = {
+  customerPage: Page;
+  adminPage: Page;
+};
+
+export const test = base.extend<AuthFixtures>({
+  customerPage: async ({ browser }, use) => {
+    const context = await browser.newContext({
+      storageState: 'auth/customer.json',
+    });
+    const page = await context.newPage();
+    await use(page);
+    await context.close();
+  },
+
+  adminPage: async ({ browser }, use) => {
+    const context = await browser.newContext({
+      storageState: 'auth/admin.json',
+    });
+    const page = await context.newPage();
+    await use(page);
+    await context.close();
+  },
+});
+```
+
+Testdə istifadəsi:
+
+```ts
+import { test } from '../fixtures/auth.fixture';
+import { expect } from '@playwright/test';
+
+test('admin idarəetmə panelini görə bilir', async ({ adminPage }) => {
+  await adminPage.goto('/admin');
+  await expect(adminPage.locator('h1')).toContainText('Admin');
+});
+
+test('müştəri admin panelinə çata bilmir', async ({ customerPage }) => {
+  await customerPage.goto('/admin');
+  await expect(customerPage).toHaveURL(/\/unauthorized|\/login/);
+});
+```
+
+Fixture yanaşması setup layihəsinin görünürlüyünü (izlər ayrı bir layihə fazası əvəzinə test başına görünür) test başına çevikliyi ilə əvəz edir.
+
+**Hansını nə vaxt istifadə etməli:**
+
+| Narahatlıq | Setup layihəsi | Auth fixture |
+|---|---|---|
+| Ən yaxşı olduğu yer | CI, böyük paketlər | Lokal inkişaf, rol dəyişdirən testlər |
+| Konfiqurasiya dəyişikliyi lazımdır | Bəli | Xeyr |
+| HTML reporter-da görünür | Bəli (öz fazası) | Bəli (test başına) |
+| Çox rollara dəstək | Rol başına bir layihə | Rol başına bir fixture |
+| İcra sırası zəmanəti | `dependencies` vasitəsilə açıq | Tənbəl (ilk test istifadəsində) |
+
+---
+
+## API login vasitəsilə token və kuki əsaslı auth
+
+UI login rahatdır amma yavaşdır (~1–3 saniyə). Tətbiqiniz bir login API endpoint-i açıqlayırsa, brauzer formasını tamamilə keçə və ~200 ms-də proqramatik olaraq daxil ola bilərsiniz.
+
+```ts
+// tests/setup/auth.api.setup.ts
+import { test as setup, expect } from '@playwright/test';
+
+setup('API vasitəsilə doğrula', async ({ request, browser }) => {
+  // 1. Auth endpoint-ə etimadnamələri POST et
+  const response = await request.post('http://localhost:3000/api/auth/login', {
+    data: {
+      email: 'customer@test.io',
+      password: 'customer123',
+    },
+  });
+  expect(response.ok()).toBeTruthy();
+
+  const { token } = await response.json();
+
+  // 2. Tokeni browser context-ə kuki kimi inject et
+  const context = await browser.newContext();
+  await context.addCookies([{
+    name: 'token',
+    value: token,
+    domain: 'localhost',
+    path: '/',
+    httpOnly: false,
+    sameSite: 'Lax',
+  }]);
+
+  // 3. Vəziyyəti UI login-dəki kimi saxla
+  await context.storageState({ path: 'auth/customer.json' });
+  await context.close();
+});
+```
+
+Nəticə `auth/customer.json` UI login-lə eyni strukturdadır. Aşağı axın testlərinin hamısı təsirsiz qalır.
+
+**API login-in uyğun olduğu hallar:**
+- Setup müddətinin CI-da ölçülə biləcəyi yüksək həcmli quraşdırmalar
+- Uzun, çox addımlı UI login axınlarına malik tətbiqlər
+- Login formasının qəsdən yavaş olduğu mühitlər (sürət məhdudlaşdırması, staging-də CAPTCHA-lar)
+
+**UI login-i qorumaq lazım olan hallar:**
+- Birbaşa API endpoint-i olmayan SSO, OAuth2 və ya çox faktorlu auth axınları
+- Real login UI-nin yoxlanılması modulun test əhatəsi tələbinin bir hissəsi olduqda
+
+<Practice missions={["login-with-validation"]} locale="az" />
+
+---
+
+## Təhlükəsizlik — real etimadnamələri commit etməyin
+
+Auth vəziyyəti faylları canlı autentifikasiya tokenləri ehtiva edir. Onlara şifrə kimi yanaşın.
+
+**`auth/` qovluğunu `.gitignore`-a əlavə edin:**
+
+```
+# .gitignore
+auth/
+```
+
+**Etimadnamələr üçün `.env` istifadə edin, onları heç vaxt kodda yazmayın:**
+
+```ts
+// .env
+CUSTOMER_EMAIL=customer@test.io
+CUSTOMER_PASSWORD=customer123
+```
+
+```ts
+// auth.setup.ts
+import 'dotenv/config';
+
+setup('müştəri kimi doğrula', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.fill('#email', process.env.CUSTOMER_EMAIL!);
+  await page.fill('#password', process.env.CUSTOMER_PASSWORD!);
+  // ...
+});
+```
+
+**CI-da** etimadnamələri provayderinizin şifrəli mühit dəyişənlərində (GitHub Actions Secrets, GitLab CI/CD Variables və s.) təyin edin və setup layihəsinin hər pipeline işinin başında təzə auth faylları yaratmasına icazə verin. `auth/*.json`-ı heç vaxt repoya commit etməyin.
+
+---
+
+## Tapşırıqlar
+
+Bu tapşırıqlar bu modulun iş vərəqəsindəki tapşırıqlara uyğundur. Onları BrauzerLab-dakı təlim tətbiqi üzərində həll edin.
+
+### Tapşırıq 1 — Müştəri auth vəziyyəti yaradın
+
+`tests/starter/setup/auth.setup.ts` yazın. Setup testi aşağıdakıları etməlidir:
+
+1. `/auth/login`-ə keçin
+2. `#email`-i `customer@test.io`, `#password`-u `customer123` ilə doldurun
+3. `button[type="submit"]`-a klikləyin
+4. `.alert-success`-in görünür olduğunu iddia edin
+5. `page.context().storageState({ path: 'auth/customer.json' })` çağırın
+
+İşlədin: `npx playwright test tests/starter/setup/auth.setup.ts`
+
+`auth/customer.json`-ın mövcud olduğunu və `cookies` ilə `origins` açarlarını ehtiva etdiyini yoxlayın.
+
+### Tapşırıq 2 — Admin auth vəziyyəti yaradın
+
+Eyni setup faylını `admin@test.io` / `admin123` üçün ikinci bir test ilə genişləndirin. Çıxış yolu: `auth/admin.json`.
+
+İki faylı müqayisə edin — token dəyərləri fərqlidir, çünki server müxtəlif rolları kodlaşdırır.
+
+### Tapşırıq 3 — Konfiqurasiyanı bağlayın
+
+`tests/starter/playwright.config.ts`-i yeniləyin:
+
+- `testMatch: /auth\.setup\.ts/` ilə `setup` layihəsi əlavə edin
+- `storageState: 'auth/customer.json'` və `dependencies: ['setup']` ilə `chromium` layihəsi əlavə edin
+- `storageState: 'auth/admin.json'` və `dependencies: ['setup']` ilə `admin-chromium` layihəsi əlavə edin
+
+Tam paketi işlədin: `npx playwright test` — setup əvvəl işləyir, sonra hər iki brauzer layihəsi paralel.
+
+### Tapşırıq 4 — Doğrulanmış testlər yazın (login kodu yoxdur)
+
+`tests/starter/tests/dashboard.spec.ts` yaradın:
+
+```ts
+import { test, expect } from '@playwright/test';
+
+test('auth vəziyyəti yüklənəndən sonra hesab linki görünür', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('a[href="/account"]')).toBeVisible();
+});
+```
+
+`--project=chromium` ilə işlədin. Testinizdə `page.fill('#email', ...)` olmamalıdır.
+
+### Tapşırıq 5 — Bir UI login testi saxlayın
+
+`storageState` olmadan tam brauzer login-i həyata keçirən `tests/starter/tests/login.spec.ts`-i qoruyun. Bu test sizi login formasındakı səssiz pozulmalardan qoruyur:
+
+```ts
+test('login axını uçdan-uca işləyir', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.fill('#email', 'customer@test.io');
+  await page.fill('#password', 'customer123');
+  await page.click('button[type="submit"]');
+  await expect(page.locator('.alert-success')).toBeVisible();
+});
+```
+
+### Çətin tapşırıq — API login
+
+`auth.setup.ts`-dəki UI login-i `/api/auth/login`-ə API POST ilə əvəzləyin. Vaxt fərqini ölçün. Nəticə `auth/customer.json`-ın eyni strukturda olduğunu yoxlayın.
+
+### Öz-özünü yoxlama sualları
+
+1. `context.storageState({ path })` diskə nəyi əslində saxlayır?
+2. Auth üçün `globalSetup` istifadəsi ilə setup layihəsi arasındakı fərq nədir?
+3. `dependencies: ['setup']` nəyi önləyir?
+4. Niyə `auth/` qovluğu `.gitignore`-da olmalıdır?
+5. Setup layihəsi əvəzinə auth fixture-i nə vaxt üstün tutarsınız?
+6. Bir test onu istifadə etməyə çalışanda `auth/customer.json` mövcud deyilsə nə olur?
+7. HTTP-only kukilərinin `storageState` tərəfindən əldə edilməməsinin əsas səbəbi nədir?
+8. Bütün digər testlər `storageState` istifadə etsə belə bir UI login testini saxlamaq niyə dəyərlidir?
