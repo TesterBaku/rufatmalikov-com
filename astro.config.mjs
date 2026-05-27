@@ -52,7 +52,7 @@ export default defineConfig({
 					items: [{ autogenerate: { directory: 'course' } }],
 				},
 				{
-					label: 'Playwright',
+					label: 'BrauzerLab',
 					items: [{ autogenerate: { directory: 'playwright' } }],
 				},
 				{
