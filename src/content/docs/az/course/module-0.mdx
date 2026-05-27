@@ -7,6 +7,7 @@ sidebar:
 ---
 
 import Video from '../../../../components/course/Video.astro';
+import { Steps } from '@astrojs/starlight/components';
 
 # Modul 0: Kurs xəritəsi və quraşdırma
 
@@ -53,37 +54,44 @@ Keçid zamanı yadda saxlayın:
 
 ---
 
-## Node LTS, VS Code, Git və brauzerlərin quraşdırılması
+## Node, VS Code və Git-in quraşdırılması
 
-Başlamaq üçün bu alətlər lazımdır:
+Bu üç aləti quraşdıracağıq. Hər addım aşağıdakı videoda da göstərilir — addımın yanındakı vaxt nişanına klikləyərək birbaşa həmin hissəyə keçə bilərsiniz.
 
-### Node.js (LTS versiyası)
+<Video />
 
-[nodejs.org](https://nodejs.org) saytından **LTS** versiyasını yükləyin. Quraşdırmadan sonra yoxlayın:
+<Steps>
 
-```bash
-node --version   # v20.x.x və ya daha yüksək
-npm --version    # v10.x.x və ya daha yüksək
-```
+1. **Node.js — LTS versiyası.** [nodejs.org](https://nodejs.org) saytına keçin və **LTS** versiyasını yükləyin (Current yox). Quraşdırıcıda bütün addımlarda standart seçimləri saxlayın. Sonra terminalda yoxlayın:
 
-### VS Code
+   ```bash
+   node --version   # v20.x.x və ya daha yüksək
+   npm --version    # v10.x.x və ya daha yüksək
+   ```
 
-[code.visualstudio.com](https://code.visualstudio.com) saytından yükləyin. Tövsiyə olunan əlavələr:
+   🎬 Videoda: _tezliklə əlavə olunacaq_
 
-- **Playwright Test for VSCode** — testləri redaktordən birbaşa işlətmək üçün
-- **ESLint** — kod keyfiyyəti üçün
+2. **VS Code.** [code.visualstudio.com](https://code.visualstudio.com) saytından Stable versiyasını yükləyin. Quraşdırdıqdan sonra bu əlavələri qurun: **Playwright Test for VSCode** (testləri redaktordan birbaşa işlətmək üçün) və **ESLint** (kod keyfiyyəti üçün).
 
-### Git
+   🎬 Videoda: _tezliklə əlavə olunacaq_
 
-[git-scm.com](https://git-scm.com) saytından yükləyin. Yoxlayın:
+3. **Git.** [git-scm.com](https://git-scm.com) saytından yükləyin və quraşdırmada standart seçimləri qəbul edin. Sonra yoxlayın:
 
-```bash
-git --version
-```
+   ```bash
+   git --version
+   ```
 
-### Brauzerlər
+   🎬 Videoda: _tezliklə əlavə olunacaq_
 
-Playwright öz brauzer versiyalarını ayrıca quraşdırır (növbəti addımda görəcəksiniz). Sistem brauzerləri ilə qarışıq salmayın.
+</Steps>
+
+:::note[Əməliyyat sistemi üzrə qeydlər]
+- **Windows:** `.exe` quraşdırıcılarını ikiqat klikləyin və standart addımları izləyin; yoxlama əmrlərini PowerShell-də işlədin.
+- **macOS:** `.pkg` quraşdırıcılarından (Homebrew bilirsinizsə: `brew install node git`) istifadə edin.
+- **Linux:** paket menecerindən (`apt`, `dnf` və s.) və ya rəsmi saytlardan istifadə edin.
+:::
+
+Brauzerlərə gəlincə: Playwright onları özü ayrıca quraşdırır (növbəti addımda) — sistem brauzerləri ilə qarışdırmayın.
 
 ---
 
