@@ -1,0 +1,652 @@
+---
+title: "Modul 7: Page Object Model (POM)"
+description: "Xam testlər niyə çətin saxlanılır, Page Object Model-in bunu necə həll etdiyi — hər səhifə üçün bir sinif, xassə kimi lokatorlar, əməliyyat metodları, ortaq BasePage, page-manager nümunəsi, parametrli metodlar, faker ilə test datası və həddən artıq mürəkkəbləşdirməkdən necə qaçmaq."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+Yüzlərlə mükəmməl işləyən test yaza bilərsiniz — sonra bir developer bir CSS selektoru dəyişdirir və yarısı sınır. Page Object Model (POM) bunu əngəlləyən arxitektura nümunəsidir. Bu modul sizi xam, kövrək testlərdən hər selektorun tam olaraq bir yerdə yaşadığı strukturlu frameworkə aparır.
+
+<Video title="Modul 7: Page Object Model (POM)" />
+
+---
+
+## Xam testlər niyə saxlanması çətin olur
+
+Login axını üçün tipik bir Playwright testi belə görünür:
+
+```typescript
+test('müştəri daxil ola bilər', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.fill('#email', 'customer@test.io');
+  await page.fill('#password', 'customer123');
+  await page.click('#login-btn');
+  await expect(page.locator('.flash-success')).toBeVisible();
+});
+```
+
+Bir test üçün bu yaxşı görünür. İndi müştəri olaraq giriş edən 30 test təsəvvür edin. Onların hər biri `page.fill('#email', ...)` çağırır. Developer `#email`-i `#login-email`-ə dəyişdirdikdə 30 fayl yeniləyirsiniz.
+
+Geniş miqyaslı xam testlərlə əsas problemlər:
+
+| Problem | Nəticə |
+|---------|--------|
+| Selektorlar çox sayda faylda təkrarlanır | Bir DOM dəyişikliyi çox sayda testi sındırır |
+| Aşağı səviyyəli Playwright çağırışları hər yerdə dağınıqdır | Testlər oxunmur — *necə* deyir, *nə* yox |
+| Paylaşılan naviqasiya köməkçiləri yoxdur | Hər test eyni `goto` nümunəsini yenidən icad edir |
+| Assertionlar və setup nəhəng bir testdə qarışır | Testin əslində nəyi yoxladığını başa düşmək çətindir |
+
+Page Object Model hamısını həll edir.
+
+---
+
+## İlk page object
+
+Page object tətbiqinizin bir səhifəsini (ya da komponentini) təmsil edən bir TypeScript sinifidir. Həmin səhifə üçün lokatorlara sahib olur və üzərindəki əməliyyatları yerinə yetirən metodları açıqlayır.
+
+```typescript
+// pages/LoginPage.ts
+import { Page, Locator } from '@playwright/test';
+
+export class LoginPage {
+  readonly page: Page;
+  readonly emailInput: Locator;
+  readonly passwordInput: Locator;
+  readonly loginButton: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.emailInput = page.locator('#email');
+    this.passwordInput = page.locator('#password');
+    this.loginButton = page.locator('#login-btn');
+  }
+
+  async goto() {
+    await this.page.goto('/auth/login');
+  }
+
+  async login(email: string, password: string) {
+    await this.emailInput.fill(email);
+    await this.passwordInput.fill(password);
+    await this.loginButton.click();
+  }
+}
+```
+
+Onu istifadə edən test belə görünür:
+
+```typescript
+import { test, expect } from '@playwright/test';
+import { LoginPage } from '../pages/LoginPage';
+
+test('müştəri daxil ola bilər', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.goto();
+  await loginPage.login('customer@test.io', 'customer123');
+  await expect(page.locator('.flash-success')).toBeVisible();
+});
+```
+
+Test indi **nə** etdiyini deyir, **necə** yox. `loginPage.login(email, parol)` bir cümə kimi oxunur.
+
+---
+
+## Page object içindəki lokatorlar
+
+Lokatorları konstruktorda `readonly` sinif xassələri kimi müəyyən edin. Bu hər selektor üçün tək həqiqət mənbəyi verir.
+
+```typescript
+export class ProductsPage {
+  readonly page: Page;
+  readonly searchInput: Locator;
+  readonly categoryFilter: Locator;
+  readonly sortSelect: Locator;
+  readonly productCards: Locator;
+  readonly applyFiltersButton: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.searchInput = page.locator('#search');
+    this.categoryFilter = page.locator('#category-filter');
+    this.sortSelect = page.locator('#sort-select');
+    this.productCards = page.locator('.product-card');
+    this.applyFiltersButton = page.locator('#apply-filters');
+  }
+}
+```
+
+**Page object içindəki lokatorlar üçün qaydalar:**
+
+1. Onları metodların içində deyil, konstruktorda müəyyən edin — bu şəkildə görünür və yenidən istifadə edilə bilir.
+2. Sinifin xaricindəki heç bir şeyin təsadüfən onları yenidən təyin edə bilməməsi üçün `readonly` istifadə edin.
+3. Sabit selektorlara üstünlük verin: dizaynçıların tez-tez dəyişdirdiyi CSS sinifləri əvəzinə `data-testid`, ARIA rolları və ID-lər.
+4. Metodların içindəki lokatorlar yaratmayın (`async someMethod()` içindəki `page.locator(...)`). Bu məqsədi pozur.
+
+---
+
+## Əməliyyat metodları
+
+Əməliyyat metodları istifadəçinin səhifədə atdığı addımları kapsülləyir. Konstruktorda müəyyən edilmiş lokatorları çağırır və heç nə qaytarmır (ya da növbəti addımla əlaqəli bir dəyər qaytarır).
+
+```typescript
+export class ProductsPage {
+  // ... (yuxarıdakı kimi konstruktorda lokatorlar)
+
+  async goto() {
+    await this.page.goto('/products');
+  }
+
+  async searchFor(term: string) {
+    await this.searchInput.fill(term);
+    await this.applyFiltersButton.click();
+  }
+
+  async filterByCategory(category: string) {
+    await this.categoryFilter.selectOption(category);
+    await this.applyFiltersButton.click();
+  }
+
+  async getDisplayedProductNames(): Promise<string[]> {
+    return this.productCards.allTextContents();
+  }
+}
+```
+
+Test daha sonra təbii oxunur:
+
+```typescript
+test('axtarış uyğun məhsulları qaytarır', async ({ page }) => {
+  const productsPage = new ProductsPage(page);
+  await productsPage.goto();
+  await productsPage.searchFor('Siçan');
+
+  const adlar = await productsPage.getDisplayedProductNames();
+  expect(adlar.some(ad => ad.toLowerCase().includes('siçan'))).toBe(true);
+});
+```
+
+---
+
+## Assertionları testlərdə saxlamaq, POM-da deyil
+
+Bu POM dizaynının ən vacib qaydası.
+
+**Yanlış — page object içindəki assertion:**
+
+```typescript
+// pages/LoginPage.ts — BUNU ETMƏYİN
+async login(email: string, password: string) {
+  await this.emailInput.fill(email);
+  await this.passwordInput.fill(password);
+  await this.loginButton.click();
+  // ❌ Bu assertion page object-də deyil, testdə olmalıdır
+  await expect(this.page.locator('.flash-success')).toBeVisible();
+}
+```
+
+**Doğru — testdəki assertion:**
+
+```typescript
+// pages/LoginPage.ts
+async login(email: string, password: string) {
+  await this.emailInput.fill(email);
+  await this.passwordInput.fill(password);
+  await this.loginButton.click();
+  // ✅ Assertion yoxdur — metod yalnız əməliyyatı yerinə yetirir
+}
+
+// tests/auth.spec.ts
+test('uğurlu giriş flash mesajı göstərir', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.goto();
+  await loginPage.login('customer@test.io', 'customer123');
+  // ✅ Assertion burada yaşayır
+  await expect(page.locator('.flash-success')).toBeVisible();
+});
+```
+
+**Bu niyə vacibdir:**
+
+- Flash mesajı ilə maraqlanmayan testlərdə `login()` çağıra bilərsiniz — onlara yalnız giriş edilmiş vəziyyət lazımdır.
+- Assertion POM-dadırsa, `login()` çağıran hər test flash mesajını yoxlayır, hətta bu testin əsas məqsədi olmasa belə.
+- POM-da uğursuz olan testlər çaşdırıcı xəta mesajları verir, çünki uğursuzluq page object içindəki kodda görünür, testdə deyil.
+
+Qayda: **Page object-lər əməliyyat edir. Testlər assertion edir.**
+
+---
+
+## Parametrli metodlar
+
+Eyni əməliyyat testlər boyunca müxtəlif giriş dəyərləri ilə çağırıldıqda, metod dəyərləri kodlaşdırmaq əvəzinə parametrləri qəbul etməlidir.
+
+```typescript
+export class CheckoutPage {
+  readonly page: Page;
+  readonly nameInput: Locator;
+  readonly addressInput: Locator;
+  readonly cityInput: Locator;
+  readonly zipInput: Locator;
+  readonly placeOrderButton: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.nameInput = page.locator('#shipping_name');
+    this.addressInput = page.locator('#shipping_address');
+    this.cityInput = page.locator('#shipping_city');
+    this.zipInput = page.locator('#shipping_zip');
+    this.placeOrderButton = page.locator('#place-order');
+  }
+
+  async goto() {
+    await this.page.goto('/checkout');
+  }
+
+  async fillShippingDetails(details: {
+    name: string;
+    address: string;
+    city: string;
+    zip: string;
+  }) {
+    await this.nameInput.fill(details.name);
+    await this.addressInput.fill(details.address);
+    await this.cityInput.fill(details.city);
+    await this.zipInput.fill(details.zip);
+  }
+
+  async placeOrder() {
+    await this.placeOrderButton.click();
+  }
+}
+```
+
+Dörd ayrı arqument əvəzinə obyekt parametri (`details: { name, address, city, zip }`) istifadəsi çağırış məntəqələrini oxuna bilən edir:
+
+```typescript
+await checkoutPage.fillShippingDetails({
+  name: 'Əli Hüseynov',
+  address: 'Nizami küçəsi 123',
+  city: 'Bakı',
+  zip: '1000',
+});
+```
+
+---
+
+## Ortaq base page
+
+Bir neçə page object selaktor paylaşdıqda (naviqasiya paneli, flash mesajı, yükləmə spinneri), onları bütün səhifə siniflərin uzatdığı `BasePage`-ə çıxarın.
+
+```typescript
+// pages/BasePage.ts
+import { Page, Locator } from '@playwright/test';
+
+export class BasePage {
+  readonly page: Page;
+  readonly flashSuccess: Locator;
+  readonly flashError: Locator;
+  readonly loadingSpinner: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.flashSuccess = page.locator('.alert.alert-success');
+    this.flashError = page.locator('.alert.alert-error');
+    this.loadingSpinner = page.locator('.spinner');
+  }
+
+  async navigate(path: string) {
+    await this.page.goto(path);
+  }
+
+  async waitForFlashMessage(type: 'success' | 'error') {
+    const locator = type === 'success' ? this.flashSuccess : this.flashError;
+    await locator.waitFor({ state: 'visible' });
+  }
+}
+```
+
+İndi hər səhifə sinifi `BasePage`-i uzatır:
+
+```typescript
+// pages/LoginPage.ts
+import { Page, Locator } from '@playwright/test';
+import { BasePage } from './BasePage';
+
+export class LoginPage extends BasePage {
+  readonly emailInput: Locator;
+  readonly passwordInput: Locator;
+  readonly loginButton: Locator;
+
+  constructor(page: Page) {
+    super(page); // page-i BasePage-ə ötürür
+    this.emailInput = page.locator('#email');
+    this.passwordInput = page.locator('#password');
+    this.loginButton = page.locator('#login-btn');
+  }
+
+  async goto() {
+    await this.navigate('/auth/login'); // BasePage-dən miras alınıb
+  }
+
+  async login(email: string, password: string) {
+    await this.emailInput.fill(email);
+    await this.passwordInput.fill(password);
+    await this.loginButton.click();
+  }
+}
+```
+
+Test indi `.alert.alert-success`-i heç bir yerdə təkrarlamadan `loginPage.flashSuccess`-i birbaşa istifadə edə bilər:
+
+```typescript
+test('uğurlu giriş flash mesajı göstərir', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.goto();
+  await loginPage.login('customer@test.io', 'customer123');
+  await expect(loginPage.flashSuccess).toBeVisible(); // BasePage-dən
+});
+```
+
+---
+
+## Naviqasiya səhifəsi
+
+Naviqasiya page object tətbiqin üst səviyyə naviqasiya panelini sarır. Hər testdən tətbiqin istənilən sahəsinə keçmək üçün qısa yollar təmin edir.
+
+```typescript
+// pages/NavPage.ts
+import { Page, Locator } from '@playwright/test';
+import { BasePage } from './BasePage';
+
+export class NavPage extends BasePage {
+  readonly cartLink: Locator;
+  readonly productsLink: Locator;
+  readonly accountLink: Locator;
+  readonly logoutLink: Locator;
+  readonly cartBadge: Locator;
+
+  constructor(page: Page) {
+    super(page);
+    this.cartLink = page.locator('nav a[href="/cart"]');
+    this.productsLink = page.locator('nav a[href="/products"]');
+    this.accountLink = page.locator('nav a[href="/account"]');
+    this.logoutLink = page.locator('nav a[href="/logout"]');
+    this.cartBadge = page.locator('.cart-count');
+  }
+
+  async goToCart() {
+    await this.cartLink.click();
+  }
+
+  async goToProducts() {
+    await this.productsLink.click();
+  }
+
+  async logout() {
+    await this.logoutLink.click();
+  }
+
+  async getCartCount(): Promise<number> {
+    const text = await this.cartBadge.textContent();
+    return parseInt(text ?? '0', 10);
+  }
+}
+```
+
+---
+
+## Page-manager nümunəsi
+
+Səhifə siniflərinin sayı artdıqca, bir neçə səhifəyə ehtiyac duyan testlər obyekt konstruksiyası ilə qısa müddətdə dolaşıqlı hala gəlir:
+
+```typescript
+// Tez dağınıq olur
+const loginPage = new LoginPage(page);
+const productsPage = new ProductsPage(page);
+const cartPage = new CartPage(page);
+const checkoutPage = new CheckoutPage(page);
+const navPage = new NavPage(page);
+```
+
+**Page manager** nümunəsi bütün page object-ləri bir yerdə yaradaraq bunu həll edir:
+
+```typescript
+// pages/PageManager.ts
+import { Page } from '@playwright/test';
+import { LoginPage } from './LoginPage';
+import { ProductsPage } from './ProductsPage';
+import { CartPage } from './CartPage';
+import { CheckoutPage } from './CheckoutPage';
+import { NavPage } from './NavPage';
+
+export class PageManager {
+  readonly loginPage: LoginPage;
+  readonly productsPage: ProductsPage;
+  readonly cartPage: CartPage;
+  readonly checkoutPage: CheckoutPage;
+  readonly navPage: NavPage;
+
+  constructor(page: Page) {
+    this.loginPage = new LoginPage(page);
+    this.productsPage = new ProductsPage(page);
+    this.cartPage = new CartPage(page);
+    this.checkoutPage = new CheckoutPage(page);
+    this.navPage = new NavPage(page);
+  }
+}
+```
+
+Testlər təmiz və ardıcıl olur:
+
+```typescript
+test('tam ödəniş axışı', async ({ page }) => {
+  const pm = new PageManager(page);
+
+  await pm.loginPage.goto();
+  await pm.loginPage.login('customer@test.io', 'customer123');
+
+  await pm.productsPage.goto();
+  await pm.productsPage.searchFor('Noutbuk');
+
+  await pm.navPage.goToCart();
+  await pm.checkoutPage.fillShippingDetails({
+    name: 'Əli Hüseynov',
+    address: 'Nizami küçəsi 123',
+    city: 'Bakı',
+    zip: '1000',
+  });
+  await pm.checkoutPage.placeOrder();
+
+  await expect(page).toHaveURL('/order-confirmation');
+});
+```
+
+---
+
+## Faker ilə test datası
+
+Kodlaşdırılmış stringlər (`'Əli Hüseynov'`, `'Nizami küçəsi 123'`) test işlədilmələri arasında yanlış asılılıq yaradır. `@faker-js/faker` kitabxanası hər işlədilmədə real görünüşlü təsadüfi data yaradır.
+
+```bash
+npm install --save-dev @faker-js/faker
+```
+
+```typescript
+import { faker } from '@faker-js/faker';
+
+test('təsadüfi çatdırılma məlumatları ilə ödəniş', async ({ page }) => {
+  const pm = new PageManager(page);
+
+  await pm.loginPage.goto();
+  await pm.loginPage.login('customer@test.io', 'customer123');
+
+  await pm.productsPage.goto();
+
+  await pm.navPage.goToCart();
+  await pm.checkoutPage.fillShippingDetails({
+    name: faker.person.fullName(),
+    address: faker.location.streetAddress(),
+    city: faker.location.city(),
+    zip: faker.location.zipCode(),
+  });
+  await pm.checkoutPage.placeOrder();
+
+  await expect(page).toHaveURL('/order-confirmation');
+});
+```
+
+Bu testlerin heç vaxt xüsusi string dəyərlərinə təsadüfən güvənməməsini təmin edir və sabit stringlərin qaçıracağı kənar halları (apostroflu adlar, uzun poçt kodları, ünvanlardakı unicode simvollar) tutur.
+
+---
+
+## Həddən artıq mühəndislikdən qaçmaq
+
+POM özlüyündə bir məqsəd deyil, bir vasitədir. Ümumi həddən artıq mühəndislik tələlər:
+
+**Hər kiçik komponent üçün page object yaratmayın.** Yalnız bir testdə görünən modal dialoq üçün öz sinfinə ehtiyac yoxdur. İki lokator inline qoyun.
+
+**Zəncirləmə üçün metodların `this` qaytarmasını etməyin**, yalnız komandanız ardıcıl olaraq həmin üslubi üstün tutmursa. Az qazanc üçün mürəkkəblik əlavə edir.
+
+**Page object içinə gözləmə qoymayın.** Bir metod içindəki `await page.waitForTimeout(1000)` test problemini gizlədir. Faktiki zamanlama problemini həll edin ya da düzgün `waitFor` istifadə edin.
+
+**Parametrləri tam soyutlamayın.** `login()` yalnız kodlaşdırılmış bir istifadəçini qəbul edirsə, çevikliyi itirirsiniz. Parametrləri saxlayın.
+
+**Hər alt-komponent üçün bir sinif yaratmadan əvvəl dayanın.** `ProductsPage`-iniz 20 metoda çatırsa, onu xüsusiyyətə görə `ProductSearchPage` və `ProductDetailPage`-ə bölün — amma yalnız həcm faktiki olaraq çaşqınlıq yaratdıqda.
+
+Yaxşı bir qaydə: bir testi page object-i açmadan başa düşmədən bir cümə kimi oxuya bilsəniz, abstraksiya səviyyəsi doğrudur.
+
+---
+
+## Tapşırıqlar
+
+Bu tapşırıqlar yerli TestMarket tətbiqini istifadə edir. `capstone-app/` qovluğunda `npm start` ilə başladın. Testlərinizi `tests/starter/` qovluğundan işlədilir.
+
+---
+
+### Tapşırıq 1: LoginPage qurun
+
+`tests/starter/pages/LoginPage.ts` yaradın:
+
+- Konstruktor `emailInput`, `passwordInput`, `loginButton` lokatorlarını müəyyən edir.
+- `goto()` `/auth/login`-ə keçir.
+- `login(email, password)` formu doldurur və göndərir.
+
+`LoginPage`-i istifadə edərək `customer@test.io` / `customer123` olaraq daxil olan bir test yazın. Flash success mesajının görünən olduğunu **testdə** yoxlayın, page object içində deyil.
+
+---
+
+### Tapşırıq 2: BasePage qurun və refactor edin
+
+`tests/starter/pages/BasePage.ts` yaradın:
+
+- Konstruktor `page`-i saxlayır.
+- `flashSuccess` getter → `.alert.alert-success`
+- `flashError` getter → `.alert.alert-error`
+- `navigate(path)` köməkçi metod.
+- `waitForFlashMessage(type: 'success' | 'error')` köməkçi metod.
+
+`LoginPage`-i `BasePage`-i uzatmaq üçün refactor edin. `goto()`-nu `this.navigate(...)` çağırmaq üçün yeniləyin.
+
+---
+
+### Tapşırıq 3: ProductsPage qurun
+
+`tests/starter/pages/ProductsPage.ts` yaradın:
+
+- Lokatorlar: `searchInput`, `categoryFilter`, `sortSelect`, `productCards`, `applyFiltersButton`.
+- `goto()` → `/products`-a keçir.
+- `searchFor(term)` → axtarış inputunu doldurur və Filtrləri Tətbiq et düyməsini tıklayır.
+- `filterByCategory(category)` → kateqoriyanı seçir və tətbiq edir.
+- `getDisplayedProductNames()` → məhsul kartı başlıqlarının `Promise<string[]>` siyahısını qaytarır.
+
+`'Siçan'` axtaran və nəticələrin adında ən az bir `'siçan'` (hərfə həssas olmayan) olan element olduğunu yoxlayan bir test yazın.
+
+---
+
+### Tapşırıq 4: CartPage qurun
+
+`tests/starter/pages/CartPage.ts` yaradın:
+
+- Lokatorlar: `cartItems`, `removeButtons`, `checkoutButton`, `emptyCartMessage`.
+- `goto()` → `/cart`-a keçir.
+- `getItemCount()` → səbətdəki elementlərin sayını qaytarır.
+- `removeFirstItem()` → ilk sil düyməsini tıklayır.
+- `proceedToCheckout()` → ödəniş düyməsini tıklayır.
+
+Aşağıdakıları edən bir test yazın:
+1. Boş olduqda səbətə keçir.
+2. Boş səbət mesajının göründüyünü yoxlayır.
+
+---
+
+### Tapşırıq 5: CheckoutPage qurun
+
+`tests/starter/pages/CheckoutPage.ts` yaradın:
+
+- Lokatorlar: `nameInput` (`#shipping_name`), `addressInput` (`#shipping_address`), `cityInput` (`#shipping_city`), `zipInput` (`#shipping_zip`), `placeOrderButton`.
+- `fillShippingDetails({ name, address, city, zip })` metodu.
+- `placeOrder()` metodu.
+- `submitEmptyForm()` metodu — heç bir sahəni doldurmadan göndəri tıklayır.
+
+Aşağıdakıları edən bonus bir test yazın:
+1. Müştəri olaraq daxil olun.
+2. Səbətə bir element əlavə edin.
+3. Ödənişə keçin.
+4. Çatdırılma məlumatlarını doldurun (data üçün `faker` istifadə edin).
+5. Sifariş verin.
+6. `/order-confirmation`-a yönlənməni yoxlayın.
+
+---
+
+### Tapşırıq 6: AdminUsersPage qurun
+
+`/admin/users`-dakı admin paneli bütün qeydiyyatdan keçmiş istifadəçiləri siyahılayır. `tests/starter/pages/AdminUsersPage.ts` yaradın:
+
+- Lokatorlar: `userRows`, `deleteButtons`, `searchInput`.
+- `goto()` → `/admin/users`-a keçir.
+- `getUserCount()` → cədvəldəki istifadəçi sıralarının sayını qaytarır.
+- `searchForUser(email)` → axtarış qutusuna yazır.
+- `deleteFirstUser()` → ilk sil düyməsini tıklayır.
+
+`admin@test.io` / `admin123` olaraq daxil olan, admin istifadəçilər səhifəsinə keçən və ən az bir istifadəçi sırasının göründüyünü yoxlayan bir test yazın.
+
+---
+
+### Tapşırıq 7: PageManager-i tətbiq edin
+
+Konstruktorunda `page` qəbul edən və aşağıdakıları açıqlayan `tests/starter/pages/PageManager.ts` yaradın:
+
+- `loginPage`
+- `productsPage`
+- `cartPage`
+- `checkoutPage`
+- `adminUsersPage`
+
+Tapşırıq 1–6-dan gələn testləri `PageManager` istifadə etmək üçün refactor edin. Bütün page object-lərin bir sətirdə qurulmasının (`const pm = new PageManager(page)`) hər testi necə daha təmiz etdiyini yoxlayın.
+
+---
+
+### Tapşırıq 8: DRY audit
+
+Bütün page siniflərinizi nəzərdən keçirin:
+
+- Birdən çox sinifdə hər hansı selektor təkrarlanır? Onları `BasePage`-ə köçürün.
+- Hər hansı köməkçi metodlar təkrarlanır? Onları `BasePage`-ə köçürün.
+- Hər səhifə sinifi `BasePage`-i uzadır?
+- Bütün test faylları `pages/`-dan idxal edir və sıfır xam `page.locator(...)` çağırışından istifadə edir?
+
+Son `pages/` qovluğunuzu `tests/final/pages/`-dakı istinad həlli ilə müqayisə edin.
+
+---
+
+## Əsas nəticələr
+
+1. **Bir sinif, bir səhifə.** Müəyyən bir səhifə üçün bütün selektorlar tam olaraq bir yerdə yaşayır.
+2. **Konstruktorda lokatorlar.** Onları bir dəfə `readonly` xassələr kimi müəyyən edin — metodların içindəki heç vaxt.
+3. **Metodlar əməliyyat edir, testlər assertion edir.** Heç vaxt page object içinə `expect()` qoymayın.
+4. **Paylaşılan vəziyyət üçün `BasePage`.** Nav bağlantıları, flash mesajları və spinnerlər hər səhifədə görünür — onları bir dəfə müəyyən edin.
+5. **Təmiz test faylları üçün `PageManager`.** Bütün page object-ləri bir sətirdə qurun; bir neçə səhifəyə ehtiyac duyan istənilən testə manager-i ötürün.
+6. **Hər şeyi parametrli edin.** Kodlaşdırılmış stringlər test data fayllarına ya da `faker` çağırışlarına aiddir, page object metodlarına deyil.
+7. **Oxunana qədər dayanın.** Bir test artıq bir cümə kimi oxunursa, doğru abstraksiya səviyyəsinə sahipsiniz.
