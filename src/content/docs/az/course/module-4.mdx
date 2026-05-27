@@ -1,0 +1,557 @@
+---
+title: "Modul 4: İddialar"
+description: "Playwright-in tam expect() API-si — veb-first assertion-lar, toBeVisible, toHaveText vs toContainText, toHaveValue, toHaveAttribute, toHaveCount, toBeEnabled/toBeDisabled, mənfi assertion-lar, soft assertion-lar və xüsusi expect vaxt aşımları."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+Səhifə ilə qarşılıqlı əlaqə qurmağı öyrəndiniz. İndi isə hər testin digər yarısından — tətbiqin həqiqətən istədiyinizi etdiyini yoxlamaqdan — danışaq. Bu modul Playwright-in tam `expect()` API-sini əhatə edir və assertion-ları düzgün yazmanın bütöv bir flakey test kateqoriyasını niyə aradan qaldırdığını izah edir.
+
+<Video title="Modul 4: İddialar" />
+
+---
+
+## Veb-first assertion-lar
+
+Playwright assertion-ları **veb-first**-dir: bir dəfə qiymətləndirib uğur ya uğursuzluq bildirmir. DOM-u sıx bir dövrə üzərindən (təxminən hər 50 ms-də bir) sorğulayır və assertion keçənə — ya da vaxt aşımı bitənə qədər yenidən cəhd edir.
+
+Bu tək dizayn qərarı sayəsində assertion-dan əvvəl demək olar ki, heç vaxt açıq gözləmə yazmağa ehtiyac qalmır.
+
+```javascript
+// Element görünənə qədər (ya da vaxt aşımı bitənə qədər) avtomatik yenidən cəhd edir
+await expect(page.locator('.success-banner')).toBeVisible();
+
+// YANLIŞ — bir dəfə qiymətləndirir, yenidən cəhd yoxdur, yavaş səhifələrdə uğursuz olur
+const visible = await page.locator('.success-banner').isVisible();
+expect(visible).toBe(true);
+```
+
+**Qızıl qayda:** `expect()`-ə həmişə bir `Locator` verin, artıq gözlənilmiş dəyər deyil. Birinci forma avtomatik yenidən cəhd edir. İkincisi etmir.
+
+| Şablon | Avtomatik yenidən cəhd? | Bunu istifadə et |
+|--------|:---:|---------|
+| `expect(locator).toBeVisible()` | Bəli | Həmişə |
+| `expect(await locator.isVisible()).toBe(true)` | Xeyr | Heç vaxt |
+| `expect(locator).toHaveText('...')` | Bəli | Həmişə |
+| `expect(await locator.textContent()).toBe('...')` | Xeyr | Heç vaxt |
+
+---
+
+## `toBeVisible`
+
+`toBeVisible()` element DOM-da olduqda **və** görünür olduqda — `display: none`, `visibility: hidden`, `opacity: 0` ilə gizlənmədikdə və ya görüntü sahəsindən kənarda olmadıqda keçir.
+
+```javascript
+// Elementin görünür olduğunu iddia edin
+await expect(page.locator('.welcome-message')).toBeVisible();
+
+// Yükləmə fırlacının yox olduğunu iddia edin
+await expect(page.locator('.spinner')).not.toBeVisible();
+
+// Click etdikdən sonra modalın göstərildiyini iddia edin
+await page.getByRole('button', { name: 'Open Modal' }).click();
+await expect(page.locator('.modal')).toBeVisible();
+```
+
+**`toBeVisible` vs `toBeAttached`:**
+
+- `toBeVisible` — element DOM-dadır **və** ekranda görünür
+- `toBeAttached` — element gizli olsa belə DOM-dadır
+
+React bir komponenti render etdiyini amma gizli ola biləcəyini iddia etmək istədiyinizdə `toBeAttached` istifadə edin. İstifadəçinin həqiqətən görə biləcəyi hər şey üçün `toBeVisible` istifadə edin.
+
+```javascript
+// Varlıq vacibdir amma görünürlük vacib deyil
+await expect(page.locator('[data-testid="lazy-component"]')).toBeAttached();
+
+// İstifadəçi onu görə bilməlidir
+await expect(page.locator('.notification')).toBeVisible();
+```
+
+---
+
+## `toHaveText` vs `toContainText`
+
+Bu, assertion çaşqınlığının ən yaygın mənbəyidir. Yanlışını seçmək real debug vaxtına mal olur.
+
+### `toHaveText` — dəqiq uyğunluq
+
+`toHaveText` elementin tam mətn məzmununun gözlənilən stringlə **dəqiq** uyğunlaşdığını iddia edir (boş yerləri kəsdikdən sonra).
+
+```javascript
+// Yalnız tam mətn "Order Confirmed" olduqda keçir
+await expect(page.locator('h1')).toHaveText('Order Confirmed');
+
+// Regex ilə — tam uyğunluq tələb olunur
+await expect(page.locator('.status-badge')).toHaveText(/Processing/);
+```
+
+**Sizi aldatdığı hal:** Element `"  Order Confirmed  "` (əlavə boş yerlə) saxlayırsa, Playwright boş yeri normallaşdırır, buna görə yenə keçir. Amma element `"Your Order Confirmed"` saxlayırsa, uğursuz olur.
+
+### `toContainText` — alt string uyğunluğu
+
+`toContainText` elementin mətninin gözlənilən stringi içindəki **hər hansı bir yerdə ehtiva etdiyini** iddia edir.
+
+```javascript
+// Mətn "Order" içeriyorsa keçir
+await expect(page.locator('h1')).toContainText('Order');
+
+// Dinamik məzmun üçün çox faydalıdır — ID-lər, tarixlər, istifadəçi adları
+await expect(page.locator('.confirmation')).toContainText('order #');
+
+// Alt string semantikası ilə regex
+await expect(page.locator('.message')).toContainText(/\d+ items/);
+```
+
+### Aralarında seçim
+
+```javascript
+// toHaveText — dəqiq stringi siz idarə edirsiniz
+await expect(page.locator('.cart-empty')).toHaveText('Your cart is empty');
+
+// toContainText — string dinamikdir ya da başqa mətnlə əhatə olunub
+await expect(page.locator('h1')).toContainText('Order'); // "Order #12345" ilə uyğunlaşır
+
+// Dinamik URL-lər üçün regex ilə toHaveURL
+await expect(page).toHaveURL(/\/orders\/\d+/);
+```
+
+**Əsas qayda:** Dəqiq mətn hər hansı bir dinamik şey (ID-lər, zaman damgaları, istifadəçi adları) ehtiva edirsə `toContainText`-ə müraciət edin. Stringi tamamilə siz idarə edirsizsə `toHaveText` istifadə edin.
+
+---
+
+## `toHaveValue`
+
+`toHaveValue` form sahəsinin — `<input>`, `<textarea>` ya da `<select>`-in — hazırkı dəyərini iddia edir.
+
+```javascript
+// Mətn daxiletməsinin dəyərini iddia edin
+await expect(page.locator('#email')).toHaveValue('customer@test.io');
+
+// Textarea-nı iddia edin
+await expect(page.locator('#description')).toHaveValue('Test product description');
+
+// Select dropdown-ının hazırkı seçimini iddia edin
+await expect(page.locator('#category')).toHaveValue('electronics');
+
+// Qismən dəyər uyğunluğu üçün regex istifadə edin
+await expect(page.locator('#search')).toHaveValue(/widget/i);
+```
+
+**Yaygın şablon — doldurun, sonra yoxlayın:**
+
+```javascript
+await page.locator('#shipping_name').fill('Jane Doe');
+await expect(page.locator('#shipping_name')).toHaveValue('Jane Doe');
+
+await page.locator('#category').selectOption('electronics');
+await expect(page.locator('#category')).toHaveValue('electronics');
+```
+
+**Qeyd:** `toHaveValue` DOM-un `value` xassəsini oxuyur, görünən mətni deyil. `<select>` üçün option-ın etiket mətni deyil, `value` atributunu qaytarır.
+
+---
+
+## `toHaveAttribute`
+
+`toHaveAttribute` bir elementin müəyyən bir dəyərə sahib xüsusi bir atribut daşıdığını iddia edir.
+
+```javascript
+// href atributunu iddia edin
+await expect(page.getByRole('link', { name: 'Terms' })).toHaveAttribute(
+  'href',
+  '/terms'
+);
+
+// Data atributunu iddia edin
+await expect(page.locator('.product-card').first()).toHaveAttribute(
+  'data-product-id',
+  '42'
+);
+
+// Əlçatanlıq testi üçün aria atributlarını iddia edin
+await expect(page.getByRole('button', { name: 'Submit' })).toHaveAttribute(
+  'aria-disabled',
+  'true'
+);
+
+// Qismən atribut dəyərləri üçün regex istifadə edin
+await expect(page.locator('img.hero')).toHaveAttribute('src', /\/images\//);
+```
+
+**İpucu:** `toHaveAttribute` xüsusən `disabled`, `aria-label`, `data-testid`, `type` və `href` dəyərlərini iddia etmək üçün faydalıdır.
+
+```javascript
+// Daxiletmədəki type atributunu iddia edin
+await expect(page.locator('#password')).toHaveAttribute('type', 'password');
+
+// "Parolu göstər" toggle-dan sonra
+await page.locator('#show-password').click();
+await expect(page.locator('#password')).toHaveAttribute('type', 'text');
+```
+
+---
+
+## `toHaveCount`
+
+`toHaveCount` bir lokatorla uyğunlaşan elementlərin sayını iddia edir. Bütün veb-first assertion-lar kimi, say uyğunlaşana ya da vaxt aşımı bitənə qədər yenidən cəhd edir.
+
+```javascript
+// Siyahıda tam olaraq 3 element olduğunu iddia edin
+await expect(page.locator('.cart-item')).toHaveCount(3);
+
+// Cədvəlin tam olaraq 5 sətrə sahib olduğunu iddia edin
+await expect(page.locator('.product-table tbody tr')).toHaveCount(5);
+
+// Elementlərin silindiğini iddia edin — say 0-a çatana qədər yenidən cəhd edir
+await expect(page.locator('.cart-item')).toHaveCount(0);
+```
+
+**`toHaveCount(0)` güclüdür.** Hazırda 3 element varsa və `toHaveCount(0)` iddia edirsizsə, Playwright hamısı yox olana qədər yoxlamanı yenidən cəhd edəcək. Bu, silmə axınlarını test etmənin düzgün yoludur.
+
+```javascript
+// 3 element əlavə edin, sonra hamısını silin, sonra təmiz vəziyyəti iddia edin
+await expect(page.locator('.cart-item')).toHaveCount(3);
+
+await page.locator('.remove-all-btn').click();
+
+// Bütün elementlər DOM-dan silinənə qədər yenidən cəhd edir
+await expect(page.locator('.cart-item')).toHaveCount(0);
+await expect(page.locator('.empty-cart-message')).toBeVisible();
+```
+
+**`toHaveCount` vs manual say:**
+
+```javascript
+// OTOMATİK YENİDƏN CƏHD EDIR — elementlər asinxron olaraq göründüyündə bunu istifadə edin
+await expect(page.locator('.search-result')).toHaveCount(5);
+
+// OTOMATİK YENİDƏN CƏHD ETMİR — yalnız sinxron anlıq görüntülər üçün istifadə edin
+const count = await page.locator('.search-result').count();
+expect(count).toBeGreaterThan(0);
+```
+
+---
+
+## `toBeEnabled` və `toBeDisabled`
+
+Bu assertion-lar form kontrolunun interaktiv olub olmadığını yoxlayır. Otomatik yenidən cəhd edirlər — məcburi sahələr doldurulduqdan sonra göndər düyməsinin aktiv hala gəldiyini iddia etmək üçün faydalıdır.
+
+```javascript
+// Göndər düyməsinin aktiv olduğunu iddia edin
+await expect(page.locator('button[type="submit"]')).toBeEnabled();
+
+// Form boş olduqda göndər düyməsinin deaktiv olduğunu iddia edin
+await expect(page.locator('button[type="submit"]')).toBeDisabled();
+```
+
+**Real forma validasiya şablonu:**
+
+```javascript
+// Düymə deaktiv başlayır
+await page.goto('/checkout');
+await expect(page.locator('#place-order-btn')).toBeDisabled();
+
+// Məcburi sahələri doldurun
+await page.locator('#shipping_name').fill('Jane Doe');
+await page.locator('#shipping_address').fill('123 Main St');
+await page.locator('#shipping_city').fill('Portland');
+await page.locator('#shipping_zip').fill('97201');
+
+// Playwright düymə aktiv hala gələnə qədər yenidən cəhd edir
+await expect(page.locator('#place-order-btn')).toBeEnabled();
+```
+
+**`toBeEnabled` vs `not.toBeDisabled`:** Ekvivalentdirlər. Test ssenarinizdə daha natural oxunanı seçin.
+
+```javascript
+// Bu iki sətir eyni şeyi iddia edir
+await expect(page.locator('#submit')).toBeEnabled();
+await expect(page.locator('#submit')).not.toBeDisabled();
+```
+
+---
+
+## Mənfi assertion-lar
+
+İstənilən Playwright assertion-ı `.not` ilə inkar edilə bilər. İnkar edilmiş assertion da otomatik yenidən cəhd edir — şərt **yanlış** olana qədər gözləyir.
+
+```javascript
+// Bir element artıq görünməyənə qədər gözləyin (məsələn, yükləmə fırlacı)
+await expect(page.locator('.loading-spinner')).not.toBeVisible();
+
+// Admin olmayan istifadəçilərin admin kontrollarını görə bilmədiyini iddia edin
+await expect(page.locator('#admin-panel')).not.toBeVisible();
+
+// URL-in admin bölməsinə getmədiyini iddia edin
+await expect(page).not.toHaveURL('/admin');
+
+// Mətni olmadığını iddia edin
+await expect(page.locator('.status')).not.toHaveText('Error');
+
+// Sahənin təmizləndiyini iddia edin
+await expect(page.locator('#search')).not.toHaveValue('old query');
+```
+
+**Giriş kontrolu üçün mənfi assertion-lar:**
+
+```javascript
+test('admin olmayan istifadəçi admin bölməsindən yönləndirilir', async ({ page }) => {
+  // Normal müştəri (admin deyil) kimi daxil olun
+  await page.goto('/admin');
+
+  // Səhifənin yönləndirildiyini iddia edin — URL /admin ehtiva etməməlidir
+  await expect(page).not.toHaveURL(/\/admin/);
+
+  // Admin panel başlığının görünmədiyini iddia edin
+  await expect(page.locator('h1')).not.toHaveText('Admin Dashboard');
+
+  // Bunun əvəzinə xəta xəbərdarlığının görünür olduğunu iddia edin
+  await expect(page.locator('.alert.alert-error')).toBeVisible();
+});
+```
+
+---
+
+## Soft assertion-lar
+
+Defolt olaraq uğursuz bir assertion testi dərhal dayandırır. **Soft assertion-lar** fərqlidir — soft assertion uğursuz olsa belə test davam edir. Bütün uğursuzluqlar toplanır və testin sonunda birlikdə bildirilir.
+
+```javascript
+// Soft assertion-lar — bunlar uğursuz olsa belə test davam edir
+await expect.soft(page.locator('.widget-revenue')).toBeVisible();
+await expect.soft(page.locator('.widget-orders')).toBeVisible();
+await expect.soft(page.locator('.widget-users')).toBeVisible();
+await expect.soft(page.locator('.widget-products')).toBeVisible();
+
+// Testin sonunda Playwright bütün uğursuzluqları bir anda bildirir
+// yuxarıdakılardan biri uğursuz olsa belə
+```
+
+**Soft assertion-lar nə vaxt istifadə edilər:**
+
+- **Panel siqaret testləri** — 10+ vidgeti yoxlamaq və yalnız birincini deyil, bütün uğursuzları görmək istəyirsiniz
+- **Vizual tamlıq yoxlamaları** — bir səhifənin bütün bölümlərinin düzgün render olunduğunu yoxlamaq
+- **Paralel forma validasiyası** — eyni anda bir neçə sahəni yoxlamaq
+
+```javascript
+test('admin panel siqaret testi', async ({ page }) => {
+  await page.goto('/admin');
+
+  // Bütün stat kartlarını yoxlayın — bütün çatışmayanları bir anda bildirin
+  await expect.soft(page.locator('[data-testid="stat-orders"]')).toBeVisible();
+  await expect.soft(page.locator('[data-testid="stat-revenue"]')).toBeVisible();
+  await expect.soft(page.locator('[data-testid="stat-users"]')).toBeVisible();
+  await expect.soft(page.locator('[data-testid="stat-products"]')).toBeVisible();
+
+  // Naviqasiya keçidlərini yoxlayın
+  await expect.soft(page.getByRole('link', { name: 'Products' })).toBeVisible();
+  await expect.soft(page.getByRole('link', { name: 'Orders' })).toBeVisible();
+  await expect.soft(page.getByRole('link', { name: 'Users' })).toBeVisible();
+
+  // İsteğe bağlı: soft uğursuzluqların toplanmadığını iddia edin
+  expect(test.info().errors).toHaveLength(0);
+});
+```
+
+**Diqqət:** Soft assertion-lar güclüdür amma istifadəsi çox asandır. Bir testin 15 soft assertion-ı varsa və 10-u uğursuz olarsa, bildiriş çox qarışıq olur. Onları test strukturu haqqında düşünməmənin bir yolu kimi deyil, siqaret yoxlamaları üçün qəsdən istifadə edin.
+
+---
+
+## Xüsusi `expect` vaxt aşımları
+
+Defolt olaraq, hər veb-first assertion uğursuz olmazdan əvvəl **5 saniyə** gözləyir. Bunu hər assertion üçün ayrıca ya da qlobal olaraq dəyişdirə bilərsiniz.
+
+### Assertion-başına vaxt aşımı
+
+```javascript
+// Bu xüsusi assertion üçün 10 saniyəyə qədər gözləyin
+await expect(page.locator('.slow-component')).toBeVisible({ timeout: 10_000 });
+
+// Qısa vaxt aşımı — element tez görünmürsə sürətlə uğursuz olun
+await expect(page.locator('.instant-feedback')).toBeVisible({ timeout: 1_000 });
+
+// İstənilən assertion-da xüsusi vaxt aşımı
+await expect(page.locator('.report-table')).toHaveCount(50, { timeout: 15_000 });
+```
+
+### `playwright.config.js`-də qlobal vaxt aşımı
+
+```javascript
+// playwright.config.js
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  expect: {
+    timeout: 10_000, // bütün assertion-lar üçün 10 saniyə
+  },
+});
+```
+
+**Xüsusi vaxt aşımı nə vaxt istifadə edilər:**
+
+- Məlum yavaş əməliyyatlar (hesabat yaratma, fayl emalı, email çatdırılması)
+- Yerli geliştirme mühitindən əhəmiyyətli dərəcədə daha yavaş olan CI mühitləri
+- Başlatmaq üçün vaxt tələb edən üçüncü tərəf vidgetləri
+
+**Xüsusi vaxt aşımı nə vaxt istifadə edilməməlidir:** yavaş ya da flakey bir tətbiq üçün plaster kimi. Hər yerə `timeout: 30_000` əlavə edirsinizsə, doğru düzəliş testi deyil, tətbiqin profilini çıxarmaqdır.
+
+---
+
+<Practice missions={['text-vs-contain','have-value','have-attribute','assertions-count','enabled-disabled','negative-assertions']} />
+
+---
+
+## Tapşırıqlar
+
+Bu tapşırıqlar `http://localhost:3000`-də yerli olaraq işləyən TestMarket Lab istifadə edir.
+
+---
+
+### Tapşırıq 1: Səbət vəziyyətini iddia edin
+
+`tests/starter/mod4/cart-assertions.spec.js` yaradın. Veb-first assertion-lardan istifadə edərək hər səbət vəziyyətini iddia edin.
+
+```javascript
+const { test, expect } = require('@playwright/test');
+const CartPage = require('../../pages/CartPage');
+
+test.describe('Səbət İddiaları', () => {
+
+  test('elementləri olan səbət sıfırdan böyük cəm göstərir', async ({ page }) => {
+    const cart = new CartPage(page);
+    await cart.goto();
+
+    await expect(cart.totalAmount).toBeVisible();
+    await expect(cart.cartRows).not.toHaveCount(0);
+    await expect(cart.checkoutButton).toBeEnabled();
+  });
+
+  test('boş səbət boş vəziyyəti göstərir', async ({ page }) => {
+    const cart = new CartPage(page);
+    await cart.goto();
+
+    await expect(cart.emptyCartMessage).toBeVisible();
+    await expect(cart.cartRows).toHaveCount(0);
+    await expect(cart.totalAmount).not.toBeVisible();
+  });
+
+});
+```
+
+**İstinad seçiciləri:**
+- `cartRows` — `.cart-table .table-row`
+- `totalAmount` — `.total-row h3`
+- `emptyCartMessage` — `getByText('Your cart is empty')`
+- `checkoutButton` — `a:has-text("Proceed to Checkout")`
+
+---
+
+### Tapşırıq 2: Ödəniş təsdiqi assertion-ları
+
+Sifariş verdikdən sonra, təsdiq URL-ini və səhifə məzmununu iddia edin.
+
+```javascript
+test('sifariş təsdiqi düzgün URL göstərir', async ({ customerPage }) => {
+  // ... (beforeEach səbətə element əlavə edir və ödənişə keçir)
+  await checkoutPage.fillShippingDetails(TestData.shippingDetails());
+  await checkoutPage.placeOrder();
+
+  // Dinamik sifariş URL-ini regex ilə iddia edin
+  await expect(customerPage).toHaveURL(/\/orders\/\d+/);
+
+  // Başlığın "Order" sözünü ehtiva etdiyini iddia edin
+  await expect(customerPage.locator('h1')).toContainText('Order');
+
+  // Uğur flash mesajının görünür olduğunu iddia edin
+  await expect(customerPage.locator('.alert.alert-success')).toBeVisible();
+});
+
+test('boş forma ödəniş səhifəsindən keçmir', async ({ customerPage }) => {
+  await checkoutPage.submitEmptyForm();
+
+  await expect(customerPage).toHaveURL('/checkout');
+  await expect(customerPage.locator('.alert.alert-error')).toBeVisible();
+});
+```
+
+---
+
+### Tapşırıq 3: Admin cədvəl assertion-ları
+
+```javascript
+test('məhsullar səhifəsi cədvəl sətirləri göstərir', async ({ adminPage }) => {
+  const productsPage = new AdminProductsPage(adminPage);
+  await productsPage.goto();
+
+  await expect(productsPage.productRows).not.toHaveCount(0);
+  await expect(productsPage.newProductBtn).toBeVisible();
+  await expect(adminPage.locator('.alert.alert-success')).not.toBeVisible();
+});
+
+test('admin olmayan istifadəçi admin sahəsinə daxil ola bilmir', async ({ customerPage }) => {
+  await customerPage.goto('/admin');
+
+  await expect(customerPage).not.toHaveURL(/\/admin/);
+  await expect(customerPage.locator('.alert.alert-error')).toBeVisible();
+});
+```
+
+---
+
+### Tapşırıq 4: Sabit gözləmələri assertion-larla əvəz edin
+
+Bu flakey testi refaktor edin — hər `waitForTimeout`-u düzgün veb-first assertion-la əvəz edin:
+
+```javascript
+// ƏVVƏL (flakey)
+test('flakey axtarış testi', async ({ page }) => {
+  await page.goto('/products');
+  await page.waitForTimeout(2000);
+  await page.fill('#search', 'widget');
+  await page.waitForTimeout(1000);
+  await page.click('#search-btn');
+  await page.waitForTimeout(3000);
+  const count = await page.locator('.product-card').count();
+  expect(count).toBeGreaterThan(0);
+  await page.waitForTimeout(1000);
+  expect(page.url()).toContain('?q=widget');
+});
+```
+
+| Yuxuma | Əvəz et |
+|--------|-------------|
+| `waitForTimeout(2000)` | Silin — `fill()` artıq avtomatik gözləyir |
+| `waitForTimeout(1000)` | Silin — `click()` artıq avtomatik gözləyir |
+| `waitForTimeout(3000)` + manual say | `expect(locator).toHaveCount(greaterThan(0))` |
+| `waitForTimeout(1000)` + `page.url()` | `expect(page).toHaveURL(/\?q=widget/)` |
+
+---
+
+## Özünü yoxlama sualları
+
+1. Nə üçün `expect(locator).toBeVisible()` avtomatik yenidən cəhd edir, amma `expect(await locator.isVisible()).toBe(true)` etmir?
+2. `toHaveText` vs `toContainText`-i nə vaxt istifadə edərdiniz? Hər biri üçün bir nümunə verin.
+3. Hazırda 5 uyğun element varsa `toHaveCount(0)` nə edir?
+4. Adi assertion ilə soft assertion (`expect.soft`) arasındakı fərq nədir?
+5. Assertion-başına vaxt aşımını necə təyin edirsiniz? Qlobal defoltunu necə?
+6. Nə üçün `toBeEnabled` forma validasiya testləri üçün faydalıdır?
+7. `toHaveAttribute('href', '/terms')` nəyi iddia edir?
+8. Nə üçün `expect(page.url()).toContain('/admin')` `expect(page).toHaveURL('/admin')`-dən daha pisdir?
+
+---
+
+## Əsas nəticələr
+
+Hər testə apardığınız dörd qayda:
+
+1. **`expect()`-ə həmişə `Locator` verin** — gözlənilmiş dəyər deyil. `expect(locator).toBeVisible()` yenidən cəhd edir; `expect(await locator.isVisible()).toBe(true)` etmir.
+2. **Dinamik məzmun üçün `toContainText`, dəqiq stringlər üçün `toHaveText`** — şübhə etdikdə `toContainText`-i üstün tutun
+3. **`toHaveCount` element siyahılarında yenidən cəhd edir** — elementlər asinxron olaraq göründüyündə `count()`-dan əvəz istifadə edin
+4. **Siqaret testləri üçün soft assertion-lar, axın testləri üçün hard assertion-lar** — səhifə səviyyəsindəki yoxlamada bütün uğursuzluqları toplayın; kritik yol testlərində sürətlə uğursuz olun
+
+Modul 5 avtomatik gözləməni əhatə edir — Playwright-in daxili əməliyyat yoxlamalarının açıq gözləmələri necə aradan qaldırdığını və onlar kifayət etmədikdə nə edəcəyinizi öyrənəcəksiniz.
