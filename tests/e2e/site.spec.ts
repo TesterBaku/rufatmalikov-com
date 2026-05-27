@@ -8,6 +8,10 @@ const pagesThatLoad = [
 	{ path: '/en/projects/', name: 'projects (en)' },
 	{ path: '/az/projects/', name: 'projects (az)' },
 	{ path: '/en/playwright/', name: 'playwright (en)' },
+	{ path: '/en/course/', name: 'course overview (en)' },
+	{ path: '/az/course/', name: 'course overview (az)' },
+	{ path: '/en/course/module-0/', name: 'course module 0 (en)' },
+	{ path: '/az/course/module-0/', name: 'course module 0 (az)' },
 	{ path: '/resume/', name: 'resume' },
 ];
 
