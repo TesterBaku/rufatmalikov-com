@@ -5,6 +5,10 @@ interface Props {
 }
 
 const { id, title = 'Video' } = Astro.props;
+
+const locale = Astro.url.pathname.startsWith('/az') ? 'az' : 'en';
+const placeholderText =
+	locale === 'en' ? '🎬 Video coming soon' : '🎬 Video tezliklə əlavə olunacaq';
 ---
 
 {
@@ -19,7 +23,7 @@ const { id, title = 'Video' } = Astro.props;
 			/>
 		</div>
 	) : (
-		<p class="video-placeholder">🎬 Video tezliklə əlavə olunacaq</p>
+		<p class="video-placeholder">{placeholderText}</p>
 	)
 }
 

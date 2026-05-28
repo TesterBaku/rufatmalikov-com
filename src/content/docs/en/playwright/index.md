@@ -1,5 +1,5 @@
 ---
-title: Playwright Course
+title: BrauzerLab
 description: BrauzerLab — a free, interactive, browser-based Playwright trainer, available in English and Azerbaijani.
 ---
 

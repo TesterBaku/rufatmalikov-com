@@ -8,6 +8,10 @@ const pagesThatLoad = [
 	{ path: '/en/projects/', name: 'projects (en)' },
 	{ path: '/az/projects/', name: 'projects (az)' },
 	{ path: '/en/playwright/', name: 'playwright (en)' },
+	{ path: '/en/course/', name: 'course overview (en)' },
+	{ path: '/az/course/', name: 'course overview (az)' },
+	{ path: '/en/course/module-0/', name: 'course module 0 (en)' },
+	{ path: '/az/course/module-0/', name: 'course module 0 (az)' },
 	{ path: '/resume/', name: 'resume' },
 ];
 
@@ -24,10 +28,10 @@ test('apex redirects to a locale home', async ({ page }) => {
 	await expect(page).toHaveURL(/\/(en|az)\//);
 });
 
-test('home hero CTA links to the BrauzerLab subdomain', async ({ page }) => {
+test('home hero CTA links to the course overview', async ({ page }) => {
 	await page.goto('/en/');
 	const cta = page.getByRole('link', { name: /start the playwright course/i });
-	await expect(cta).toHaveAttribute('href', 'https://brauzerlab.rufatmalikov.com/en/');
+	await expect(cta).toHaveAttribute('href', '/en/course/');
 });
 
 test('projects page lists all entries in importance order', async ({ page }) => {

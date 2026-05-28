@@ -1,5 +1,5 @@
 ---
-title: Playwright Kursu
+title: BrauzerLab
 description: BrauzerLab — pulsuz, interaktiv, brauzer əsaslı Playwright məşqçisi (ingilis və Azərbaycan dillərində).
 ---
 
