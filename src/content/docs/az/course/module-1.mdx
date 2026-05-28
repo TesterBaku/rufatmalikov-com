@@ -8,7 +8,9 @@ sidebar:
 
 import Video from '../../../../components/course/Video.astro';
 
-Bu modul Playwright testlərini yazmaq üçün lazım olan JavaScript və TypeScript biliklərini verir — nə çox, nə az. JS ilə ilk dəfə tanışsınızsa, bu normaldır. Əgər daha əvvəl JS yazmısınızsa, bu modul gündəlik istifadə edəcəyiniz şablonları möhkəmləndirəcək.
+Bu modul Playwright testlərini yazmaq üçün lazım olan TypeScript və JavaScript biliklərini verir — nə çox, nə az. Kod yazmaqla ilk dəfə tanışsınızsa, bu normaldır. Əgər daha əvvəl JS yazmısınızsa, bu modul gündəlik istifadə edəcəyiniz şablonları möhkəmləndirəcək.
+
+Kurs boyu **TypeScript** istifadə edirik — Modul 0-da `npm init playwright@latest` bunu sizin üçün qurub. TypeScript ixtiyari tiplərlə JavaScript-dir, ona görə də aşağıdakı hər bir JavaScript nümunəsi eyni zamanda etibarlı TypeScript-dir.
 
 <Video title="Modul 1: QA üçün JavaScript və TypeScript" />
 
@@ -18,14 +20,14 @@ Bu modul Playwright testlərini yazmaq üçün lazım olan JavaScript və TypeSc
 
 Hər test faylında iki dəyişən açar sözü görəcəksiniz: `const` və `let`.
 
-```javascript
+```typescript
 const baseURL = 'http://localhost:3000';  // yenidən mənimsədilməyəcək
 let retryCount = 0;                        // sonra dəyəri dəyişəcək
 ```
 
 **Qayda:** standart olaraq `const` istifadə edin. Dəyişənə yeni dəyər mənimsətməli olduqda `let`-ə keçin.
 
-```javascript
+```typescript
 // ✅ Düzgün
 const TIMEOUT = 30000;
 let attempts = 0;
@@ -38,7 +40,7 @@ MAX = 10;  // TypeError: Assignment to constant variable
 
 Vacib bir məqam: `const` dəyişməzlik demək deyil. Obyekt xüsusiyyətlərini dəyişdirmək mümkündür:
 
-```javascript
+```typescript
 const config = { retries: 1 };
 config.retries = 2;       // ✅ bu icazəlidir
 config = { retries: 3 };  // ❌ bu icazəsizdir — referansı yenidən mənimsədə bilməzsiniz
@@ -54,7 +56,7 @@ Bu üç primitiv tip test fayllarında istifadə edəcəyiniz şeylərin böyük
 
 ### String-lər
 
-```javascript
+```typescript
 const url = 'http://localhost:3000/login';
 const selector = '#email-input';
 
@@ -67,7 +69,7 @@ Template literal-lar (backtick-li string-lər) Playwright-də çox istifadə olu
 
 ### Rəqəmlər
 
-```javascript
+```typescript
 const timeout = 5000;   // millisaniyə
 const retries = 3;
 const price = 19.99;
@@ -84,10 +86,12 @@ Praktikada açıq çevirmədən istifadə edin: `Number('5')` və ya `parseInt('
 
 ### Boolean
 
-```javascript
+```typescript
 const isLoggedIn = true;
 const hasErrors = false;
+```
 
+```javascript
 // Həmişə === (ciddi bərabərlik), heç vaxt ==
 '5' === 5   // → false (fərqli tiplər)
 '5' == 5    // → true  (tip çevrilməsi — bundan qaçın)
@@ -101,7 +105,7 @@ Playwright-də boolean-lar iddia ifadələrində (`expect(isVisible).toBe(true)`
 
 ### Array-lər
 
-```javascript
+```typescript
 const browsers = ['chromium', 'firefox', 'webkit'];
 const prices = [9.99, 14.99, 29.99];
 
@@ -115,7 +119,7 @@ browsers.map(b => b.toUpperCase());    // ['CHROMIUM', 'FIREFOX', 'WEBKIT']
 
 ### Obyektlər
 
-```javascript
+```typescript
 const user = {
   email: 'customer@test.io',
   password: 'customer123',
@@ -131,7 +135,7 @@ user['role'];         // 'admin' — dinamik açarlar üçün mötərizə notasi
 
 Destructuring, obyekt və array-lərdən dəyərləri təmiz şəkildə çıxarmağa imkan verir:
 
-```javascript
+```typescript
 const { email, password } = user;
 // eyni məna daşıyır: const email = user.email; const password = user.password;
 
@@ -141,21 +145,21 @@ const [first, second] = browsers;
 
 Playwright-də bunu daim görəcəksiniz — məsələn, freymvorkdan `test` və `expect`-i çıxararkən:
 
-```javascript
-const { test, expect } = require('@playwright/test');
+```typescript
+import { test, expect } from '@playwright/test';
 ```
 
 ### Spread operatoru
 
 Spread operatoru (`...`) obyekt və array-ləri kopyalayır və birləşdirir:
 
-```javascript
+```typescript
 const defaultOptions = { headless: true, slowMo: 0 };
 const debugOptions = { ...defaultOptions, headless: false, slowMo: 500 };
 // → { headless: false, slowMo: 500 }
 ```
 
-Test konfiqurasiyalarını birləşdirmək və dəyişdirilmiş test data obyektləri yaratmaq üçün geniş istifadə olunur.
+Test konfiqurasiyalarını birləşdirmək və dəyişdirilmiş test data obyektləri qurmaq üçün geniş istifadə olunur.
 
 ---
 
@@ -163,21 +167,23 @@ Test konfiqurasiyalarını birləşdirmək və dəyişdirilmiş test data obyekt
 
 ### Adi funksiyalar
 
-```javascript
-function formatPrice(price) {
+```typescript
+function formatPrice(price: number): string {
   return `$${price.toFixed(2)}`;
 }
 ```
+
+`price`-dakı `: number` annotasiyası və mötərizələrdən sonrakı `: string` TypeScript tipləridir — onlar redaktora nəyin daxil ola biləcəyini və nəyin çıxdığını bildirir. Onları hər yerdə görəcəksiniz.
 
 ### Arrow funksiyalar
 
 Arrow funksiyalar daha qısa, müasir sintaksisdır — Playwright-də hər yerdə görünür:
 
-```javascript
-const formatPrice = (price) => `$${price.toFixed(2)}`;
+```typescript
+const formatPrice = (price: number): string => `$${price.toFixed(2)}`;
 
 // Çox sətirli arrow funksiya { } və açıq return tələb edir
-const generateUser = (role) => {
+const generateUser = (role: string) => {
   const timestamp = Date.now();
   return { email: `${role}_${timestamp}@test.io`, role };
 };
@@ -185,7 +191,7 @@ const generateUser = (role) => {
 
 Hər Playwright testi arrow funksiyadan istifadə edir:
 
-```javascript
+```typescript
 test('istifadəçi daxil ola bilər', async ({ page }) => {
   await page.goto('/login');
   // ...
@@ -201,7 +207,7 @@ test('istifadəçi daxil ola bilər', async ({ page }) => {
 
 Tək ifadəli arrow funksiyalar dəyəri gizlin qaytarır — `return` açar sözü lazım deyil:
 
-```javascript
+```typescript
 const double = x => x * 2;      // gizlin return — x * 2 qaytarır
 const triple = x => { x * 3 };  // ❌ return yoxdur — undefined qaytarır
 const triple = x => { return x * 3 };  // ✅ açıq return
@@ -209,48 +215,48 @@ const triple = x => { return x * 3 };  // ✅ açıq return
 
 ---
 
-## Import və export (CommonJS modulları)
+## Import və export (ESM)
 
-Playwright standart olaraq **CommonJS** modullarından istifadə edir. Bu, `require()` və `module.exports` deməkdir.
+Playwright **ES modulları** (ESM) istifadə edir — `import` / `export` sintaksisi. Yazacağınız hər `.ts` faylı ən azı bir `import` ilə başlayacaq.
 
 ### Import etmək
 
-```javascript
-// Moduldan hər şeyi import et
-const { test, expect } = require('@playwright/test');
-
-// Öz faylınızı import edin
-const LoginPage = require('./pages/LoginPage');
+```typescript
+// Moduldan adlandırılmış export-ları import et
+import { test, expect } from '@playwright/test';
 
 // Bir neçə şeyi import edin
-const { chromium, firefox } = require('@playwright/test');
+import { chromium, firefox } from '@playwright/test';
+
+// Öz faylınızı import edin (default export)
+import LoginPage from './pages/LoginPage';
+
+// Öz faylınızı import edin (adlandırılmış export)
+import { LoginPage } from './pages/LoginPage';
 ```
+
+Qeyd: öz faylınızı import edəndə yola `.ts` uzantısı əlavə etmirsiniz.
 
 ### Export etmək
 
-```javascript
-// LoginPage.js — başqaları import edə bilsin deyə class-ı export edirik
-class LoginPage {
-  constructor(page) {
-    this.page = page;
-  }
+```typescript
+// LoginPage.ts — adlandırılmış export
+export class LoginPage {
+  constructor(public page: Page) {}
 }
 
-module.exports = LoginPage;
-```
-
-`module.exports`-u unutsanız, import `{}` qaytaracaq və `TypeError: LoginPage is not a constructor` kimi xətalar görəcəksiniz.
-
-### ES modulları (`import`/`export`)
-
-Bəzi kod bazalarında ES modul sintaksisi də görə bilərsiniz:
-
-```javascript
-import { test, expect } from '@playwright/test';
+// LoginPage.ts — default export (fayl başına yalnız bir dənə)
+class LoginPage {
+  constructor(public page: Page) {}
+}
 export default LoginPage;
 ```
 
-`package.json`-a `"type": "module"` əlavə etsəniz, bu Playwright-də işləyir. Kurs maksimum uyğunluq üçün CommonJS-dən istifadə edir, amma hər iki üsul işləyir.
+`export` açar sözünü unutsanız, import `undefined` qaytaracaq və `TypeError: LoginPage is not a constructor` kimi xətalar görəcəksiniz.
+
+### CommonJS-i hələ də görə bilərsiniz
+
+Köhnə Node.js və Playwright nümunələri **CommonJS** sintaksisindən istifadə edir — `const { test } = require('@playwright/test')` və `module.exports = LoginPage`. Hər iki üsul Node.js-də işləyir, amma rəsmi Playwright generatoru və bu kurs hər yerdə ESM `import` / `export` istifadə edir. Bir təlimatda ya köhnə repo-da `require()` görsəniz, eyni ideya, fərqli sintaksis kimi qəbul edin.
 
 ---
 
@@ -262,14 +268,14 @@ Bu bölmə flaky testlərdən qaçmaq üçün ən vacibdir. **`await` unutmaq te
 
 Promise hələ mövcud olmayan bir dəyəri təmsil edir — asinxron əməliyyatın nəticəsidir. Playwright demək olar ki, hər əməliyyatdan Promise qaytarır:
 
-```javascript
+```typescript
 // page.goto() Promise qaytarır
 const promise = page.goto('/login');  // naviqasiyanı başladır amma gözləmir
 ```
 
 ### `await` dayanır və gözləyir
 
-```javascript
+```typescript
 async function login() {
   await page.goto('/login');         // naviqasiyanın tamamlanmasını gözləyir
   await page.fill('#email', '...');  // doldurmağın tamamlanmasını gözləyir
@@ -279,10 +285,10 @@ async function login() {
 
 `await` olmadan test əməliyyat bitmədən növbəti sətirə keçir:
 
-```javascript
+```typescript
 // ❌ await yoxdur — test dərhal davam edir
 page.goto('/login');
-page.fill('#email', 'user@test.io');  // səhifə hələ yüklənməyib ola bilər!
+page.fill('#email', 'user@test.io');   // səhifə hələ yüklənməyib ola bilər!
 expect(page).toHaveURL('/dashboard');  // login olmadan işləyir!
 ```
 
@@ -290,7 +296,7 @@ expect(page).toHaveURL('/dashboard');  // login olmadan işləyir!
 
 `await` istifadə edən hər funksiya `async` ilə elan edilməlidir:
 
-```javascript
+```typescript
 // ✅ Düzgün
 async function runTest() {
   await page.goto('/');
@@ -308,7 +314,7 @@ const runTest = async () => {
 
 Eyni anda bir neçə şeyi gözləmək lazım olduqda:
 
-```javascript
+```typescript
 // Naviqasiya VƏ başqa bir şeyi eyni anda gözləyin
 const [response] = await Promise.all([
   page.waitForResponse('/api/login'),
@@ -322,11 +328,11 @@ Bu, klik etdikdə şəbəkə sorğusunu gözləmək lazım olan naviqasiya şabl
 
 ## TypeScript əsasları
 
-Playwright-in TypeScript üçün tam dəstəyi var. `.ts` faylları əlavə konfiqurasiya olmadan işləyir.
+Bu modul boyu artıq TypeScript yazırsınız — hər annotasiya edilmiş parametr (`price: number`, `role: string`) iş başında olan TypeScript-dir. Bu bölmə "tip annotasiyaları olan JS" olmayan hissələri bir araya gətirir: interface-lər, istəyə bağlı xüsusiyyətlər və JSDoc.
 
-### Niyə TypeScript?
+### Niyə tiplər kömək edir
 
-TypeScript kodu işlətməzdən əvvəl xətaları aşkar edən **tip annotasiyaları** əlavə edir:
+Tiplər **kodu işlətməzdən əvvəl** xətaları aşkar edir:
 
 ```typescript
 // JavaScript — xəta yalnız işləmə zamanı baş verir
@@ -339,25 +345,10 @@ formatPrice('rəqəm-deyil');  // işləmə zamanı çöküş
 function formatPrice(price: number): string {
   return `$${price.toFixed(2)}`;
 }
-formatPrice('rəqəm-deyil');  // ❌ TypeScript xətası
+formatPrice('rəqəm-deyil');  // ❌ TypeScript xətası: Argument of type 'string' is not assignable to parameter of type 'number'
 ```
 
-### Əsas tip annotasiyaları
-
-```typescript
-// Primitivlər
-const url: string = 'http://localhost:3000';
-const timeout: number = 5000;
-const headless: boolean = true;
-
-// Array-lər
-const browsers: string[] = ['chromium', 'firefox', 'webkit'];
-
-// Funksiyalar
-function getUser(role: string): { email: string; role: string } {
-  return { email: `${role}@test.io`, role };
-}
-```
+VS Code-dakı qırmızı dalğa-xətt — budur dərs. İşə salmadan öncə xətanı düzəldirsiniz.
 
 ### Interface-lər
 
@@ -399,7 +390,7 @@ interface ShippingDetails {
 
 ### JSDoc — `.ts` faylları olmadan TypeScript faydaları
 
-Sadə `.js` fayllarında tip yoxlaması istəyirsinizsə, JSDoc annotasiyalarından istifadə edin:
+Sadə `.js` faylında tip yoxlaması lazım olarsa, JSDoc annotasiyalarından istifadə edin. VS Code onları oxuyur və sizə avtomatik tamamlama və tip xətaları göstərir — TypeScript kimi, amma heç bir build addımı olmadan.
 
 ```javascript
 /**
@@ -408,15 +399,15 @@ Sadə `.js` fayllarında tip yoxlaması istəyirsinizsə, JSDoc annotasiyaların
  */
 const formatPrice = (price) => `$${price.toFixed(2)}`;
 
-/**
- * @param {import('@playwright/test').Page} page
- */
-constructor(page) {
-  this.page = page;
+class LoginPage {
+  /** @param {import('@playwright/test').Page} page */
+  constructor(page) {
+    this.page = page;
+  }
 }
 ```
 
-VS Code bu annotasiyaları oxuyur və sizə avtomatik tamamlama və tip xətaları göstərir — TypeScript kimi, amma heç bir build addımı olmadan.
+Tez-tez ehtiyacınız olmayacaq — kurs `.ts` faylları istifadə edir — amma köhnə kod bazalarında görəcəksiniz.
 
 ---
 
@@ -424,26 +415,31 @@ VS Code bu annotasiyaları oxuyur və sizə avtomatik tamamlama və tip xətalar
 
 Test uğursuz olduqda, xəta mesajı nə baş verdiyini dəqiq deyir — əgər oxumağı bilsəniz.
 
-### Stack trace-in anatomiyası
+### Playwright uğursuzluğunun anatomiyası
 
 ```
-TypeError: Cannot read properties of undefined (reading 'click')
-    at LoginPage.login (/project/tests/pages/LoginPage.js:18:22)
-    at Context.<anonymous> (/project/tests/login.spec.js:15:12)
-    at Test.runner (/project/node_modules/@playwright/test/lib/test.js:142:5)
+  1) [chromium] › login.spec.ts:10:3 › admin can login to dashboard ───────────
 
-  Failure in test 'admin can login to dashboard'
-  tests/login.spec.js:10:3
+    TypeError: Cannot read properties of undefined (reading 'click')
+
+      16 |   async login(email: string, password: string) {
+      17 |     await this.emailInput.fill(email);
+    > 18 |     await this.loginButton.click();
+         |                            ^
+      19 |   }
+
+      at LoginPage.login (tests/pages/LoginPage.ts:18:28)
+      at tests/login.spec.ts:15:12
 ```
 
-Oxuma qaydası:
+Yuxarıdan aşağı oxuyun:
 
-1. **Birinci sətir** — xəta tipi və mesajı: `TypeError: Cannot read properties of undefined`. Bir şey `undefined`-dir və siz onun üzərində `.click()` çağırmağa cəhd etdiniz.
-2. **İkinci sətir** — xətanın faktiki baş verdiyi yer: `LoginPage.js:18:22` (fayl, sətir, sütun).
-3. **Üçüncü sətir** — uğursuz kodu çağıran yer: `login.spec.js:15`.
-4. **Aşağı hissə** — test adınız və testin başladığı sətir.
+1. **Test başlığı** — `[chromium] › login.spec.ts:10:3 › admin can login to dashboard` brauzer projektini, testin başladığı fayl və sətri, və test adını göstərir.
+2. **Xəta tipi və mesajı** — `TypeError: Cannot read properties of undefined (reading 'click')`. Bir şey `undefined`-dir və siz onun üzərində `.click()` çağırmağa cəhd etdiniz.
+3. **Kod çərçivəsi** — uğursuzluğun ətrafındakı sətirlər. 18-ci sətirdəki `>` oxu uğursuz sətri işarələyir; `^` işarəsi tam olaraq pozulan ifadəni göstərir — burada `this.loginButton` `undefined`-dir.
+4. **Stack sətirləri** — hər çağırışın öz fayllarınızda haradan gəldiyi. Stack-in başı — xətanın baş verdiyi yer; aşağıda — onu çağıran kod.
 
-**`node_modules` sətirlərinə məhəl qoymayın** — bunlar Playwright-in daxili işləridir. Öz fayllarınıza diqqət edin.
+**`node_modules` stack sətirlərinə məhəl qoymayın** — bunlar Playwright-in daxili işləridir. Öz fayllarınıza diqqət edin.
 
 ### Ümumi xətalar və mənası
 
@@ -452,7 +448,7 @@ Oxuma qaydası:
 | `Cannot read properties of null (reading 'click')` | Selector heç nə tapmadı — element `null`-dur | Selector-u yoxlayın, elementin mövcud olduğunu yoxlayın |
 | `Cannot read properties of undefined` | Dəyişən mənimsədilməyib | Import-ları, dəyişən scope-unu yoxlayın |
 | `ReferenceError: X is not defined` | Dəyişən scope-da elan edilməyib | Yazılışı, elan yerini yoxlayın |
-| `TypeError: X is not a function` | Yanlış şey import edilib ya `module.exports` unudulub | `console.log(typeof X)` yoxlayın |
+| `TypeError: X is not a function` | Yanlış şey import edilib ya `export` unudulub | `console.log(typeof X)` yoxlayın |
 | Çıxış sırası yanlışdır | `await` yoxdur | Asinxron çağırışlardan əvvəl `await` əlavə edin |
 
 ---
@@ -463,16 +459,16 @@ URL-ləri, parolları və ya tokenləri test fayllarına heç vaxt birbaşa yazm
 
 ### `process.env`-dən oxumaq
 
-```javascript
+```typescript
 const baseURL = process.env.BASE_URL;
 const adminEmail = process.env.ADMIN_EMAIL;
 ```
 
 ### Standart dəyərlər və məcburi dəyişənlər
 
-```javascript
+```typescript
 function getConfig() {
-  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';  // standart dəyər
+  const baseUrl = process.env.BASE_URL ?? 'http://localhost:3000';  // standart dəyər
 
   const adminEmail = process.env.ADMIN_EMAIL;
   if (!adminEmail) {
@@ -487,7 +483,7 @@ function getConfig() {
 
 ### `.env` faylları
 
-Layihə kökündə `.env` faylı yaradın:
+Layihə kökündə `.env` faylı hazırlayın:
 
 ```
 BASE_URL=http://localhost:3000
@@ -496,40 +492,43 @@ ADMIN_PASSWORD=admin123
 CI=false
 ```
 
-Sonra konfiqurasiyada `dotenv` ilə yükləyin:
+Sonra konfiqurasiyanın yuxarısında yükləyin:
 
-```javascript
-require('dotenv').config();
+```typescript
+import 'dotenv/config';
 // İndi process.env.BASE_URL, process.env.ADMIN_EMAIL və s. mövcuddur
 ```
 
 **`.env`-i həmişə `.gitignore`-a əlavə edin** — sirrləri heç vaxt version control-a göndərməyin.
 
-Playwright konfiqurasiyasında bu şablonu görəcəksiniz:
+Bu şablonu `playwright.config.ts`-də görəcəksiniz:
 
-```javascript
-// playwright.config.js
-module.exports = {
+```typescript
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+import 'dotenv/config';
+
+export default defineConfig({
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.BASE_URL ?? 'http://localhost:3000',
   },
   forbidOnly: !!process.env.CI,  // !! string-i boolean-a çevirir
-};
+});
 ```
 
 ---
 
 ## Tapşırıqlar
 
-Bu tapşırıqlar sadə Node.js ilə işləyir — brauzerlərə ehtiyac yoxdur. VS Code-u açın, aşağıdakı faylları yaradın və `node exercises/mod1/exercise-X.js` ilə işlədin.
+Bu tapşırıqlar sadə Node.js ilə işləyir — brauzerlərə ehtiyac yoxdur. VS Code-u açın, aşağıdakı faylları hazırlayın və `npx tsx exercises/mod1/exercise-X.ts` ilə işlədin. `tsx` yoxdursa, bir dəfə `npm install -D tsx` ilə quraşdırın.
 
 ---
 
 ### Tapşırıq 1: Dəyişənlər — xətaları tapın
 
-Aşağıdakı kodda 3 xəta var. Onları düzəldin və faylı işlədin.
+Aşağıdakı kodda 4 xəta var. Onları düzəldin və faylı işlədin.
 
-```javascript
+```typescript
 // ❌ Bu kodda xətalar var. Düzəldin.
 var baseURL = 'http://localhost:3000';
 const TIMEOUT = 30000;
@@ -559,9 +558,9 @@ Tapşırıqlar:
 
 ### Tapşırıq 2: Köməkçi funksiyalar yazın
 
-Bu dörd arrow funksiyanı ehtiva edən `exercise-2.js` yaradın:
+Bu dörd arrow funksiyanı ehtiva edən `exercise-2.ts` hazırlayın:
 
-```javascript
+```typescript
 // 1. formatPrice(price) — $ və 2 onluq rəqəm ilə string qaytarır
 //    formatPrice(19.99) → "$19.99"
 
@@ -576,15 +575,15 @@ Bu dörd arrow funksiyanı ehtiva edən `exercise-2.js` yaradın:
 //    → [{name:'Siçan',category:'aksesuarlar'}]
 ```
 
-İpuclar: template literal, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()` istifadə edin.
+İpuclar: template literal, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()` istifadə edin. Hər parametrə əsas tip annotasiyası əlavə edin.
 
 ---
 
-### Tapşırıq 3: Test data obyektləri yaradın
+### Tapşırıq 3: Test data obyektlərini qurun
 
 `TestData` class-ını tamamlayın:
 
-```javascript
+```typescript
 class TestData {
   static get validCustomer() {
     return {
@@ -617,30 +616,30 @@ console.log('Göndərmə:', TestData.shippingDetails());
 
 ### Tapşırıq 4: Xətalı asinxron kodu düzəldin
 
-Aşağıdakı kodda **4 əksik `await` açar sözü** var. Onları tapın və düzəldin.
+Aşağıdakı kodda **6 əksik `await` açar sözü** var. Onları tapın və düzəldin.
 
-```javascript
+```typescript
 const fakePage = {
-  goto: (url) => Promise.resolve(`Keçildi: ${url}`),
-  fill: (selector, value) => Promise.resolve(`${selector} dolduruldu: ${value}`),
-  click: (selector) => Promise.resolve(`Klik edildi: ${selector}`),
-  waitForSelector: (selector) => Promise.resolve(`Gözlənildi: ${selector}`),
+  goto: (url: string) => Promise.resolve(`Keçildi: ${url}`),
+  fill: (selector: string, value: string) => Promise.resolve(`${selector} dolduruldu: ${value}`),
+  click: (selector: string) => Promise.resolve(`Klik edildi: ${selector}`),
+  waitForSelector: (selector: string) => Promise.resolve(`Gözlənildi: ${selector}`),
   screenshot: () => Promise.resolve('Ekran görüntüsü alındı'),
 };
 
 async function runTest() {
   console.log('Test başlayır...');
 
-  fakePage.goto('/auth/login');           // ❌ await yoxdur
+  fakePage.goto('/auth/login');                  // ❌ await yoxdur
   console.log('Login səhifəsinə keçildi');
 
-  fakePage.waitForSelector('#email');     // ❌ await yoxdur
-  fakePage.fill('#email', 'customer@test.io');  // ❌ await yoxdur
-  fakePage.fill('#password', 'customer123');
-  fakePage.click('button[type="submit"]');
+  fakePage.waitForSelector('#email');            // ❌ await yoxdur
+  fakePage.fill('#email', 'customer@test.io');   // ❌ await yoxdur
+  fakePage.fill('#password', 'customer123');     // ❌ await yoxdur
+  fakePage.click('button[type="submit"]');       // ❌ await yoxdur
 
   console.log('Login formu göndərildi');
-  fakePage.screenshot();                  // ❌ await yoxdur
+  fakePage.screenshot();                         // ❌ await yoxdur
   console.log('Ekran görüntüsü alındı');
 
   console.log('Test tamamlandı!');
@@ -658,13 +657,18 @@ runTest();
 Bu xətanı oxuyun və aşağıdakı sualları cavablayın:
 
 ```
-TypeError: Cannot read properties of undefined (reading 'click')
-    at LoginPage.login (/project/tests/pages/LoginPage.js:18:22)
-    at Context.<anonymous> (/project/tests/login.spec.js:15:12)
-    at Test.runner (/project/node_modules/@playwright/test/lib/test.js:142:5)
+  1) [chromium] › login.spec.ts:10:3 › admin can login to dashboard ───────────
 
-  Failure in test 'admin can login to dashboard'
-  tests/login.spec.js:10:3
+    TypeError: Cannot read properties of undefined (reading 'click')
+
+      16 |   async login(email: string, password: string) {
+      17 |     await this.emailInput.fill(email);
+    > 18 |     await this.loginButton.click();
+         |                            ^
+      19 |   }
+
+      at LoginPage.login (tests/pages/LoginPage.ts:18:28)
+      at tests/login.spec.ts:15:12
 ```
 
 Suallar:
@@ -673,7 +677,7 @@ Suallar:
 3. "Cannot read properties of undefined" bu kontekstdə nə deməkdir — nə undefined-dir?
 4. Bunu düzəltmək üçün ilk nəyi yoxlayardınız?
 
-Cavablarınızı `exercise-5.js` faylında şərh kimi yazın.
+Cavablarınızı `exercise-5.ts` faylında şərh kimi yazın.
 
 ---
 
@@ -681,7 +685,7 @@ Cavablarınızı `exercise-5.js` faylında şərh kimi yazın.
 
 `process.env`-dən oxuyan `getConfig()` funksiyasını tətbiq edin:
 
-```javascript
+```typescript
 // dotenv-i simulyasiya edirik
 process.env.BASE_URL = 'http://localhost:3000';
 process.env.ADMIN_EMAIL = 'admin@test.io';
@@ -709,7 +713,7 @@ Yapışqan kağıza yazacağınız dörd qayda:
 
 1. **Standart olaraq `const`, yenidən mənimsətmək üçün `let`, heç vaxt `var`**
 2. **Hər Playwright əməliyyatını `await` edin** — `await` unudulması = flaky test
-3. **Stack trace-ləri aşağıdan yuxarı oxuyun** — faylınız aşağıdadır, xəta yuxarıdadır
+3. **Stack trace-ləri yuxarıdan aşağı oxuyun** — başlıq, xəta mesajı, kod çərçivəsi, sonra öz fayllarınıza işarə edən stack sətirləri
 4. **Sirrləri heç vaxt kodda yazmayın** — `process.env` və `.env` fayllarından istifadə edin
 
 Modul 2-də bu modulun hər bir anlayışı real Page Object class-larında istifadə olunacaq.
