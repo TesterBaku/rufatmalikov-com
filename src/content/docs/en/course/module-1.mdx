@@ -1,0 +1,776 @@
+---
+title: "Module 1: JavaScript & TypeScript for QA"
+description: "The JS/TS skills you need for every Playwright test file — const/let, functions, async/await, TypeScript basics, and more."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+
+This module gives you the TypeScript and JavaScript skills you need to write Playwright tests — nothing more, nothing less. If you've never written code before, that's fine. If you have, this will be a quick consolidation of the patterns you'll use every day.
+
+Throughout the course we use **TypeScript** — that's what `npm init playwright@latest` set up for you in Module 0. TypeScript is JavaScript with optional types, so every JavaScript example below is also valid TypeScript.
+
+<Video title="Module 1: JavaScript & TypeScript for QA" />
+
+---
+
+## `const` and `let` — never use `var`
+
+You'll see two variable keywords in every test file: `const` and `let`.
+
+```typescript
+const baseURL = 'http://localhost:3000';  // won't be reassigned
+let retryCount = 0;                        // will be reassigned later
+```
+
+**The rule:** use `const` by default. Switch to `let` only when you need to reassign the variable.
+
+```typescript
+// ✅ Correct
+const TIMEOUT = 30000;
+let attempts = 0;
+attempts = attempts + 1;  // fine — let allows reassignment
+
+// ❌ This throws an error
+const MAX = 5;
+MAX = 10;  // TypeError: Assignment to constant variable
+```
+
+Important nuance: `const` does **not** mean immutable. You can still change object properties:
+
+```typescript
+const config = { retries: 1 };
+config.retries = 2;       // ✅ this is allowed
+config = { retries: 3 };  // ❌ this is not — you can't rebind the reference
+```
+
+As for `var` — it exists but causes confusing scope bugs. Every modern linter flags it. You will never need it in a Playwright project.
+
+### Block scope
+
+`const` and `let` are block-scoped — they only exist inside the `{ }` they are declared in. Here `message` is only accessible inside the `if` block; referencing it outside throws a `ReferenceError`:
+
+```typescript
+if (true) {
+  let message = 'Hello!';
+}
+console.log(message);  // ❌ ReferenceError: message is not defined
+```
+
+You will fix exactly this in Exercise 1.
+
+---
+
+### Exercise setup
+
+<Deck href="/course/decks/mod1-setup-en/" title="How to Run Exercises" locale="en" />
+
+All exercises run on plain Node.js — no browser needed.
+
+1. Open the Playwright project you set up in Module 0 in VS Code.
+2. Create an `exercises/mod1/` folder in the project root (right-click in the Explorer → **New Folder**).
+3. Create one file per exercise: `exercise-1.ts`, `exercise-2.ts` … `exercise-6.ts`.
+4. Open the integrated terminal (**Ctrl + `**) and confirm you are in the project root.
+5. Run a file: `npx tsx exercises/mod1/exercise-1.ts`
+
+If `tsx` is not found: `npm install -D tsx`
+
+---
+
+### Exercise 1: Variables — fix the mistakes
+
+The code below has several problems. Fix them and run the file.
+
+```typescript
+// ❌ This code has problems. Fix them.
+var baseURL = 'http://localhost:3000';
+const TIMEOUT = 30000;
+TIMEOUT = 50000;  // Should this be allowed?
+
+const user = { email: 'test@test.io', role: 'admin' };
+user = { email: 'admin@test.io', role: 'admin' };  // Should this work?
+
+if (true) {
+  let message = 'Hello!';
+}
+console.log(message);  // Why does this throw?
+
+console.log('Exercise 1 done');
+```
+
+Tasks:
+- Replace `var baseURL` with `const`
+- Fix the `TIMEOUT` reassignment — use a new variable (e.g. `TIMEOUT_EXTENDED`)
+- Fix the `user = {...}` line — assigning to a `const` is an error; declare it with `let` instead
+- Fix the `message` scope issue — move `console.log` inside the block
+- Run the fixed file and verify no errors
+
+**Expected output:**
+```
+Hello!
+Exercise 1 done
+```
+
+---
+
+## Strings, numbers, and booleans
+
+These three primitive types cover nearly everything you'll touch in a test file.
+
+### Strings
+
+```typescript
+const url = 'http://localhost:3000/login';
+const selector = '#email-input';
+
+// Template literals (backticks) — use these whenever you embed values
+const message = `Navigated to ${url}`;
+const fullSelector = `[data-testid="${selector}"]`;
+```
+
+Template literals (the backtick strings) are used constantly in Playwright — in config files, page objects, and assertions.
+
+### Numbers
+
+```typescript
+const timeout = 5000;   // milliseconds
+const retries = 3;
+const price = 19.99;
+```
+
+Watch out for type coercion (the examples below show plain JavaScript behaviour — no TypeScript types):
+
+```javascript
+'5' - 3  // → 2   (JS converts the string to a number for subtraction)
+'5' + 3  // → '53' (JS converts 3 to a string for addition — a trap!)
+```
+
+In practice, use explicit conversion: `Number('5')` or `parseInt('5', 10)`.
+
+### Booleans
+
+```typescript
+const isLoggedIn = true;
+const hasErrors = false;
+```
+
+```javascript
+// Always use === (strict equality), never ==
+'5' === 5   // → false (different types)
+'5' == 5    // → true  (type coercion — avoid this)
+```
+
+In Playwright, booleans appear in assertions (`expect(isVisible).toBe(true)`) and configuration (`headless: true`).
+
+---
+
+## Arrays and objects
+
+### Arrays
+
+```typescript
+const browsers = ['chromium', 'firefox', 'webkit'];
+const prices = [9.99, 14.99, 29.99];
+
+// Common operations
+browsers.length;              // 3
+browsers[0];                  // 'chromium'
+browsers.push('electron');    // adds to end
+browsers.filter(b => b !== 'webkit');  // returns new array without 'webkit'
+browsers.map(b => b.toUpperCase());    // returns ['CHROMIUM', 'FIREFOX', 'WEBKIT']
+```
+
+### Objects
+
+```typescript
+const user = {
+  email: 'customer@test.io',
+  password: 'customer123',
+  role: 'admin',
+};
+
+// Access properties
+user.email;           // 'customer@test.io'
+user['role'];         // 'admin' — bracket notation for dynamic keys
+```
+
+### Destructuring
+
+Destructuring lets you pull values out of objects and arrays cleanly:
+
+```typescript
+const { email, password } = user;
+// same as: const email = user.email; const password = user.password;
+
+const [first, second] = browsers;
+// same as: const first = browsers[0]; const second = browsers[1];
+```
+
+You'll see this in Playwright constantly — for example, when pulling `test` and `expect` from the framework:
+
+```typescript
+import { test, expect } from '@playwright/test';
+```
+
+### Spread operator
+
+The spread operator (`...`) copies or merges objects and arrays:
+
+```typescript
+const defaultOptions = { headless: true, slowMo: 0 };
+const debugOptions = { ...defaultOptions, headless: false, slowMo: 500 };
+// → { headless: false, slowMo: 500 }
+```
+
+This is used heavily for merging test configs and producing modified test data objects.
+
+---
+
+### Exercise 2: Build test data objects
+
+Complete the `testData` object:
+
+```typescript
+const testData = {
+  validCustomer: {
+    email: 'customer@test.io',
+    password: 'customer123',
+    name: 'Test Customer',
+  },
+
+  validAdmin: {
+    // TODO: add these properties:
+    // email: 'admin@test.io', password: 'admin123', name: 'Test Admin'
+  },
+
+  newProduct() {
+    // TODO: return { name: `Test Product ${Date.now()}`, price: 19.99, category: 'accessories' }
+  },
+
+  shippingDetails() {
+    // TODO: return { name: '...', address: '...', city: '...', zip: '...' } — use your own test values
+  },
+};
+
+console.log('Customer:', testData.validCustomer);
+console.log('Admin:', testData.validAdmin);
+console.log('Product:', testData.newProduct());
+console.log('Shipping:', testData.shippingDetails());
+```
+
+**Expected output:**
+```
+Customer: { email: 'customer@test.io', password: 'customer123', name: 'Test Customer' }
+Admin: { email: 'admin@test.io', password: 'admin123', name: 'Test Admin' }
+Product: { name: 'Test Product 1712345678901', price: 19.99, category: 'accessories' }
+Shipping: { name: '...', address: '...', city: '...', zip: '...' }
+```
+
+---
+
+## Functions and arrow functions
+
+### Regular functions
+
+```typescript
+function formatPrice(price: number): string {
+  return `$${price.toFixed(2)}`;
+}
+```
+
+The `: number` annotation on `price` and the `: string` after the parens are TypeScript types — they tell the editor what's allowed in and what comes out. You'll see them everywhere.
+
+### Arrow functions
+
+Arrow functions are the shorter, modern syntax — and they're everywhere in Playwright:
+
+```typescript
+const formatPrice = (price: number): string => `$${price.toFixed(2)}`;
+
+// Multi-line arrow function needs { } and explicit return
+const generateUser = (role: string) => {
+  const timestamp = Date.now();
+  return { email: `${role}_${timestamp}@test.io`, role };
+};
+```
+
+Every Playwright test uses an arrow function:
+
+```typescript
+test('user can log in', async ({ page }) => {
+  await page.goto('/login');
+  // ...
+});
+```
+
+**When to use which:**
+
+- Arrow functions: callbacks, test bodies, short helpers
+- Regular `function`: class methods (like Page Object methods that use `this`)
+
+### The implicit return trap
+
+Single-expression arrow functions return their value implicitly — no `return` keyword needed:
+
+```typescript
+const double = x => x * 2;      // implicit return — returns x * 2
+const triple = x => { x * 3 };  // ❌ no return — returns undefined
+const triple = x => { return x * 3 };  // ✅ explicit return
+```
+
+---
+
+### Exercise 3: Write helper functions
+
+Make `exercise-3.ts` with these four arrow functions:
+
+```typescript
+// 1. formatPrice(price) — returns string with $ and 2 decimals
+//    formatPrice(19.99) → "$19.99"
+
+// 2. isEmail(email) — returns true if string contains '@' and '.'
+//    isEmail('customer@test.io') → true
+
+// 3. generateUser(role) — returns object with timestamp-based email
+//    generateUser('admin') → { email: 'admin_1712345678901@test.io', role: 'admin' }
+
+// 4. filterByCategory(products, category) — filters array by category
+//    filterByCategory([{name:'Mouse',category:'accessories'},...], 'accessories')
+//    → [{name:'Mouse',category:'accessories'}]
+```
+
+Hints: use template literals, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()`. Add basic type annotations to each parameter.
+
+**Expected output:**
+```
+$19.99
+true
+false
+{ email: 'admin_1712345678901@test.io', role: 'admin' }
+[ { name: 'Mouse', category: 'accessories' } ]
+```
+
+---
+
+## Imports and exports (ESM)
+
+Playwright uses **ES modules** (ESM) — the `import` / `export` syntax. Every `.ts` file you write will start with at least one `import`.
+
+### Importing
+
+```typescript
+// Import named exports from a module
+import { test, expect } from '@playwright/test';
+
+// Import multiple things
+import { chromium, firefox } from '@playwright/test';
+
+// Import your own file (default export)
+import LoginPage from './pages/LoginPage';
+
+// Import your own file (named export)
+import { LoginPage } from './pages/LoginPage';
+```
+
+Note: when you import your own file, you don't add the `.ts` extension in the path.
+
+### Exporting
+
+```typescript
+// In LoginPage.ts — named export
+import { Page } from '@playwright/test';
+
+export class LoginPage {
+  constructor(public page: Page) {}
+}
+
+// In LoginPage.ts — default export (only one per file)
+import { Page } from '@playwright/test';
+
+class LoginPage {
+  constructor(public page: Page) {}
+}
+export default LoginPage;
+```
+
+If you forget the `export` keyword, the import will resolve to `undefined` and you'll get errors like `TypeError: LoginPage is not a constructor`.
+
+### You may still see CommonJS
+
+Older Node.js and Playwright examples use **CommonJS** syntax — `const { test } = require('@playwright/test')` and `module.exports = LoginPage`. Both styles work in Node.js, but the official Playwright generator and this course use ESM `import` / `export` throughout. If you see `require()` in a tutorial or older repo, treat it as the same idea with different syntax.
+
+---
+
+## Promises and async/await
+
+<Deck href="/course/decks/mod1-async-en/" title="async/await — Why It Matters" locale="en" />
+
+This is the most important section for avoiding flaky tests. **Missing `await` is the #1 cause of test failures.**
+
+Think of an async operation like ordering coffee: you pay and get a receipt — that is your Promise. `await` is standing at the counter until the coffee is ready. You have the receipt (Promise) immediately; the result arrives later.
+
+### What is a Promise?
+
+A Promise represents a value that isn't available yet — it's the result of an asynchronous operation. Playwright returns Promises from nearly every action:
+
+```typescript
+// page.goto() returns a Promise
+const promise = page.goto('/login');  // starts the navigation but doesn't wait
+```
+
+### `await` pauses and waits
+
+```typescript
+async function login() {
+  await page.goto('/login');         // waits for navigation to complete
+  await page.fill('#email', '...');  // waits for fill to complete
+  await page.click('button');        // waits for click to complete
+}
+```
+
+Without `await`, the test moves to the next line before the action finishes:
+
+```typescript
+// ❌ Missing await — test continues immediately
+page.goto('/login');
+page.fill('#email', 'user@test.io');   // page might not have loaded yet!
+expect(page).toHaveURL('/dashboard');  // runs before login happens!
+```
+
+### The `async` keyword
+
+Any function that uses `await` must be declared with `async`:
+
+```typescript
+// ✅ Correct
+async function runTest() {
+  await page.goto('/');
+}
+
+// Also works as arrow function
+const runTest = async () => {
+  await page.goto('/');
+};
+```
+
+An `async` function always returns a Promise. If you return `'hello'` from an async function, the caller receives `Promise<string>` — they need to `await` it too.
+
+### `Promise.all` — parallel actions
+
+:::note[Advanced]
+You don't need to fully understand this yet — come back when it appears in Module 9 (API testing).
+:::
+
+When you need to wait for multiple things at once:
+
+```typescript
+// Wait for navigation AND something else to happen simultaneously
+const [response] = await Promise.all([
+  page.waitForResponse('/api/login'),
+  page.click('button[type="submit"]'),
+]);
+```
+
+This is used for navigation patterns where you click and wait for a network request at the same time.
+
+---
+
+### Exercise 4: Fix broken async code
+
+The code below has **6 missing `await` keywords**. Find and fix them.
+
+```typescript
+const fakePage = {
+  goto: (url: string) => new Promise<void>(r =>
+    setTimeout(() => { console.log(`Navigated to ${url}`); r(); }, 50)),
+  fill: (selector: string, value: string) => new Promise<void>(r =>
+    setTimeout(() => { console.log(`Filled ${selector} with ${value}`); r(); }, 50)),
+  click: (selector: string) => new Promise<void>(r =>
+    setTimeout(() => { console.log(`Clicked ${selector}`); r(); }, 50)),
+  waitForSelector: (selector: string) => new Promise<void>(r =>
+    setTimeout(() => { console.log(`Waited for ${selector}`); r(); }, 50)),
+  screenshot: () => new Promise<void>(r =>
+    setTimeout(() => { console.log('Screenshot taken'); r(); }, 50)),
+};
+
+async function runTest() {
+  console.log('Starting test...');
+
+  fakePage.goto('/auth/login');                  // ❌ missing await
+  console.log('Navigated to login page');
+
+  fakePage.waitForSelector('#email');            // ❌ missing await
+  fakePage.fill('#email', 'customer@test.io');   // ❌ missing await
+  fakePage.fill('#password', 'customer123');     // ❌ missing await
+  fakePage.click('button[type="submit"]');       // ❌ missing await
+
+  console.log('Login form submitted');
+  fakePage.screenshot();                         // ❌ missing await
+
+  console.log('Test complete!');
+}
+
+runTest();
+```
+
+Run the broken version first — notice the output order is wrong. Then add `await` and run again.
+
+---
+
+## TypeScript basics
+
+You've already been writing TypeScript throughout this module — every annotated parameter (`price: number`, `role: string`) is TypeScript at work. This section pulls together the parts that aren't just "JS with type annotations": interfaces, optional properties, and JSDoc.
+
+### Why types help
+
+Types catch bugs **before you run the code**:
+
+```typescript
+// JavaScript — no error until runtime
+function formatPrice(price) {
+  return `$${price.toFixed(2)}`;
+}
+formatPrice('not-a-number');  // crashes at runtime
+
+// TypeScript — error caught immediately in your editor
+function formatPrice(price: number): string {
+  return `$${price.toFixed(2)}`;
+}
+formatPrice('not-a-number');  // ❌ TypeScript error: Argument of type 'string' is not assignable to parameter of type 'number'
+```
+
+That red squiggle in VS Code is the lesson — you fix the bug before pressing run.
+
+### Interfaces
+
+Interfaces describe the shape of an object. Use them for test data:
+
+```typescript
+interface User {
+  email: string;
+  password: string;
+  role: 'admin' | 'customer';  // union type — only these two values
+}
+
+interface Product {
+  name: string;
+  price: number;
+  category: string;
+}
+
+const user: User = {
+  email: 'customer@test.io',
+  password: 'customer123',
+  role: 'customer',
+};
+```
+
+### Optional properties
+
+Add `?` to mark a property as optional:
+
+```typescript
+interface ShippingDetails {
+  name: string;
+  address: string;
+  city: string;
+  zip: string;
+  country?: string;  // optional — may be undefined
+}
+```
+
+### JSDoc — TypeScript benefits without `.ts` files
+
+If you ever need type checking in a plain `.js` file, use JSDoc annotations. VS Code reads them and gives you auto-complete and type errors — same as TypeScript, with no build step.
+
+```javascript
+/**
+ * @param {number} price
+ * @returns {string}
+ */
+const formatPrice = (price) => `$${price.toFixed(2)}`;
+
+class LoginPage {
+  /** @param {import('@playwright/test').Page} page */
+  constructor(page) {
+    this.page = page;
+  }
+}
+```
+
+You won't need this often — the course uses `.ts` files — but you'll see it in older codebases.
+
+---
+
+## Reading errors and stack traces
+
+When a test fails, the error message tells you exactly what went wrong — if you know how to read it.
+
+### Anatomy of a Playwright failure
+
+```
+  1) [chromium] › login.spec.ts:10:3 › admin can login to dashboard ───────────
+
+    TypeError: Cannot read properties of undefined (reading 'click')
+
+      16 |   async login(email: string, password: string) {
+      17 |     await this.emailInput.fill(email);
+    > 18 |     await this.loginButton.click();
+         |                            ^
+      19 |   }
+
+      at LoginPage.login (tests/pages/LoginPage.ts:18:28)
+      at tests/login.spec.ts:15:12
+```
+
+Read it top to bottom:
+
+1. **Test header** — `[chromium] › login.spec.ts:10:3 › admin can login to dashboard` shows the browser project, the test file with the line where the test starts, and the test name.
+2. **Error type and message** — `TypeError: Cannot read properties of undefined (reading 'click')`. Something is `undefined` and you tried to call `.click()` on it.
+3. **Code frame** — the lines around the failure. The `>` arrow on line 18 marks the failing line; the `^` caret pinpoints the exact expression that broke — here, `this.loginButton` is `undefined`.
+4. **Stack lines** — where each call came from in your own files. The top of the stack is where the error fired; below that is what called it.
+
+**Ignore `node_modules` stack lines** — those are Playwright's internals. Focus on your own files.
+
+### Common errors and what they mean
+
+| Error | Meaning | Fix |
+|-------|---------|-----|
+| `Cannot read properties of null (reading 'click')` | A variable or handle is `null` — an expected object was not found | Check the variable is properly initialised, check your selector |
+| `Cannot read properties of undefined` | Variable hasn't been assigned | Check imports, check variable scope |
+| `ReferenceError: X is not defined` | Variable not declared in scope | Check spelling, check where it's declared |
+| `TypeError: X is not a function` | Imported wrong thing or forgot `export` | Check `console.log(typeof X)` |
+| Wrong output order | Missing `await` | Add `await` before async calls |
+
+---
+
+### Exercise 5: Read a stack trace
+
+Read this error and answer the questions below:
+
+```
+  1) [chromium] › login.spec.ts:10:3 › admin can login to dashboard ───────────
+
+    TypeError: Cannot read properties of undefined (reading 'click')
+
+      16 |   async login(email: string, password: string) {
+      17 |     await this.emailInput.fill(email);
+    > 18 |     await this.loginButton.click();
+         |                            ^
+      19 |   }
+
+      at LoginPage.login (tests/pages/LoginPage.ts:18:28)
+      at tests/login.spec.ts:15:12
+```
+
+Questions:
+1. Where did the error actually occur? (file, line, column)
+2. What is the name of the test that failed?
+3. What does "Cannot read properties of undefined" mean — what is undefined here?
+4. What would you check first to fix this?
+
+Write your answers as comments in `exercise-5.ts`.
+
+---
+
+## Environment variables
+
+Never hardcode URLs, passwords, or tokens in test files. Use environment variables instead.
+
+### Reading from `process.env`
+
+```typescript
+const baseURL = process.env.BASE_URL;
+const adminEmail = process.env.ADMIN_EMAIL;
+```
+
+### Defaults and required variables
+
+```typescript
+function getConfig() {
+  const baseUrl = process.env.BASE_URL ?? 'http://localhost:3000';  // default value
+
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) {
+    throw new Error('ADMIN_EMAIL environment variable is required');
+  }
+
+  const isCI = process.env.CI === 'true';  // convert string to boolean
+
+  return { baseUrl, adminEmail, isCI };
+}
+```
+
+### `.env` files
+
+Make a `.env` file at the project root:
+
+```
+BASE_URL=http://localhost:3000
+ADMIN_EMAIL=admin@test.io
+ADMIN_PASSWORD=admin123
+CI=false
+```
+
+Then load it at the top of your config:
+
+```typescript
+import 'dotenv/config';
+// Now process.env.BASE_URL, process.env.ADMIN_EMAIL etc. are available
+```
+
+**Always add `.env` to `.gitignore`** — never commit secrets to version control.
+
+You'll see this pattern in `playwright.config.ts`:
+
+```typescript
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+import 'dotenv/config';
+
+export default defineConfig({
+  use: {
+    baseURL: process.env.BASE_URL ?? 'http://localhost:3000',
+  },
+  forbidOnly: !!process.env.CI,  // !! converts string to boolean
+});
+```
+
+---
+
+### Exercise 6: Environment variables
+
+Implement `getConfig()` that reads from `process.env`:
+
+```typescript
+// Simulate dotenv
+process.env.BASE_URL = 'http://localhost:3000';
+process.env.ADMIN_EMAIL = 'admin@test.io';
+process.env.ADMIN_PASSWORD = 'admin123';
+process.env.CI = 'true';
+
+function getConfig() {
+  // Return:
+  // - baseUrl (from BASE_URL, default 'http://localhost:3000')
+  // - adminEmail (from ADMIN_EMAIL, throw Error if missing)
+  // - adminPassword (from ADMIN_PASSWORD, throw Error if missing)
+  // - isCI (from CI, convert string 'true' → boolean true)
+}
+
+console.log(getConfig());
+```
+
+Bonus: delete `process.env.ADMIN_EMAIL` and handle the error with a try/catch.
+
+---
+
+## Key takeaways
+
+Four rules to write on a sticky note:
+
+1. **`const` by default, `let` to rebind, never `var`**
+2. **`await` every Playwright action** — missing `await` = flaky test
+3. **Read stack traces top to bottom** — test header, error message, code frame, then the stack pointing into your files
+4. **Never hardcode secrets** — use `process.env` and `.env` files
+
+In Module 2, every single concept from this module appears in real Page Object classes.
