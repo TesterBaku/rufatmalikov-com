@@ -1,12 +1,10 @@
 ---
 title: "Module 1: JavaScript & TypeScript for QA"
 description: "The JS/TS skills you need for every Playwright test file — const/let, functions, async/await, TypeScript basics, and more."
-pagefind: false
-sidebar:
-  hidden: true
 ---
 
 import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
 
 This module gives you the TypeScript and JavaScript skills you need to write Playwright tests — nothing more, nothing less. If you've never written code before, that's fine. If you have, this will be a quick consolidation of the patterns you'll use every day.
 
@@ -48,6 +46,71 @@ config = { retries: 3 };  // ❌ this is not — you can't rebind the reference
 
 As for `var` — it exists but causes confusing scope bugs. Every modern linter flags it. You will never need it in a Playwright project.
 
+### Block scope
+
+`const` and `let` are block-scoped — they only exist inside the `{ }` they are declared in. Here `message` is only accessible inside the `if` block; referencing it outside throws a `ReferenceError`:
+
+```typescript
+if (true) {
+  let message = 'Hello!';
+}
+console.log(message);  // ❌ ReferenceError: message is not defined
+```
+
+You will fix exactly this in Exercise 1.
+
+---
+
+### Exercise setup
+
+<Deck href="/course/decks/mod1-setup-en/" title="How to Run Exercises" locale="en" />
+
+All exercises run on plain Node.js — no browser needed.
+
+1. Open the Playwright project you set up in Module 0 in VS Code.
+2. Create an `exercises/mod1/` folder in the project root (right-click in the Explorer → **New Folder**).
+3. Create one file per exercise: `exercise-1.ts`, `exercise-2.ts` … `exercise-6.ts`.
+4. Open the integrated terminal (**Ctrl + `**) and confirm you are in the project root.
+5. Run a file: `npx tsx exercises/mod1/exercise-1.ts`
+
+If `tsx` is not found: `npm install -D tsx`
+
+---
+
+### Exercise 1: Variables — fix the mistakes
+
+The code below has several problems. Fix them and run the file.
+
+```typescript
+// ❌ This code has problems. Fix them.
+var baseURL = 'http://localhost:3000';
+const TIMEOUT = 30000;
+TIMEOUT = 50000;  // Should this be allowed?
+
+const user = { email: 'test@test.io', role: 'admin' };
+user = { email: 'admin@test.io', role: 'admin' };  // Should this work?
+
+if (true) {
+  let message = 'Hello!';
+}
+console.log(message);  // Why does this throw?
+
+console.log('Exercise 1 done');
+```
+
+Tasks:
+- Replace `var baseURL` with `const`
+- Fix the `TIMEOUT` reassignment — use a new variable (e.g. `TIMEOUT_EXTENDED`)
+- Fix the `user = {...}` line — assigning to a `const` is an error; declare it with `let` instead
+- Fix the `message` scope issue — move `console.log` inside the block
+- Run the fixed file and verify no errors
+
+**Expected output:**
+```
+Hello!
+Exercise 1 done
+```
+
 ---
 
 ## Strings, numbers, and booleans
@@ -75,7 +138,7 @@ const retries = 3;
 const price = 19.99;
 ```
 
-Watch out for type coercion:
+Watch out for type coercion (the examples below show plain JavaScript behaviour — no TypeScript types):
 
 ```javascript
 '5' - 3  // → 2   (JS converts the string to a number for subtraction)
@@ -163,6 +226,48 @@ This is used heavily for merging test configs and producing modified test data o
 
 ---
 
+### Exercise 2: Build test data objects
+
+Complete the `testData` object:
+
+```typescript
+const testData = {
+  validCustomer: {
+    email: 'customer@test.io',
+    password: 'customer123',
+    name: 'Test Customer',
+  },
+
+  validAdmin: {
+    // TODO: add these properties:
+    // email: 'admin@test.io', password: 'admin123', name: 'Test Admin'
+  },
+
+  newProduct() {
+    // TODO: return { name: `Test Product ${Date.now()}`, price: 19.99, category: 'accessories' }
+  },
+
+  shippingDetails() {
+    // TODO: return { name: '...', address: '...', city: '...', zip: '...' } — use your own test values
+  },
+};
+
+console.log('Customer:', testData.validCustomer);
+console.log('Admin:', testData.validAdmin);
+console.log('Product:', testData.newProduct());
+console.log('Shipping:', testData.shippingDetails());
+```
+
+**Expected output:**
+```
+Customer: { email: 'customer@test.io', password: 'customer123', name: 'Test Customer' }
+Admin: { email: 'admin@test.io', password: 'admin123', name: 'Test Admin' }
+Product: { name: 'Test Product 1712345678901', price: 19.99, category: 'accessories' }
+Shipping: { name: '...', address: '...', city: '...', zip: '...' }
+```
+
+---
+
 ## Functions and arrow functions
 
 ### Regular functions
@@ -215,6 +320,38 @@ const triple = x => { return x * 3 };  // ✅ explicit return
 
 ---
 
+### Exercise 3: Write helper functions
+
+Make `exercise-3.ts` with these four arrow functions:
+
+```typescript
+// 1. formatPrice(price) — returns string with $ and 2 decimals
+//    formatPrice(19.99) → "$19.99"
+
+// 2. isEmail(email) — returns true if string contains '@' and '.'
+//    isEmail('customer@test.io') → true
+
+// 3. generateUser(role) — returns object with timestamp-based email
+//    generateUser('admin') → { email: 'admin_1712345678901@test.io', role: 'admin' }
+
+// 4. filterByCategory(products, category) — filters array by category
+//    filterByCategory([{name:'Mouse',category:'accessories'},...], 'accessories')
+//    → [{name:'Mouse',category:'accessories'}]
+```
+
+Hints: use template literals, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()`. Add basic type annotations to each parameter.
+
+**Expected output:**
+```
+$19.99
+true
+false
+{ email: 'admin_1712345678901@test.io', role: 'admin' }
+[ { name: 'Mouse', category: 'accessories' } ]
+```
+
+---
+
 ## Imports and exports (ESM)
 
 Playwright uses **ES modules** (ESM) — the `import` / `export` syntax. Every `.ts` file you write will start with at least one `import`.
@@ -241,11 +378,15 @@ Note: when you import your own file, you don't add the `.ts` extension in the pa
 
 ```typescript
 // In LoginPage.ts — named export
+import { Page } from '@playwright/test';
+
 export class LoginPage {
   constructor(public page: Page) {}
 }
 
 // In LoginPage.ts — default export (only one per file)
+import { Page } from '@playwright/test';
+
 class LoginPage {
   constructor(public page: Page) {}
 }
@@ -262,7 +403,11 @@ Older Node.js and Playwright examples use **CommonJS** syntax — `const { test 
 
 ## Promises and async/await
 
+<Deck href="/course/decks/mod1-async-en/" title="async/await — Why It Matters" locale="en" />
+
 This is the most important section for avoiding flaky tests. **Missing `await` is the #1 cause of test failures.**
+
+Think of an async operation like ordering coffee: you pay and get a receipt — that is your Promise. `await` is standing at the counter until the coffee is ready. You have the receipt (Promise) immediately; the result arrives later.
 
 ### What is a Promise?
 
@@ -308,9 +453,13 @@ const runTest = async () => {
 };
 ```
 
-An `async` function always returns a Promise. If you return `'hello'` from an async function, the caller receives `Promise<'hello'>` — they need to `await` it too.
+An `async` function always returns a Promise. If you return `'hello'` from an async function, the caller receives `Promise<string>` — they need to `await` it too.
 
 ### `Promise.all` — parallel actions
+
+:::note[Advanced]
+You don't need to fully understand this yet — come back when it appears in Module 9 (API testing).
+:::
 
 When you need to wait for multiple things at once:
 
@@ -323,6 +472,48 @@ const [response] = await Promise.all([
 ```
 
 This is used for navigation patterns where you click and wait for a network request at the same time.
+
+---
+
+### Exercise 4: Fix broken async code
+
+The code below has **6 missing `await` keywords**. Find and fix them.
+
+```typescript
+const fakePage = {
+  goto: (url: string) => new Promise<void>(r =>
+    setTimeout(() => { console.log(`Navigated to ${url}`); r(); }, 50)),
+  fill: (selector: string, value: string) => new Promise<void>(r =>
+    setTimeout(() => { console.log(`Filled ${selector} with ${value}`); r(); }, 50)),
+  click: (selector: string) => new Promise<void>(r =>
+    setTimeout(() => { console.log(`Clicked ${selector}`); r(); }, 50)),
+  waitForSelector: (selector: string) => new Promise<void>(r =>
+    setTimeout(() => { console.log(`Waited for ${selector}`); r(); }, 50)),
+  screenshot: () => new Promise<void>(r =>
+    setTimeout(() => { console.log('Screenshot taken'); r(); }, 50)),
+};
+
+async function runTest() {
+  console.log('Starting test...');
+
+  fakePage.goto('/auth/login');                  // ❌ missing await
+  console.log('Navigated to login page');
+
+  fakePage.waitForSelector('#email');            // ❌ missing await
+  fakePage.fill('#email', 'customer@test.io');   // ❌ missing await
+  fakePage.fill('#password', 'customer123');     // ❌ missing await
+  fakePage.click('button[type="submit"]');       // ❌ missing await
+
+  console.log('Login form submitted');
+  fakePage.screenshot();                         // ❌ missing await
+
+  console.log('Test complete!');
+}
+
+runTest();
+```
+
+Run the broken version first — notice the output order is wrong. Then add `await` and run again.
 
 ---
 
@@ -445,11 +636,40 @@ Read it top to bottom:
 
 | Error | Meaning | Fix |
 |-------|---------|-----|
-| `Cannot read properties of null (reading 'click')` | Selector found nothing — element is `null` | Check your selector, verify element exists |
+| `Cannot read properties of null (reading 'click')` | A variable or handle is `null` — an expected object was not found | Check the variable is properly initialised, check your selector |
 | `Cannot read properties of undefined` | Variable hasn't been assigned | Check imports, check variable scope |
 | `ReferenceError: X is not defined` | Variable not declared in scope | Check spelling, check where it's declared |
 | `TypeError: X is not a function` | Imported wrong thing or forgot `export` | Check `console.log(typeof X)` |
 | Wrong output order | Missing `await` | Add `await` before async calls |
+
+---
+
+### Exercise 5: Read a stack trace
+
+Read this error and answer the questions below:
+
+```
+  1) [chromium] › login.spec.ts:10:3 › admin can login to dashboard ───────────
+
+    TypeError: Cannot read properties of undefined (reading 'click')
+
+      16 |   async login(email: string, password: string) {
+      17 |     await this.emailInput.fill(email);
+    > 18 |     await this.loginButton.click();
+         |                            ^
+      19 |   }
+
+      at LoginPage.login (tests/pages/LoginPage.ts:18:28)
+      at tests/login.spec.ts:15:12
+```
+
+Questions:
+1. Where did the error actually occur? (file, line, column)
+2. What is the name of the test that failed?
+3. What does "Cannot read properties of undefined" mean — what is undefined here?
+4. What would you check first to fix this?
+
+Write your answers as comments in `exercise-5.ts`.
 
 ---
 
@@ -515,169 +735,6 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,  // !! converts string to boolean
 });
 ```
-
----
-
-## Exercises
-
-These exercises run on plain Node.js — no browser needed. Open VS Code, set up the files below, and run them with `npx tsx exercises/mod1/exercise-X.ts`. If you don't have `tsx` yet, install it once with `npm install -D tsx`.
-
----
-
-### Exercise 1: Variables — fix the mistakes
-
-The code below has 4 bugs. Fix them and run the file.
-
-```typescript
-// ❌ This code has bugs. Fix them.
-var baseURL = 'http://localhost:3000';
-const TIMEOUT = 30000;
-TIMEOUT = 50000;  // Should this be allowed?
-
-let user = { email: 'test@test.io', role: 'admin' };
-var user = { email: 'admin@test.io', role: 'admin' };  // Should this work?
-
-if (true) {
-  let message = 'Hello!';
-}
-console.log(message);  // Why is this undefined?
-
-console.log('Exercise 1 done');
-```
-
-Tasks:
-- Replace `var` with `const` or `let`
-- Fix the `TIMEOUT` reassignment — use a new variable (e.g. `TIMEOUT_EXTENDED`)
-- Fix the `user` redeclaration — use assignment, not redeclaration
-- Fix the `message` scope issue — move `console.log` inside the block
-- Run the fixed file and verify no errors
-
-**Expected output:** `Exercise 1 done`
-
----
-
-### Exercise 2: Write helper functions
-
-Make `exercise-2.ts` with these four arrow functions:
-
-```typescript
-// 1. formatPrice(price) — returns string with $ and 2 decimals
-//    formatPrice(19.99) → "$19.99"
-
-// 2. isEmail(email) — returns true if string contains '@' and '.'
-//    isEmail('customer@test.io') → true
-
-// 3. generateUser(role) — returns object with timestamp-based email
-//    generateUser('admin') → { email: 'admin_1712345678@test.io', role: 'admin' }
-
-// 4. filterByCategory(products, category) — filters array by category
-//    filterByCategory([{name:'Mouse',category:'accessories'},...], 'accessories')
-//    → [{name:'Mouse',category:'accessories'}]
-```
-
-Hints: use template literals, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()`. Add basic type annotations to each parameter.
-
----
-
-### Exercise 3: Build test data objects
-
-Complete the `TestData` class:
-
-```typescript
-class TestData {
-  static get validCustomer() {
-    return {
-      email: 'customer@test.io',
-      password: 'customer123',
-      name: 'Test Customer',
-    };
-  }
-
-  static get validAdmin() {
-    // TODO: return { email: 'admin@test.io', password: 'admin123', name: 'Test Admin' }
-  }
-
-  static newProduct() {
-    // TODO: return { name: `Test Product ${Date.now()}`, price: 19.99, category: 'accessories' }
-  }
-
-  static shippingDetails() {
-    // TODO: return { name, address, city, zip } — use your own test values
-  }
-}
-
-console.log('Customer:', TestData.validCustomer);
-console.log('Admin:', TestData.validAdmin);
-console.log('Product:', TestData.newProduct());
-console.log('Shipping:', TestData.shippingDetails());
-```
-
----
-
-### Exercise 4: Fix broken async code
-
-The code below has **6 missing `await` keywords**. Find and fix them.
-
-```typescript
-const fakePage = {
-  goto: (url: string) => Promise.resolve(`Navigated to ${url}`),
-  fill: (selector: string, value: string) => Promise.resolve(`Filled ${selector} with ${value}`),
-  click: (selector: string) => Promise.resolve(`Clicked ${selector}`),
-  waitForSelector: (selector: string) => Promise.resolve(`Waited for ${selector}`),
-  screenshot: () => Promise.resolve('Screenshot taken'),
-};
-
-async function runTest() {
-  console.log('Starting test...');
-
-  fakePage.goto('/auth/login');                  // ❌ missing await
-  console.log('Navigated to login page');
-
-  fakePage.waitForSelector('#email');            // ❌ missing await
-  fakePage.fill('#email', 'customer@test.io');   // ❌ missing await
-  fakePage.fill('#password', 'customer123');     // ❌ missing await
-  fakePage.click('button[type="submit"]');       // ❌ missing await
-
-  console.log('Login form submitted');
-  fakePage.screenshot();                         // ❌ missing await
-  console.log('Screenshot captured');
-
-  console.log('Test complete!');
-}
-
-runTest();
-```
-
-Run the broken version first — notice the output order is wrong. Then add `await` and run again.
-
----
-
-### Exercise 5: Read a stack trace
-
-Read this error and answer the questions below:
-
-```
-  1) [chromium] › login.spec.ts:10:3 › admin can login to dashboard ───────────
-
-    TypeError: Cannot read properties of undefined (reading 'click')
-
-      16 |   async login(email: string, password: string) {
-      17 |     await this.emailInput.fill(email);
-    > 18 |     await this.loginButton.click();
-         |                            ^
-      19 |   }
-
-      at LoginPage.login (tests/pages/LoginPage.ts:18:28)
-      at tests/login.spec.ts:15:12
-```
-
-Questions:
-1. Where did the error actually occur? (file, line, column)
-2. What is the name of the test that failed?
-3. What does "Cannot read properties of undefined" mean — what is undefined here?
-4. What would you check first to fix this?
-
-Write your answers as comments in `exercise-5.ts`.
 
 ---
 

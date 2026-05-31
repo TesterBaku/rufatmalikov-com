@@ -1,14 +1,12 @@
 ---
 title: "Modul 1: QA üçün JavaScript və TypeScript"
-description: "Hər Playwright test faylında lazım olan JS/TS biliklər — const/let, funksiyalar, async/await, TypeScript əsasları və daha çox."
-pagefind: false
-sidebar:
-  hidden: true
+description: "Hər Playwright test faylında lazım olan JS/TS bilikləri — const/let, funksiyalar, async/await, TypeScript əsasları və daha çox."
 ---
 
 import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
 
-Bu modul Playwright testlərini yazmaq üçün lazım olan TypeScript və JavaScript biliklərini verir — nə çox, nə az. Kod yazmaqla ilk dəfə tanışsınızsa, bu normaldır. Əgər daha əvvəl JS yazmısınızsa, bu modul gündəlik istifadə edəcəyiniz şablonları möhkəmləndirəcək.
+Bu modul Playwright testlərini yazmaq üçün lazım olan TypeScript və JavaScript biliklərini verir — nə çox, nə az. Əgər daha əvvəl kod yazmamısınızsa, problem deyil. Əgər daha əvvəl JS yazmısınızsa, bu modul gündəlik istifadə edəcəyiniz şablonları möhkəmləndirəcək.
 
 Kurs boyu **TypeScript** istifadə edirik — Modul 0-da `npm init playwright@latest` bunu sizin üçün qurub. TypeScript ixtiyari tiplərlə JavaScript-dir, ona görə də aşağıdakı hər bir JavaScript nümunəsi eyni zamanda etibarlı TypeScript-dir.
 
@@ -42,17 +40,82 @@ Vacib bir məqam: `const` dəyişməzlik demək deyil. Obyekt xüsusiyyətlərin
 
 ```typescript
 const config = { retries: 1 };
-config.retries = 2;       // ✅ bu icazəlidir
-config = { retries: 3 };  // ❌ bu icazəsizdir — referansı yenidən mənimsədə bilməzsiniz
+config.retries = 2;       // ✅ buna icazə verilir
+config = { retries: 3 };  // ❌ buna icazə verilmir — referansı yenidən mənimsədə bilməzsiniz
 ```
 
-`var` haqqında: mövcuddur, amma gözlənilməz scope xətaları yaradır. Bütün müasir linter-lər bunu işarələyir. Playwright layihəsində heç vaxt `var`-a ehtiyac olmayacaq.
+`var` haqqında: mövcuddur, amma çaşdırıcı scope xətaları yaradır. Bütün müasir linter-lər bunu işarələyir. Playwright layihəsində heç vaxt `var`-a ehtiyac olmayacaq.
+
+### Blok scope
+
+`const` və `let` blok-scoped-dır — yalnız elan edildikləri `{ }` blokunun daxilindən əlçatandır. Aşağıdakı nümunədə `message` yalnız `if` bloku daxilindədir; blokundan kənarda `ReferenceError` atılır:
+
+```typescript
+if (true) {
+  let message = 'Salam!';
+}
+console.log(message);  // ❌ ReferenceError: message is not defined
+```
+
+Tapşırıq 1-də məhz bu xətanı düzəldəcəksiniz.
+
+---
+
+### Tapşırıqlara hazırlıq
+
+<Deck href="/course/decks/mod1-setup/" title="Tapşırıqları Necə İşlətməli" />
+
+Bütün tapşırıqlar sadə Node.js ilə işləyir — brauzerlərə ehtiyac yoxdur.
+
+1. Modul 0-da qurduğunuz Playwright layihəsini VS Code-da açın.
+2. Layihənin kökündə `exercises/mod1/` qovluğunu yaradın (Explorer panelində sağ klik → **New Folder**).
+3. Hər tapşırıq üçün ayrı fayl yaradın: `exercise-1.ts`, `exercise-2.ts` … `exercise-6.ts`.
+4. İnteqrasiya olunmuş terminalı açın (**Ctrl + `**) — yolun layihə kökü olduğundan əmin olun.
+5. Faylı işlədin: `npx tsx exercises/mod1/exercise-1.ts`
+
+`tsx` tapılmırsa: `npm install -D tsx`
+
+---
+
+### Tapşırıq 1: Dəyişənlər — xətaları tapın
+
+Aşağıdakı kodda bir neçə problem var. Onları düzəldin və faylı işlədin.
+
+```typescript
+// ❌ Bu kodda problemlər var. Düzəldin.
+var baseURL = 'http://localhost:3000';
+const TIMEOUT = 30000;
+TIMEOUT = 50000;  // Bu icazəlidirmi?
+
+const user = { email: 'test@test.io', role: 'admin' };
+user = { email: 'admin@test.io', role: 'admin' };  // Bu işləyəcəkmi?
+
+if (true) {
+  let message = 'Salam!';
+}
+console.log(message);  // Niyə xəta var?
+
+console.log('Tapşırıq 1 tamamlandı');
+```
+
+Addımlar:
+- `var baseURL`-ı `const` ilə əvəzləyin
+- `TIMEOUT` yenidən mənimsətməni düzəldin — yeni dəyişən istifadə edin (məs. `TIMEOUT_EXTENDED`)
+- `user = {...}` — `const` dəyişəninə mənimsətmə xətasıdır; `let user` ilə elan edin
+- `message` scope xətasını düzəldin — `console.log`-u blokun içinə köçürün
+- Düzəldilmiş faylı işlədin və xəta olmadığını yoxlayın
+
+**Gözlənilən nəticə:**
+```
+Salam!
+Tapşırıq 1 tamamlandı
+```
 
 ---
 
 ## String, rəqəm və boolean
 
-Bu üç primitiv tip test fayllarında istifadə edəcəyiniz şeylərin böyük hissəsini əhatə edir.
+Bu üç primitiv tip test fayllarında istifadə edəcəklərinizin böyük hissəsini əhatə edir.
 
 ### String-lər
 
@@ -75,7 +138,7 @@ const retries = 3;
 const price = 19.99;
 ```
 
-Tip çevrilərinə diqqət edin:
+Tip çevrilmələrinə diqqət edin (aşağıdakı nümunələr xalis JavaScript davranışını göstərir — TypeScript tipləri yoxdur):
 
 ```javascript
 '5' - 3  // → 2   (JS string-i rəqəmə çevirir)
@@ -163,6 +226,48 @@ Test konfiqurasiyalarını birləşdirmək və dəyişdirilmiş test data obyekt
 
 ---
 
+### Tapşırıq 2: Test data obyektlərini qurun
+
+`testData` obyektini tamamlayın:
+
+```typescript
+const testData = {
+  validCustomer: {
+    email: 'customer@test.io',
+    password: 'customer123',
+    name: 'Test Müştərisi',
+  },
+
+  validAdmin: {
+    // TODO: bu xüsusiyyətləri əlavə edin:
+    // email: 'admin@test.io', password: 'admin123', name: 'Test Admini'
+  },
+
+  newProduct() {
+    // TODO: { name: `Test Məhsulu ${Date.now()}`, price: 19.99, category: 'aksesuarlar' } qaytarın
+  },
+
+  shippingDetails() {
+    // TODO: { name: '...', address: '...', city: '...', zip: '...' } qaytarın — öz test dəyərlərinizi istifadə edin
+  },
+};
+
+console.log('Müştəri:', testData.validCustomer);
+console.log('Admin:', testData.validAdmin);
+console.log('Məhsul:', testData.newProduct());
+console.log('Göndərmə:', testData.shippingDetails());
+```
+
+**Gözlənilən nəticə:**
+```
+Müştəri: { email: 'customer@test.io', password: 'customer123', name: 'Test Müştərisi' }
+Admin: { email: 'admin@test.io', password: 'admin123', name: 'Test Admini' }
+Məhsul: { name: 'Test Məhsulu 1712345678901', price: 19.99, category: 'aksesuarlar' }
+Göndərmə: { name: '...', address: '...', city: '...', zip: '...' }
+```
+
+---
+
 ## Funksiyalar və arrow funksiyalar
 
 ### Adi funksiyalar
@@ -177,7 +282,7 @@ function formatPrice(price: number): string {
 
 ### Arrow funksiyalar
 
-Arrow funksiyalar daha qısa, müasir sintaksisdır — Playwright-də hər yerdə görünür:
+Arrow funksiyalar daha qısa, müasir sintaksisdir — Playwright-də hər yerdə görünür:
 
 ```typescript
 const formatPrice = (price: number): string => `$${price.toFixed(2)}`;
@@ -205,12 +310,45 @@ test('istifadəçi daxil ola bilər', async ({ page }) => {
 
 ### Gizli return tələsi
 
-Tək ifadəli arrow funksiyalar dəyəri gizlin qaytarır — `return` açar sözü lazım deyil:
+Tək ifadəli arrow funksiyalar dəyəri gizli qaytarır — `return` açar sözü lazım deyil:
 
 ```typescript
-const double = x => x * 2;      // gizlin return — x * 2 qaytarır
+const double = x => x * 2;      // gizli return — x * 2 qaytarır
 const triple = x => { x * 3 };  // ❌ return yoxdur — undefined qaytarır
 const triple = x => { return x * 3 };  // ✅ açıq return
+```
+
+---
+
+### Tapşırıq 3: Köməkçi funksiyalar yazın
+
+Bu dörd arrow funksiyanı ehtiva edən `exercise-3.ts` hazırlayın:
+
+```typescript
+// 1. formatPrice(price) — $ və 2 onluq rəqəm ilə string qaytarır
+//    formatPrice(19.99) → "$19.99"
+
+// 2. isEmail(email) — string '@' və '.' ehtiva edirsə true qaytarır
+//    isEmail('customer@test.io') → true
+//    isEmail('e-poçt-deyil') → false
+
+// 3. generateUser(role) — timestamp-li email ilə obyekt qaytarır
+//    generateUser('admin') → { email: 'admin_1712345678901@test.io', role: 'admin' }
+
+// 4. filterByCategory(products, category) — array-i kateqoriyaya görə süzür
+//    filterByCategory([{name:'Siçan',category:'aksesuarlar'},...], 'aksesuarlar')
+//    → [{name:'Siçan',category:'aksesuarlar'}]
+```
+
+İpuclar: template literal, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()` istifadə edin. Hər parametrə əsas tip annotasiyası əlavə edin.
+
+**Gözlənilən nəticə:**
+```
+$19.99
+true
+false
+{ email: 'admin_1712345678901@test.io', role: 'admin' }
+[ { name: 'Siçan', category: 'aksesuarlar' } ]
 ```
 
 ---
@@ -241,11 +379,15 @@ Qeyd: öz faylınızı import edəndə yola `.ts` uzantısı əlavə etmirsiniz.
 
 ```typescript
 // LoginPage.ts — adlandırılmış export
+import { Page } from '@playwright/test';
+
 export class LoginPage {
   constructor(public page: Page) {}
 }
 
 // LoginPage.ts — default export (fayl başına yalnız bir dənə)
+import { Page } from '@playwright/test';
+
 class LoginPage {
   constructor(public page: Page) {}
 }
@@ -262,7 +404,11 @@ Köhnə Node.js və Playwright nümunələri **CommonJS** sintaksisindən istifa
 
 ## Promise-lər və async/await
 
+<Deck href="/course/decks/mod1-async/" title="async/await — Niyə Vacibdir?" />
+
 Bu bölmə flaky testlərdən qaçmaq üçün ən vacibdir. **`await` unutmaq test uğursuzluqlarının 1 nömrəli səbəbidir.**
+
+Asinxron əməliyyatları anlamaq üçün qəhvə sifariş etməyi təsəvvür edin: kassaya pul verirsiniz və çek alırsınız — bu sizin Promise-inizdir. `await` isə piştaxtanın yanında dayanıb qəhvə hazır olana qədər gözləməkdir. Çek (Promise) dərhal əlinizdədir, nəticə isə bir az sonra gəlir.
 
 ### Promise nədir?
 
@@ -308,9 +454,13 @@ const runTest = async () => {
 };
 ```
 
-`async` funksiya həmişə Promise qaytarır. Əgər async funksiyadan `'salam'` qaytarsanız, çağıran tərəf `Promise<'salam'>` alır — onlar da `await` etməlidir.
+`async` funksiya həmişə Promise qaytarır. Əgər async funksiyadan `'salam'` qaytarsanız, çağıran tərəf `Promise<string>` alır — onlar da `await` etməlidir.
 
 ### `Promise.all` — paralel əməliyyatlar
+
+:::note[Qabaqcıl]
+Bu nümunəni indi tam başa düşmək vacib deyil — Modul 9-da (API testi) qarşınıza çıxanda qayıdın.
+:::
 
 Eyni anda bir neçə şeyi gözləmək lazım olduqda:
 
@@ -326,9 +476,51 @@ Bu, klik etdikdə şəbəkə sorğusunu gözləmək lazım olan naviqasiya şabl
 
 ---
 
+### Tapşırıq 4: Xətalı asinxron kodu düzəldin
+
+Aşağıdakı kodda **6 əksik `await` açar sözü** var. Onları tapın və düzəldin.
+
+```typescript
+const fakePage = {
+  goto: (url: string) => new Promise<void>(r =>
+    setTimeout(() => { console.log(`Keçildi: ${url}`); r(); }, 50)),
+  fill: (selector: string, value: string) => new Promise<void>(r =>
+    setTimeout(() => { console.log(`${selector} dolduruldu: ${value}`); r(); }, 50)),
+  click: (selector: string) => new Promise<void>(r =>
+    setTimeout(() => { console.log(`Klik edildi: ${selector}`); r(); }, 50)),
+  waitForSelector: (selector: string) => new Promise<void>(r =>
+    setTimeout(() => { console.log(`Gözlənildi: ${selector}`); r(); }, 50)),
+  screenshot: () => new Promise<void>(r =>
+    setTimeout(() => { console.log('Ekran görüntüsü alındı'); r(); }, 50)),
+};
+
+async function runTest() {
+  console.log('Test başlayır...');
+
+  fakePage.goto('/auth/login');                  // ❌ await yoxdur
+  console.log('Login səhifəsinə keçildi');
+
+  fakePage.waitForSelector('#email');            // ❌ await yoxdur
+  fakePage.fill('#email', 'customer@test.io');   // ❌ await yoxdur
+  fakePage.fill('#password', 'customer123');     // ❌ await yoxdur
+  fakePage.click('button[type="submit"]');       // ❌ await yoxdur
+
+  console.log('Login formu göndərildi');
+  fakePage.screenshot();                         // ❌ await yoxdur
+
+  console.log('Test tamamlandı!');
+}
+
+runTest();
+```
+
+Əvvəlcə xətalı versiyanı işlədin — çıxış sırasının yanlış olduğunu görəcəksiniz. Sonra `await` əlavə edib yenidən işlədin.
+
+---
+
 ## TypeScript əsasları
 
-Bu modul boyu artıq TypeScript yazırsınız — hər annotasiya edilmiş parametr (`price: number`, `role: string`) iş başında olan TypeScript-dir. Bu bölmə "tip annotasiyaları olan JS" olmayan hissələri bir araya gətirir: interface-lər, istəyə bağlı xüsusiyyətlər və JSDoc.
+Bu modul boyu artıq TypeScript yazırsınız — hər annotasiya edilmiş parametr (`price: number`, `role: string`) iş başında olan TypeScript-dir. Bu bölmə sadəcə "tip annotasiyaları olan JS" hissələri bir araya gətirmir: interface-lər, istəyə bağlı xüsusiyyətlər və JSDoc.
 
 ### Niyə tiplər kömək edir
 
@@ -348,7 +540,7 @@ function formatPrice(price: number): string {
 formatPrice('rəqəm-deyil');  // ❌ TypeScript xətası: Argument of type 'string' is not assignable to parameter of type 'number'
 ```
 
-VS Code-dakı qırmızı dalğa-xətt — budur dərs. İşə salmadan öncə xətanı düzəldirsiniz.
+VS Code-dakı qırmızı dalğalı xətt — siqnaldır. İşə salmadan öncə xətanı düzəldirsiniz.
 
 ### Interface-lər
 
@@ -415,7 +607,7 @@ Tez-tez ehtiyacınız olmayacaq — kurs `.ts` faylları istifadə edir — amma
 
 Test uğursuz olduqda, xəta mesajı nə baş verdiyini dəqiq deyir — əgər oxumağı bilsəniz.
 
-### Playwright uğursuzluğunun anatomiyası
+### Playwright xətasının anatomiyası
 
 ```
   1) [chromium] › login.spec.ts:10:3 › admin can login to dashboard ───────────
@@ -434,9 +626,9 @@ Test uğursuz olduqda, xəta mesajı nə baş verdiyini dəqiq deyir — əgər 
 
 Yuxarıdan aşağı oxuyun:
 
-1. **Test başlığı** — `[chromium] › login.spec.ts:10:3 › admin can login to dashboard` brauzer projektini, testin başladığı fayl və sətri, və test adını göstərir.
+1. **Test başlığı** — `[chromium] › login.spec.ts:10:3 › admin can login to dashboard` brauzer proyektini, testin başladığı fayl və sətri, və test adını göstərir.
 2. **Xəta tipi və mesajı** — `TypeError: Cannot read properties of undefined (reading 'click')`. Bir şey `undefined`-dir və siz onun üzərində `.click()` çağırmağa cəhd etdiniz.
-3. **Kod çərçivəsi** — uğursuzluğun ətrafındakı sətirlər. 18-ci sətirdəki `>` oxu uğursuz sətri işarələyir; `^` işarəsi tam olaraq pozulan ifadəni göstərir — burada `this.loginButton` `undefined`-dir.
+3. **Kod çərçivəsi** — xətanın ətrafındakı sətirlər. 18-ci sətirdəki `>` oxu uğursuz sətri işarələyir; `^` işarəsi tam olaraq pozulan ifadəni göstərir — burada `this.loginButton` `undefined`-dir.
 4. **Stack sətirləri** — hər çağırışın öz fayllarınızda haradan gəldiyi. Stack-in başı — xətanın baş verdiyi yer; aşağıda — onu çağıran kod.
 
 **`node_modules` stack sətirlərinə məhəl qoymayın** — bunlar Playwright-in daxili işləridir. Öz fayllarınıza diqqət edin.
@@ -445,11 +637,40 @@ Yuxarıdan aşağı oxuyun:
 
 | Xəta | Məna | Həll |
 |------|------|------|
-| `Cannot read properties of null (reading 'click')` | Selector heç nə tapmadı — element `null`-dur | Selector-u yoxlayın, elementin mövcud olduğunu yoxlayın |
+| `Cannot read properties of null (reading 'click')` | Bir dəyişən və ya handle `null`-dur — gözlənilən obyekt tapılmadı | Dəyişənin düzgün başladıldığını və selector-un düzgün yazıldığını yoxlayın |
 | `Cannot read properties of undefined` | Dəyişən mənimsədilməyib | Import-ları, dəyişən scope-unu yoxlayın |
 | `ReferenceError: X is not defined` | Dəyişən scope-da elan edilməyib | Yazılışı, elan yerini yoxlayın |
 | `TypeError: X is not a function` | Yanlış şey import edilib ya `export` unudulub | `console.log(typeof X)` yoxlayın |
-| Çıxış sırası yanlışdır | `await` yoxdur | Asinxron çağırışlardan əvvəl `await` əlavə edin |
+| Nəticə sırası yanlışdır | `await` yoxdur | Asinxron çağırışlardan əvvəl `await` əlavə edin |
+
+---
+
+### Tapşırıq 5: Stack trace-i oxuyun
+
+Bu xətanı oxuyun və aşağıdakı sualları cavablayın:
+
+```
+  1) [chromium] › login.spec.ts:10:3 › admin can login to dashboard ───────────
+
+    TypeError: Cannot read properties of undefined (reading 'click')
+
+      16 |   async login(email: string, password: string) {
+      17 |     await this.emailInput.fill(email);
+    > 18 |     await this.loginButton.click();
+         |                            ^
+      19 |   }
+
+      at LoginPage.login (tests/pages/LoginPage.ts:18:28)
+      at tests/login.spec.ts:15:12
+```
+
+Suallar:
+1. Xəta faktiki olaraq harada baş verdi? (fayl, sətir, sütun)
+2. Uğursuz olan testin adı nədir?
+3. "Cannot read properties of undefined" bu kontekstdə nə deməkdir — nə undefined-dir?
+4. Bunu düzəltmək üçün ilk nəyi yoxlayardınız?
+
+Cavablarınızı `exercise-5.ts` faylında şərh kimi yazın.
 
 ---
 
@@ -492,7 +713,7 @@ ADMIN_PASSWORD=admin123
 CI=false
 ```
 
-Sonra konfiqurasiyanın yuxarısında yükləyin:
+Sonra konfiqurasiyanın başında yükləyin:
 
 ```typescript
 import 'dotenv/config';
@@ -515,169 +736,6 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,  // !! string-i boolean-a çevirir
 });
 ```
-
----
-
-## Tapşırıqlar
-
-Bu tapşırıqlar sadə Node.js ilə işləyir — brauzerlərə ehtiyac yoxdur. VS Code-u açın, aşağıdakı faylları hazırlayın və `npx tsx exercises/mod1/exercise-X.ts` ilə işlədin. `tsx` yoxdursa, bir dəfə `npm install -D tsx` ilə quraşdırın.
-
----
-
-### Tapşırıq 1: Dəyişənlər — xətaları tapın
-
-Aşağıdakı kodda 4 xəta var. Onları düzəldin və faylı işlədin.
-
-```typescript
-// ❌ Bu kodda xətalar var. Düzəldin.
-var baseURL = 'http://localhost:3000';
-const TIMEOUT = 30000;
-TIMEOUT = 50000;  // Bu icazəlidirmi?
-
-let user = { email: 'test@test.io', role: 'admin' };
-var user = { email: 'admin@test.io', role: 'admin' };  // Bu işləyəcəkmi?
-
-if (true) {
-  let message = 'Salam!';
-}
-console.log(message);  // Niyə undefined-dir?
-
-console.log('Tapşırıq 1 tamamlandı');
-```
-
-Tapşırıqlar:
-- `var`-ı `const` və ya `let` ilə əvəzləyin
-- `TIMEOUT` yenidən mənimsətməni düzəldin — yeni dəyişən istifadə edin (məs. `TIMEOUT_EXTENDED`)
-- `user` yenidən elan etməni düzəldin — elan deyil, mənimsətmədən istifadə edin
-- `message` scope xətasını düzəldin — `console.log`-u blokun içinə köçürün
-- Düzəldilmiş faylı işədin və xəta olmadığını yoxlayın
-
-**Gözlənilən çıxış:** `Tapşırıq 1 tamamlandı`
-
----
-
-### Tapşırıq 2: Köməkçi funksiyalar yazın
-
-Bu dörd arrow funksiyanı ehtiva edən `exercise-2.ts` hazırlayın:
-
-```typescript
-// 1. formatPrice(price) — $ və 2 onluq rəqəm ilə string qaytarır
-//    formatPrice(19.99) → "$19.99"
-
-// 2. isEmail(email) — string '@' və '.' ehtiva edirsə true qaytarır
-//    isEmail('customer@test.io') → true
-
-// 3. generateUser(role) — timestamp-li email ilə obyekt qaytarır
-//    generateUser('admin') → { email: 'admin_1712345678@test.io', role: 'admin' }
-
-// 4. filterByCategory(products, category) — array-i kateqoriyaya görə süzür
-//    filterByCategory([{name:'Siçan',category:'aksesuarlar'},...], 'aksesuarlar')
-//    → [{name:'Siçan',category:'aksesuarlar'}]
-```
-
-İpuclar: template literal, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()` istifadə edin. Hər parametrə əsas tip annotasiyası əlavə edin.
-
----
-
-### Tapşırıq 3: Test data obyektlərini qurun
-
-`TestData` class-ını tamamlayın:
-
-```typescript
-class TestData {
-  static get validCustomer() {
-    return {
-      email: 'customer@test.io',
-      password: 'customer123',
-      name: 'Test Müştərisi',
-    };
-  }
-
-  static get validAdmin() {
-    // TODO: { email: 'admin@test.io', password: 'admin123', name: 'Test Admini' } qaytarın
-  }
-
-  static newProduct() {
-    // TODO: { name: `Test Məhsulu ${Date.now()}`, price: 19.99, category: 'aksesuarlar' } qaytarın
-  }
-
-  static shippingDetails() {
-    // TODO: { name, address, city, zip } — öz test dəyərlərinizi istifadə edin
-  }
-}
-
-console.log('Müştəri:', TestData.validCustomer);
-console.log('Admin:', TestData.validAdmin);
-console.log('Məhsul:', TestData.newProduct());
-console.log('Göndərmə:', TestData.shippingDetails());
-```
-
----
-
-### Tapşırıq 4: Xətalı asinxron kodu düzəldin
-
-Aşağıdakı kodda **6 əksik `await` açar sözü** var. Onları tapın və düzəldin.
-
-```typescript
-const fakePage = {
-  goto: (url: string) => Promise.resolve(`Keçildi: ${url}`),
-  fill: (selector: string, value: string) => Promise.resolve(`${selector} dolduruldu: ${value}`),
-  click: (selector: string) => Promise.resolve(`Klik edildi: ${selector}`),
-  waitForSelector: (selector: string) => Promise.resolve(`Gözlənildi: ${selector}`),
-  screenshot: () => Promise.resolve('Ekran görüntüsü alındı'),
-};
-
-async function runTest() {
-  console.log('Test başlayır...');
-
-  fakePage.goto('/auth/login');                  // ❌ await yoxdur
-  console.log('Login səhifəsinə keçildi');
-
-  fakePage.waitForSelector('#email');            // ❌ await yoxdur
-  fakePage.fill('#email', 'customer@test.io');   // ❌ await yoxdur
-  fakePage.fill('#password', 'customer123');     // ❌ await yoxdur
-  fakePage.click('button[type="submit"]');       // ❌ await yoxdur
-
-  console.log('Login formu göndərildi');
-  fakePage.screenshot();                         // ❌ await yoxdur
-  console.log('Ekran görüntüsü alındı');
-
-  console.log('Test tamamlandı!');
-}
-
-runTest();
-```
-
-Əvvəlcə xətalı versiyanu işlədin — çıxış sırasının yanlış olduğunu görəcəksiniz. Sonra `await` əlavə edib yenidən işlədin.
-
----
-
-### Tapşırıq 5: Stack trace-i oxuyun
-
-Bu xətanı oxuyun və aşağıdakı sualları cavablayın:
-
-```
-  1) [chromium] › login.spec.ts:10:3 › admin can login to dashboard ───────────
-
-    TypeError: Cannot read properties of undefined (reading 'click')
-
-      16 |   async login(email: string, password: string) {
-      17 |     await this.emailInput.fill(email);
-    > 18 |     await this.loginButton.click();
-         |                            ^
-      19 |   }
-
-      at LoginPage.login (tests/pages/LoginPage.ts:18:28)
-      at tests/login.spec.ts:15:12
-```
-
-Suallar:
-1. Xəta faktiki olaraq harada baş verdi? (fayl, sətir, sütun)
-2. Uğursuz olan testin adı nədir?
-3. "Cannot read properties of undefined" bu kontekstdə nə deməkdir — nə undefined-dir?
-4. Bunu düzəltmək üçün ilk nəyi yoxlayardınız?
-
-Cavablarınızı `exercise-5.ts` faylında şərh kimi yazın.
 
 ---
 
