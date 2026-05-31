@@ -22,6 +22,22 @@ Available in English and Azerbaijani.
 
 [Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com/en/) · [More about it →](/en/playwright/)
 
+## Exam Helper — exam prep for students in Azerbaijan
+
+A free, browser-based study app for students in Azerbaijan. Pick a subject, read short lessons, then practise with tiered quizzes that grade instantly and explain every mistake — no install, runs in the browser. One bank-aware app serves two subjects from the same code, and every math answer is verified by an automatic answer-checker.
+
+**What's inside:**
+
+- **Grade 5 Mathematics** — 57 topics across 8 chapters, **1,710 questions**, taught in Russian
+- **Grade 9 buraxılış prep** — exam-style math practice in Azerbaijani across 10 topics, tuned for the exit exam
+- **Tiered quizzes** — easy / medium / hard / mixed, with per-mistake feedback
+- **Retry-wrong & progress** — re-run only the questions you missed and track your score
+- **Verified answers** — a deterministic answer-checker validates every math item before it ships
+
+Built with TypeScript and Next.js (static export).
+
+[Open Exam Helper →](https://exam.rufatmalikov.com/) · [More about it →](/en/exam-helper/) · [View the code →](https://github.com/TesterBaku/az-exam-helper)
+
 ## Universal Appliances Repair — client website
 
 A static marketing website I built for Universal Appliances Repair, an appliance repair service in Orange County, CA. It's live in production and shows the testing-and-automation workflow I enjoy: every change ships through a PR gated by automated checks.

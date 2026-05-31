@@ -22,6 +22,22 @@ Qurub paylaşdığım layihələr. Hər biri inkişaf etdikcə öz yazısını a
 
 [BrauzerLab-ı aç →](https://brauzerlab.rufatmalikov.com/az/) · [Ətraflı →](/az/playwright/)
 
+## İmtahan Köməkçisi — Azərbaycandakı şagirdlər üçün imtahan hazırlığı
+
+Azərbaycandakı şagirdlər üçün pulsuz, brauzer əsaslı təhsil tətbiqi. Fənn seçirsiniz, qısa dərsləri oxuyursunuz, sonra dərhal qiymətləndirən və hər səhvi izah edən pilləli testlərlə məşq edirsiniz — quraşdırma yoxdur, brauzerdə işləyir. Bir məzmun-bilən tətbiq eyni koddan iki fənni təqdim edir və hər riyaziyyat cavabı avtomatik cavab-yoxlayıcısı ilə yoxlanılır.
+
+**İçərisində nə var:**
+
+- **5-ci sinif riyaziyyatı** — 8 fəsil üzrə 57 mövzu, **1 710 sual**, rus dilində
+- **9-cu sinif buraxılış hazırlığı** — Azərbaycan dilində, 10 mövzu üzrə imtahan tipli riyaziyyat məşqi, buraxılış imtahanına köklənib
+- **Pilləli testlər** — asan / orta / çətin / qarışıq, hər səhv üçün rəylə
+- **Səhvləri təkrarla & tərəqqi** — yalnız səhv etdiyiniz sualları yenidən işləyin və nəticənizi izləyin
+- **Yoxlanmış cavablar** — deterministik cavab-yoxlayıcısı hər riyaziyyat sualını yayımdan əvvəl təsdiqləyir
+
+TypeScript və Next.js ilə qurulub (statik export).
+
+[İmtahan Köməkçisini aç →](https://exam.rufatmalikov.com/) · [Ətraflı →](/az/exam-helper/) · [Koda bax →](https://github.com/TesterBaku/az-exam-helper)
+
 ## Universal Appliances Repair — müştəri vebsaytı
 
 Orange County, Kaliforniyada yerləşən Universal Appliances Repair adlı məişət texnikası təmiri xidməti üçün qurduğum statik marketinq vebsaytı. Sayt canlı işləyir və sevdiyim test-və-avtomatlaşdırma iş axınını nümayiş etdirir: hər dəyişiklik avtomatik yoxlamalarla qorunan PR vasitəsilə yayımlanır.
