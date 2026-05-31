@@ -56,6 +56,11 @@ export default defineConfig({
 					items: [{ autogenerate: { directory: 'playwright' } }],
 				},
 				{
+					label: 'Exam Helper',
+					translations: { az: 'İmtahan Köməkçisi' },
+					items: [{ autogenerate: { directory: 'exam-helper' } }],
+				},
+				{
 					label: 'Projects',
 					items: [{ autogenerate: { directory: 'projects' } }],
 				},

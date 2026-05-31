@@ -39,6 +39,7 @@ test('projects page lists all entries in importance order', async ({ page }) => 
 	const headings = await page.locator('.sl-markdown-content h2').allInnerTexts();
 	const expectedOrder = [
 		'BrauzerLab',
+		'Exam Helper',
 		'Universal Appliances Repair',
 		'SDET Interview Trainer',
 		'Study Quiz',
