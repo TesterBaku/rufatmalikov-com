@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://rufatmalikov.com/sitemap-index.xml
