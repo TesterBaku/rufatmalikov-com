@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
@@ -69,5 +70,6 @@ export default defineConfig({
 			// Edit-this-page links — wire up once the repo is on GitHub.
 			// editLink: { baseUrl: 'https://github.com/<user>/<repo>/edit/main/' },
 		}),
+		sitemap(),
 	],
 });
