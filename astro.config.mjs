@@ -13,6 +13,7 @@ export default defineConfig({
 	},
 	integrations: [
 		starlight({
+			routeMiddleware: './src/starlightRouteData.ts',
 			title: {
 				en: 'Rufat Malikov',
 				az: 'Rüfət Məlikov',

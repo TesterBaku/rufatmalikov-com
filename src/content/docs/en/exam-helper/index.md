@@ -1,6 +1,9 @@
 ---
 title: Exam Helper
 description: A free, browser-based exam-prep app for students in Azerbaijan — interactive math lessons and tiered quizzes with instant feedback.
+# AZ/RU-only school app. Kept reachable (linked from the Projects page) but out
+# of EN search; the EN sidebar group is dropped via src/starlightRouteData.ts.
+pagefind: false
 ---
 
 **Exam Helper** is a free, browser-based study app for students in Azerbaijan. Pick a subject, read short lessons, then practise with tiered quizzes that grade you instantly and explain every mistake. Nothing to install — it runs in your browser.
