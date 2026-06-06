@@ -449,7 +449,24 @@ For closed shadow roots (rare in practice), you will need to work with the compo
 
 ## Exercises
 
-These exercises use TestMarket Lab running locally at `http://localhost:3000`.
+These exercises run against **TestMarket Lab**, a small e-commerce app you run on your own machine. You'll reuse it throughout the rest of the course, so set it up once now (requires Node.js 20+, installed in [Module 0](/en/course/module-0/)):
+
+```bash
+# Clone the app (one time)
+git clone https://github.com/TesterBaku/testmarket-lab.git
+cd testmarket-lab
+
+# Install dependencies and start the server
+npm install
+npm start
+```
+
+Leave it running and open **http://localhost:3000** in your browser. When an exercise needs a logged-in user, sign in with the demo accounts:
+
+- **Customer** — `customer@test.io` / `customer123`
+- **Admin** — `admin@test.io` / `admin123`
+
+> Need a clean slate? Restart the app, or send `POST http://localhost:3000/api/reset` to restore the seed data.
 
 ---
 
