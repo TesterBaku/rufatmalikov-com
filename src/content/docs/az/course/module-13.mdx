@@ -1,0 +1,472 @@
+---
+title: "Modul 13: Yekun layihə"
+description: "Kursun hər texnikasını real bir tətbiqə tətbiq edərək sıfırdan tam, peşəkar Playwright test avtomatlaşdırma çərçivəsi qurun."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+Son modulə xoş gəldiniz. Əvvəlki modullar boyunca peşəkar test avtomatlaşdırma çərçivəsinin hər parçasını qurduğunuz: Səhifə Obyekti Modeli, xüsusi fixtures, API testi, autentifikasiya vəziyyəti idarəetməsi, vizual və əlçatımlılıq testi, tam CI pipeline. Bu modul hər şeyi vahid yekun layihəsində bir araya gətirir.
+
+Sonunda istənilən müsahibədə nümayiş etdirə biləcəyiniz tam, portfolio-ya hazır test dəsti — və istənilən yeni tətbiqə tətbiq edə biləcəyiniz bir çərçivə əlinizdə olacaq.
+
+<Video title="Modul 13: Yekun layihə" />
+
+---
+
+## Yekun layihənin məqsədi
+
+Məqsəd kursun hər texnikasını tətbiq edərək real bir e-ticarət tətbiqi — **TestMarket Lab** — üçün tam, peşəkar test avtomatlaşdırma çərçivəsi qurmaqdan ibarətdir:
+
+- Ortaq `BasePage` və səhifəyə özəl siniflər ilə **Səhifə Obyekti Modeli**
+- Səhifə obyektlərini, API köməkçilərini və autentifikasiya vəziyyətini daxil edən **xüsusi fixtures**
+- UI axışlarına etibar etmədən test məlumatlarını hazırlamaq və silmək üçün **API seeding**
+- Hər testin artıq daxil olmuş vəziyyətdə başlaması üçün **Auth `storageState`** — hər işlətmədə giriş yoxdur
+- Hər push və pull request-də bir neçə brauzerdə işləyən **CI pipeline**
+
+Nəticə sadəcə keçən test dəsti deyil. Bu, avtomatlaşdırmanı peşəkar səviyyədə dizayn edə, strukturlaşdıra və saxlaya bildiyinizin nümayişidir.
+
+---
+
+## Tövsiyə olunan arxitektura
+
+Yaxşı strukturlaşdırılmış yekun layihə çərçivəsi belə görünür:
+
+```
+capstone-tests/
+├── pages/
+│   ├── BasePage.js           ← ortaq lokatör köməkçiləri + naviqasiya
+│   ├── LoginPage.js
+│   ├── ProductPage.js
+│   ├── CartPage.js
+│   ├── CheckoutPage.js
+│   └── AdminDashboardPage.js
+├── fixtures/
+│   ├── auth.fixture.js       ← customerPage / adminPage daxil edir
+│   └── test-data.fixture.js  ← apiHelper + testData fabrikaları daxil edir
+├── utils/
+│   ├── ApiHelper.js          ← hər REST endpoint-i sarır
+│   └── TestData.js           ← test məlumatları üçün fabrika metodları
+├── tests/
+│   ├── auth/
+│   ├── shop/
+│   ├── admin/
+│   ├── api/
+│   └── visual/
+├── auth/
+│   ├── customer.json         ← saxlanmış storageState (gitignore-da)
+│   └── admin.json
+├── playwright.config.js
+└── package.json
+```
+
+**Bu struktur niyə belədir?**
+
+Hər qovluğun tək bir məsuliyyəti var. Testlər öz məlumatlarını qurmur və ya autentifikasiyanı idarə etmir — fixtures bunu edir. Səhifə obyektləri iddialar saxlamır — testlər edir. Bu ayrılıq uğursuzluqları diaqnostika etməyi asanlaşdırır və yeni funksiyaları əlavə etməyi sadələşdirir.
+
+---
+
+## Test planı və əhatə mülahizəsi
+
+Tək bir test yazmadan əvvəl iki sualı cavablandırın:
+
+### Nəyi test etmək lazımdır
+
+Əvvəlcə **kritik istifadəçi axışlarına** diqqət yetirin:
+
+| Prioritet | Sahə | Səbəb |
+|---|---|---|
+| Yüksək | Giriş / çıxış | Hər şey autentifikasiyadan asılıdır |
+| Yüksək | Səbətə əlavə + ödəniş | Əsas biznes axışı; buradakı reqressiyalar pul itkisinə yol açır |
+| Yüksək | Məhsul axtarışı və filtrləmə | Yüksək trafik, tez-tez frontend dəyişiklikləri ilə pozulur |
+| Orta | İstifadəçi profili idarəetməsi | Daha az risk, lakin tez-tez istifadə olunur |
+| Orta | Admin: məhsul əlavə et / düzəlt / sil | Admin xətaları bütün istifadəçilərə təsir edir |
+| Aşağı | Boş vəziyyətlər və xəta səhifələri | Vacibdir, lakin aşağı ehtimallı yollar |
+
+### Risk əsaslı prioritetləşdirmə
+
+Soruşun: *"Bu istehsalda qırılsa, təsiri nə olar?"* Qırılmış ödəniş fəlakətlidir. Qırılmış "haqqımızda" səhifəsi aşağı təsirlidir. Bu sırada avtomatlaşdırın.
+
+Bu layihə üçün praktik bölüşdürmə:
+
+- **UI testləri** — kritik istifadəçi axışları, əsas səhifələrdə vizual reqressiya
+- **API testləri** — məlumat yaratma, doğrulama qaydaları, xəta vəziyyətləri
+- **Auth testləri** — vəziyyət faylının etibarlı olduğunu təsdiqləmək üçün rol üzrə bir test
+
+Cəmi 40–50 test hədəfləyin. Kəmiyyətdən keyfiyyət önəmlidir.
+
+---
+
+## Repozitoriyanın strukturlaşdırılması
+
+### Hər hansı bir test yazmadan əvvəl qurulacaq əsas fayllar
+
+**`playwright.config.js`** — brauzerləri, webServer-i və CI-a uyğun parametrləri konfiqurasiya edin:
+
+```js
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests',
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  workers: 1,
+  reporter: [['html', { open: 'never' }]],
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+  },
+  webServer: {
+    command: 'npm start',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+  },
+  projects: [
+    { name: 'setup', testMatch: /.*\.setup\.js/ },
+    {
+      name: 'chromium',
+      use: { browserName: 'chromium' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'firefox',
+      use: { browserName: 'firefox' },
+      dependencies: ['setup'],
+    },
+  ],
+});
+```
+
+**`pages/BasePage.js`** — hər səhifə sinfi bunu genişləndirir:
+
+```js
+class BasePage {
+  constructor(page) {
+    this.page = page;
+  }
+
+  async navigate(path) {
+    await this.page.goto(path);
+  }
+
+  async waitForFlashMessage(type = 'success') {
+    return this.page.locator(`.flash.${type}`).waitFor();
+  }
+}
+
+module.exports = BasePage;
+```
+
+**`fixtures/auth.fixture.js`** — ilk işlətmədə storageState faylları yaradır, sonradan yenidən istifadə edir:
+
+```js
+const { test: base } = require('@playwright/test');
+const path = require('path');
+
+const CUSTOMER_AUTH = path.resolve(__dirname, '../auth/customer.json');
+const ADMIN_AUTH    = path.resolve(__dirname, '../auth/admin.json');
+
+exports.test = base.extend({
+  customerPage: async ({ browser }, use) => {
+    const context = await browser.newContext({ storageState: CUSTOMER_AUTH });
+    const page = await context.newPage();
+    await use(page);
+    await context.close();
+  },
+  adminPage: async ({ browser }, use) => {
+    const context = await browser.newContext({ storageState: ADMIN_AUTH });
+    const page = await context.newPage();
+    await use(page);
+    await context.close();
+  },
+});
+```
+
+---
+
+## Tövsiyə olunan quruluş sırası
+
+Çərçivəni bu sırayla qurun. Hər addım əvvəlkinin üzərində qurulur və hər mərhələdə işlək, işlənə bilən bir dəst verir.
+
+### Addım 1 — Layihəni başladın (30 dəq)
+
+```bash
+mkdir capstone-tests && cd capstone-tests
+npm init playwright@latest
+npm install
+npx playwright install chromium
+```
+
+Qovluq strukturunu yaradın: `pages/`, `fixtures/`, `utils/`, `tests/`, `auth/`.
+
+`auth/`-i `.gitignore`-a əlavə edin — storageState faylları sessiya kukiləri ehtiva edir və heç vaxt commit edilməməlidir.
+
+### Addım 2 — BasePage və ilk səhifə obyekti (45 dəq)
+
+`BasePage.js` yazın. Sonra onu genişləndirən `LoginPage.js` yazın. Tətbiqi açan və səhifə başlığını yoxlayan tək bir smoke testi yazın. İşlədin. Yaşıl edin.
+
+Bu test etibarlı şəkildə keçməyincə irəliləməyin.
+
+### Addım 3 — Auth qurulum layihəsi və storageState (45 dəq)
+
+`tests/auth/auth.setup.js` yaradın. Bu Playwright *setup layihəsidir* — əsas testlərdən əvvəl işləyir və `customer.json` ilə `admin.json` saxlayır. Bu layihəni `playwright.config.js`-ə əsas brauzer layihələrinizdə `dependencies: ['setup']` ilə əlavə edin.
+
+Dəsti iki dəfə işlədin. İkinci işlətmə nəzərəçarpacaq dərəcədə daha sürətli olmalıdır — hər test üçün giriş atlanır.
+
+### Addım 4 — ApiHelper və test məlumatları fixture-ı (60 dəq)
+
+Testlərin istifadə edəcəyi hər endpoint üçün metodlarla `utils/ApiHelper.js` yazın: `createProduct`, `deleteProduct`, `getProducts`, `createOrder`. Realist test məlumatı obyektləri qaytaran fabrika metodlarıyla `utils/TestData.js` yazın.
+
+`apiHelper` və `testData` daxil edilmiş əsas `test`-i genişləndirən `fixtures/test-data.fixture.js` yazın. Bu fixtures istifadə edərək iki API testi yazın. İşlədin.
+
+### Addım 5 — Əsas UI səhifə obyektləri və testlər (90 dəq)
+
+`ProductPage`, `CartPage`, `CheckoutPage` üçün səhifə obyektləri əlavə edin. Hər biri üçün ən azı iki test yazın:
+
+- Xoşbəxt yol (axış uğurla tamamlanır)
+- Kənar hal və ya doğrulama (boş səbət, etibarsız forma girişi və s.)
+
+Hər yerdə `customerPage` fixture-ından istifadə edin — heç bir testdə `page.goto('/login')` çağırmayın.
+
+### Addım 6 — Admin testləri (45 dəq)
+
+`AdminDashboardPage` əlavə edin. `adminPage` fixture-ından istifadə edən testlər yazın:
+
+- Məhsul əlavə et
+- Mövcud məhsulu düzəlt
+- Məhsulu sil (və yox olduğunu yoxla)
+
+Məhsulu qurmaq üçün API seeding (`apiHelper` vasitəsilə) istifadə edin, sonra onun üzərindəki admin UI hərəkətini test edin.
+
+### Addım 7 — Vizual reqressiya (30 dəq)
+
+Kritik səhifələr üçün (ana səhifə, məhsul detalı səhifəsi) ən azı iki vizual snapshot testi əlavə edin. Əsas görüntüləri yaratmaq üçün bir dəfə işlədin. Əsasları commit edin. Fərq olmadığını təsdiqləmək üçün yenidən işlədin.
+
+### Addım 8 — CI pipeline (30 dəq)
+
+`.github/workflows/playwright-tests.yml` əlavə edin. GitHub-a push edin. İlk işlətməni izləyin. Mühit problemlərini düzəldin. HTML hesabatının artefakt kimi yükləndiyini təsdiqləyin.
+
+---
+
+## Tamamlanma tərifi — öz-özünü qiymətləndirmə siyahısı
+
+Yekun layihəni tamamlanmış saymadan əvvəl hər elementi yoxlayın:
+
+**Çərçivə strukturu**
+- [ ] Qovluq ağacı tövsiyə olunan arxitekturaya uyğundur
+- [ ] `BasePage.js` var və hər səhifə sinfi onu genişləndirir
+- [ ] Test fayllarında raw `page.goto('/login')` çağırışları yoxdur — auth fixtures tərəfindən idarə olunur
+- [ ] `auth/` `.gitignore`-dadır
+
+**Test əhatəsi**
+- [ ] Ən azı 5 kritik UI istifadəçi axışı əhatəlidir
+- [ ] Ən azı 3 API testi (xoşbəxt yol + xəta vəziyyəti)
+- [ ] Həm müştəri, həm admin rolları storageState vasitəsilə test edilir
+- [ ] Ən azı 2 vizual reqressiya əsası commit edilib
+
+**Konfiqurasiya və CI**
+- [ ] `playwright.config.js` `retries`, `forbidOnly`, `reuseExistingServer` üçün `process.env.CI` istifadə edir
+- [ ] `trace: 'on-first-retry'` konfiqurasiya edilib
+- [ ] CI workflow push-da və pull request-də tetiklənir
+- [ ] Playwright hesabatı `if: always()` ilə artefakt kimi yüklənir
+
+**Sazlama**
+- [ ] Trace faylını aça və hərəkət zaman xəttini keçə bilərsiniz
+- [ ] CI logunu necə şərh etməyi və hesabat artefaktını necə endirməyi bilirsiniz
+
+**Müsahibəyə hazırlıq**
+- [ ] Qovluq ağacını əzbər izah edə bilərsiniz
+- [ ] POM *niyə*, fixtures *niyə*, storageState *niyə* suallarını cavablandıra bilərsiniz
+- [ ] Layihənin rəqəmlərini qeyd etmədən deyə bilərsiniz: səhifə sinifləri, testlər, brauezrlər, CI addımları
+- [ ] 30 saniəlik layihə təqdimatını yüksək səslə məşq etmisiniz
+
+---
+
+## Layihə depoları
+
+Yekun layihənin tətbiqi — **TestMarket Lab** — bu kurs saytından ayrı, öz açıq repozitoriyasında yerləşir. Onu klonlayın və testlərinizi yazmaq üçün yerli olaraq işə salın.
+
+| Repozitoriya | Link |
+|---|---|
+| Yekun layihə tətbiqi (TestMarket Lab) | [`testmarket-lab`](https://github.com/TesterBaku/testmarket-lab) |
+| İstinad test çərçivəsi | _Sonra dərc olunacaq — əvvəlcə öz yekun layihənizi qurun_ |
+
+---
+
+## BrauzerLab məşqi
+
+Real dəsti qurmadan əvvəl bu yekun layihənin iki əsas texnikasını interaktiv mühitdə möhkəmləndirin. Quraşdırma tələb olunmur.
+
+<Practice missions={["conditional-form", "e2e-checkout"]} locale="az" />
+
+---
+
+## Tapşırıqlar
+
+Bu tapşırıqları `capstone-tests` layihə qovluğunuzda icra edin.
+
+### Tapşırıq 1 — Yeni səhifə obyekti əlavə edin: ProfilePage (20 dəq)
+
+Tətbiqin `/profile` ünvanında profil səhifəsi var. Bunun üçün bir səhifə obyekti əlavə edin.
+
+`pages/ProfilePage.js` yaradın:
+
+```js
+const BasePage = require('./BasePage');
+const { expect } = require('@playwright/test');
+
+class ProfilePage extends BasePage {
+  constructor(page) {
+    super(page);
+    this.nameInput  = page.locator('#profile_name');
+    this.emailInput = page.locator('#profile_email');
+    this.saveButton = page.locator('button:has-text("Update Profile")');
+  }
+
+  async goto() {
+    await this.navigate('/profile');
+  }
+
+  async updateName(newName) {
+    await this.nameInput.clear();
+    await this.nameInput.fill(newName);
+    await this.saveButton.click();
+  }
+
+  async assertNameUpdated(expectedName) {
+    await this.waitForFlashMessage('success');
+    await expect(this.nameInput).toHaveValue(expectedName);
+  }
+}
+
+module.exports = ProfilePage;
+```
+
+Sonra `customerPage` fixture-ından istifadə edərək `tests/shop/profile.spec.js`-də bir test yazın. Testin keçdiyini təsdiqləyin.
+
+- [ ] `ProfilePage.js` var və `BasePage`-i genişləndirir
+- [ ] Üç lokatör müəyyən edilib
+- [ ] `updateName()` təmizləyir, doldurur və klikləyir
+- [ ] Test `customerPage` fixture-ı ilə keçir
+
+### Tapşırıq 2 — Yeni API testi: sifariş yaratma (20 dəq)
+
+`ApiHelper.js`-ə `createOrder` metodu əlavə edin:
+
+```js
+async createOrder(customerEmail, items) {
+  const response = await this.request.post(`${this.baseURL}/api/orders`, {
+    data: { email: customerEmail, items },
+  });
+  return { status: response.status(), body: await response.json() };
+}
+```
+
+Sonra `tests/api/orders-api.spec.js`-də üç test yazın:
+
+1. `POST /api/orders` sifariş yaradır — status `201` və `id` ilə `items` ehtiva edən body gözləyin
+2. `GET /api/orders` yenicə yaradılmış sifarişi qaytarır
+3. Boş `items` massivi ilə `POST /api/orders` — status `400` gözləyin
+
+- [ ] `ApiHelper`-ə `createOrder` metodu əlavə edilib
+- [ ] Üç testin hamısı keçir
+
+### Tapşırıq 3 — Trace viewer ilə sazlama (20 dəq)
+
+1. Mövcud testdə qəsdən bir xəta girin (lokatoru və ya iddia dəyərini dəyişin).
+2. `--trace on` ilə işlədin: `npx playwright test --trace on --project chromium tests/shop/cart.spec.js`
+3. Trace-i açın: `npx playwright show-trace test-results/<test-adı>/trace.zip`
+4. Cavab verin: hansı hərəkət uğursuz oldu? DOM necə görünürdü? Xəta mesajı nə idi?
+5. Xətanı düzəldin və testin keçdiyini təsdiqləyin.
+
+- [ ] Qəsdən xəta girilib
+- [ ] Trace yaradılıb və baxılıb
+- [ ] Trace-dən kök səbəb müəyyən edilib
+- [ ] Xəta düzəldilib, test keçir
+
+### Tapşırıq 4 — Müsahibə məşqi (15 dəq)
+
+Hər cavabı yüksək səslə deyин — başınızda deyil.
+
+**S1: "Qurduğunuz bir test avtomatlaşdırma layihəsindən danışın."**
+
+30 saniəlik təqdimatınızı yazın və məşq edin:
+
+```
+________________________________________________
+________________________________________________
+________________________________________________
+```
+
+Yoxlama siyahısı:
+- [ ] BasePage miras alması ilə Səhifə Obyekti Modelindən bəhs edir
+- [ ] Xüsusi fixtures-dan (auth + test məlumatları) bəhs edir
+- [ ] API testlərindən və verilənlər bazasını sıfırlamadan bəhs edir
+- [ ] GitHub Actions ilə CI/CD-dən bəhs edir
+- [ ] Sazlama üçün trace viewer-dan bəhs edir
+- [ ] Konkret rəqəmlər ehtiva edir (səhifə sinifləri, testlər, brauezrlər)
+
+**S2: "Həll etdiyiniz ən çətin problem nə idi?"**
+
+Cavabınızı yazın (auth vəziyyəti, qeyri-sabit CI testləri, lokatör strategiyası, webServer konfiqurasiyası — sizin üçün real olanı seçin):
+
+```
+________________________________________________
+________________________________________________
+```
+
+**S3: "Nəyi avtomatlaşdıracağınıza necə qərar verirsiniz?"**
+
+Cavabınızı yazın (kritik axışlar, risk əsaslı prioritet, API vs UI mübadiləsi):
+
+```
+________________________________________________
+________________________________________________
+```
+
+### Tapşırıq 5 — Kurs sonrası yol xəritəsi (10 dəq)
+
+Şəxsi növbəti addımlarınızı doldurun:
+
+**Qısamüddətli (növbəti 2 həftə):**
+- [ ] Çərçivəni GitHub-a deploy edin və CI-nın push-da işlədiyini təsdiqləyin
+- [ ] Əhatəsiz səhifələr üçün daha 2 səhifə obyekti əlavə edin
+- [ ] Əhatəsiz endpoint-lər üçün daha 2 API testi əlavə edin
+
+**Ortamüddətli (növbəti 1–2 ay):**
+- [ ] Çərçivəni fərqli veb tətbiqinə tətbiq edin (öz layihəniz və ya iş layihəsi)
+- [ ] Daha 3 kritik səhifə üçün vizual reqressiya testləri əlavə edin
+- [ ] Qurduğunuz haqqında qısa blog yazısı və ya LinkedIn məqaləsi yazın
+
+**Uzunmüddətli (növbəti 3–6 ay):**
+- [ ] GitHub profilinizdə çərçivə ilə QA Avtomatlaşdırma / SDET vəzifələrinə müraciət edin
+- [ ] Yeni başlayan birini mentorlaşdırın
+- [ ] Açıq mənbəli layihəyə Playwright testləri ilə töhfə verin
+
+---
+
+## Bundan sonra — təbrik
+
+Bu son moduldir. Sıfırdan tam bir Playwright avtomatlaşdırma çərçivəsi qurdunuz:
+
+- Ortaq `BasePage` və miras alma ilə **Səhifə Obyekti Modeli**
+- Auth, API köməkçiləri və test məlumatlarını daxil edən **xüsusi fixtures**
+- Xüsusi `ApiHelper` və fabrika metodları ilə **API testi**
+- `storageState` vasitəsilə **autentifikasiya vəziyyəti** — rol üzrə bir dəfə giriş, hər yerdə yenidən istifadə
+- **Vizual reqressiya**, **əlçatımlılıq** və **mobil emulyasiya**
+- GitHub Actions, çox brauzerli, trace çəkimi və hesabat artefaktları ilə **CI/CD**
+
+Bu real bir portfolio layihəsidir. Müsahibələrdə əksər namizədlər nəzəriyyədən danışır. Sizdə isə keçə biləcəyiniz kod, sitat gətirə biləcəyiniz rəqəmlər və müdafiə edə biləcəyiniz arxitektura qərarları var.
+
+**Bilavasitə növbəti addımlarınız:**
+
+1. Çərçivəni açıq GitHub repozitoriyasına push edin
+2. Repozitoriya linkini CV-nizə və LinkedIn profilinizə əlavə edin
+3. 30 saniəlik layihə təqdimatını təbii gələnə qədər məşq edin
+
+Gözəl işlər görün.

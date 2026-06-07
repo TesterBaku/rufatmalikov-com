@@ -1,0 +1,472 @@
+---
+title: "Module 13: Capstone Project"
+description: "Build a complete, professional Playwright test automation framework from scratch — applying every technique from the course to a real application."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+Welcome to the final module. Across the previous modules you have built every piece of a professional test automation framework: Page Object Model, custom fixtures, API testing, authentication state management, visual and accessibility testing, and a full CI pipeline. This module ties everything together into a single capstone project.
+
+By the end you will have a complete, portfolio-ready test suite you can walk through in any interview — and a framework you can fork and apply to any new application.
+
+<Video title="Module 13: Capstone Project" />
+
+---
+
+## Capstone goal
+
+The goal is to build a complete, professional test automation framework for a real e-commerce application — **TestMarket Lab** — by applying every technique from the course:
+
+- **Page Object Model** with a shared `BasePage` and per-page classes
+- **Custom fixtures** that inject page objects, API helpers, and authentication state
+- **API seeding** to set up and tear down test data without relying on UI flows
+- **Auth `storageState`** so each test starts already logged in — no login on every run
+- **CI pipeline** that runs on every push and pull request across multiple browsers
+
+The result is not just a passing test suite. It is a demonstration that you can design, structure, and maintain automation at a professional level.
+
+---
+
+## Recommended architecture
+
+A well-structured capstone framework looks like this:
+
+```
+capstone-tests/
+├── pages/
+│   ├── BasePage.js           ← shared locator helpers + navigation
+│   ├── LoginPage.js
+│   ├── ProductPage.js
+│   ├── CartPage.js
+│   ├── CheckoutPage.js
+│   └── AdminDashboardPage.js
+├── fixtures/
+│   ├── auth.fixture.js       ← injects customerPage / adminPage
+│   └── test-data.fixture.js  ← injects apiHelper + testData factories
+├── utils/
+│   ├── ApiHelper.js          ← wraps every REST endpoint
+│   └── TestData.js           ← factory methods for test data
+├── tests/
+│   ├── auth/
+│   ├── shop/
+│   ├── admin/
+│   ├── api/
+│   └── visual/
+├── auth/
+│   ├── customer.json         ← saved storageState (gitignored)
+│   └── admin.json
+├── playwright.config.js
+└── package.json
+```
+
+**Why this structure?**
+
+Every directory has a single responsibility. Tests do not set up their own data or handle authentication — fixtures do that. Page objects do not contain assertions — tests do. This separation makes failures easy to diagnose and new features easy to add.
+
+---
+
+## Test-plan and coverage thinking
+
+Before writing a single test, answer two questions:
+
+### What to test
+
+Focus on **critical user journeys** first:
+
+| Priority | Area | Why |
+|---|---|---|
+| High | Login / logout | Everything else depends on authentication |
+| High | Add to cart + checkout | Core business flow; regressions here cost money |
+| High | Product search and filtering | High traffic, often broken by frontend changes |
+| Medium | User profile management | Lower risk but used frequently |
+| Medium | Admin: add / edit / delete product | Admin errors affect all users |
+| Low | Empty states and error pages | Important but low probability paths |
+
+### Risk-based prioritisation
+
+Ask: *"If this breaks in production, what is the impact?"* A broken checkout is catastrophic. A broken "about us" page is low impact. Automate in that order.
+
+A practical split for this project:
+
+- **UI tests** — critical user journeys, visual regression on key pages
+- **API tests** — data creation, validation rules, error cases
+- **Auth tests** — one test per role to confirm the state file is valid
+
+Aim for 40–50 tests total. Quality over quantity.
+
+---
+
+## Structuring the repository
+
+### Key files to set up before writing any tests
+
+**`playwright.config.js`** — configure browsers, webServer, and CI-aware settings:
+
+```js
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests',
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  workers: 1,
+  reporter: [['html', { open: 'never' }]],
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+  },
+  webServer: {
+    command: 'npm start',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+  },
+  projects: [
+    { name: 'setup', testMatch: /.*\.setup\.js/ },
+    {
+      name: 'chromium',
+      use: { browserName: 'chromium' },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'firefox',
+      use: { browserName: 'firefox' },
+      dependencies: ['setup'],
+    },
+  ],
+});
+```
+
+**`pages/BasePage.js`** — every page class extends this:
+
+```js
+class BasePage {
+  constructor(page) {
+    this.page = page;
+  }
+
+  async navigate(path) {
+    await this.page.goto(path);
+  }
+
+  async waitForFlashMessage(type = 'success') {
+    return this.page.locator(`.flash.${type}`).waitFor();
+  }
+}
+
+module.exports = BasePage;
+```
+
+**`fixtures/auth.fixture.js`** — creates storageState files on first run, reuses them afterwards:
+
+```js
+const { test: base } = require('@playwright/test');
+const path = require('path');
+
+const CUSTOMER_AUTH = path.resolve(__dirname, '../auth/customer.json');
+const ADMIN_AUTH    = path.resolve(__dirname, '../auth/admin.json');
+
+exports.test = base.extend({
+  customerPage: async ({ browser }, use) => {
+    const context = await browser.newContext({ storageState: CUSTOMER_AUTH });
+    const page = await context.newPage();
+    await use(page);
+    await context.close();
+  },
+  adminPage: async ({ browser }, use) => {
+    const context = await browser.newContext({ storageState: ADMIN_AUTH });
+    const page = await context.newPage();
+    await use(page);
+    await context.close();
+  },
+});
+```
+
+---
+
+## Suggested build order
+
+Work through the framework in this order. Each step builds on the previous one and gives you a working, runnable suite at every stage.
+
+### Step 1 — Bootstrap the project (30 min)
+
+```bash
+mkdir capstone-tests && cd capstone-tests
+npm init playwright@latest
+npm install
+npx playwright install chromium
+```
+
+Create the directory structure: `pages/`, `fixtures/`, `utils/`, `tests/`, `auth/`.
+
+Add `auth/` to `.gitignore` — storageState files contain session cookies and must never be committed.
+
+### Step 2 — BasePage and first page object (45 min)
+
+Write `BasePage.js`. Then write `LoginPage.js` extending it. Write a single smoke test that opens the app and verifies the page title. Run it. Make it green.
+
+Do not move on until this test passes reliably.
+
+### Step 3 — Auth setup project and storageState (45 min)
+
+Create `tests/auth/auth.setup.js`. This is a Playwright *setup project* — it runs before the main tests and saves `customer.json` and `admin.json`. Add this project to `playwright.config.js` with `dependencies: ['setup']` on your main browser projects.
+
+Run the suite twice. The second run should be noticeably faster — login is skipped for every test.
+
+### Step 4 — ApiHelper and test data fixture (60 min)
+
+Write `utils/ApiHelper.js` with methods for every endpoint the tests will use: `createProduct`, `deleteProduct`, `getProducts`, `createOrder`. Write `utils/TestData.js` with factory methods that return realistic test data objects.
+
+Write `fixtures/test-data.fixture.js` that extends the base `test` with `apiHelper` and `testData` injected. Write two API tests using these fixtures. Run them.
+
+### Step 5 — Core UI page objects and tests (90 min)
+
+Add page objects for: `ProductPage`, `CartPage`, `CheckoutPage`. For each one, write at least two tests:
+
+- Happy path (flow completes successfully)
+- Edge case or validation (empty cart, invalid form input, etc.)
+
+Use the `customerPage` fixture throughout — do not call `page.goto('/login')` in any test.
+
+### Step 6 — Admin tests (45 min)
+
+Add `AdminDashboardPage`. Write tests that use the `adminPage` fixture to:
+
+- Add a product
+- Edit an existing product
+- Delete a product (and verify it is gone)
+
+Use API seeding (via `apiHelper`) to set up the product, then test the admin UI action on it.
+
+### Step 7 — Visual regression (30 min)
+
+Add at least two visual snapshot tests for critical pages (home page, product detail page). Run them once to generate baseline images. Commit the baselines. Run again to confirm no diff.
+
+### Step 8 — CI pipeline (30 min)
+
+Add `.github/workflows/playwright-tests.yml`. Push to GitHub. Watch the first run. Fix any environment issues. Confirm the HTML report is uploaded as an artifact.
+
+---
+
+## Definition of done — self-assessment checklist
+
+Before calling the capstone complete, verify each item:
+
+**Framework structure**
+- [ ] Directory tree matches the recommended architecture
+- [ ] `BasePage.js` exists and every page class extends it
+- [ ] No raw `page.goto('/login')` calls in test files — auth is handled by fixtures
+- [ ] `auth/` is in `.gitignore`
+
+**Test coverage**
+- [ ] At least 5 critical UI user journeys covered
+- [ ] At least 3 API tests (happy path + error case)
+- [ ] Both customer and admin roles tested via storageState
+- [ ] At least 2 visual regression baselines committed
+
+**Configuration and CI**
+- [ ] `playwright.config.js` uses `process.env.CI` for `retries`, `forbidOnly`, `reuseExistingServer`
+- [ ] `trace: 'on-first-retry'` configured
+- [ ] CI workflow triggers on push and pull request
+- [ ] Playwright report uploaded as artifact with `if: always()`
+
+**Debugging**
+- [ ] You can open a trace file and navigate the action timeline
+- [ ] You know how to interpret a CI log and download the report artifact
+
+**Interview readiness**
+- [ ] You can walk through the directory tree from memory
+- [ ] You can explain *why* POM, *why* fixtures, *why* storageState
+- [ ] You can say your project numbers without notes: page classes, tests, browsers, CI steps
+- [ ] You have rehearsed a 30-second project pitch out loud
+
+---
+
+## Project repositories
+
+The capstone application — **TestMarket Lab** — lives in its own public repository, separate from this course site. Clone it and run it locally to write your tests against.
+
+| Repository | Link |
+|---|---|
+| Capstone application (TestMarket Lab) | [`testmarket-lab`](https://github.com/TesterBaku/testmarket-lab) |
+| Reference test framework | _Published later — build your own capstone first_ |
+
+---
+
+## BrauzerLab practice
+
+Reinforce two key techniques from this capstone in an interactive environment before building the real suite. No installation required.
+
+<Practice missions={["conditional-form", "e2e-checkout"]} locale="en" />
+
+---
+
+## Exercises
+
+Work through these exercises in your `capstone-tests` project directory.
+
+### Exercise 1 — Add a new page object: ProfilePage (20 min)
+
+The app has a profile page at `/profile`. Add a page object for it.
+
+Create `pages/ProfilePage.js`:
+
+```js
+const BasePage = require('./BasePage');
+const { expect } = require('@playwright/test');
+
+class ProfilePage extends BasePage {
+  constructor(page) {
+    super(page);
+    this.nameInput  = page.locator('#profile_name');
+    this.emailInput = page.locator('#profile_email');
+    this.saveButton = page.locator('button:has-text("Update Profile")');
+  }
+
+  async goto() {
+    await this.navigate('/profile');
+  }
+
+  async updateName(newName) {
+    await this.nameInput.clear();
+    await this.nameInput.fill(newName);
+    await this.saveButton.click();
+  }
+
+  async assertNameUpdated(expectedName) {
+    await this.waitForFlashMessage('success');
+    await expect(this.nameInput).toHaveValue(expectedName);
+  }
+}
+
+module.exports = ProfilePage;
+```
+
+Then write a test in `tests/shop/profile.spec.js` using the `customerPage` fixture. Confirm the test passes.
+
+- [ ] `ProfilePage.js` exists and extends `BasePage`
+- [ ] All three locators defined
+- [ ] `updateName()` clears, fills, and clicks
+- [ ] Test passes with `customerPage` fixture
+
+### Exercise 2 — New API test: order creation (20 min)
+
+Add a `createOrder` method to `ApiHelper.js`:
+
+```js
+async createOrder(customerEmail, items) {
+  const response = await this.request.post(`${this.baseURL}/api/orders`, {
+    data: { email: customerEmail, items },
+  });
+  return { status: response.status(), body: await response.json() };
+}
+```
+
+Then write three tests in `tests/api/orders-api.spec.js`:
+
+1. `POST /api/orders` creates an order — expect status `201` and a body with `id` and `items`
+2. `GET /api/orders` returns the order just created
+3. `POST /api/orders` with empty `items` array — expect status `400`
+
+- [ ] `createOrder` method added to `ApiHelper`
+- [ ] All three tests pass
+
+### Exercise 3 — Debug with trace viewer (20 min)
+
+1. Introduce a deliberate bug in an existing test (change a locator or an assertion value).
+2. Run with `--trace on`: `npx playwright test --trace on --project chromium tests/shop/cart.spec.js`
+3. Open the trace: `npx playwright show-trace test-results/<test-name>/trace.zip`
+4. Answer: what action failed? What did the DOM look like? What was the error message?
+5. Fix the bug and confirm the test passes.
+
+- [ ] Deliberate bug introduced
+- [ ] Trace generated and inspected
+- [ ] Root cause identified from the trace
+- [ ] Bug fixed, test passes
+
+### Exercise 4 — Interview practice (15 min)
+
+Say each answer out loud — not in your head.
+
+**Q1: "Tell me about a test automation project you've built."**
+
+Write your 30-second pitch and practice it:
+
+```
+________________________________________________
+________________________________________________
+________________________________________________
+```
+
+Checklist:
+- [ ] Mentions Page Object Model with BasePage inheritance
+- [ ] Mentions custom fixtures (auth + test data)
+- [ ] Mentions API tests and database reset
+- [ ] Mentions CI/CD with GitHub Actions
+- [ ] Mentions trace viewer for debugging
+- [ ] Includes concrete numbers (page classes, tests, browsers)
+
+**Q2: "What was the hardest problem you solved?"**
+
+Write your answer (auth state, flaky CI tests, locator strategy, webServer config — pick what's real for you):
+
+```
+________________________________________________
+________________________________________________
+```
+
+**Q3: "How do you decide what to automate?"**
+
+Write your answer (critical journeys, risk-based priority, API vs UI tradeoffs):
+
+```
+________________________________________________
+________________________________________________
+```
+
+### Exercise 5 — Post-course roadmap (10 min)
+
+Fill in your personal next steps:
+
+**Short-term (next 2 weeks):**
+- [ ] Deploy the framework to GitHub and confirm CI runs on push
+- [ ] Add 2 more page objects for uncovered pages
+- [ ] Add 2 more API tests for uncovered endpoints
+
+**Medium-term (next 1–2 months):**
+- [ ] Apply the framework to a different web application (your own project or a work project)
+- [ ] Add visual regression tests for 3 more critical pages
+- [ ] Write a short blog post or LinkedIn article about what you built
+
+**Long-term (next 3–6 months):**
+- [ ] Apply for QA Automation / SDET roles with the framework on your GitHub profile
+- [ ] Mentor someone else who is starting out
+- [ ] Contribute Playwright tests to an open-source project
+
+---
+
+## What comes next — congratulations
+
+This is the last module. You have now built a complete Playwright automation framework from scratch:
+
+- **Page Object Model** with a shared `BasePage` and inheritance
+- **Custom fixtures** that inject auth, API helpers, and test data
+- **API testing** with a dedicated `ApiHelper` and factory methods
+- **Authentication state** via `storageState` — login once per role, reuse everywhere
+- **Visual regression**, **accessibility**, and **mobile emulation**
+- **CI/CD** with GitHub Actions, multi-browser, trace capture, and report artifacts
+
+That is a real portfolio project. Most candidates in interviews talk about theory. You have code you can walk through, numbers you can cite, and architectural decisions you can defend.
+
+**Your immediate next actions:**
+
+1. Push the framework to a public GitHub repository
+2. Add the repository link to your resume and LinkedIn profile
+3. Practice your 30-second project pitch until it feels natural
+
+Go build something great.
