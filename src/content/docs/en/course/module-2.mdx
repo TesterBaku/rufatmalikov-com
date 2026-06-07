@@ -1,0 +1,578 @@
+---
+title: "Module 2: Locators Mastery"
+description: "The single most important Playwright skill — choosing the right locator for every situation. getByRole, getByLabel, chained locators, filter, strict-mode fixes, and more."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+A bad locator makes your tests flaky. A good locator makes them robust — resilient to style changes, refactors, and data refreshes. Locators are a design decision, not an afterthought.
+
+<Video title="Module 2: Locators Mastery" />
+
+---
+
+## Why locator strategy matters
+
+Every Playwright action — `click`, `fill`, `check`, `expect` — starts with a locator. The locator tells Playwright **which element** to act on. Pick the wrong strategy and your tests will fail on the first designer sprint.
+
+Here are three fragile locators from real codebases:
+
+```javascript
+// ❌ Fragile: CSS class changes when a designer tweaks layout
+page.locator('.btn.btn-primary.mt-2').click();
+
+// ❌ Fragile: breaks when a wrapper <div> is added
+page.locator('div > div > form > button').click();
+
+// ❌ Fragile: exact text match breaks on whitespace changes
+page.locator('text="Log In"').click();
+```
+
+Compare those with their resilient equivalents:
+
+```javascript
+// ✅ Resilient: matches how assistive technology sees the page
+page.getByRole('button', { name: 'Log In' }).click();
+
+// ✅ Resilient: tied to the <label> association
+page.getByLabel('Email').fill('user@test.io');
+
+// ✅ Resilient: explicit, never changes unless you change it
+page.getByTestId('submit-btn').click();
+```
+
+**Playwright's recommended locator priority:**
+
+1. `getByRole` — prefer this first
+2. `getByLabel` — for form fields
+3. `getByPlaceholder` — when no label exists
+4. `getByText` — for links and visible text
+5. `getByTestId` — when nothing else is stable
+6. CSS / XPath — last resort
+
+---
+
+## `getByRole` — the recommended default
+
+`getByRole` matches elements the way assistive technology (screen readers) sees them. It uses the element's implicit ARIA role and its accessible name.
+
+```javascript
+// Matches <button>Log In</button>
+page.getByRole('button', { name: 'Log In' })
+
+// Matches <a href="/register">Register</a>
+page.getByRole('link', { name: 'Register' })
+
+// Matches <h1>Welcome to TestMarket</h1>
+page.getByRole('heading', { name: 'Welcome to TestMarket' })
+
+// Matches <select> associated with a label "Category"
+page.getByRole('combobox', { name: 'Category' })
+```
+
+Common role mappings:
+
+| HTML Element | ARIA Role |
+|---|---|
+| `<button>` | `button` |
+| `<a href>` | `link` |
+| `<input type="text">` | `textbox` |
+| `<input type="checkbox">` | `checkbox` |
+| `<select>` | `combobox` |
+| `<h1>`–`<h6>` | `heading` |
+| `<img alt="...">` | `img` |
+
+### Role + accessible name
+
+The `name` option is what makes `getByRole` precise. Without it, `getByRole('button')` matches **every** button on the page — guaranteed strict mode violation.
+
+The accessible name comes from:
+- Button / link **text content**: `<button>Log In</button>` → name is `'Log In'`
+- `aria-label` attribute: `<button aria-label="Close dialog">X</button>` → name is `'Close dialog'`
+- `alt` on images: `<img alt="Company logo">` → name is `'Company logo'`
+- Associated `<label>` for form fields: `<label for="email">Email</label>` → name is `'Email'`
+
+```javascript
+// ✅ Precise — name option narrows to exactly one button
+page.getByRole('button', { name: 'Add to Cart' })
+
+// ❌ Imprecise — matches all buttons, causes strict mode violation
+page.getByRole('button')
+```
+
+---
+
+## `getByText` — matching visible text
+
+`getByText` matches any element that contains the given text. Use it for links and standalone text elements, but use it sparingly — it matches any element in the DOM.
+
+```javascript
+// Matches <a href="/products/new">New Product</a>
+page.getByText('New Product')
+
+// Exact match — prevents partial matches on similar text
+page.getByText('Log In', { exact: true })
+
+// Regex match — useful for case-insensitive or partial matching
+page.getByText(/login/i)
+```
+
+**When to use `getByText`:** links where no accessible role is more descriptive, or standalone paragraph text you want to assert is visible.
+
+**When NOT to use it:** form fields (use `getByLabel`), buttons (use `getByRole`).
+
+---
+
+## `getByLabel` — the best choice for form fields
+
+`getByLabel` matches form inputs via their associated `<label>` element. It respects the `for` / `id` association and the `aria-labelledby` / `aria-label` attributes.
+
+```javascript
+// Matches <input id="email"> with <label for="email">Email</label>
+page.getByLabel('Email').fill('customer@test.io')
+
+// Matches <input id="password"> with <label for="password">Password</label>
+page.getByLabel('Password').fill('customer123')
+
+// Matches <input id="shipping_name"> with label "Shipping Name"
+page.getByLabel('Shipping Name').fill('Jane Smith')
+```
+
+This is the right choice for login forms, checkout forms, and admin product forms — wherever the HTML has proper `<label>` associations.
+
+---
+
+## `getByPlaceholder` — when there is no label
+
+When a field has no `<label>` but has a `placeholder` attribute, use `getByPlaceholder`.
+
+```javascript
+// Matches <input placeholder="Search products...">
+page.getByPlaceholder('Search products...')
+
+// Matches <input placeholder="Enter your email address">
+page.getByPlaceholder('Enter your email address')
+```
+
+Use this only when there is genuinely no label. If a label exists, `getByLabel` is more robust (labels are less likely to change than placeholder text).
+
+---
+
+## `getByTestId` — stable but requires code changes
+
+`getByTestId` matches elements with a `data-testid` attribute. It is the most stable locator because test IDs are changed intentionally and never by accident.
+
+```javascript
+// Matches <button data-testid="submit-btn">Place Order</button>
+page.getByTestId('submit-btn').click()
+
+// Matches <div data-testid="product-card">...</div>
+page.getByTestId('product-card')
+```
+
+**When to add `data-testid`:** when an element has no accessible name, no stable text, and no unique ID. Common examples: generic `<div>` containers, SVG icons, complex widget boundaries.
+
+**Don't** add `data-testid` to every element. Prefer role-based locators first.
+
+---
+
+## CSS locators as fallback
+
+CSS locators are not bad — they are just less resilient. Use them when:
+
+- Selecting by ID (`#email` is very stable)
+- Using attribute selectors (`button[type="submit"]`)
+- Selecting for generic elements with no accessible role
+- Targeting structural classes that almost never change
+
+```javascript
+// ID selector — stable and fast
+page.locator('#shipping_name')
+
+// Attribute selector — better than class-based
+page.locator('button[type="submit"]')
+
+// Class composition for flash messages — acceptable
+page.locator('.alert.alert-success')
+
+// Product card grid item
+page.locator('.product-card')
+```
+
+**Prefer IDs over classes.** CSS classes change when designers refactor styling. IDs rarely change because they're also used for `<label for="...">` associations and JavaScript hooks.
+
+---
+
+## Chained locators
+
+Chaining lets you navigate the DOM tree with precision. Start broad — find the container — then drill into child elements.
+
+```javascript
+// Find the admin products table, then all rows
+const rows = page.locator('table tbody tr.table-row');
+
+// Get the second row (index 1)
+const secondRow = rows.nth(1);
+
+// Get the product name (second column) in the second row
+const productName = secondRow.locator('td').nth(1);
+
+// Click the Edit button in the last row
+await rows.last().locator('a:has-text("Edit")').click();
+```
+
+Cart example — two levels of chaining:
+
+```javascript
+// Get the quantity input in the first cart row
+const firstCartQuantity = page.locator('.cart-table .table-row')
+  .first()
+  .locator('input[name="quantity"]');
+```
+
+**Performance tip:** Playwright evaluates locators lazily. Defining a long chain has zero cost — the chain resolves only when you perform an action on it.
+
+---
+
+## `filter({ hasText })` and `filter({ has })`
+
+`filter` narrows a set of matching elements to those that meet an extra condition. It is more readable than complex CSS selectors.
+
+### `filter({ hasText })`
+
+Matches elements whose text content (or any descendant's text) contains the given string. Case-insensitive, substring match.
+
+```javascript
+// Admin dashboard: all stat cards look the same — filter by heading text
+const totalProductsCard = page.locator('.card')
+  .filter({ hasText: 'Total Products' });
+
+// Get the count value from that specific card
+const count = await totalProductsCard.locator('p').textContent();
+
+// Find the product card for "Gaming Keyboard"
+await page.locator('.product-card')
+  .filter({ hasText: 'Gaming Keyboard' })
+  .locator('button:has-text("Add to Cart")')
+  .click();
+```
+
+### `filter({ has })`
+
+Matches elements that contain a child element matching the given locator. Use when you need structural matching rather than text matching.
+
+```javascript
+// Find all stat cards that contain a <p> element
+const allStatCards = page.locator('.card')
+  .filter({ has: page.locator('p') });
+
+// Find all order rows that have a "pending" status badge
+const pendingRows = page.locator('tr.table-row')
+  .filter({ has: page.locator('.badge-warning') });
+```
+
+**Gotcha:** `hasText` matches text in descendants too. If your search text appears in multiple places within the element, you may get unexpected matches. Be specific enough to narrow to one element.
+
+---
+
+## `.first()`, `.last()`, `.nth()`
+
+When a locator matches multiple elements and you need one specific one:
+
+```javascript
+const rows = page.locator('table tbody tr.table-row');
+
+await rows.first().locator('td').nth(0).textContent(); // first row, first cell
+await rows.last().locator('button:has-text("Delete")').click(); // last row delete
+await rows.nth(2).locator('a:has-text("Edit")').click();        // third row edit
+```
+
+**Prefer `filter({ hasText })` over `.nth()`** when you know the content. Index-based selection breaks if rows are reordered; content-based selection is robust.
+
+```javascript
+// ❌ Fragile — breaks if sort order changes
+await rows.nth(0).locator('button:has-text("Edit")').click();
+
+// ✅ Robust — finds the right row regardless of sort order
+await rows.filter({ hasText: 'Wireless Mouse' })
+  .locator('button:has-text("Edit")')
+  .click();
+```
+
+<Practice missions={['first-click','get-by-label','get-by-placeholder','find-by-text','test-id','chained-locators','filter-sale-card','filter-has-locator','nth-first-last','dynamic-ids','table-row-by-text','shadow-dom']} locale="en" />
+
+---
+
+## Strict mode violations
+
+Playwright's **strict mode** throws an error whenever your locator matches more than one element and you perform an action like `click`, `fill`, or `textContent`. This is intentional — Playwright refuses to guess which element you meant.
+
+```
+Error: strict mode violation: page.locator('button') resolved to 15 elements
+```
+
+### Why it happens
+
+```javascript
+// ❌ 15 buttons on the page — which one?
+await page.locator('button').click();
+
+// ❌ Multiple links — which one?
+await page.locator('a').click();
+
+// ❌ Two <select> elements on the page
+await page.locator('select').selectOption('electronics');
+```
+
+### Three fixes
+
+**Fix 1 — Be more specific with role + name:**
+
+```javascript
+// ✅ Only one button is labeled "Log In"
+await page.getByRole('button', { name: 'Log In' }).click();
+
+// ✅ Only one link is labeled "Register"
+await page.getByRole('link', { name: 'Register' }).click();
+
+// ✅ Only one select has the label "Category"
+await page.getByRole('combobox', { name: 'Category' }).selectOption('electronics');
+```
+
+**Fix 2 — Chain into a container:**
+
+```javascript
+// ✅ Scope the button to its parent container
+await page.locator('.login-form').getByRole('button', { name: 'Log In' }).click();
+
+// ✅ Find the Remove button within the right cart row
+await page.locator('.cart-table .table-row')
+  .filter({ hasText: 'Wireless Mouse' })
+  .getByRole('button', { name: 'Remove' })
+  .click();
+```
+
+**Fix 3 — Use `.first()`, `.last()`, or `.nth()` when order is stable:**
+
+```javascript
+// ✅ First notification close button — acceptable when order is guaranteed
+await page.locator('.notification button.close').first().click();
+```
+
+### Dynamic IDs — a strict-mode adjacent problem
+
+Some pages generate IDs with random or data-driven values:
+
+```html
+<!-- Product detail page — slug or hash in the ID -->
+<div id="product_abc123f">...</div>
+<div id="product_def456a">...</div>
+```
+
+These IDs change when the database is re-seeded or a product is recreated. The rule:
+
+> **If it contains a dynamic part (hash, UUID, slug, timestamp), do not use it as a locator.**
+
+Use stable alternatives instead:
+
+```javascript
+// ❌ Breaks on data refresh
+page.locator('#product_abc123f')
+
+// ✅ Stable — class or role won't change
+page.locator('.product-card').filter({ hasText: 'Wireless Mouse' })
+page.getByRole('article').filter({ hasText: 'Wireless Mouse' })
+page.getByTestId('product-card').filter({ hasText: 'Wireless Mouse' })
+```
+
+<Practice missions={['role-with-name','exact-match','strict-mode-disambiguation','nth-vs-first','iterate-multiple','disambiguation-cookbook']} locale="en" />
+
+---
+
+## Table rows — putting it all together
+
+Tables are the most complex locator challenge in most apps. They combine chained locators, filter, and role-based locators in one pattern.
+
+The admin orders table has customer info, order totals, status badges, AND a form with a `<select>` and `<button>` in every row. Here is the full pattern:
+
+```javascript
+// All rows in the orders table
+const orderRows = page.locator('table tbody tr.table-row');
+
+// Strategy 1 — by index (quick but fragile if order changes)
+const firstRow = orderRows.first();
+
+// Strategy 2 — by text content (robust for known content)
+const janeRow = orderRows.filter({ hasText: 'Jane Smith' });
+
+// Strategy 3 — by child element (structural matching)
+const pendingRow = orderRows.filter({
+  has: page.locator('.badge-warning')
+});
+
+// Strategy 4 — full chain: find row + interact with form elements
+const janeSelect = orderRows
+  .filter({ hasText: 'Jane Smith' })
+  .locator('select[name="status"]');
+
+const janeUpdateBtn = orderRows
+  .filter({ hasText: 'Jane Smith' })
+  .locator('button:has-text("Update")');
+
+await janeSelect.selectOption('shipped');
+await janeUpdateBtn.click();
+```
+
+---
+
+## Shadow DOM basics
+
+Some component libraries use Shadow DOM — a separate DOM tree that is encapsulated inside a host element. Standard CSS selectors cannot pierce Shadow DOM boundaries.
+
+Playwright handles this automatically for most cases via its `pierce` selector engine:
+
+```javascript
+// Playwright automatically pierces open shadow roots
+page.locator('my-component >> button')
+
+// Or use the pierce selector explicitly
+page.locator('pierce/button')
+```
+
+For closed shadow roots (rare in practice), you will need to work with the component's documented API or `data-testid` attributes placed on the shadow host.
+
+---
+
+## Exercises
+
+These exercises run against **TestMarket Lab**, a small e-commerce app you run on your own machine. You'll reuse it throughout the rest of the course, so set it up once now (requires Node.js 20+, installed in [Module 0](/en/course/module-0/)):
+
+```bash
+# Clone the app (one time)
+git clone https://github.com/TesterBaku/testmarket-lab.git
+cd testmarket-lab
+
+# Install dependencies and start the server
+npm install
+npm start
+```
+
+Leave it running and open **http://localhost:3000** in your browser. When an exercise needs a logged-in user, sign in with the demo accounts:
+
+- **Customer** — `customer@test.io` / `customer123`
+- **Admin** — `admin@test.io` / `admin123`
+
+> Need a clean slate? Restart the app, or send `POST http://localhost:3000/api/reset` to restore the seed data.
+
+---
+
+### Exercise 1: Identify locator types
+
+For each HTML element below, write the best Playwright locator:
+
+| HTML Element | Best Locator |
+|---|---|
+| `<input id="email">` with `<label for="email">Email</label>` | |
+| `<button type="submit">Log In</button>` | |
+| `<a href="/auth/register">Register</a>` | |
+| `<input placeholder="Search products...">` | |
+| `<div class="alert alert-success">Login successful!</div>` | |
+
+**Reference:** `tests/final/pages/LoginPage.js`
+
+---
+
+### Exercise 2: Rewrite fragile locators
+
+Rewrite each fragile locator using a resilient strategy:
+
+```javascript
+// 1. ❌ Fragile: CSS class
+page.locator('.btn.btn-primary')
+
+// 2. ❌ Fragile: DOM path
+page.locator('div > div > form > input').first()
+
+// 3. ❌ Fragile: dynamic ID
+page.locator('#product_abc123')
+
+// 4. ❌ Fragile: nth-child
+page.locator('table tbody tr:first-child td:nth-child(2)')
+```
+
+---
+
+### Exercise 3: Form field locators
+
+Write `getByLabel` locators for the TestMarket checkout form fields: Shipping Name, Shipping Address, Shipping City, Shipping Zip Code, and the Place Order button.
+
+Write `getByLabel` locators for the admin product form: Name, Price, Category, Stock, and the Create/Update Product button.
+
+---
+
+### Exercise 4: Chained locators
+
+Using `capstone-app/views/admin/products.ejs`:
+
+1. Get all table rows with class `table-row`
+2. Get the third row (index 2)
+3. Get the product name (second `<td>`) in the first row
+4. Click the Edit button in the last row
+5. Click the Delete button in the second row
+
+---
+
+### Exercise 5: `filter` practice
+
+Using the admin dashboard stat cards:
+
+1. Find the card containing "Total Products" and read its `<p>` count
+2. Find the card containing "Total Users" and read its `<p>` count
+3. Click "Add to Cart" for the product named "Gaming Keyboard" on the shop page
+
+---
+
+### Exercise 6: Admin table row targeting (challenge)
+
+Write a test sequence that:
+1. Navigates to the admin orders page
+2. Finds the row for customer "Jane Smith"
+3. Asserts the status badge says "pending"
+4. Changes the status to "shipped" via the `<select>` and Update button
+5. Asserts the flash message confirms the update
+
+---
+
+### Exercise 7: Strict mode fix
+
+Fix each strict mode violation:
+
+```javascript
+// ❌ Fix this:
+await page.locator('button').click();                        // 15 buttons
+await page.locator('a').click();                            // 50+ links
+await page.locator('select').selectOption('electronics');   // 2 selects
+await page.locator('button:has-text("Remove")').click();    // 2+ Remove buttons
+```
+
+---
+
+### Exercise 8: `getByTestId` migration
+
+Given that `data-testid="product-card"` has been added to product card elements, migrate the existing class-based locator `page.locator('.product-card')` to use `getByTestId`. Then do the same for `table-row` and `cart-row`.
+
+---
+
+## Key takeaways
+
+Three rules to carry into every test you write:
+
+1. **Prefer `getByRole` first** — "find the button labeled Log In" beats "find the thing with these CSS classes"
+2. **`getByLabel` for forms, `getByTestId` for stability** — forms have labels for accessibility; use them
+3. **Chain + filter for precision** — do not write one massive selector; chain small readable locators and filter by content you can see
+
+Module 3 covers fixtures and auth state — you'll skip the login form entirely using pre-authenticated browser contexts.

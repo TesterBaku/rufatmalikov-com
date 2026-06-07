@@ -1,0 +1,578 @@
+---
+title: "Modul 2: Lokatorların mənimsənilməsi"
+description: "Playwright-in ən vacib bacarığı — hər vəziyyət üçün düzgün lokator seçimi. getByRole, getByLabel, zəncirvari lokatorlar, filter, strict-mode düzəltmələri və daha çox."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+Pis lokator testlərinizi qeyri-sabit edər. Yaxşı lokator isə onları möhkəm saxlayır — stil dəyişikliklərinə, yenidən strukturlaşdırmaya və məlumat yeniləmələrinə dözümlü olur. Lokatorlar sonradan düşünüləcək bir şey deyil — dizayn qərarıdır.
+
+<Video title="Modul 2: Lokatorların mənimsənilməsi" />
+
+---
+
+## Lokator strategiyası niyə vacibdir
+
+Playwright-in hər əməliyyatı — `click`, `fill`, `check`, `expect` — bir lokatorla başlayır. Lokator Playwright-ə **hansı elementə** təsir etməsini deyir. Yanlış strategiya seçsəniz, ilk dizayner sprintindən sonra testləriniz uğursuz olacaq.
+
+Real kod bazalarından üç zərif lokator nümunəsi:
+
+```javascript
+// ❌ Zərif: dizayner layout-u dəyişdirdə CSS class dəyişir
+page.locator('.btn.btn-primary.mt-2').click();
+
+// ❌ Zərif: bir sarıcı <div> əlavə edildikdə sınır
+page.locator('div > div > form > button').click();
+
+// ❌ Zərif: dəqiq mətn uyğunluğu boşluq dəyişikliklərindən sınır
+page.locator('text="Log In"').click();
+```
+
+Bunları davamlı ekvivalentləri ilə müqayisə edin:
+
+```javascript
+// ✅ Davamlı: köməkçi texnologiyanın səhifəni necə gördüyünə uyğundur
+page.getByRole('button', { name: 'Log In' }).click();
+
+// ✅ Davamlı: <label> əlaqəsinə bağlıdır
+page.getByLabel('Email').fill('user@test.io');
+
+// ✅ Davamlı: açıq-aşkar, yalnız siz dəyişdirəndə dəyişir
+page.getByTestId('submit-btn').click();
+```
+
+**Playwright-in tövsiyə etdiyi lokator prioriteti:**
+
+1. `getByRole` — ilk olaraq bunu üstün tutun
+2. `getByLabel` — form sahələri üçün
+3. `getByPlaceholder` — label olmadıqda
+4. `getByText` — keçidlər və görünən mətn üçün
+5. `getByTestId` — başqa heç nə sabit deyilsə
+6. CSS / XPath — son çıxış yolu
+
+---
+
+## `getByRole` — tövsiyə olunan standart
+
+`getByRole` elementləri köməkçi texnologiyanın (ekran oxuyucuların) gördüyü kimi uyğunlaşdırır. Elementin gizli ARIA rolundan və əlçatan adından istifadə edir.
+
+```javascript
+// <button>Log In</button>-ə uyğundur
+page.getByRole('button', { name: 'Log In' })
+
+// <a href="/register">Register</a>-a uyğundur
+page.getByRole('link', { name: 'Register' })
+
+// <h1>Welcome to TestMarket</h1>-a uyğundur
+page.getByRole('heading', { name: 'Welcome to TestMarket' })
+
+// "Category" labeli ilə əlaqəli <select>-ə uyğundur
+page.getByRole('combobox', { name: 'Category' })
+```
+
+Ümumi rol xəritəsi:
+
+| HTML Elementi | ARIA Rolu |
+|---|---|
+| `<button>` | `button` |
+| `<a href>` | `link` |
+| `<input type="text">` | `textbox` |
+| `<input type="checkbox">` | `checkbox` |
+| `<select>` | `combobox` |
+| `<h1>`–`<h6>` | `heading` |
+| `<img alt="...">` | `img` |
+
+### Rol + əlçatan ad
+
+`name` seçimi `getByRole`-u dəqiq edən şeydir. Onsuz `getByRole('button')` səhifədəki **hər** düyməyə uyğun gəlir — bu zəmanətli bir strict mode pozuntusudur.
+
+Əlçatan ad bunlardan gəlir:
+- Düymə / keçid **mətn məzmunu**: `<button>Log In</button>` → ad `'Log In'`-dir
+- `aria-label` atributu: `<button aria-label="Close dialog">X</button>` → ad `'Close dialog'`-dir
+- Şəkillərdə `alt`: `<img alt="Company logo">` → ad `'Company logo'`-dur
+- Form sahələri üçün əlaqəli `<label>`: `<label for="email">Email</label>` → ad `'Email'`-dir
+
+```javascript
+// ✅ Dəqiq — name seçimi yalnız bir düyməyə daraltır
+page.getByRole('button', { name: 'Add to Cart' })
+
+// ❌ Qeyri-dəqiq — bütün düymələrə uyğun gəlir, strict mode pozuntusuna səbəb olur
+page.getByRole('button')
+```
+
+---
+
+## `getByText` — görünən mətnə uyğunlaşma
+
+`getByText` verilmiş mətni ehtiva edən istənilən elementə uyğun gəlir. Keçidlər və müstəqil mətn elementləri üçün istifadə edin, lakin ehtiyatla istifadə edin — DOM-dakı istənilən elementə uyğun gəlir.
+
+```javascript
+// <a href="/products/new">New Product</a>-a uyğundur
+page.getByText('New Product')
+
+// Dəqiq uyğunluq — oxşar mətnlər üçün qismən uyğunluğun qarşısını alır
+page.getByText('Log In', { exact: true })
+
+// Regex uyğunluğu — hərfə həssas olmayan və ya qismən uyğunluq üçün faydalı
+page.getByText(/login/i)
+```
+
+**`getByText` nə vaxt istifadə edilir:** başqa rol daha təsviri olmayan keçidlər, ya da görünən olduğunu iddia etmək istədiyiniz müstəqil abzas mətni üçün.
+
+**`getByText` nə vaxt istifadə edilməz:** form sahələri üçün (`getByLabel` istifadə edin), düymələr üçün (`getByRole` istifadə edin).
+
+---
+
+## `getByLabel` — form sahələri üçün ən yaxşı seçim
+
+`getByLabel` form daxiletmələrini əlaqəli `<label>` elementi vasitəsilə uyğunlaşdırır. `for` / `id` əlaqəsini, `aria-labelledby` və `aria-label` atributlarını hörmət edir.
+
+```javascript
+// <label for="email">Email</label> ilə <input id="email">-a uyğundur
+page.getByLabel('Email').fill('customer@test.io')
+
+// <label for="password">Password</label> ilə <input id="password">-a uyğundur
+page.getByLabel('Password').fill('customer123')
+
+// "Shipping Name" labeli ilə <input id="shipping_name">-a uyğundur
+page.getByLabel('Shipping Name').fill('Jane Smith')
+```
+
+Bu, login formları, ödəniş formları və admin məhsul formları üçün düzgün seçimdir — HTML-in düzgün `<label>` əlaqəsinə sahib olduğu hər yerdə.
+
+---
+
+## `getByPlaceholder` — label olmadıqda
+
+Sahənin `<label>`-i olmasa da `placeholder` atributu varsa, `getByPlaceholder`-dan istifadə edin.
+
+```javascript
+// <input placeholder="Search products...">-a uyğundur
+page.getByPlaceholder('Search products...')
+
+// <input placeholder="Enter your email address">-a uyğundur
+page.getByPlaceholder('Enter your email address')
+```
+
+Bunu yalnız həqiqətən label olmadıqda istifadə edin. Əgər label varsa, `getByLabel` daha möhkəmdir (labellər placeholder mətndən daha az dəyişir).
+
+---
+
+## `getByTestId` — sabit, lakin kod dəyişikliyi tələb edir
+
+`getByTestId` `data-testid` atributuna sahib elementlərə uyğun gəlir. Test ID-ləri qəsdən dəyişdirilir, heç vaxt təsadüfən deyil — bu onu ən sabit lokator edir.
+
+```javascript
+// <button data-testid="submit-btn">Place Order</button>-a uyğundur
+page.getByTestId('submit-btn').click()
+
+// <div data-testid="product-card">...</div>-a uyğundur
+page.getByTestId('product-card')
+```
+
+**`data-testid` nə vaxt əlavə edilir:** elementin əlçatan adı, sabit mətni və unikal ID-si olmadıqda. Ümumi nümunələr: ümumi `<div>` konteynerləri, SVG ikonalar, mürəkkəb vidjet sərhədləri.
+
+Hər elementə `data-testid` əlavə etməyin. Rol əsaslı lokatorları ilk üstün tutun.
+
+---
+
+## CSS lokatorları — son çıxış yolu kimi
+
+CSS lokatorları pis deyil — sadəcə daha az davamlıdır. Bunları aşağıdakı hallarda istifadə edin:
+
+- ID ilə seçim edərkən (`#email` çox sabitdir)
+- Atribut seçiciləri istifadə edərkən (`button[type="submit"]`)
+- Əlçatan rolu olmayan ümumi elementlər üçün
+- Demək olar ki, heç vaxt dəyişməyən struktural sinifləri hədəf alanda
+
+```javascript
+// ID seçici — sabit və sürətli
+page.locator('#shipping_name')
+
+// Atribut seçici — sinif əsaslıdan daha yaxşı
+page.locator('button[type="submit"]')
+
+// Flash mesajları üçün sinif kompozisiyası — qəbul edilə bilər
+page.locator('.alert.alert-success')
+
+// Məhsul kartı grid elementi
+page.locator('.product-card')
+```
+
+**ID-ləri siniflərdən üstün tutun.** CSS sinifləri dizaynerlər stilistikanı yenidən struktur etdikdə dəyişir. ID-lər nadirən dəyişir, çünki onlar həmçinin `<label for="...">` əlaqələri və JavaScript hookları üçün də istifadə olunur.
+
+---
+
+## Zəncirvari lokatorlar
+
+Zəncirlər DOM ağacını dəqiqliklə keçməyə imkan verir. Geniş başlayın — konteyner tapın — sonra uşaq elementlərə enin.
+
+```javascript
+// Admin məhsullar cədvəlini tapın, sonra bütün sıraları tapın
+const rows = page.locator('table tbody tr.table-row');
+
+// İkinci sıranı götürün (indeks 1)
+const secondRow = rows.nth(1);
+
+// İkinci sıradakı məhsul adını (ikinci <td>) götürün
+const productName = secondRow.locator('td').nth(1);
+
+// Son sıradakı Edit düyməsini kliklayın
+await rows.last().locator('a:has-text("Edit")').click();
+```
+
+Səbət nümunəsi — iki səviyyəli zəncir:
+
+```javascript
+// İlk səbət sırasındakı miqdar daxiletməsini götürün
+const firstCartQuantity = page.locator('.cart-table .table-row')
+  .first()
+  .locator('input[name="quantity"]');
+```
+
+**Performans ipucu:** Playwright lokatorları tənbəlliklə qiymətləndirir. Uzun bir zəncir müəyyən etməyin heç bir xərci yoxdur — zəncir yalnız üzərində əməliyyat həyata keçirdiyinizdə həll olunur.
+
+---
+
+## `filter({ hasText })` və `filter({ has })`
+
+`filter` uyğun elementlər dəstini əlavə şərti yerinə yetirənlərə daraltır. Mürəkkəb CSS seçicilərindən daha oxunaqlıdır.
+
+### `filter({ hasText })`
+
+Mətn məzmunu (ya da hər hansı nəslin mətni) verilmiş stringi ehtiva edən elementlərə uyğun gəlir. Hərfə həssas deyil, alt-sətir uyğunluğu.
+
+```javascript
+// Admin dashboard: bütün stat kartları eyni görünür — başlıq mətni ilə filtrləyin
+const totalProductsCard = page.locator('.card')
+  .filter({ hasText: 'Total Products' });
+
+// Həmin kartdan say dəyərini götürün
+const count = await totalProductsCard.locator('p').textContent();
+
+// "Gaming Keyboard" məhsul kartını tapın
+await page.locator('.product-card')
+  .filter({ hasText: 'Gaming Keyboard' })
+  .locator('button:has-text("Add to Cart")')
+  .click();
+```
+
+### `filter({ has })`
+
+Verilmiş lokatora uyğun gələn uşaq elementi ehtiva edən elementlərə uyğun gəlir. Mətn uyğunluğu əvəzinə struktur uyğunluğuna ehtiyacınız olduqda istifadə edin.
+
+```javascript
+// <p> elementi ehtiva edən bütün stat kartlarını tapın
+const allStatCards = page.locator('.card')
+  .filter({ has: page.locator('p') });
+
+// "pending" status badge-ı olan bütün sifariş sıralarını tapın
+const pendingRows = page.locator('tr.table-row')
+  .filter({ has: page.locator('.badge-warning') });
+```
+
+**Tuz:** `hasText` nəsllərdəki mətni də uyğunlaşdırır. Axtarış mətniniz elementin bir neçə yerində görünürsə, gözlənilməz uyğunluqlar ala bilərsiniz. Bir elementə daraltmaq üçün kifayət qədər spesifik olun.
+
+---
+
+## `.first()`, `.last()`, `.nth()`
+
+Bir lokator çoxsaylı elementlərə uyğun gəlir və bir spesifik elementə ehtiyacınız olduqda:
+
+```javascript
+const rows = page.locator('table tbody tr.table-row');
+
+await rows.first().locator('td').nth(0).textContent(); // birinci sıra, birinci xana
+await rows.last().locator('button:has-text("Delete")').click(); // son sıranı sil
+await rows.nth(2).locator('a:has-text("Edit")').click();        // üçüncü sıranı redaktə et
+```
+
+Mətni bildiyiniz zaman `.nth()`-dən çox **`filter({ hasText })`-i üstün tutun**. İndeks əsaslı seçim sıralar yenidən sıralandıqda sınır; məzmun əsaslı filtrləmə davamlıdır.
+
+```javascript
+// ❌ Zərif — sıralama dəyişsə sınır
+await rows.nth(0).locator('button:has-text("Edit")').click();
+
+// ✅ Davamlı — sıralama sırası nə olursa olsun düzgün sıranı tapır
+await rows.filter({ hasText: 'Wireless Mouse' })
+  .locator('button:has-text("Edit")')
+  .click();
+```
+
+<Practice missions={['first-click','get-by-label','get-by-placeholder','find-by-text','test-id','chained-locators','filter-sale-card','filter-has-locator','nth-first-last','dynamic-ids','table-row-by-text','shadow-dom']} />
+
+---
+
+## Strict mode pozuntuları
+
+Playwright-in **strict mode**-u lokatoru birdən çox elementə uyğun gəldikdə və `click`, `fill` və ya `textContent` kimi bir əməliyyat həyata keçirdikdə xəta atır. Bu qəsdən edilir — Playwright hansını nəzərdə tutduğunuzu təxmin etməkdən imtina edir.
+
+```
+Error: strict mode violation: page.locator('button') resolved to 15 elements
+```
+
+### Niyə baş verir
+
+```javascript
+// ❌ Səhifədə 15 düymə var — hansı?
+await page.locator('button').click();
+
+// ❌ Çoxsaylı keçidlər — hansı?
+await page.locator('a').click();
+
+// ❌ Səhifədə iki <select> elementi var
+await page.locator('select').selectOption('electronics');
+```
+
+### Üç düzəltmə yolu
+
+**Düzəltmə 1 — Rol + adla daha spesifik olun:**
+
+```javascript
+// ✅ Yalnız bir düymənin labeli "Log In"-dir
+await page.getByRole('button', { name: 'Log In' }).click();
+
+// ✅ Yalnız bir keçidin labeli "Register"-dir
+await page.getByRole('link', { name: 'Register' }).click();
+
+// ✅ Yalnız bir select-in labeli "Category"-dir
+await page.getByRole('combobox', { name: 'Category' }).selectOption('electronics');
+```
+
+**Düzəltmə 2 — Konteynerə zəncirlə:**
+
+```javascript
+// ✅ Düyməni valideyn konteynerə məhdudlaşdırın
+await page.locator('.login-form').getByRole('button', { name: 'Log In' }).click();
+
+// ✅ Düzgün səbət sırasındakı Remove düyməsini tapın
+await page.locator('.cart-table .table-row')
+  .filter({ hasText: 'Wireless Mouse' })
+  .getByRole('button', { name: 'Remove' })
+  .click();
+```
+
+**Düzəltmə 3 — Sıra sabitdirsə `.first()`, `.last()`, ya da `.nth()`-dən istifadə edin:**
+
+```javascript
+// ✅ Birinci bildiriş bağlama düyməsi — sıra zəmanətlidirsə qəbul edilə bilər
+await page.locator('.notification button.close').first().click();
+```
+
+### Dinamik ID-lər — strict mode-la əlaqəli problem
+
+Bəzi səhifələr təsadüfi və ya məlumat əsaslı dəyərlərlə ID-lər yaradır:
+
+```html
+<!-- Məhsul detalları səhifəsi — ID-də slug ya da hash -->
+<div id="product_abc123f">...</div>
+<div id="product_def456a">...</div>
+```
+
+Bu ID-lər məlumat bazası yenidən toxumlandıqda və ya məhsul yenidən yaradıldıqda dəyişir. Qayda:
+
+> **Dinamik hissə (hash, UUID, slug, zaman damğası) ehtiva edirsə, onu lokator kimi istifadə etməyin.**
+
+Bunun əvəzinə sabit alternativlər istifadə edin:
+
+```javascript
+// ❌ Məlumat yeniləməsindən sonra sınır
+page.locator('#product_abc123f')
+
+// ✅ Sabit — sinif ya da rol dəyişməz
+page.locator('.product-card').filter({ hasText: 'Wireless Mouse' })
+page.getByRole('article').filter({ hasText: 'Wireless Mouse' })
+page.getByTestId('product-card').filter({ hasText: 'Wireless Mouse' })
+```
+
+<Practice missions={['role-with-name','exact-match','strict-mode-disambiguation','nth-vs-first','iterate-multiple','disambiguation-cookbook']} />
+
+---
+
+## Cədvəl sıraları — hamısını bir araya gətirmək
+
+Cədvəllər əksər tətbiqlərdə ən mürəkkəb lokator çətinliyidir. Zəncirvari lokatorları, filter-i və rol əsaslı lokatorları bir arada birləşdirirlər.
+
+Admin sifarişlər cədvəlinin müştəri məlumatları, sifariş cəmləri, status badge-ları VƏ hər sırada `<select>` ilə `<button>` olan bir forması var. Tam şablon belədir:
+
+```javascript
+// Sifarişlər cədvəlindəki bütün sıralar
+const orderRows = page.locator('table tbody tr.table-row');
+
+// Strategiya 1 — indeksə görə (sıra dəyişsə zərif)
+const firstRow = orderRows.first();
+
+// Strategiya 2 — mətn məzmununa görə (məlum məzmun üçün davamlı)
+const janeRow = orderRows.filter({ hasText: 'Jane Smith' });
+
+// Strategiya 3 — uşaq elementə görə (struktur uyğunluğu)
+const pendingRow = orderRows.filter({
+  has: page.locator('.badge-warning')
+});
+
+// Strategiya 4 — tam zəncir: sıra tapın + form elementləri ilə əlaqə qurun
+const janeSelect = orderRows
+  .filter({ hasText: 'Jane Smith' })
+  .locator('select[name="status"]');
+
+const janeUpdateBtn = orderRows
+  .filter({ hasText: 'Jane Smith' })
+  .locator('button:has-text("Update")');
+
+await janeSelect.selectOption('shipped');
+await janeUpdateBtn.click();
+```
+
+---
+
+## Shadow DOM əsasları
+
+Bəzi komponent kitabxanaları Shadow DOM — ev sahibi elementin içinə kapsullanmış ayrı bir DOM ağacı — istifadə edir. Standart CSS seçiciləri Shadow DOM sərhədlərini keçə bilmir.
+
+Playwright bunu əksər hallar üçün `pierce` seçici mühərriki vasitəsilə avtomatik idarə edir:
+
+```javascript
+// Playwright açıq shadow root-ları avtomatik keçir
+page.locator('my-component >> button')
+
+// Ya da pierce seçicisini açıq istifadə edin
+page.locator('pierce/button')
+```
+
+Qapalı shadow root-lar üçün (praktikada nadir hallarda) komponentin sənədləşdirilmiş API-si ilə ya da shadow ev sahibinə yerləşdirilmiş `data-testid` atributları ilə işləməli olacaqsınız.
+
+---
+
+## Tapşırıqlar
+
+Bu tapşırıqlar üçün öz kompüterinizdə kiçik bir e-ticarət tətbiqini — **TestMarket Lab** — işə salacaqsınız. Onu kursun qalan hissəsində də istifadə edəcəyiniz üçün indi bir dəfə quraşdırın (Node.js 20+ tələb olunur, [Modul 0](/az/course/module-0/)-da quraşdırılıb):
+
+```bash
+# Tətbiqi klonlayın (bir dəfə)
+git clone https://github.com/TesterBaku/testmarket-lab.git
+cd testmarket-lab
+
+# Asılılıqları quraşdırın və serveri işə salın
+npm install
+npm start
+```
+
+Onu işlək vəziyyətdə saxlayın və brauzerdə **http://localhost:3000** ünvanını açın. Tapşırıq sistemə daxil olmuş istifadəçi tələb etdikdə demo hesablardan istifadə edin:
+
+- **Müştəri** — `customer@test.io` / `customer123`
+- **Admin** — `admin@test.io` / `admin123`
+
+> Təmiz başlanğıc lazımdır? Tətbiqi yenidən başladın və ya ilkin məlumatları bərpa etmək üçün `POST http://localhost:3000/api/reset` göndərin.
+
+---
+
+### Tapşırıq 1: Lokator növlərini müəyyən edin
+
+Aşağıdakı HTML elementlərinin hər biri üçün ən yaxşı Playwright lokatorunu yazın:
+
+| HTML Elementi | Ən Yaxşı Lokator |
+|---|---|
+| `<label for="email">Email</label>` ilə `<input id="email">` | |
+| `<button type="submit">Log In</button>` | |
+| `<a href="/auth/register">Register</a>` | |
+| `<input placeholder="Search products...">` | |
+| `<div class="alert alert-success">Login successful!</div>` | |
+
+**İstinad:** `tests/final/pages/LoginPage.js`
+
+---
+
+### Tapşırıq 2: Zərif lokatorları yenidən yazın
+
+Hər zərif lokatoru davamlı strategiya ilə yenidən yazın:
+
+```javascript
+// 1. ❌ Zərif: CSS sinifi
+page.locator('.btn.btn-primary')
+
+// 2. ❌ Zərif: DOM yolu
+page.locator('div > div > form > input').first()
+
+// 3. ❌ Zərif: dinamik ID
+page.locator('#product_abc123')
+
+// 4. ❌ Zərif: nth-child
+page.locator('table tbody tr:first-child td:nth-child(2)')
+```
+
+---
+
+### Tapşırıq 3: Form sahəsi lokatorları
+
+TestMarket ödəniş forması sahələri üçün `getByLabel` lokatorları yazın: Shipping Name, Shipping Address, Shipping City, Shipping Zip Code və Place Order düyməsi.
+
+Admin məhsul forması üçün `getByLabel` lokatorları yazın: Name, Price, Category, Stock və Create/Update Product düyməsi.
+
+---
+
+### Tapşırıq 4: Zəncirvari lokatorlar
+
+`capstone-app/views/admin/products.ejs`-dən istifadə edərək:
+
+1. `table-row` sinfi olan bütün cədvəl sıralarını əldə edin
+2. Üçüncü sıranı (indeks 2) əldə edin
+3. Birinci sıradakı məhsul adını (ikinci `<td>`) əldə edin
+4. Son sıradakı Edit düyməsini kliklayın
+5. İkinci sıradakı Delete düyməsini kliklayın
+
+---
+
+### Tapşırıq 5: `filter` məşqi
+
+Admin dashboard stat kartlarından istifadə edərək:
+
+1. "Total Products" ehtiva edən kartı tapın və `<p>` sayını oxuyun
+2. "Total Users" ehtiva edən kartı tapın və `<p>` sayını oxuyun
+3. Mağaza səhifəsindəki "Gaming Keyboard" adlı məhsul üçün "Add to Cart" düyməsini kliklayın
+
+---
+
+### Tapşırıq 6: Admin cədvəl sırasının hədəflənməsi (çətin tapşırıq)
+
+Aşağıdakıları yerinə yetirən bir test ardıcıllığı yazın:
+1. Admin sifarişlər səhifəsinə keçin
+2. "Jane Smith" müştərisi üçün sıranı tapın
+3. Status badge-ının "pending" dediğini iddia edin
+4. `<select>` və Update düyməsi vasitəsilə statusu "shipped"-ə dəyişin
+5. Flash mesajının yeniləməni təsdiqlədiğini iddia edin
+
+---
+
+### Tapşırıq 7: Strict mode düzəltməsi
+
+Hər strict mode pozuntusunu düzəldin:
+
+```javascript
+// ❌ Bunları düzəldin:
+await page.locator('button').click();                        // 15 düymə
+await page.locator('a').click();                            // 50+ keçid
+await page.locator('select').selectOption('electronics');   // 2 select
+await page.locator('button:has-text("Remove")').click();    // 2+ Remove düymə
+```
+
+---
+
+### Tapşırıq 8: `getByTestId` miqrasiyası
+
+Məhsul kartı elementlərinə `data-testid="product-card"` əlavə edildiyi nəzərə alınaraq, mövcud sinif əsaslı lokator `page.locator('.product-card')`-ı `getByTestId` istifadə etmək üçün miqrasiya edin. Sonra eyni şeyi `table-row` və `cart-row` üçün edin.
+
+---
+
+## Əsas nəticələr
+
+Yazacağınız hər testə apardığınız üç qayda:
+
+1. **Əvvəlcə `getByRole`-u üstün tutun** — "Log In labeli olan düyməni tap" demək "bu CSS siniflərinə malik şeyi tap"-dan daha yaxşıdır
+2. **Formlar üçün `getByLabel`, sabitlik üçün `getByTestId`** — formlarda əlçatanlıq üçün labellər var; onlardan istifadə edin
+3. **Dəqiqlik üçün zəncirləyin + filtrləyin** — bir nəhəng seçici yazmayın; kiçik oxunaqlı lokatorları zəncirlə və gördüyünüz məzmunla filtrləyin
+
+Modul 3 fixture-ları və auth vəziyyətini əhatə edir — əvvəlcədən autentikasiya edilmiş brauzer kontekstlərindən istifadə edərək login formasını tamamilə atlayacaqsınız.
