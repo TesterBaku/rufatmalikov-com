@@ -110,8 +110,8 @@ export class ProductsPage {
   constructor(page: Page) {
     this.page = page;
     this.searchInput = page.locator('#search');
-    this.categoryFilter = page.locator('#category-filter');
-    this.sortSelect = page.locator('#sort-select');
+    this.categoryFilter = page.locator('[data-testid="category-filter"]');
+    this.sortSelect = page.locator('[data-testid="sort-select"]');
     this.productCards = page.locator('.product-card');
     this.applyFiltersButton = page.locator('#apply-filters');
   }
@@ -371,8 +371,8 @@ export class NavPage extends BasePage {
     super(page);
     this.cartLink = page.locator('nav a[href="/cart"]');
     this.productsLink = page.locator('nav a[href="/products"]');
-    this.accountLink = page.locator('nav a[href="/account"]');
-    this.logoutLink = page.locator('nav a[href="/logout"]');
+    this.accountLink = page.locator('[data-testid="nav-profile"]');
+    this.logoutLink = page.locator('[data-testid="nav-logout"]');
     this.cartBadge = page.locator('.cart-count');
   }
 
@@ -459,7 +459,7 @@ test('full checkout flow', async ({ page }) => {
   });
   await pm.checkoutPage.placeOrder();
 
-  await expect(page).toHaveURL('/order-confirmation');
+  await expect(page).toHaveURL(/\/orders\/\d+/);
 });
 ```
 
@@ -493,7 +493,7 @@ test('checkout with random shipping details', async ({ page }) => {
   });
   await pm.checkoutPage.placeOrder();
 
-  await expect(page).toHaveURL('/order-confirmation');
+  await expect(page).toHaveURL(/\/orders\/\d+/);
 });
 ```
 
@@ -521,13 +521,13 @@ A good rule of thumb: if a test reads like a clear sentence without you having t
 
 ## Exercises
 
-These exercises use the local TestMarket app. Start it with `npm start` in the `capstone-app/` directory. Run your tests from the `tests/starter/` directory.
+These exercises use the local TestMarket app. Set it up by following Module 2 (clone the standalone `testmarket-lab` repo and start it) so the app is running at `http://localhost:3000`. Write your page objects and tests in your own test project (e.g. `tests/`).
 
 ---
 
 ### Exercise 1: Build LoginPage
 
-Create `tests/starter/pages/LoginPage.ts`:
+Create `tests/pages/LoginPage.ts`:
 
 - Constructor defines `emailInput`, `passwordInput`, `loginButton` locators.
 - `goto()` navigates to `/auth/login`.
@@ -539,7 +539,7 @@ Write a test that uses your `LoginPage` to log in as `customer@test.io` / `custo
 
 ### Exercise 2: Build BasePage and refactor
 
-Create `tests/starter/pages/BasePage.ts`:
+Create `tests/pages/BasePage.ts`:
 
 - Constructor stores `page`.
 - `flashSuccess` getter → `.alert.alert-success`
@@ -553,7 +553,7 @@ Refactor `LoginPage` to extend `BasePage`. Update `goto()` to call `this.navigat
 
 ### Exercise 3: Build ProductsPage
 
-Create `tests/starter/pages/ProductsPage.ts`:
+Create `tests/pages/ProductsPage.ts`:
 
 - Locators: `searchInput`, `categoryFilter`, `sortSelect`, `productCards`, `applyFiltersButton`.
 - `goto()` → navigates to `/products`.
@@ -567,7 +567,7 @@ Write a test that searches for `'Mouse'` and checks the results contain at least
 
 ### Exercise 4: Build CartPage
 
-Create `tests/starter/pages/CartPage.ts`:
+Create `tests/pages/CartPage.ts`:
 
 - Locators: `cartItems`, `removeButtons`, `checkoutButton`, `emptyCartMessage`.
 - `goto()` → navigates to `/cart`.
@@ -583,7 +583,7 @@ Write a test that:
 
 ### Exercise 5: Build CheckoutPage
 
-Create `tests/starter/pages/CheckoutPage.ts`:
+Create `tests/pages/CheckoutPage.ts`:
 
 - Locators: `nameInput` (`#shipping_name`), `addressInput` (`#shipping_address`), `cityInput` (`#shipping_city`), `zipInput` (`#shipping_zip`), `placeOrderButton`.
 - `fillShippingDetails({ name, address, city, zip })` method.
@@ -596,13 +596,13 @@ Write a bonus test that:
 3. Navigates to checkout.
 4. Fills shipping details (use `faker` for the data).
 5. Places the order.
-6. Asserts redirect to `/order-confirmation`.
+6. Asserts redirect to the order page (URL matches `/orders/:id`).
 
 ---
 
 ### Exercise 6: Build AdminUsersPage
 
-The admin panel at `/admin/users` lists all registered users. Create `tests/starter/pages/AdminUsersPage.ts`:
+The admin panel at `/admin/users` lists all registered users. Create `tests/pages/AdminUsersPage.ts`:
 
 - Locators: `userRows`, `deleteButtons`, `searchInput`.
 - `goto()` → navigates to `/admin/users`.
@@ -616,7 +616,7 @@ Write a test that logs in as `admin@test.io` / `admin123`, navigates to the admi
 
 ### Exercise 7: Introduce PageManager
 
-Create `tests/starter/pages/PageManager.ts` that accepts `page` in its constructor and exposes:
+Create `tests/pages/PageManager.ts` that accepts `page` in its constructor and exposes:
 
 - `loginPage`
 - `productsPage`
@@ -637,7 +637,7 @@ Review all your page classes:
 - Does every page class extend `BasePage`?
 - Do all test files import from `pages/` and use zero raw `page.locator(...)` calls?
 
-Compare your final `pages/` directory with the reference solution at `tests/final/pages/`.
+Compare your final `pages/` directory against the structure described in this module — every page class should extend `BasePage`, and no test file should contain a raw `page.locator(...)` call.
 
 ---
 

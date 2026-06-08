@@ -110,8 +110,8 @@ export class ProductsPage {
   constructor(page: Page) {
     this.page = page;
     this.searchInput = page.locator('#search');
-    this.categoryFilter = page.locator('#category-filter');
-    this.sortSelect = page.locator('#sort-select');
+    this.categoryFilter = page.locator('[data-testid="category-filter"]');
+    this.sortSelect = page.locator('[data-testid="sort-select"]');
     this.productCards = page.locator('.product-card');
     this.applyFiltersButton = page.locator('#apply-filters');
   }
@@ -371,8 +371,8 @@ export class NavPage extends BasePage {
     super(page);
     this.cartLink = page.locator('nav a[href="/cart"]');
     this.productsLink = page.locator('nav a[href="/products"]');
-    this.accountLink = page.locator('nav a[href="/account"]');
-    this.logoutLink = page.locator('nav a[href="/logout"]');
+    this.accountLink = page.locator('[data-testid="nav-profile"]');
+    this.logoutLink = page.locator('[data-testid="nav-logout"]');
     this.cartBadge = page.locator('.cart-count');
   }
 
@@ -459,7 +459,7 @@ test('tam ödəniş axışı', async ({ page }) => {
   });
   await pm.checkoutPage.placeOrder();
 
-  await expect(page).toHaveURL('/order-confirmation');
+  await expect(page).toHaveURL(/\/orders\/\d+/);
 });
 ```
 
@@ -493,7 +493,7 @@ test('təsadüfi çatdırılma məlumatları ilə ödəniş', async ({ page }) =
   });
   await pm.checkoutPage.placeOrder();
 
-  await expect(page).toHaveURL('/order-confirmation');
+  await expect(page).toHaveURL(/\/orders\/\d+/);
 });
 ```
 
@@ -521,13 +521,13 @@ Yaxşı bir qaydə: bir testi page object-i açmadan başa düşmədən bir cüm
 
 ## Tapşırıqlar
 
-Bu tapşırıqlar yerli TestMarket tətbiqini istifadə edir. `capstone-app/` qovluğunda `npm start` ilə başladın. Testlərinizi `tests/starter/` qovluğundan işlədilir.
+Bu tapşırıqlar yerli TestMarket tətbiqini istifadə edir. Modul 2-yə əməl edərək (standalone `testmarket-lab` reposunu klonlayıb işə salın) tətbiqi `http://localhost:3000` ünvanında işə salın. Page object-ləri və testləri öz test layihənizdə (məsələn, `tests/`) yazın.
 
 ---
 
 ### Tapşırıq 1: LoginPage qurun
 
-`tests/starter/pages/LoginPage.ts` yaradın:
+`tests/pages/LoginPage.ts` yaradın:
 
 - Konstruktor `emailInput`, `passwordInput`, `loginButton` lokatorlarını müəyyən edir.
 - `goto()` `/auth/login`-ə keçir.
@@ -539,7 +539,7 @@ Bu tapşırıqlar yerli TestMarket tətbiqini istifadə edir. `capstone-app/` qo
 
 ### Tapşırıq 2: BasePage qurun və refactor edin
 
-`tests/starter/pages/BasePage.ts` yaradın:
+`tests/pages/BasePage.ts` yaradın:
 
 - Konstruktor `page`-i saxlayır.
 - `flashSuccess` getter → `.alert.alert-success`
@@ -553,7 +553,7 @@ Bu tapşırıqlar yerli TestMarket tətbiqini istifadə edir. `capstone-app/` qo
 
 ### Tapşırıq 3: ProductsPage qurun
 
-`tests/starter/pages/ProductsPage.ts` yaradın:
+`tests/pages/ProductsPage.ts` yaradın:
 
 - Lokatorlar: `searchInput`, `categoryFilter`, `sortSelect`, `productCards`, `applyFiltersButton`.
 - `goto()` → `/products`-a keçir.
@@ -567,7 +567,7 @@ Bu tapşırıqlar yerli TestMarket tətbiqini istifadə edir. `capstone-app/` qo
 
 ### Tapşırıq 4: CartPage qurun
 
-`tests/starter/pages/CartPage.ts` yaradın:
+`tests/pages/CartPage.ts` yaradın:
 
 - Lokatorlar: `cartItems`, `removeButtons`, `checkoutButton`, `emptyCartMessage`.
 - `goto()` → `/cart`-a keçir.
@@ -583,7 +583,7 @@ Aşağıdakıları edən bir test yazın:
 
 ### Tapşırıq 5: CheckoutPage qurun
 
-`tests/starter/pages/CheckoutPage.ts` yaradın:
+`tests/pages/CheckoutPage.ts` yaradın:
 
 - Lokatorlar: `nameInput` (`#shipping_name`), `addressInput` (`#shipping_address`), `cityInput` (`#shipping_city`), `zipInput` (`#shipping_zip`), `placeOrderButton`.
 - `fillShippingDetails({ name, address, city, zip })` metodu.
@@ -596,13 +596,13 @@ Aşağıdakıları edən bonus bir test yazın:
 3. Ödənişə keçin.
 4. Çatdırılma məlumatlarını doldurun (data üçün `faker` istifadə edin).
 5. Sifariş verin.
-6. `/order-confirmation`-a yönlənməni yoxlayın.
+6. Sifariş səhifəsinə yönlənməni yoxlayın (URL `/orders/:id` ilə uyğun gəlir).
 
 ---
 
 ### Tapşırıq 6: AdminUsersPage qurun
 
-`/admin/users`-dakı admin paneli bütün qeydiyyatdan keçmiş istifadəçiləri siyahılayır. `tests/starter/pages/AdminUsersPage.ts` yaradın:
+`/admin/users`-dakı admin paneli bütün qeydiyyatdan keçmiş istifadəçiləri siyahılayır. `tests/pages/AdminUsersPage.ts` yaradın:
 
 - Lokatorlar: `userRows`, `deleteButtons`, `searchInput`.
 - `goto()` → `/admin/users`-a keçir.
@@ -616,7 +616,7 @@ Aşağıdakıları edən bonus bir test yazın:
 
 ### Tapşırıq 7: PageManager-i tətbiq edin
 
-Konstruktorunda `page` qəbul edən və aşağıdakıları açıqlayan `tests/starter/pages/PageManager.ts` yaradın:
+Konstruktorunda `page` qəbul edən və aşağıdakıları açıqlayan `tests/pages/PageManager.ts` yaradın:
 
 - `loginPage`
 - `productsPage`
@@ -637,7 +637,7 @@ Bütün page siniflərinizi nəzərdən keçirin:
 - Hər səhifə sinifi `BasePage`-i uzadır?
 - Bütün test faylları `pages/`-dan idxal edir və sıfır xam `page.locator(...)` çağırışından istifadə edir?
 
-Son `pages/` qovluğunuzu `tests/final/pages/`-dakı istinad həlli ilə müqayisə edin.
+Son `pages/` qovluğunuzu bu modulda təsvir olunan struktura görə yoxlayın — hər page sinifi `BasePage`-i uzatmalı və heç bir test faylında xam `page.locator(...)` çağırışı olmamalıdır.
 
 ---
 
