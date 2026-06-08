@@ -527,7 +527,7 @@ test('flaky search test', async ({ page }) => {
 |-------|-------------|
 | `waitForTimeout(2000)` | Remove — `fill()` already auto-waits |
 | `waitForTimeout(1000)` | Remove — `click()` already auto-waits |
-| `waitForTimeout(3000)` + manual count | `expect(locator).toHaveCount(greaterThan(0))` |
+| `waitForTimeout(3000)` + manual count | `expect(locator).not.toHaveCount(0)` |
 | `waitForTimeout(1000)` + `page.url()` | `expect(page).toHaveURL(/\?q=widget/)` |
 
 ---

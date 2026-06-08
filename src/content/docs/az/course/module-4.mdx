@@ -334,12 +334,12 @@ await expect.soft(page.locator('.widget-products')).toBeVisible();
 
 **Soft assertion-lar nə vaxt istifadə edilər:**
 
-- **Panel siqaret testləri** — 10+ vidgeti yoxlamaq və yalnız birincini deyil, bütün uğursuzları görmək istəyirsiniz
+- **Panel smoke testləri** — 10+ vidgeti yoxlamaq və yalnız birincini deyil, bütün uğursuzları görmək istəyirsiniz
 - **Vizual tamlıq yoxlamaları** — bir səhifənin bütün bölümlərinin düzgün render olunduğunu yoxlamaq
 - **Paralel forma validasiyası** — eyni anda bir neçə sahəni yoxlamaq
 
 ```javascript
-test('admin panel siqaret testi', async ({ page }) => {
+test('admin panel smoke testi', async ({ page }) => {
   await page.goto('/admin');
 
   // Bütün stat kartlarını yoxlayın — bütün çatışmayanları bir anda bildirin
@@ -358,7 +358,7 @@ test('admin panel siqaret testi', async ({ page }) => {
 });
 ```
 
-**Diqqət:** Soft assertion-lar güclüdür amma istifadəsi çox asandır. Bir testin 15 soft assertion-ı varsa və 10-u uğursuz olarsa, bildiriş çox qarışıq olur. Onları test strukturu haqqında düşünməmənin bir yolu kimi deyil, siqaret yoxlamaları üçün qəsdən istifadə edin.
+**Diqqət:** Soft assertion-lar güclüdür, amma onlardan səhv istifadə etmək asandır. Bir testin 15 soft assertion-ı varsa və 10-u uğursuz olarsa, bildiriş çox qarışıq olur. Onları test strukturu haqqında düşünməmənin bir yolu kimi deyil, smoke yoxlamaları üçün qəsdən istifadə edin.
 
 ---
 
@@ -527,7 +527,7 @@ test('flakey axtarış testi', async ({ page }) => {
 |--------|-------------|
 | `waitForTimeout(2000)` | Silin — `fill()` artıq avtomatik gözləyir |
 | `waitForTimeout(1000)` | Silin — `click()` artıq avtomatik gözləyir |
-| `waitForTimeout(3000)` + manual say | `expect(locator).toHaveCount(greaterThan(0))` |
+| `waitForTimeout(3000)` + manual say | `expect(locator).not.toHaveCount(0)` |
 | `waitForTimeout(1000)` + `page.url()` | `expect(page).toHaveURL(/\?q=widget/)` |
 
 ---
