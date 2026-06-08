@@ -1,0 +1,473 @@
+---
+title: "Modul 5: Avtomatik gözləmə və flaky testlər"
+description: "Playwright-in hər əməliyyatdan əvvəl actionability yoxlamalarını necə avtomatik icra etdiyi, waitForTimeout-un nə üçün həmişə anti-pattern olduğu, ağıllı gözləmə API-ləri (waitForURL, waitForResponse, waitForLoadState) və flaky testlərin diaqnostikası ilə aradan qaldırılması."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+Veb-first assertion-ların avtomatik olaraq necə yenidən cəhd etdiyini artıq bilirsiniz. İndi isə etibarlılığın digər tərəfinə baxaq: Playwright hər hansı bir əməliyyatı icra etməzdən **əvvəl** nə edir — və qalan hər `waitForTimeout` çağırışını həqiqətən işləyən bir şeylə necə əvəz etmək olar.
+
+<Video title="Modul 5: Avtomatik gözləmə və flaky testlər" />
+
+---
+
+## Playwright hər əməliyyatdan əvvəl avtomatik necə gözləyir
+
+Hər Playwright əməliyyatı — `click()`, `fill()`, `hover()`, `press()`, `selectOption()`, `check()`, `uncheck()` — həqiqətən icra etməzdən əvvəl bir sıra **actionability yoxlamaları** keçirir. Bu yoxlamalar avtomatik baş verir; siz onları yazmırsınız.
+
+Yoxlamalar bunlardır:
+
+| Yoxlama | Mənası |
+|---------|--------|
+| **Attached** | Element DOM-da mövcuddur |
+| **Visible** | Element gizlənməyib (`display:none`, `visibility:hidden`, `opacity:0`, sıfır ölçü) |
+| **Stable** | Element ən azı iki animasiya çərçivəsi (500 ms) boyunca hərəkət etməyib |
+| **Receives events** | Heç bir element hədəfi örtmür (overlay, modal və ya tooltip yoxdur) |
+| **Enabled** | Element `disabled` deyil |
+
+Playwright hamısı keçənə — ya da əməliyyat vaxt aşımı bitənə (defolt: 30 saniyə) qədər dövrə üzərindən ~50 ms-dən bir bütün beş şərti yoxlayır.
+
+```javascript
+// Playwright düymə attached, visible, stable, hadisə qəbul edir
+// VƏ enabled olana qədər gözləyir — sonra click edir.
+await page.getByRole('button', { name: 'Sifariş ver' }).click();
+
+// Bunları özünüz yazmanıza gərək yoxdur:
+// await page.waitForSelector('button', { state: 'visible' }); // artıqdır
+// await page.waitForTimeout(500); // anti-pattern
+```
+
+**Bu praktikada nə demək olar:**
+
+- Düymə əvvəlcə yükləmə overlay-ının arxasındadırsa, `click()` overlay-ın yox olmasını gözləyir.
+- Düymə `disabled` başlayır və forma doldurulduqdan sonra aktiv olursa, `click()` gözləyir.
+- Element hazırda animasiya edirsə (sürüşərək girən, silinərək görünən), `click()` sabitləşməsini gözləyir.
+
+Buna görə Playwright ilə açıq gözləmələrin əksəriyyəti lazımsızdır.
+
+---
+
+## `waitForTimeout` həmişə anti-pattern-dir
+
+`page.waitForTimeout(N)` tam olaraq bir şey edir: testi N millisaniyə dayandırır. Heç bir şərti yoxlamır. Tətbiqin hazır olduğunu bilmir. Həmişə yanlışdır.
+
+```javascript
+// ANTİ-PATTERN — heç vaxt belə etməyin
+await page.click('#submit');
+await page.waitForTimeout(3000); // səhifənin 3 saniyədə yüklənəcəyini ümid edir
+const text = await page.locator('h1').textContent();
+expect(text).toContain('Təsdiqləndi');
+
+// DÜZGÜN — faktiki şərti gözləyir
+await page.click('#submit');
+await expect(page.locator('h1')).toContainText('Təsdiqləndi');
+```
+
+**`waitForTimeout` testləri nə üçün flaky edir:**
+
+1. Sizin maşınınız o qədər sürətli ola bilər ki, 3000 ms kifayətdir. CI serveri 4× daha yavaşdır. Test CI-də uğursuz olur.
+2. Tətbiq növbəti buraxılışda sürətlənir. 3000 ms yuxumanız indi hər icrada 2 saniyə israf edir.
+3. Bir reqressiya nəticəsində tətbiq yavaşlayır. Yuxumanız indi çox qısadır. Test qırmızıya çevrilir.
+
+`waitForTimeout` testinizi hardware sürətinə bağlayır. Veb-first assertion-lar və ağıllı gözləmə API-ləri testinizi tətbiq davranışına bağlayır. İkincisi heç vaxt yanlış səbəblərdən qırılmır.
+
+**`waitForTimeout`-un yeganə qəbul edilə bilən istifadəsi** debug zamanıdır — brauzerın nə etdiyini görmək üçün testi müvəqqəti olaraq yavaşlatmaq. Commit etməzdən əvvəl onu silin.
+
+```javascript
+// Debug zamanı müvəqqəti olaraq tamamdır
+await page.waitForTimeout(5000); // COMMIT ETMƏZDƏN ƏVVƏL SİLİN
+
+// Şərh xatırladıcınızdır. Həqiqətən silin.
+```
+
+---
+
+## `expect` avtomatik yenidən cəhdi — xatırlatma
+
+Modul 4-dən: `expect(locator)` assertion-ları avtomatik yenidən cəhd edir. Bu burada aktualdır çünki **geliştiricilerin `waitForTimeout`-a əl atmasının ən yaygın səbəbi yenidən cəhd etməyən assertion istifadə etmələridir**.
+
+```javascript
+// Yenidən cəhd etmir — bir dəfə yoxlayır, yavaş səhifələrdə uğursuz olur
+const text = await page.locator('.status').textContent();
+expect(text).toBe('Hazır');
+
+// Avtomatik yenidən cəhd edir — şərt keçənə ya da vaxt aşımı bitənə qədər yenidən cəhd edir
+await expect(page.locator('.status')).toHaveText('Hazır');
+```
+
+Mətn, say, URL ya da görünürlük vəziyyətini yoxlamadan əvvəl `waitForTimeout` yazdığınızı görürsünüzsə — yoxlamanı veb-first ekvivalenti ilə əvəz edin. Yuxuma avtomatik yox olur.
+
+---
+
+## `waitForURL`
+
+`page.waitForURL()` brauzerın hazırkı URL-inin gözlənilən dəyərlə uyğunlaşmasını gözləyir. String, glob şablonu ya da müntəzəm ifadə qəbul edir.
+
+```javascript
+// Dəqiq URL gözləyin
+await page.waitForURL('https://example.com/dashboard');
+
+// Glob şablon gözləyin
+await page.waitForURL('**/orders/**');
+
+// Regex — dinamik ID-lər üçün faydalıdır
+await page.waitForURL(/\/orders\/\d+/);
+```
+
+**Kritik şablon: tetikle, sonra gözlə.** Əvvəlcə URL-i gözləməyin — naviqasiya artıq baş vermiş ola bilər. `waitForURL` çağırışı onu tetikleyen əməliyyatı izləməlidir.
+
+```javascript
+await page.getByRole('button', { name: 'Sifariş ver' }).click();
+await page.waitForURL(/\/orders\/\d+/);
+// URL artıq /orders/1042 kimi bir şeydir
+```
+
+**`waitForURL` vs `expect(page).toHaveURL()`:**
+
+Hər ikisi işləyir. Fərq niyyətdədir:
+
+- `waitForURL` açıq bir gözləmədir: "Naviqasiyanın baş verməsini gözləyirəm."
+- `expect(page).toHaveURL()` bir assertion-dır: "Naviqasiyanın baş verdiyini yoxlayıram."
+
+Praktikada demək olar ki, eynidir — `toHaveURL` da yenidən cəhd edir. Test assertion-larında `toHaveURL`, birbaşa assertion etmədiyiniz köməkçi metodlarda ya da page object-lərdə `waitForURL` üstün tutun.
+
+```javascript
+// Testdə — assertion formasını istifadə edin
+await checkoutPage.placeOrder();
+await expect(page).toHaveURL(/\/orders\/\d+/);
+
+// Page object köməkçisində — gözləmə formasını istifadə edin
+async placeOrder() {
+  await this.placeOrderBtn.click();
+  await this.page.waitForURL(/\/orders\/\d+/);
+}
+```
+
+---
+
+## `waitForResponse`
+
+`page.waitForResponse()` brauzer tərəfindən müəyyən bir HTTP cavabının qəbul edilməsini gözləyir. Bir əməliyyat şəbəkə sorğusunu tetiklediyinde istifadə edin və davam etməzdən əvvəl cavabı yoxlamanız lazımdır.
+
+**Kritik şablon: `Promise.all`.**
+
+`waitForResponse`-u əməliyyatdan sonra çağırırsınızsa, cavabı qaçıra bilərsiniz — dinləyiciniz qeydiyyata alınmazdan əvvəl tamamlanmış ola bilər. Həmişə `Promise.all` istifadə edərək əməliyyatı tetiklemeden əvvəl dinləyicini başladın:
+
+```javascript
+// YANLIŞ — cavab dinləyicidən əvvəl gələ bilər
+await page.click('.daha-yüklə');
+const response = await page.waitForResponse('**/api/products');
+
+// DÜZGÜN — dinləyici click-dən əvvəl qeydiyyata alınır
+const [response] = await Promise.all([
+  page.waitForResponse('**/api/products'),
+  page.click('.daha-yüklə'),
+]);
+expect(response.ok()).toBeTruthy();
+```
+
+**Uyğunlaşdırma şablonları:** URL string, glob ya da cavab obyektini qəbul edən funksiyanla uyğunlaşdıra bilərsiniz.
+
+```javascript
+// Glob ilə uyğunlaşdır
+const [response] = await Promise.all([
+  page.waitForResponse('**/api/products**'),
+  page.click('.məhsulları-yüklə'),
+]);
+
+// Funksiya ilə uyğunlaşdır — status kodu yoxlamaları üçün faydalıdır
+const [response] = await Promise.all([
+  page.waitForResponse(
+    (resp) => resp.url().includes('/api/products') && resp.status() === 200
+  ),
+  page.click('.məhsulları-yüklə'),
+]);
+
+// Cavab gövdəsini yoxlayın
+const body = await response.json();
+expect(body.products).toHaveLength(10);
+```
+
+**`waitForResponse` nə vaxt istifadə edilər:**
+
+- "Daha yüklə"yə kliklədikdən sonra — yeni elementləri iddia etməzdən əvvəl API cavabını gözləyin
+- Forma göndərdikdən sonra — təsdiq mesajını iddia etməzdən əvvəl POST cavabını gözləyin
+- Şəbəkə xətası işləmini sınaqdan keçirərkən — 4xx ya da 5xx cavabını gözləyin
+
+---
+
+## `waitForLoadState`
+
+`page.waitForLoadState()` səhifənin müəyyən bir yüklənmə vəziyyətinə çatmasını gözləyir. Üç vəziyyət var:
+
+| Vəziyyət | Nə vaxt işə düşür |
+|----------|------------------|
+| `'load'` | `load` hadisəsi işə düşdü (bütün resurslar endirildi) |
+| `'domcontentloaded'` | `DOMContentLoaded` hadisəsi işə düşdü (HTML ayrıştırıldı, şəkillər hələ yox) |
+| `'networkidle'` | 500 ms boyunca şəbəkə sorğusu yoxdur |
+
+```javascript
+// Səhifənin tam yüklənməsini gözləyin
+await page.goto('/dashboard');
+await page.waitForLoadState('load'); // adətən artıqdır — goto() artıq gözləyir
+
+// DOM-un ayrıştırılmasını gözləyin ('load'-dan daha sürətli)
+await page.waitForLoadState('domcontentloaded');
+
+// Şəbəkənin sabitləşməsini gözləyin
+await page.waitForLoadState('networkidle');
+```
+
+**Vacib:** `page.goto()` defolt olaraq artıq `'load'`-u gözləyir, buna görə `goto()`-dan sonra `waitForLoadState('load')` çağırmaq demək olar ki, həmişə artıqdır.
+
+---
+
+## `networkidle`-ın çatışmazlıqları
+
+`networkidle` ən təhlükəsiz seçim kimi görünür — "hər şey bitənə qədər gözlə." Praktikada ciddi problemləri var:
+
+**Problem 1: Heç vaxt işə düşməyə bilər.** Müasir SPA-lar fasiləsiz olaraq arxa planda sorğular edir — analitika pingi, heartbeat polling, WebSocket yenidən qoşulmaları. Tətbiq sorğu göndərməyə davam edərsə, `networkidle` sonsuz gözləyir (vaxt aşımına qədər).
+
+**Problem 2: Yavaşdır.** Sakit səhifələrdə belə, `networkidle` həmişə son sorğudan sonra minimum 500 ms gözləyir. Bunu yüzlərlə testdə artırın.
+
+**Problem 3: Yanlış şeyi gözləyir.** Adətən müəyyən bir cavabla maraqlanırsınız, "bütün şəbəkə fəaliyyəti" ilə deyil. Başqa bir arxa planda çalışan sorğudan gələn cavab doğru anda `networkidle`-ı açsa, həqiqətən maraqlandığınız cavab gəlməzdən əvvəl baş verə bilər.
+
+```javascript
+// KÖVRƏK — şəbəkə sakinləşdikdə işə düşür, datanız hazır olduqda deyil
+await page.click('.məhsulları-yüklə');
+await page.waitForLoadState('networkidle');
+await expect(page.locator('.product-card')).toHaveCount(10);
+
+// MÖHKƏM — müəyyən cavab gəldikdə işə düşür
+const [response] = await Promise.all([
+  page.waitForResponse('**/api/products'),
+  page.click('.məhsulları-yüklə'),
+]);
+await expect(page.locator('.product-card')).toHaveCount(10);
+```
+
+**`networkidle`-ın qəbul edilə bilən olduğu zaman:**
+
+- Arxa planda sorğu olmayan sadə statik səhifə yüklənməsi
+- SPA marşrutlaması olmayan köhnəlmiş tətbiqlərdə testlər
+- Daha yaxşı siqnal olmadıqda son çarə kimi — hətta o zaman belə, nə üçün olduğunu izah edən şərh əlavə edin
+
+---
+
+## Flaky testləri diaqnostika etmək
+
+Test heç bir kod dəyişikliyi olmadan bəzən keçdikdə, bəzən isə uğursuz olduqda **flaky**-dir. Flakiness demək olar ki, həmişə kök səbəbə malikdir — onu tapın.
+
+### Addım 1: Yuxumaları yoxlayın
+
+Ən yaygın səbəb. Test faylında `waitForTimeout` axtarın. Hər nümunəni uyğun veb-first alternativlə əvəz edin.
+
+```javascript
+// Əvvəl
+await page.click('#submit');
+await page.waitForTimeout(2000);
+const text = await page.locator('.result').textContent();
+
+// Sonra
+await page.click('#submit');
+await expect(page.locator('.result')).toHaveText(/uğur/i);
+```
+
+### Addım 2: Yenidən cəhd etməyən assertion-ları yoxlayın
+
+Lokatorlar əvəzinə `await`-lənmiş dəyərlərdən qurulan assertion-ları axtarın.
+
+```javascript
+// Flaky — bir dəfə qiymətləndirir
+const visible = await page.locator('.banner').isVisible();
+expect(visible).toBe(true);
+
+// Sabit — avtomatik yenidən cəhd edir
+await expect(page.locator('.banner')).toBeVisible();
+```
+
+### Addım 3: Qorunmamış URL ya da cavab yoxlamalarını tapın
+
+```javascript
+// Flaky — page.url() sinxrondur, yenidən cəhd yoxdur
+expect(page.url()).toContain('/dashboard');
+
+// Sabit — avtomatik yenidən cəhd edir
+await expect(page).toHaveURL('/dashboard');
+```
+
+### Addım 4: `waitForResponse`-da yarış şərtlərini yoxlayın
+
+Ən incə səbəb. `waitForResponse` tetikleyen əməliyyatdan sonra çağırılırsa, cavabı qaçıra bilər.
+
+```javascript
+// Flaky — cavab dinləyicidən əvvəl gəlmiş ola bilər
+await page.click('.axtarış');
+const resp = await page.waitForResponse('**/api/search');
+
+// Sabit — tetiklemeden əvvəl dinləyici qeydiyyata alınır
+const [resp] = await Promise.all([
+  page.waitForResponse('**/api/search'),
+  page.click('.axtarış'),
+]);
+```
+
+### Addım 5: Click-lərdə `{ force: true }` yoxlayın
+
+`click({ force: true })` bütün beş actionability yoxlamasını atlayır. Elementi örtülü, deaktiv ya da gizli olsa belə tıklamağa məcbur edir. Bu real problemləri gizlədir.
+
+```javascript
+// Kod iyi — bu element nə üçün normal tıklana bilmir?
+await page.locator('.submit-btn').click({ force: true });
+
+// Düzəliş: tıklamanı bloklayan şeyi tapın və idarə edin
+await expect(page.locator('.modal')).not.toBeVisible(); // modalın bağlanmasını gözləyin
+await page.locator('.submit-btn').click();
+```
+
+### Flaky test diaqnostika cədvəli
+
+| Simptom | Kök səbəb | Düzəliş |
+|---------|-----------|---------|
+| Yerli keçir, CI-də uğursuz olur | `waitForTimeout` sürətli maşına uyğunlaşdırılıb | Veb-first assertion ilə əvəz edin |
+| Eyni maşında ~20% uğursuz olur | Yenidən cəhd etməyən assertion, yarış şərti | Yenidən cəhd etməyən yoxlamanı tapın |
+| Yalnız testlər paralel çalışdıqda uğursuz olur | Paylaşılan vəziyyət, test sıralama asılılığı | Test datanı izolyasiya edin |
+| Heç bir test dəyişikliyi olmadan deploy-dan sonra uğursuz olur | Lokator çox kövrəkdir | Rol əsaslı ya da `data-testid` lokatorlarına keçin |
+| `console.log` əlavə etdiyinizdə keçir | Əlavə mikrotask tick-i ilə üzə çıxan yarış şərti | Düzgün `await` ya da `Promise.all` əlavə edin |
+| Həmişə eyni addımda uğursuz olur | Real bug, flakiness deyil | Tətbiqi ya da assertion məntiqi düzəldin |
+
+---
+
+## Xüsusi əməliyyat vaxt aşımları
+
+Defolt olaraq, hər əməliyyat actionability yoxlamaları üçün **30 saniyəyə** qədər gözləyir. Bunu qlobal olaraq ya da əməliyyat-başına dəyişdirə bilərsiniz.
+
+```javascript
+// Əməliyyat-başına vaxt aşımı (millisaniyə)
+await page.getByRole('button', { name: 'Yavaş əməliyyat' }).click({ timeout: 60_000 });
+
+// playwright.config.js-də qlobal əməliyyat vaxt aşımı
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  use: {
+    actionTimeout: 10_000, // bütün əməliyyatlar üçün 10 saniyə
+  },
+});
+```
+
+**Bir şeyin sürətli olması lazım olduğunu bildiyiniz zaman vaxt aşımını azaldın.** Düymə tıklaması 2 saniyə içində naviqasiyaya səbəb olmalıdırsa, amma 30 saniyelik vaxt aşımınız varsa, real reqressiya test uğursuz olmazdan əvvəl 30 saniyə aşkar edilməyə bilər.
+
+---
+
+<Practice missions={['custom-timeout','wait-for-selector','auto-waiting','wait-for-url','wait-for-response','click-actionability','fix-flaky-test','wait-for-load-state']} />
+
+---
+
+## Tapşırıqlar
+
+Bu tapşırıqlar `http://localhost:3000`-də yerli olaraq işləyən TestMarket Lab istifadə edir.
+
+---
+
+### Tapşırıq 1: Sabit gözləmələri veb-first assertion-larla əvəz edin
+
+Bu testi refaktor edin — hər `waitForTimeout`-u düzgün veb-first alternativlə əvəz edin:
+
+```javascript
+// ƏVVƏL (flaky)
+test('məhsul axtarışı', async ({ page }) => {
+  await page.goto('/products');
+  await page.waitForTimeout(1500);
+
+  await page.fill('#search', 'vidget');
+  await page.waitForTimeout(800);
+
+  await page.click('#search-btn');
+  await page.waitForTimeout(3000);
+
+  const count = await page.locator('.product-card').count();
+  expect(count).toBeGreaterThan(0);
+
+  await page.waitForTimeout(500);
+  expect(page.url()).toContain('?q=vidget');
+});
+```
+
+| Əvəz edin | Bunla |
+|-----------|-------|
+| `waitForTimeout(1500)` | Silin — `fill()` artıq element üçün avtomatik gözləyir |
+| `waitForTimeout(800)` | Silin — `click()` artıq avtomatik gözləyir |
+| `waitForTimeout(3000)` + `count()` | `expect(locator).toHaveCount(greaterThan(0))` |
+| `waitForTimeout(500)` + `page.url()` | `expect(page).toHaveURL(/\?q=vidget/)` |
+
+---
+
+### Tapşırıq 2: Flaky naviqasiya testini düzəldin
+
+Aşağıdakı test flaky-dir çünki URL sinxron olaraq yoxlanılır. Onu yenidən yazın.
+
+```javascript
+// ƏVVƏL
+test('ödəniş sifariş səhifəsinə yönləndirir', async ({ page }) => {
+  await page.goto('/checkout');
+  await fillCheckoutForm(page);
+  await page.click('#place-order');
+  await page.waitForTimeout(2000);
+  expect(page.url()).toMatch(/\/orders\/\d+/);
+});
+```
+
+Yuxumanı və sinxron URL yoxlamasını `waitForURL` ya da `toHaveURL` ilə əvəz edin.
+
+---
+
+### Tapşırıq 3: Şəbəkə cavabını gözləyin
+
+Aşağıdakıları edən bir test yazın:
+1. `/products`-a keçin
+2. "Daha yüklə" düyməsini tıklayın
+3. `Promise.all` istifadə edərək `/api/products` cavabını gözləyin
+4. Daha çox məhsul kartının göründüyünü iddia edin
+
+```javascript
+test('daha yüklə məhsulları əlavə edir', async ({ page }) => {
+  await page.goto('/products');
+  const initial = await page.locator('.product-card').count();
+
+  const [response] = await Promise.all([
+    page.waitForResponse('**/api/products**'),
+    page.click('.load-more-btn'),
+  ]);
+
+  expect(response.ok()).toBeTruthy();
+  await expect(page.locator('.product-card')).toHaveCount(initial + 10);
+});
+```
+
+---
+
+## Özünü yoxlama sualları
+
+1. Playwright hər əməliyyatdan əvvəl hansı beş actionability yoxlamasını aparır?
+2. `waitForTimeout` yerli keçdikdə belə CI-də testləri flaky niyə edir?
+3. `waitForResponse` üçün `Promise.all` şablonu nədir və nə üçün zəruridir?
+4. `waitForURL` ilə `expect(page).toHaveURL()` arasındakı fərq nədir?
+5. `networkidle` nə üçün SPA-lar üçün etibarsızdır?
+6. `click({ force: true })` olan bir test görürsünüz. Bu sizə test haqqında nə deyir?
+7. Yerli keçən amma CI-də 20% uğursuz olan bir testi necə diaqnostika edərdiniz?
+8. Defolt əməliyyat vaxt aşımı nədir və onu əməliyyat-başına necə dəyişdirirsiniz?
+
+---
+
+## Əsas nəticələr
+
+1. **Avtomatik gözləmə daxildir.** Hər Playwright əməliyyatı elementin attached, visible, stable, bloklanmamış və enabled olmasını gözləyir. Əməliyyatlardan əvvəl açıq gözləmə yazmağa nadir hallarda ehtiyac var.
+2. **`waitForTimeout` həmişə yanlışdır.** Heç bir şərti yoxlamır. Hər yuxumanı veb-first assertion ya da ağıllı gözləmə API-si ilə əvəz edin.
+3. **`waitForResponse` üçün `Promise.all`.** Tetikleyen əməliyyatdan əvvəl dinləyicini qeydiyyata alın — heç vaxt sonra deyil.
+4. **SPA-larda `networkidle`-dan çəkinin.** Heç vaxt gəlməyə bilən sükutu gözləyir. Bunun əvəzinə müəyyən bir URL ya da cavabı gözləyin.
+5. **Flakiness-in kök səbəbi var.** Diaqnostika yoxlama siyahısı üzərindən işləyin: yuxumalar, yenidən cəhd etməyən assertion-lar, sinxron URL yoxlamaları, çatışmayan `Promise.all` ya da `{ force: true }`.
