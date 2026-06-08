@@ -32,15 +32,14 @@ test('məhsul kartı bazis xəttinə uyğun gəlir', async ({ page }) => {
 
 **Bazis xətləri necə işləyir.** İlk işlətmədə snapshot faylı hələ mövcud deyil, ona görə Playwright onu yazır — test keçdi ya uğursuz oldu kimi deyil, "yazıldı" kimi qeyd edilir. Sonrakı hər işlətmə həmin bazis faylına qarşı piksel-piksel müqayisə aparır. Fərq konfiqurasiya edilmiş tolerantlığı keçərsə, test uğursuz olur və Playwright nəzarəti asanlaşdırmaq üçün bazis faylının yanına `-diff.png` və `-actual.png` yazır.
 
-**Snapshot-lar harda saxlanır.** Varsayılan olaraq fayllar spec faylının yanındakı `__screenshots__` qovluğunda, layihənin adına görə (`chromium/`, `firefox/` və s.) alt qovluqda saxlanır:
+**Snapshot-lar harda saxlanır.** Varsayılan olaraq hər spec faylının yanında öz `<spec-faylı>-snapshots/` qovluğu yaranır; layihə adı və platforma isə fayl adının bir hissəsi olur (məsələn, `...-chromium-linux.png`):
 
 ```
 tests/
   visual/
     product-card.spec.ts
-    __screenshots__/
-      product-card.spec.ts-snapshots/
-        product-card-chromium-linux.png
+    product-card.spec.ts-snapshots/
+      product-card-chromium-linux.png
 ```
 
 Platforma şəkilçisi (`linux`, `darwin`, `win32`) avtomatik əlavə edilir, çünki render OS-lər arasında fərqlənir. Hədəf CI platformanız üçün bazis fayllarını commit edin.
@@ -398,7 +397,7 @@ Bu tapşırıqlar bu modulun iş vərəqəsindəki tapşırıqlara uyğundur. On
 3. İlk məhsul kartının element səviyyəsindəki ekran görüntüsünü alın: `await expect(page.locator('.product-card').first()).toHaveScreenshot('product-card.png')`
 4. Testi iki dəfə işlədin — ilk işlətmə bazis xəttini yazır, ikinci isə keçir (müqayisə)
 
-Bazis xətti faylının `__screenshots__/` daxilində yaradıldığını yoxlayın.
+Bazis xətti faylının spec faylınızın yanındakı `*-snapshots/` qovluğunda yaradıldığını yoxlayın.
 
 ### Tapşırıq 2 — Tam səhifə ödəniş ekran görüntüsü
 

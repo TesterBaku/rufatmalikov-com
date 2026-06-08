@@ -32,15 +32,14 @@ test('product card matches baseline', async ({ page }) => {
 
 **How baselines work.** On the very first run the snapshot file does not yet exist, so Playwright writes it — the test is marked as "written" rather than passed or failed. Every subsequent run performs a pixel-by-pixel comparison against that baseline file. If the diff exceeds the configured tolerance, the test fails and Playwright writes a `-diff.png` and `-actual.png` alongside the baseline for easy inspection.
 
-**Where snapshots are stored.** By default the files are saved in a `__screenshots__` directory next to the spec file, in a sub-folder named after the project (`chromium/`, `firefox/`, etc.):
+**Where snapshots are stored.** By default each spec gets its own `<spec-file>-snapshots/` folder right next to it, and the project name and platform are part of each file name (e.g. `...-chromium-linux.png`):
 
 ```
 tests/
   visual/
     product-card.spec.ts
-    __screenshots__/
-      product-card.spec.ts-snapshots/
-        product-card-chromium-linux.png
+    product-card.spec.ts-snapshots/
+      product-card-chromium-linux.png
 ```
 
 The platform suffix (`linux`, `darwin`, `win32`) is appended automatically because rendering differs across OSes. Commit the baseline files for your target CI platform.
@@ -398,7 +397,7 @@ Create `tests/starter/tests/visual/product-card.spec.js`:
 3. Take an element-level screenshot of the first product card: `await expect(page.locator('.product-card').first()).toHaveScreenshot('product-card.png')`
 4. Run the test twice — first run writes the baseline, second run passes (comparison)
 
-Verify the baseline file is created inside `__screenshots__/`.
+Verify the baseline file is created inside the new `*-snapshots/` folder next to your spec file.
 
 ### Exercise 2 — Full-page checkout screenshot
 
