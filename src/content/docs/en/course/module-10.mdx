@@ -185,7 +185,7 @@ type TestAuthFixtures = {
   customerPage: Page;
 };
 
-export const test = base.extend<TestAuthFixtures & WorkerAuthFixtures>({
+export const test = base.extend<TestAuthFixtures, WorkerAuthFixtures>({
   // One logged-in context per worker process.
   customerContext: [async ({ browser }, use) => {
     const context = await browser.newContext();
