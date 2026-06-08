@@ -1,0 +1,652 @@
+---
+title: "Module 7: Page Object Model"
+description: "Why raw tests break down at scale, and how the Page Object Model fixes it — one class per page, locators as properties, action methods, a shared BasePage, the page-manager pattern, parameterized methods, test data with faker, and how to avoid over-engineering."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+You can write a hundred tests that work perfectly — and then a developer renames one CSS selector and half of them break. The Page Object Model (POM) is the architectural pattern that prevents that. This module walks you from raw, fragile tests to a structured framework where every selector lives in exactly one place.
+
+<Video title="Module 7: Page Object Model" />
+
+---
+
+## Why raw tests become hard to maintain
+
+Consider a typical raw Playwright test for a login flow:
+
+```typescript
+test('customer can log in', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.fill('#email', 'customer@test.io');
+  await page.fill('#password', 'customer123');
+  await page.click('#login-btn');
+  await expect(page.locator('.flash-success')).toBeVisible();
+});
+```
+
+This looks fine for one test. Now imagine 30 tests that all log in as a customer. Every single one calls `page.fill('#email', ...)`. When the developer changes `#email` to `#login-email`, you update 30 files.
+
+The core problems with raw tests at scale:
+
+| Problem | Effect |
+|---------|--------|
+| Selectors duplicated across many files | One DOM change breaks many tests |
+| Low-level Playwright calls scattered everywhere | Tests are hard to read — they say *how*, not *what* |
+| No shared navigation helpers | Every test reinvents the same `goto` pattern |
+| Assertions and setup mixed into one giant test | Hard to tell what the test is actually checking |
+
+The Page Object Model solves all four.
+
+---
+
+## The first page object
+
+A page object is a TypeScript class that represents one page (or component) of your application. It owns the locators for that page and exposes methods that perform actions on it.
+
+```typescript
+// pages/LoginPage.ts
+import { Page, Locator } from '@playwright/test';
+
+export class LoginPage {
+  readonly page: Page;
+  readonly emailInput: Locator;
+  readonly passwordInput: Locator;
+  readonly loginButton: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.emailInput = page.locator('#email');
+    this.passwordInput = page.locator('#password');
+    this.loginButton = page.locator('#login-btn');
+  }
+
+  async goto() {
+    await this.page.goto('/auth/login');
+  }
+
+  async login(email: string, password: string) {
+    await this.emailInput.fill(email);
+    await this.passwordInput.fill(password);
+    await this.loginButton.click();
+  }
+}
+```
+
+The test that uses it becomes:
+
+```typescript
+import { test, expect } from '@playwright/test';
+import { LoginPage } from '../pages/LoginPage';
+
+test('customer can log in', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.goto();
+  await loginPage.login('customer@test.io', 'customer123');
+  await expect(page.locator('.flash-success')).toBeVisible();
+});
+```
+
+The test now says **what** it does, not **how**. `loginPage.login(email, pass)` reads like a sentence.
+
+---
+
+## Locators inside page objects
+
+Define locators as readonly class properties in the constructor. This gives you one source of truth per selector.
+
+```typescript
+export class ProductsPage {
+  readonly page: Page;
+  readonly searchInput: Locator;
+  readonly categoryFilter: Locator;
+  readonly sortSelect: Locator;
+  readonly productCards: Locator;
+  readonly applyFiltersButton: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.searchInput = page.locator('#search');
+    this.categoryFilter = page.locator('[data-testid="category-filter"]');
+    this.sortSelect = page.locator('[data-testid="sort-select"]');
+    this.productCards = page.locator('.product-card');
+    this.applyFiltersButton = page.locator('#apply-filters');
+  }
+}
+```
+
+**Rules for locators in page objects:**
+
+1. Define them in the constructor, not inside methods — this way they are visible and reusable.
+2. Use `readonly` so nothing outside the class can accidentally reassign them.
+3. Prefer stable selectors: `data-testid`, ARIA roles, and IDs over CSS classes that designers change frequently.
+4. Do not create locators inside methods (`page.locator(...)` inside `async someMethod()`). That defeats the purpose.
+
+---
+
+## Action methods
+
+Action methods encapsulate the steps a user takes on a page. They call the locators defined in the constructor and return nothing (or return a value relevant to the next step).
+
+```typescript
+export class ProductsPage {
+  // ... (locators in constructor as above)
+
+  async goto() {
+    await this.page.goto('/products');
+  }
+
+  async searchFor(term: string) {
+    await this.searchInput.fill(term);
+    await this.applyFiltersButton.click();
+  }
+
+  async filterByCategory(category: string) {
+    await this.categoryFilter.selectOption(category);
+    await this.applyFiltersButton.click();
+  }
+
+  async getDisplayedProductNames(): Promise<string[]> {
+    return this.productCards.allTextContents();
+  }
+}
+```
+
+The test then reads naturally:
+
+```typescript
+test('search returns matching products', async ({ page }) => {
+  const productsPage = new ProductsPage(page);
+  await productsPage.goto();
+  await productsPage.searchFor('Mouse');
+
+  const names = await productsPage.getDisplayedProductNames();
+  expect(names.some(n => n.toLowerCase().includes('mouse'))).toBe(true);
+});
+```
+
+---
+
+## Keeping assertions in tests, not in POMs
+
+This is the single most important rule of POM design.
+
+**Wrong — assertion inside the page object:**
+
+```typescript
+// pages/LoginPage.ts — DO NOT DO THIS
+async login(email: string, password: string) {
+  await this.emailInput.fill(email);
+  await this.passwordInput.fill(password);
+  await this.loginButton.click();
+  // ❌ This assertion belongs in the test, not here
+  await expect(this.page.locator('.flash-success')).toBeVisible();
+}
+```
+
+**Right — assertion in the test:**
+
+```typescript
+// pages/LoginPage.ts
+async login(email: string, password: string) {
+  await this.emailInput.fill(email);
+  await this.passwordInput.fill(password);
+  await this.loginButton.click();
+  // ✅ No assertion — the method just performs the action
+}
+
+// tests/auth.spec.ts
+test('successful login shows flash message', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.goto();
+  await loginPage.login('customer@test.io', 'customer123');
+  // ✅ Assertion lives here
+  await expect(page.locator('.flash-success')).toBeVisible();
+});
+```
+
+**Why this matters:**
+
+- You may need to call `login()` in tests that don't care about the flash message — they just need a logged-in state.
+- If the assertion is in the POM, every test that calls `login()` is asserting the flash message, even when that is not what the test is about.
+- Tests that fail in the POM produce confusing error messages because the failure appears inside the page object, not inside the test.
+
+The rule: **Page objects perform actions. Tests make assertions.**
+
+---
+
+## Parameterized methods
+
+When the same action is called with different inputs across tests, the method should accept parameters rather than hardcoding values.
+
+```typescript
+export class CheckoutPage {
+  readonly page: Page;
+  readonly nameInput: Locator;
+  readonly addressInput: Locator;
+  readonly cityInput: Locator;
+  readonly zipInput: Locator;
+  readonly placeOrderButton: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.nameInput = page.locator('#shipping_name');
+    this.addressInput = page.locator('#shipping_address');
+    this.cityInput = page.locator('#shipping_city');
+    this.zipInput = page.locator('#shipping_zip');
+    this.placeOrderButton = page.locator('#place-order');
+  }
+
+  async goto() {
+    await this.page.goto('/checkout');
+  }
+
+  async fillShippingDetails(details: {
+    name: string;
+    address: string;
+    city: string;
+    zip: string;
+  }) {
+    await this.nameInput.fill(details.name);
+    await this.addressInput.fill(details.address);
+    await this.cityInput.fill(details.city);
+    await this.zipInput.fill(details.zip);
+  }
+
+  async placeOrder() {
+    await this.placeOrderButton.click();
+  }
+}
+```
+
+Using an object parameter (`details: { name, address, city, zip }`) instead of four separate arguments makes call sites readable:
+
+```typescript
+await checkoutPage.fillShippingDetails({
+  name: 'Jane Doe',
+  address: '123 Main St',
+  city: 'Baku',
+  zip: '1000',
+});
+```
+
+---
+
+## A shared base page
+
+When multiple page objects share selectors (a nav bar, a flash message, a spinner), extract them to a `BasePage` that all page classes extend.
+
+```typescript
+// pages/BasePage.ts
+import { Page, Locator } from '@playwright/test';
+
+export class BasePage {
+  readonly page: Page;
+  readonly flashSuccess: Locator;
+  readonly flashError: Locator;
+  readonly loadingSpinner: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.flashSuccess = page.locator('.alert.alert-success');
+    this.flashError = page.locator('.alert.alert-error');
+    this.loadingSpinner = page.locator('.spinner');
+  }
+
+  async navigate(path: string) {
+    await this.page.goto(path);
+  }
+
+  async waitForFlashMessage(type: 'success' | 'error') {
+    const locator = type === 'success' ? this.flashSuccess : this.flashError;
+    await locator.waitFor({ state: 'visible' });
+  }
+}
+```
+
+Every page class now extends `BasePage`:
+
+```typescript
+// pages/LoginPage.ts
+import { Page, Locator } from '@playwright/test';
+import { BasePage } from './BasePage';
+
+export class LoginPage extends BasePage {
+  readonly emailInput: Locator;
+  readonly passwordInput: Locator;
+  readonly loginButton: Locator;
+
+  constructor(page: Page) {
+    super(page); // passes page to BasePage
+    this.emailInput = page.locator('#email');
+    this.passwordInput = page.locator('#password');
+    this.loginButton = page.locator('#login-btn');
+  }
+
+  async goto() {
+    await this.navigate('/auth/login'); // inherited from BasePage
+  }
+
+  async login(email: string, password: string) {
+    await this.emailInput.fill(email);
+    await this.passwordInput.fill(password);
+    await this.loginButton.click();
+  }
+}
+```
+
+The test can now use `loginPage.flashSuccess` directly — no need to repeat `.alert.alert-success` anywhere:
+
+```typescript
+test('successful login shows flash message', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  await loginPage.goto();
+  await loginPage.login('customer@test.io', 'customer123');
+  await expect(loginPage.flashSuccess).toBeVisible(); // from BasePage
+});
+```
+
+---
+
+## A navigation page
+
+A navigation page object wraps the application's top-level navigation bar. It provides shortcuts to navigate to any area of the app from any test.
+
+```typescript
+// pages/NavPage.ts
+import { Page, Locator } from '@playwright/test';
+import { BasePage } from './BasePage';
+
+export class NavPage extends BasePage {
+  readonly cartLink: Locator;
+  readonly productsLink: Locator;
+  readonly accountLink: Locator;
+  readonly logoutLink: Locator;
+  readonly cartBadge: Locator;
+
+  constructor(page: Page) {
+    super(page);
+    this.cartLink = page.locator('nav a[href="/cart"]');
+    this.productsLink = page.locator('nav a[href="/products"]');
+    this.accountLink = page.locator('[data-testid="nav-profile"]');
+    this.logoutLink = page.locator('[data-testid="nav-logout"]');
+    this.cartBadge = page.locator('.cart-count');
+  }
+
+  async goToCart() {
+    await this.cartLink.click();
+  }
+
+  async goToProducts() {
+    await this.productsLink.click();
+  }
+
+  async logout() {
+    await this.logoutLink.click();
+  }
+
+  async getCartCount(): Promise<number> {
+    const text = await this.cartBadge.textContent();
+    return parseInt(text ?? '0', 10);
+  }
+}
+```
+
+---
+
+## The page-manager pattern
+
+As the number of page classes grows, tests that need several pages become verbose with object construction:
+
+```typescript
+// Gets messy quickly
+const loginPage = new LoginPage(page);
+const productsPage = new ProductsPage(page);
+const cartPage = new CartPage(page);
+const checkoutPage = new CheckoutPage(page);
+const navPage = new NavPage(page);
+```
+
+The **page manager** pattern solves this by creating all page objects in one place:
+
+```typescript
+// pages/PageManager.ts
+import { Page } from '@playwright/test';
+import { LoginPage } from './LoginPage';
+import { ProductsPage } from './ProductsPage';
+import { CartPage } from './CartPage';
+import { CheckoutPage } from './CheckoutPage';
+import { NavPage } from './NavPage';
+
+export class PageManager {
+  readonly loginPage: LoginPage;
+  readonly productsPage: ProductsPage;
+  readonly cartPage: CartPage;
+  readonly checkoutPage: CheckoutPage;
+  readonly navPage: NavPage;
+
+  constructor(page: Page) {
+    this.loginPage = new LoginPage(page);
+    this.productsPage = new ProductsPage(page);
+    this.cartPage = new CartPage(page);
+    this.checkoutPage = new CheckoutPage(page);
+    this.navPage = new NavPage(page);
+  }
+}
+```
+
+Tests become clean and consistent:
+
+```typescript
+test('full checkout flow', async ({ page }) => {
+  const pm = new PageManager(page);
+
+  await pm.loginPage.goto();
+  await pm.loginPage.login('customer@test.io', 'customer123');
+
+  await pm.productsPage.goto();
+  await pm.productsPage.searchFor('Laptop');
+
+  await pm.navPage.goToCart();
+  await pm.checkoutPage.fillShippingDetails({
+    name: 'Jane Doe',
+    address: '123 Main St',
+    city: 'Baku',
+    zip: '1000',
+  });
+  await pm.checkoutPage.placeOrder();
+
+  await expect(page).toHaveURL(/\/orders\/\d+/);
+});
+```
+
+---
+
+## Test data with faker
+
+Hardcoded strings (`'Jane Doe'`, `'123 Main St'`) create false coupling between test runs. The `@faker-js/faker` library generates realistic random data on every run.
+
+```bash
+npm install --save-dev @faker-js/faker
+```
+
+```typescript
+import { faker } from '@faker-js/faker';
+
+test('checkout with random shipping details', async ({ page }) => {
+  const pm = new PageManager(page);
+
+  await pm.loginPage.goto();
+  await pm.loginPage.login('customer@test.io', 'customer123');
+
+  await pm.productsPage.goto();
+
+  await pm.navPage.goToCart();
+  await pm.checkoutPage.fillShippingDetails({
+    name: faker.person.fullName(),
+    address: faker.location.streetAddress(),
+    city: faker.location.city(),
+    zip: faker.location.zipCode(),
+  });
+  await pm.checkoutPage.placeOrder();
+
+  await expect(page).toHaveURL(/\/orders\/\d+/);
+});
+```
+
+This ensures tests never inadvertently depend on specific string values and catches edge cases (names with apostrophes, long zip codes, unicode characters in addresses) that fixed strings would miss.
+
+---
+
+## Avoiding over-engineering
+
+POM is a means to an end, not a goal in itself. Common over-engineering traps:
+
+**Do not create a page object for every tiny component.** A modal dialog that appears in one test does not need its own class. Inline the two locators.
+
+**Do not make methods return `this` for chaining unless your team consistently prefers that style.** It adds complexity for little gain.
+
+**Do not put waits inside page objects.** `await page.waitForTimeout(1000)` inside a method hides a test smell. Fix the actual timing issue or use a proper `waitFor`.
+
+**Do not abstract parameters away entirely.** If `login()` only ever accepts one hardcoded user, you lose flexibility. Keep parameters.
+
+**Stop before one class per sub-component.** If your `ProductsPage` is growing to 20 methods, split it by feature into `ProductSearchPage` and `ProductDetailPage` — but only when the size actually causes confusion.
+
+A good rule of thumb: if a test reads like a clear sentence without you having to open the page object to understand it, the abstraction level is right.
+
+---
+
+## Exercises
+
+These exercises use the local TestMarket app. Set it up by following Module 2 (clone the standalone `testmarket-lab` repo and start it) so the app is running at `http://localhost:3000`. Write your page objects and tests in your own test project (e.g. `tests/`).
+
+---
+
+### Exercise 1: Build LoginPage
+
+Create `tests/pages/LoginPage.ts`:
+
+- Constructor defines `emailInput`, `passwordInput`, `loginButton` locators.
+- `goto()` navigates to `/auth/login`.
+- `login(email, password)` fills and submits the form.
+
+Write a test that uses your `LoginPage` to log in as `customer@test.io` / `customer123`. Assert that the flash success message is visible **in the test**, not inside the page object.
+
+---
+
+### Exercise 2: Build BasePage and refactor
+
+Create `tests/pages/BasePage.ts`:
+
+- Constructor stores `page`.
+- `flashSuccess` getter → `.alert.alert-success`
+- `flashError` getter → `.alert.alert-error`
+- `navigate(path)` helper method.
+- `waitForFlashMessage(type: 'success' | 'error')` helper method.
+
+Refactor `LoginPage` to extend `BasePage`. Update `goto()` to call `this.navigate(...)`.
+
+---
+
+### Exercise 3: Build ProductsPage
+
+Create `tests/pages/ProductsPage.ts`:
+
+- Locators: `searchInput`, `categoryFilter`, `sortSelect`, `productCards`, `applyFiltersButton`.
+- `goto()` → navigates to `/products`.
+- `searchFor(term)` → fills search input and clicks Apply Filters.
+- `filterByCategory(category)` → selects the category and applies.
+- `getDisplayedProductNames()` → returns `Promise<string[]>` of product card titles.
+
+Write a test that searches for `'Mouse'` and checks the results contain at least one item with `'mouse'` (case-insensitive) in the name.
+
+---
+
+### Exercise 4: Build CartPage
+
+Create `tests/pages/CartPage.ts`:
+
+- Locators: `cartItems`, `removeButtons`, `checkoutButton`, `emptyCartMessage`.
+- `goto()` → navigates to `/cart`.
+- `getItemCount()` → returns the number of items in the cart.
+- `removeFirstItem()` → clicks the first remove button.
+- `proceedToCheckout()` → clicks the checkout button.
+
+Write a test that:
+1. Navigates to the cart when it is empty.
+2. Asserts the empty cart message is visible.
+
+---
+
+### Exercise 5: Build CheckoutPage
+
+Create `tests/pages/CheckoutPage.ts`:
+
+- Locators: `nameInput` (`#shipping_name`), `addressInput` (`#shipping_address`), `cityInput` (`#shipping_city`), `zipInput` (`#shipping_zip`), `placeOrderButton`.
+- `fillShippingDetails({ name, address, city, zip })` method.
+- `placeOrder()` method.
+- `submitEmptyForm()` method — clicks submit without filling any fields.
+
+Write a bonus test that:
+1. Logs in as customer.
+2. Adds an item to the cart.
+3. Navigates to checkout.
+4. Fills shipping details (use `faker` for the data).
+5. Places the order.
+6. Asserts redirect to the order page (URL matches `/orders/:id`).
+
+---
+
+### Exercise 6: Build AdminUsersPage
+
+The admin panel at `/admin/users` lists all registered users. Create `tests/pages/AdminUsersPage.ts`:
+
+- Locators: `userRows`, `deleteButtons`, `searchInput`.
+- `goto()` → navigates to `/admin/users`.
+- `getUserCount()` → returns the number of user rows in the table.
+- `searchForUser(email)` → types in the search box.
+- `deleteFirstUser()` → clicks the first delete button.
+
+Write a test that logs in as `admin@test.io` / `admin123`, navigates to the admin users page, and asserts at least one user row is visible.
+
+---
+
+### Exercise 7: Introduce PageManager
+
+Create `tests/pages/PageManager.ts` that accepts `page` in its constructor and exposes:
+
+- `loginPage`
+- `productsPage`
+- `cartPage`
+- `checkoutPage`
+- `adminUsersPage`
+
+Refactor the tests from Exercises 1–6 to use `PageManager`. Verify that constructing all page objects in one line (`const pm = new PageManager(page)`) makes each test cleaner.
+
+---
+
+### Exercise 8: DRY audit
+
+Review all your page classes:
+
+- Are any selectors duplicated across more than one class? Move them to `BasePage`.
+- Are any helper methods duplicated? Move them to `BasePage`.
+- Does every page class extend `BasePage`?
+- Do all test files import from `pages/` and use zero raw `page.locator(...)` calls?
+
+Compare your final `pages/` directory against the structure described in this module — every page class should extend `BasePage`, and no test file should contain a raw `page.locator(...)` call.
+
+---
+
+## Key takeaways
+
+1. **One class, one page.** All selectors for a given page live in exactly one place.
+2. **Locators in the constructor.** Define them once as `readonly` properties — never inside methods.
+3. **Methods perform actions, tests make assertions.** Never put `expect()` inside a page object.
+4. **`BasePage` for shared state.** Nav links, flash messages, and spinners appear on every page — define them once.
+5. **`PageManager` for clean test files.** Construct all page objects in one line; pass the manager to any test that needs multiple pages.
+6. **Parameterize everything.** Hardcoded strings belong in test data files or `faker` calls, not in page object methods.
+7. **Stop when it's readable.** If a test already reads like a sentence, you have the right amount of abstraction.
