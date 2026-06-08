@@ -1,0 +1,697 @@
+---
+title: "Modul 6: Test Runner və konfiqurasiya"
+description: "Playwright test runner-inin necə işlədiyini öyrənin — test() və expect(), describe blokları və hook-lar, @smoke/@regression teqləri, CLI, UI rejimi, debug rejimi, trace viewer, artefaktlar və playwright.config.ts tam istinadı."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+Əla testlər yaza bilərsiniz, lakin istədiyiniz testləri tam olaraq necə işlədəcəyinizi, nəyin sındığını başa düşmək və CI üçün layihəni konfiqurasiya etməyi öyrənməyə saatlar sərf edə bilərsiniz. Bu modul hər Playwright testinin arxasındakı mühərriki — runner-in özünü — əhatə edir ki, testlərinizin necə icra ediləcəyini tam idarə edəsiniz.
+
+<Video title="Modul 6: Test Runner və konfiqurasiya" />
+
+---
+
+## `test` və `expect`
+
+Hər Playwright testi `@playwright/test`-dən idxal edilən iki funksiyadan qurulur.
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('səhifə başlığı düzgündür', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveTitle(/TestMarket/);
+});
+```
+
+**`test(ad, fn)`** tək bir test hadisəsini qeydiyyata alır. Callback `fixtures` obyektini alır — `{ page }` ən çox istifadə edilən fixture-dır. Playwright hər test üçün təzə brauzer səhifəsi yaradır və sonra bağlayır.
+
+**`expect(dəyər)`** Playwright-ın assertion API-sidir. Node-un daxili `assert`-i deyil. Bir lokator verildiğinde avtomatik yenidən cəhd edir — şərt keçənə ya da `expect.timeout` bitənə qədər (defolt: 5 saniyə).
+
+```typescript
+// Yenidən cəhd etmir — bir dəfəlik, yavaş səhifələrdə uğursuz olur
+const text = await page.locator('h1').textContent();
+expect(text).toBe('Xoş gəldiniz'); // dərhal keçir ya da uğursuz olur
+
+// Avtomatik yenidən cəhd edir — şərt keçənə ya da vaxt aşımı bitənə qədər yenidən cəhd edir
+await expect(page.locator('h1')).toHaveText('Xoş gəldiniz');
+```
+
+DOM assertion-ları üçün həmişə `expect`-in lokator formasını üstün tutun.
+
+---
+
+## `test.describe`
+
+`test.describe()` əlaqəli testləri adlandırılmış blok altında qruplaşdırır. Terminal çıxışını düzənləyir, əhatəli hook-lar tətbiq edir və test faylını oxumağı asanlaşdırır.
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Alış-veriş Səbəti', () => {
+  test('boş səbət mesajını göstərir', async ({ page }) => {
+    await page.goto('/cart');
+    await expect(page.locator('.cart-empty')).toBeVisible();
+  });
+
+  test('naviqasiyada element sayını göstərir', async ({ page }) => {
+    // ...
+  });
+});
+```
+
+Describe blokları iç-içə ola bilər. Hər blokun öz hook-ları ola bilər. Çıxışdakı tam test adı `Alış-veriş Səbəti > boş səbət mesajını göstərir` şəklindədir.
+
+---
+
+## `beforeEach` və `afterEach`
+
+Hook-lar əhatə daxilindəki hər testdən əvvəl ya da sonra avtomatik işləyir. Setup və teardown kodunu hər testə kopyalamaqdan qaçmaq üçün istifadə edin.
+
+```typescript
+test.describe('Məhsullar Səhifəsi', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/products');
+  });
+
+  test('məhsul kartlarını göstərir', async ({ page }) => {
+    // page artıq /products-dadır — burada goto() lazım deyil
+    await expect(page.locator('.product-card').first()).toBeVisible();
+  });
+
+  test('axtarış nəticələri filtrləyir', async ({ page }) => {
+    // /products-da da
+    await page.fill('#search', 'noutbuk');
+    await expect(page.locator('.product-card')).toHaveCount(3);
+  });
+
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== 'passed') {
+      // isteğe bağlı: uğursuzluqda əlavə data qeyd edin ya da əldə edin
+      console.log('Test uğursuz oldu:', testInfo.title);
+    }
+  });
+});
+```
+
+**`beforeAll` və `afterAll`** bütün describe bloku üçün bir dəfə işləyir — mock server başlatmaq ya da bir dəfə daxil olmaq kimi bahalı setup üçün faydalıdır.
+
+```typescript
+test.describe('Admin Paneli', () => {
+  test.beforeAll(async ({ browser }) => {
+    // bir dəfə login olmuş storage state yaradın
+    const page = await browser.newPage();
+    await page.goto('/login');
+    await page.fill('#email', 'admin@example.com');
+    await page.fill('#password', 'gizli');
+    await page.click('#submit');
+    await page.context().storageState({ path: 'admin-state.json' });
+    await page.close();
+  });
+
+  test('istifadəçi siyahısını görə bilər', async ({ page }) => { /* ... */ });
+  test('istifadəçi silə bilər', async ({ page }) => { /* ... */ });
+});
+```
+
+---
+
+## Teqlər: `@smoke` və `@regression`
+
+Teqlər test adlarına yerləşdirilmiş sadə stringlərdir, `@` ilə başlayır. Xüsusi API yoxdur — yalnız bir adlandırma konvensiyasıdır.
+
+```typescript
+test('ana səhifə yüklənir @smoke', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('h1')).toBeVisible();
+});
+
+test('tam ödəniş axışı @regression', async ({ page }) => {
+  // ...
+});
+
+test('məhsul axtarışı @smoke @regression', async ({ page }) => {
+  // bu test hər iki suitəyə aiddir
+});
+```
+
+**Ümumi teq konvensiyaları:**
+
+| Teq | Mənası |
+|-----|--------|
+| `@smoke` | Sürətli, yüksək dəyərli sağlamlıq yoxlamaları — hər deploy-dan əvvəl işlədilir |
+| `@regression` | Tam suite — gecə ya da hər PR-da işlədilir |
+| `@slow` | Uzun müddətli testlər — dev döngüsü işlədilməsindən xaric edilir |
+| `@wip` | Hazırlanma prosesindədir — CI-də `--grep-invert @wip` ilə atlanır |
+
+`--grep` ilə teqə görə filtrlə:
+
+```bash
+npx playwright test --grep "@smoke"
+npx playwright test --grep "@regression"
+npx playwright test --grep "@smoke|@regression"   # hər iki teq
+npx playwright test --grep-invert "@slow"          # yavaş testləri xaric et
+```
+
+---
+
+## CLI: fayl, layihə və grep ilə işlətmək
+
+```bash
+# Bütün testləri işlət
+npx playwright test
+
+# Müəyyən bir faylı işlət
+npx playwright test tests/auth/login.spec.ts
+
+# Bir qovluqdakı bütün faylları işlət
+npx playwright test tests/checkout/
+
+# Ad alt-stringi ya da regex-ə uyğun testləri işlət
+npx playwright test --grep "login"
+npx playwright test --grep "@smoke"
+npx playwright test --grep "login|cart"
+
+# Testləri ada görə xaric et
+npx playwright test --grep-invert "@slow"
+
+# Müəyyən brauzer layihəsini işlət
+npx playwright test --project chromium
+npx playwright test --project firefox
+
+# Birləşdirmə: yalnız Firefox-da smoke testlər
+npx playwright test tests/shop/ --grep "@smoke" --project firefox
+
+# Paralelliyi idarə et
+npx playwright test --workers 4
+npx playwright test --workers 1   # ardıcıl işlət (debug üçün daha asandır)
+
+# Uğursuz testləri yenidən cəhd et
+npx playwright test --retries 2
+```
+
+---
+
+## UI rejimi
+
+`npx playwright test --ui` aşağıdakıları edə biləcəyiniz brauzer əsaslı bir panel açır:
+
+- Bütün test fayllarınıza və testlərə göz atın
+- Tək bir tıqlama ilə ayrı-ayrı testləri ya da tam suitləri işlədilir
+- Testlərin daxili brauzerda canlı icrasını izləyin
+- Hər test nəticəsi üçün trace, ekran görüntüsü və konsol çıxışını görün
+- Tək bir uğursuz testi dərhal yenidən işlədilir
+
+```bash
+npx playwright test --ui
+```
+
+UI rejimi inkişaf üçün idealdır — brauzerdan çıxmadan test runner-inin əks əlaqə döngüsünü əldə edirsiniz. CI üçün deyil.
+
+---
+
+## Debug rejimi
+
+`--debug` **Playwright Inspector**-u — addım-addım sazlayıcısını açır.
+
+```bash
+# Bütün testləri debug et
+npx playwright test --debug
+
+# Müəyyən bir faylı debug et
+npx playwright test tests/login.spec.ts --debug
+```
+
+Inspector-da edə bildikləriniz:
+
+- Testin əvvəlində dayandır
+- `F10` ilə bir əməliyyat irəli get
+- Növbəti `pause()` çağırışına qədər işlət
+- Brauzerda lokatorları interaktiv şəkildə yoxlayın
+- Kodda və brauzerda vurğulanan cari əməliyyatı görün
+
+Bütün əvvəlki əməliyyatları addım-addım rejimdə işlətmədən müəyyən bir nöqtədə durmaq üçün test içinə `await page.pause()` da əlavə edə bilərsiniz.
+
+```typescript
+test('bu addımı debug et', async ({ page }) => {
+  await page.goto('/checkout');
+  await page.fill('#email', 'user@example.com');
+  await page.pause(); // icra burada dayanır; Inspector açılır
+  await page.click('#submit');
+});
+```
+
+---
+
+## Trace viewer
+
+Trace viewer bir test icrasında baş verən hər şeyi qeyd edir: hər əməliyyat, hər əməliyyatdan əvvəl və sonra tam DOM snapshot-u, bütün şəbəkə sorğuları və brauzer konsolu.
+
+**`playwright.config.ts`-də tracing-i aktiv edin:**
+
+```typescript
+use: {
+  trace: 'on-first-retry', // yalnız test yenidən cəhd edildikdə trace qeyd edin
+  // trace: 'on',           // həmişə qeyd edin (CI uğursuzluqlarını debug etmək üçün faydalıdır)
+  // trace: 'retain-on-failure', // yalnız test uğursuz olduqda trace-i saxlayın
+}
+```
+
+**Trace-i HTML hesabatından açın:**
+Test işlədildikdən sonra HTML hesabatını açın (`npx playwright show-report`) və istənilən testin yanındakı trace ikonuna tıklayın.
+
+**Trace faylını birbaşa açın:**
+```bash
+npx playwright show-trace test-results/menim-testim/trace.zip
+```
+
+**Trace viewer panelləri:**
+
+| Panel | Nə göstərir |
+|-------|------------|
+| Timeline | Üfüqi çubuq; scrubber-i zamandakı istənilən nöqtəyə sürükləyin |
+| Actions | Zaman damğaları ilə hər Playwright əməliyyatının siyahısı |
+| DOM snapshot | Hər əməliyyatdan əvvəl və sonra səhifənin tam vəziyyəti |
+| Network | Hər HTTP sorğusu və cavabı |
+| Console | `console.log`, `console.error` və s. vasitəsilə qeydə alınan hər şey |
+
+Timeline scrubber ən güclü xüsusiyyətdir — testin uğursuz olduğu dəqiq ana sürükləyin və o anda səhifənin piksel-mükəmməl ekran görüntüsünü görün.
+
+---
+
+## Ekran görüntüləri və videolar
+
+```typescript
+// playwright.config.ts
+use: {
+  screenshot: 'only-on-failure', // test uğursuz olduqda PNG çəkin
+  // screenshot: 'on',           // həmişə çəkin
+
+  video: 'retain-on-failure',    // yalnız test uğursuz olduqda videoyu saxlayın
+  // video: 'on',                // həmişə qeyd edin
+  // video: 'off',               // heç vaxt qeyd etməyin
+}
+```
+
+Ekran görüntüləri və videolar trace faylları ilə birlikdə `test-results/`-da saxlanılır. CI-də həmin qovluğu build artefaktı kimi yükləyin.
+
+**Test içindən əl ilə ekran görüntüsü çəkin:**
+
+```typescript
+test('cari vəziyyəti əldə et', async ({ page }) => {
+  await page.goto('/dashboard');
+  await page.screenshot({ path: 'screenshots/dashboard.png', fullPage: true });
+});
+```
+
+---
+
+## HTML hesabatı
+
+HTML hesabatı hər test işlədilməsindən sonra yaradılan interaktiv, özünü özündə saxlayan bir panel-dir.
+
+```bash
+# Hesabatı aç
+npx playwright show-report
+
+# Ya da playwright-report/index.html-i birbaşa brauzerda açın
+```
+
+Hesabat göstərir:
+
+- Yuxarıda keçdi / uğursuz oldu / atlandı xülasəsi
+- Müddət, status və brauzer layihəsi ilə test siyahısı
+- Hər test üçün daxili ekran görüntüləri, videolar və trace bağlantıları
+- Filtr və axtarış idarəetmə elementləri
+
+**Xüsusi çıxış qovluğu təyin edin:**
+
+```typescript
+reporter: [
+  ['html', { outputFolder: 'menim-hesabatim', open: 'never' }],
+  ['list'],
+],
+```
+
+`playwright-report/`-u `.gitignore`-a əlavə edin — o, yaradılan çıxışdır, mənbə kodu deyil. CI-də build artefaktı kimi yükləyin və uğursuzluqları araşdırmanız lazım olduqda endirin.
+
+---
+
+## `playwright.config.ts`
+
+Konfiqurasiya faylı test suitənizin necə işlədiyinin vahid mənbəyidir.
+
+```typescript
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  // Playwright-ın test fayllarını axtardığı qovluq
+  testDir: './tests',
+
+  // Tək bir testin öldürülməzdən əvvəl işləyə biləcəyi maksimum müddət
+  timeout: 30_000,
+
+  // expect() assertion-unun uğursuz olmadan əvvəl yenidən cəhd etdiyi maksimum müddət
+  expect: {
+    timeout: 5_000,
+  },
+
+  // Uğursuz testi neçə dəfə yenidən işlətmək (0 = yenidən cəhd yoxdur)
+  retries: process.env.CI ? 2 : 0,
+
+  // Neçə testin paralel işlədildiyi
+  workers: process.env.CI ? 4 : undefined,
+
+  // CI-də test.only()-i bloklayır — təsadüfi commit-lərin qarşısını alır
+  forbidOnly: !!process.env.CI,
+
+  // Çıxış formatları
+  reporter: [
+    ['html', { open: 'never' }],
+    ['list'],
+  ],
+
+  // Bütün layihələr üçün paylaşılan brauzer seçimləri
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+  },
+
+  // Brauzer layihələri
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox',  use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit',   use: { ...devices['Desktop Safari'] } },
+  ],
+});
+```
+
+---
+
+## `baseURL`
+
+`use`-da `baseURL` təyin etmək testlərinizdə hər yerdə nisbi URL-lər yazmanıza imkan verir.
+
+```typescript
+// playwright.config.ts
+use: {
+  baseURL: 'http://localhost:3000',
+}
+
+// Testlərinizdə — nisbi URL-lər baseURL-ə qarşı həll edilir
+await page.goto('/products');           // → http://localhost:3000/products
+await page.goto('/checkout');           // → http://localhost:3000/checkout
+await expect(page).toHaveURL('/cart'); // nisbi də olur
+```
+
+Staging mühitinə deploy etdiyinizdə axtarıb-dəyişdirmə lazım deyil — konfiqurasiyada bir dəfə əsas URL-i dəyişin.
+
+---
+
+## Brauzer layihələri
+
+Layihələr fərqli brauzer konfiqurasiyaları müəyyən edir. `--project` olmadan `npx playwright test` işlədildiğinde hər testi hər layihəyə qarşı işlədir.
+
+```typescript
+projects: [
+  // Masaüstü brauzerlər
+  { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+  { name: 'firefox',  use: { ...devices['Desktop Firefox'] } },
+  { name: 'webkit',   use: { ...devices['Desktop Safari'] } },
+
+  // Testlərin bir alt kümesini mobil cihazda işlət (əhatəni üçün testMatch istifadə edin)
+  {
+    name: 'Mobile Chrome',
+    use: { ...devices['Pixel 7'] },
+    testMatch: /.*mobile.*/,
+  },
+],
+```
+
+CLI-dən tək bir layihəni işlət:
+
+```bash
+npx playwright test --project chromium
+npx playwright test --project firefox
+npx playwright test --project "Mobile Chrome"
+```
+
+---
+
+## Mobil emulyasiya
+
+Playwright ~50 daxili cihaz deskriptoru ilə gəlir. Hər deskriptor viewport, user agent, `deviceScaleFactor`, toxunma hadisələrini və brauzerin `isMobile` bildirip bildirməyeceğini təyin edir.
+
+```typescript
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  projects: [
+    {
+      name: 'iPhone 14',
+      use: { ...devices['iPhone 14'] },
+    },
+    {
+      name: 'Pixel 7',
+      use: { ...devices['Pixel 7'] },
+    },
+    {
+      name: 'iPad Pro',
+      use: { ...devices['iPad Pro 11'] },
+    },
+  ],
+});
+```
+
+Ön ayarı olmadan xüsusi viewport və user agent da təyin edə bilərsiniz:
+
+```typescript
+use: {
+  viewport: { width: 375, height: 812 },
+  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 ...)',
+  isMobile: true,
+  hasTouch: true,
+}
+```
+
+---
+
+## Yenidən cəhdlər, worker-lər və vaxt aşımları
+
+**Yenidən cəhdlər** uğursuz testi avtomatik olaraq yenidən işlədir. Son yenidən cəhdin trace-i həmişə saxlanılır.
+
+```typescript
+retries: 2, // uğursuz testləri ən çox 3 dəfə işlət (1 orijinal + 2 yenidən cəhd)
+```
+
+CLI-dən yenidən cəhdlə işlət (konfiqurasiyadan üstün tutur):
+
+```bash
+npx playwright test --retries 1
+```
+
+**Worker-lər** neçə testin paralel işlədildiğini idarə edir. Defolt olaraq Playwright CPU nüvələrinin təxminən yarısını istifadə edir.
+
+```typescript
+workers: 4,           // həmişə 4 paralel worker
+workers: '50%',       // mövcud CPU nüvələrinin yarısı
+workers: 1,           // tam ardıcıl — debug etmək ən asandır
+```
+
+**`fullyParallel`** — `true` olduqda eyni fayldakı testlər paralel işlədilə bilər. Defolt `false`-dur (fayldakı testlər ardıcıl işləyir; test faylları paralel işləyir).
+
+```typescript
+fullyParallel: true,
+```
+
+**Vaxt aşımı iyerarxiyası:**
+
+| Parametr | Defolt | Nəni məhdudlaşdırır |
+|----------|--------|---------------------|
+| `timeout` | 30 000 ms | Tam test funksiyası |
+| `expect.timeout` | 5 000 ms | Tək bir `expect()` assertion-u |
+| `use.actionTimeout` | 30 000 ms | Tək bir əməliyyat (`click`, `fill` və s.) |
+| `use.navigationTimeout` | 30 000 ms | Tək bir naviqasiya (`goto`, `waitForURL`) |
+
+Test-başına override edin:
+
+```typescript
+test('yavaş inteqrasiya testi', async ({ page }) => {
+  test.setTimeout(120_000); // yalnız bu test üçün vaxt aşımını uzadın
+  // ...
+});
+```
+
+---
+
+## Tapşırıqlar
+
+Bu tapşırıqlar yerli Playwright layihəsini istifadə edir. Bütün əmrləri `tests/starter/` qovluğundan işlədilir.
+
+---
+
+### Tapşırıq 1: npm skriptlərini əlavə edin
+
+`package.json`-u açın və ümumi test rejimləri üçün qısa yollarınız olması üçün aşağıdakı skriptləri əlavə edin:
+
+```json
+{
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report"
+  }
+}
+```
+
+Skriptləri əlavə etdikdən sonra işlədildiklərini yoxlayın:
+
+```bash
+npm test                 # bütün testləri işlət
+npm run test:smoke       # yalnız @smoke testlərini işlət
+npm run test:headed      # brauzer görünən şəkildə işlət
+```
+
+---
+
+### Tapşırıq 2: Smoke testlərini işlədilir
+
+1. `@smoke` ilə teqlənmiş ən az iki test olan `tests/smoke.spec.ts` yaradın:
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('ana səhifə yüklənir @smoke', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('h1')).toBeVisible();
+});
+
+test('məhsullar səhifəsi yüklənir @smoke', async ({ page }) => {
+  await page.goto('/products');
+  await expect(page.locator('.product-card').first()).toBeVisible();
+});
+
+test('ödəniş səhifəsi yüklənir @regression', async ({ page }) => {
+  await page.goto('/checkout');
+  await expect(page).toHaveURL('/checkout');
+});
+```
+
+2. Smoke suitesini işlədilir və yalnız 2 testin icra edildiyini təsdiqləyin:
+
+```bash
+npx playwright test --grep @smoke
+```
+
+3. Regression suitesini işlədilir və yalnız 1 testin icra edildiyini təsdiqləyin:
+
+```bash
+npx playwright test --grep @regression
+```
+
+---
+
+### Tapşırıq 3: Tək bir spec faylını işlədilir
+
+Ən ümumi CLI hədəfləmə nümunələrini tətbiq edin:
+
+```bash
+# Tək bir faylı işlət
+npx playwright test tests/smoke.spec.ts
+
+# Bir qovluqdakı bütün faylları işlət
+npx playwright test tests/
+
+# Adı "məhsullar" olan testləri işlət
+npx playwright test --grep "məhsullar"
+
+# Bir faylı müəyyən brauzer layihəsində işlət
+npx playwright test tests/smoke.spec.ts --project chromium
+```
+
+Hər əmrin terminal çıxışında nəyi dəyişdirdiyini müşahidə edin.
+
+---
+
+### Tapşırıq 4: Headed və debug rejimi
+
+1. Smoke testlərini headed rejimdə işlədilir — brauzerin açıldığını izləyin:
+
+```bash
+npx playwright test --grep @smoke --headed
+```
+
+2. Bir testə `await page.pause()` əlavə edin:
+
+```typescript
+test('ana səhifə yüklənir @smoke', async ({ page }) => {
+  await page.goto('/');
+  await page.pause(); // Inspector burada açılır
+  await expect(page.locator('h1')).toBeVisible();
+});
+```
+
+3. Həmin testi debug rejimində işlədilir:
+
+```bash
+npx playwright test tests/smoke.spec.ts --debug
+```
+
+4. Inspector-da: test boyunca addımlayın, lokator seçicini tıqlayın, bir seçici yazın və canlı vurğulandığını görün.
+
+5. Commit etməzdən əvvəl `page.pause()`-u silin.
+
+---
+
+### Tapşırıq 5: Trace-i yoxlayın
+
+1. `playwright.config.ts`-də tracing-i aktiv edin:
+
+```typescript
+use: {
+  trace: 'on',
+}
+```
+
+2. Smoke testlərini işlədilir:
+
+```bash
+npx playwright test --grep @smoke
+```
+
+3. HTML hesabatını açın və istənilən test üçün trace ikonuna tıklayın:
+
+```bash
+npx playwright show-report
+```
+
+4. Trace viewer-da:
+   - **Timeline scrubber**-i bir `locator.goto` əməliyyatına sürükləyin və DOM snapshot-una baxın
+   - **Network** tab-ını açın — səhifə hansı sorğuları etdi?
+   - **Console** tab-ını açın — hər hansı xəta ya da xəbərdarlıq varmı?
+
+5. İsteğe bağlı olaraq trace zip-ni birbaşa açın:
+
+```bash
+npx playwright show-trace test-results/smoke-spec-ana-sehife-yuklendir-smoke-chromium/trace.zip
+```
+
+---
+
+## Əsas nəticələr
+
+1. **`test()` və `expect()`** iki primitiv-dir. `expect(lokator)` avtomatik yenidən cəhd edir; `expect(dəyər)` etmir.
+2. **`test.describe()` və hook-lar** test kodunu DRY saxlayır. `beforeEach` əhatə daxilindəki hər testdən əvvəl işləyir; `afterEach` sonra.
+3. **Teqlər stringlərdir**. Test adına `@smoke` ya da `@regression` qoyun. `--grep` ilə filtrlə. Xüsusi API tələb olunmur.
+4. **CLI birləşdiriləbilədir**. Tam olaraq istədiyiniz alt kümeni işlətmək üçün fayl yolunu, `--grep`, `--project` və `--workers`-ı birləşdirin.
+5. **İnkişaf üçün UI rejimi, sazlama üçün debug rejimi, CI uğursuzluqları üçün trace viewer.** Hansı alətin hansı vəziyyətə uyğun olduğunu bilin.
+6. **`playwright.config.ts` vahid həqiqət mənbəyidir.** `baseURL`, `retries`, `workers`, `reporter` və `projects` hamısı orada yaşayır.
+7. **Mobil emulyasiya bir sətirdir**. Bir cihaz deskriptorunu layihənin `use` blokuna yaymaqla o layihədəki hər test həmin cihaz kimi işləyir.

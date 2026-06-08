@@ -1,0 +1,697 @@
+---
+title: "Module 6: Test Runner & Configuration"
+description: "How Playwright's test runner works — test() and expect(), describe blocks and hooks, tagging with @smoke/@regression, the CLI, UI mode, debug mode, trace viewer, artifacts, and the full playwright.config.ts reference."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+You can write great tests and still waste hours trying to run exactly what you want, understand what broke, and configure a project for CI. This module covers the engine behind every Playwright test — the runner itself — so you can control every aspect of how your tests execute.
+
+<Video title="Module 6: Test Runner & Configuration" />
+
+---
+
+## `test` and `expect`
+
+Every Playwright test is built from two functions imported from `@playwright/test`.
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('page title is correct', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveTitle(/TestMarket/);
+});
+```
+
+**`test(name, fn)`** registers a single test case. The callback receives a `fixtures` object — `{ page }` is the most common fixture. Playwright creates a fresh browser page for each test and closes it afterwards.
+
+**`expect(value)`** is Playwright's assertion API. It is **not** Node's built-in `assert`. It auto-retries when given a locator — polling until the condition passes or the `expect.timeout` expires (default: 5 seconds).
+
+```typescript
+// Non-retrying — one shot, fails on slow pages
+const text = await page.locator('h1').textContent();
+expect(text).toBe('Welcome'); // passes or fails immediately
+
+// Auto-retrying — retries until the condition passes or timeout expires
+await expect(page.locator('h1')).toHaveText('Welcome');
+```
+
+Always prefer the locator form of `expect` for DOM assertions.
+
+---
+
+## `test.describe`
+
+`test.describe()` groups related tests under a named block. It organises terminal output, applies scoped hooks, and makes the test file easier to read.
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Shopping Cart', () => {
+  test('shows empty cart message', async ({ page }) => {
+    await page.goto('/cart');
+    await expect(page.locator('.cart-empty')).toBeVisible();
+  });
+
+  test('shows item count in nav', async ({ page }) => {
+    // ...
+  });
+});
+```
+
+Describe blocks can be nested. Each block can have its own hooks. The full test name in output is `Shopping Cart > shows empty cart message`.
+
+---
+
+## `beforeEach` and `afterEach`
+
+Hooks run automatically before or after every test in their scope. Use them to avoid repeating setup and teardown code inside each test.
+
+```typescript
+test.describe('Products Page', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/products');
+  });
+
+  test('shows product cards', async ({ page }) => {
+    // page is already at /products — no goto() needed here
+    await expect(page.locator('.product-card').first()).toBeVisible();
+  });
+
+  test('search filters results', async ({ page }) => {
+    // also already at /products
+    await page.fill('#search', 'laptop');
+    await expect(page.locator('.product-card')).toHaveCount(3);
+  });
+
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== 'passed') {
+      // optional: log or capture extra data on failure
+      console.log('Test failed:', testInfo.title);
+    }
+  });
+});
+```
+
+**`beforeAll` and `afterAll`** run once for the whole describe block — useful for expensive setup like starting a mock server or logging in once.
+
+```typescript
+test.describe('Admin Panel', () => {
+  test.beforeAll(async ({ browser }) => {
+    // create a logged-in storage state once
+    const page = await browser.newPage();
+    await page.goto('/login');
+    await page.fill('#email', 'admin@example.com');
+    await page.fill('#password', 'secret');
+    await page.click('#submit');
+    await page.context().storageState({ path: 'admin-state.json' });
+    await page.close();
+  });
+
+  test('can see user list', async ({ page }) => { /* ... */ });
+  test('can delete a user', async ({ page }) => { /* ... */ });
+});
+```
+
+---
+
+## Tags: `@smoke` and `@regression`
+
+Tags are plain strings embedded in test names, prefixed with `@`. There is no special API — just a naming convention.
+
+```typescript
+test('home page loads @smoke', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('h1')).toBeVisible();
+});
+
+test('full checkout flow @regression', async ({ page }) => {
+  // ...
+});
+
+test('product search @smoke @regression', async ({ page }) => {
+  // this test belongs to both suites
+});
+```
+
+**Common tag conventions:**
+
+| Tag | Meaning |
+|-----|---------|
+| `@smoke` | Fast, high-value sanity checks — run before every deploy |
+| `@regression` | Full suite — run overnight or on every PR |
+| `@slow` | Long-running tests — excluded from the dev-loop run |
+| `@wip` | Work in progress — skip in CI with `--grep-invert @wip` |
+
+Filter by tag with `--grep`:
+
+```bash
+npx playwright test --grep "@smoke"
+npx playwright test --grep "@regression"
+npx playwright test --grep "@smoke|@regression"   # either tag
+npx playwright test --grep-invert "@slow"          # exclude slow tests
+```
+
+---
+
+## CLI: run by file, project, and grep
+
+```bash
+# Run all tests
+npx playwright test
+
+# Run a specific file
+npx playwright test tests/auth/login.spec.ts
+
+# Run all files in a directory
+npx playwright test tests/checkout/
+
+# Run tests matching a name substring or regex
+npx playwright test --grep "login"
+npx playwright test --grep "@smoke"
+npx playwright test --grep "login|cart"
+
+# Exclude tests by name
+npx playwright test --grep-invert "@slow"
+
+# Run on a specific browser project
+npx playwright test --project chromium
+npx playwright test --project firefox
+
+# Combine: run smoke tests on Firefox only
+npx playwright test tests/shop/ --grep "@smoke" --project firefox
+
+# Control parallelism
+npx playwright test --workers 4
+npx playwright test --workers 1   # run serially (easier to debug)
+
+# Retry failed tests
+npx playwright test --retries 2
+```
+
+---
+
+## UI mode
+
+`npx playwright test --ui` opens a browser-based dashboard where you can:
+
+- Browse all your test files and tests
+- Run individual tests or whole suites with one click
+- Watch tests execute live in a built-in browser
+- See trace, screenshot, and console output for each test result
+- Re-run a single failed test instantly
+
+```bash
+npx playwright test --ui
+```
+
+UI mode is ideal for development — you get the feedback loop of a test runner without leaving the browser. It is not for CI.
+
+---
+
+## Debug mode
+
+`--debug` opens the **Playwright Inspector** — a step-through debugger.
+
+```bash
+# Debug all tests
+npx playwright test --debug
+
+# Debug a specific file
+npx playwright test tests/login.spec.ts --debug
+```
+
+In the Inspector you can:
+
+- Pause at the start of the test
+- Step forward one action at a time with `F10`
+- Run to the next `pause()` call
+- Inspect and verify locators interactively in the browser
+- See the current action highlighted in both the code and the browser
+
+You can also add `await page.pause()` inside a test to pause at a specific point without running all preceding actions in step-through mode.
+
+```typescript
+test('debug this step', async ({ page }) => {
+  await page.goto('/checkout');
+  await page.fill('#email', 'user@example.com');
+  await page.pause(); // execution pauses here; Inspector opens
+  await page.click('#submit');
+});
+```
+
+---
+
+## Trace viewer
+
+The trace viewer records everything that happened during a test run: every action, the full DOM snapshot before and after each action, all network requests, and the browser console.
+
+**Enable tracing in `playwright.config.ts`:**
+
+```typescript
+use: {
+  trace: 'on-first-retry', // record trace only when a test is retried
+  // trace: 'on',           // always record (useful for debugging CI failures)
+  // trace: 'retain-on-failure', // keep trace only when test fails
+}
+```
+
+**Open the trace from the HTML report:**
+After a test run, open the HTML report (`npx playwright show-report`) and click the trace icon next to any test.
+
+**Open a trace file directly:**
+```bash
+npx playwright show-trace test-results/my-test/trace.zip
+```
+
+**Trace viewer panels:**
+
+| Panel | What it shows |
+|-------|--------------|
+| Timeline | Horizontal bar; drag the scrubber to any point in time |
+| Actions | List of every Playwright action with timestamps |
+| DOM snapshot | The exact state of the page before and after each action |
+| Network | Every HTTP request and response |
+| Console | Everything logged to `console.log`, `console.error`, etc. |
+
+The timeline scrubber is the most powerful feature — drag it to the exact moment a test failed and see a pixel-perfect screenshot of the page at that point.
+
+---
+
+## Screenshots and videos
+
+```typescript
+// playwright.config.ts
+use: {
+  screenshot: 'only-on-failure', // capture a PNG on test failure
+  // screenshot: 'on',           // always capture
+
+  video: 'retain-on-failure',    // keep video only when test fails
+  // video: 'on',                // always record
+  // video: 'off',               // never record
+}
+```
+
+Screenshots and videos are saved in `test-results/` alongside trace files. In CI, upload that directory as a build artifact.
+
+**In a test, take a screenshot manually:**
+
+```typescript
+test('capture current state', async ({ page }) => {
+  await page.goto('/dashboard');
+  await page.screenshot({ path: 'screenshots/dashboard.png', fullPage: true });
+});
+```
+
+---
+
+## The HTML report
+
+The HTML report is an interactive, self-contained dashboard generated after every test run.
+
+```bash
+# Open the report
+npx playwright show-report
+
+# Or open playwright-report/index.html directly in a browser
+```
+
+The report shows:
+
+- Pass / fail / skip summary at the top
+- Test list with duration, status, and browser project
+- Inline screenshots, videos, and trace links for each test
+- Filter and search controls
+
+**Set a custom output directory:**
+
+```typescript
+reporter: [
+  ['html', { outputFolder: 'my-report', open: 'never' }],
+  ['list'],
+],
+```
+
+Add `playwright-report/` to `.gitignore` — it is generated output, not source code. In CI, upload it as a build artifact and download it when you need to investigate failures.
+
+---
+
+## `playwright.config.ts`
+
+The config file is the single source of truth for how your test suite runs.
+
+```typescript
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  // Directory where Playwright looks for test files
+  testDir: './tests',
+
+  // Maximum time a single test can run before it is killed
+  timeout: 30_000,
+
+  // Maximum time an expect() assertion retries before failing
+  expect: {
+    timeout: 5_000,
+  },
+
+  // How many times to retry a failed test (0 = no retries)
+  retries: process.env.CI ? 2 : 0,
+
+  // How many tests run in parallel
+  workers: process.env.CI ? 4 : undefined,
+
+  // Block test.only() in CI — prevents accidental commits
+  forbidOnly: !!process.env.CI,
+
+  // Output formats
+  reporter: [
+    ['html', { open: 'never' }],
+    ['list'],
+  ],
+
+  // Shared browser options for all projects
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+  },
+
+  // Browser projects
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox',  use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit',   use: { ...devices['Desktop Safari'] } },
+  ],
+});
+```
+
+---
+
+## `baseURL`
+
+Setting `baseURL` in `use` lets you write relative URLs everywhere in your tests.
+
+```typescript
+// playwright.config.ts
+use: {
+  baseURL: 'http://localhost:3000',
+}
+
+// In your tests — relative URLs resolve against baseURL
+await page.goto('/products');           // → http://localhost:3000/products
+await page.goto('/checkout');           // → http://localhost:3000/checkout
+await expect(page).toHaveURL('/cart'); // also relative
+```
+
+Change the base URL once in the config for all tests — no search-and-replace needed when you deploy to a staging environment.
+
+---
+
+## Browser projects
+
+Projects define distinct browser configurations. Running `npx playwright test` without `--project` runs every test against every project.
+
+```typescript
+projects: [
+  // Desktop browsers
+  { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+  { name: 'firefox',  use: { ...devices['Desktop Firefox'] } },
+  { name: 'webkit',   use: { ...devices['Desktop Safari'] } },
+
+  // Run a subset of tests on mobile (use testMatch to scope them)
+  {
+    name: 'Mobile Chrome',
+    use: { ...devices['Pixel 7'] },
+    testMatch: /.*mobile.*/,
+  },
+],
+```
+
+Run a single project from the CLI:
+
+```bash
+npx playwright test --project chromium
+npx playwright test --project firefox
+npx playwright test --project "Mobile Chrome"
+```
+
+---
+
+## Mobile emulation
+
+Playwright ships with ~50 built-in device descriptors. Each descriptor sets the viewport, user agent, `deviceScaleFactor`, touch events, and whether the browser reports `isMobile`.
+
+```typescript
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  projects: [
+    {
+      name: 'iPhone 14',
+      use: { ...devices['iPhone 14'] },
+    },
+    {
+      name: 'Pixel 7',
+      use: { ...devices['Pixel 7'] },
+    },
+    {
+      name: 'iPad Pro',
+      use: { ...devices['iPad Pro 11'] },
+    },
+  ],
+});
+```
+
+You can also set a custom viewport and user agent without a preset:
+
+```typescript
+use: {
+  viewport: { width: 375, height: 812 },
+  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 ...)',
+  isMobile: true,
+  hasTouch: true,
+}
+```
+
+---
+
+## Retries, workers, and timeouts
+
+**Retries** re-run a failed test automatically. The trace from the final retry is always saved.
+
+```typescript
+retries: 2, // run failed tests up to 3 times total (1 original + 2 retries)
+```
+
+Run with retries from the CLI (overrides the config):
+
+```bash
+npx playwright test --retries 1
+```
+
+**Workers** control how many tests run in parallel. By default Playwright uses approximately half your CPU cores.
+
+```typescript
+workers: 4,           // always 4 parallel workers
+workers: '50%',       // half of available CPU cores
+workers: 1,           // fully serial — easiest to debug
+```
+
+**`fullyParallel`** — when `true`, tests within the same file can run in parallel. Default is `false` (tests in a file run sequentially; test files run in parallel).
+
+```typescript
+fullyParallel: true,
+```
+
+**Timeouts hierarchy:**
+
+| Setting | Default | What it limits |
+|---------|---------|----------------|
+| `timeout` | 30 000 ms | The entire test function |
+| `expect.timeout` | 5 000 ms | A single `expect()` assertion |
+| `use.actionTimeout` | 30 000 ms | A single action (`click`, `fill`, etc.) |
+| `use.navigationTimeout` | 30 000 ms | A single navigation (`goto`, `waitForURL`) |
+
+Override per-test:
+
+```typescript
+test('slow integration test', async ({ page }) => {
+  test.setTimeout(120_000); // extend timeout for this test only
+  // ...
+});
+```
+
+---
+
+## Exercises
+
+These exercises use a local Playwright project. Run all commands from the `tests/starter/` directory.
+
+---
+
+### Exercise 1: Add npm scripts
+
+Open `package.json` and add the following scripts so you have shortcuts for common test modes:
+
+```json
+{
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report"
+  }
+}
+```
+
+After adding the scripts, verify they work:
+
+```bash
+npm test                 # run all tests
+npm run test:smoke       # run only @smoke tests
+npm run test:headed      # run with browser visible
+```
+
+---
+
+### Exercise 2: Run smoke tests
+
+1. Create `tests/smoke.spec.ts` with at least two tests tagged `@smoke`:
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('home page loads @smoke', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('h1')).toBeVisible();
+});
+
+test('products page loads @smoke', async ({ page }) => {
+  await page.goto('/products');
+  await expect(page.locator('.product-card').first()).toBeVisible();
+});
+
+test('checkout page loads @regression', async ({ page }) => {
+  await page.goto('/checkout');
+  await expect(page).toHaveURL('/checkout');
+});
+```
+
+2. Run the smoke suite and confirm only 2 tests execute:
+
+```bash
+npx playwright test --grep @smoke
+```
+
+3. Run the regression suite and confirm only 1 test executes:
+
+```bash
+npx playwright test --grep @regression
+```
+
+---
+
+### Exercise 3: Run a single spec file
+
+Practice the most common CLI targeting patterns:
+
+```bash
+# Run a single file
+npx playwright test tests/smoke.spec.ts
+
+# Run all files in a folder
+npx playwright test tests/
+
+# Run tests whose name contains "products"
+npx playwright test --grep "products"
+
+# Run a file on a specific browser project
+npx playwright test tests/smoke.spec.ts --project chromium
+```
+
+Observe how each command changes what appears in the terminal output.
+
+---
+
+### Exercise 4: Headed and debug mode
+
+1. Run your smoke tests in headed mode — watch the browser open:
+
+```bash
+npx playwright test --grep @smoke --headed
+```
+
+2. Add `await page.pause()` to one test:
+
+```typescript
+test('home page loads @smoke', async ({ page }) => {
+  await page.goto('/');
+  await page.pause(); // Inspector opens here
+  await expect(page.locator('h1')).toBeVisible();
+});
+```
+
+3. Run that test in debug mode:
+
+```bash
+npx playwright test tests/smoke.spec.ts --debug
+```
+
+4. In the Inspector: step through the test, click the locator picker, type a selector and see it highlighted live.
+
+5. Remove `page.pause()` before committing.
+
+---
+
+### Exercise 5: Inspect a trace
+
+1. Enable tracing in `playwright.config.ts`:
+
+```typescript
+use: {
+  trace: 'on',
+}
+```
+
+2. Run the smoke tests:
+
+```bash
+npx playwright test --grep @smoke
+```
+
+3. Open the HTML report and click the trace icon for any test:
+
+```bash
+npx playwright show-report
+```
+
+4. In the trace viewer:
+   - Drag the **timeline scrubber** to a `locator.goto` action and inspect the DOM snapshot
+   - Click the **Network** tab — which requests did the page make?
+   - Click the **Console** tab — any errors or warnings?
+
+5. Optionally open the trace zip directly:
+
+```bash
+npx playwright show-trace test-results/smoke-spec-home-page-loads-smoke-chromium/trace.zip
+```
+
+---
+
+## Key takeaways
+
+1. **`test()` and `expect()`** are the two primitives. `expect(locator)` auto-retries; `expect(value)` does not.
+2. **`test.describe()` and hooks** keep test code DRY. `beforeEach` runs before every test in scope; `afterEach` after.
+3. **Tags are strings**. Put `@smoke` or `@regression` in the test name. Filter with `--grep`. No special API required.
+4. **CLI is composable**. Combine file path, `--grep`, `--project`, and `--workers` to run exactly the subset you need.
+5. **UI mode for development, debug mode for debugging, trace viewer for CI failures.** Know which tool fits which situation.
+6. **`playwright.config.ts` is the single source of truth.** `baseURL`, `retries`, `workers`, `reporter`, and `projects` all live there.
+7. **Mobile emulation is one line**. Spread a device descriptor into a project's `use` block and every test in that project runs as that device.
