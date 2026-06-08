@@ -1,0 +1,839 @@
+---
+title: "Modul 3: Əməliyyatlar və istifadəçi qarşılıqlı əlaqəsi"
+description: "Playwright-in istifadəçi ilə qarşılıqlı əlaqə əməliyyatları — click, fill vs type, klaviatura, checkboxlar, dropdown-lar, hover, date picker, drag & drop, fayl yükləmə, dialoqlar və iframelər."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+Lokatorları mənimsədiniz. İndi isə faktiki olaraq səhifə ilə qarşılıqlı əlaqəyə girməyin vaxtıdır. Bu modul real bir Playwright testindəki hər istifadəçi əməliyyatını əhatə edir — sadə bir klikdən tutmuş brauzer dialoqunu idarə etməyə və ya iframe içindəki faylı yükləməyə qədər.
+
+<Video title="Modul 3: Əməliyyatlar və istifadəçi qarşılıqlı əlaqəsi" />
+
+---
+
+## Click əməliyyatları
+
+`.click()` Playwright-dəki ən yaygın əməliyyatdır. Klikdən əvvəl Playwright avtomatik olaraq elementin görünür, aktiv, sabit olduğunu və başqa bir element tərəfindən örtülmədiyini gözləyir. Əksər kliklərdən əvvəl manual `waitFor()` yazmağa ehtiyac yoxdur.
+
+```javascript
+// Sadə click — hər testin əsas hissəsi
+await page.getByRole('button', { name: 'Log In' }).click();
+
+// Keçidə click edin
+await page.getByRole('link', { name: 'Register' }).click();
+
+// Məhsul kartına click edin
+await page.locator('.product-card').filter({ hasText: 'Wireless Mouse' }).click();
+```
+
+### Double-click
+
+Sətirdəki redaktə interfeyslərini və tək klikdən fərqlənən double-click-i ayırd edən elementlər üçün istifadə olunur.
+
+```javascript
+// Redaktə edilə bilən cədvəl xanasına double-click edin
+await page.locator('.editable-cell').dblclick();
+```
+
+### Sağ click
+
+Sağ click brauzer kontekst menyusunu açır və ya tətbiqdəki `contextmenu` hadisə dinləyicilərini işə salır.
+
+```javascript
+// Kontekst menyusunu işə salmaq üçün sağ click edin
+await page.locator('.product-card').click({ button: 'right' });
+```
+
+### Force click
+
+Playwright-in actionability yoxlamalarını atlayır. Ehtiyatla istifadə edin — yalnız elementin orada olduğunu bildiyiniz amma Playwright-in yoxlamaları düzgün bir qarşılıqlı əlaqəni blokladığı zaman istifadə edin.
+
+```javascript
+// Force click — görünürlük / actionability yoxlamalarını atlayır
+await page.locator('#hidden-trigger').click({ force: true });
+```
+
+**Playwright-in avtomatik gözləməsi** o deməkdir ki: real testlərin 95%-ində sadə `.click()` kifayətdir. Parametrləri kənar hallar üçün saxlayın.
+
+---
+
+## `fill()` vs `type()`
+
+Bu, həm ümumi müsahibə sualı, həm də gündəlik dizayn qərarıdır.
+
+### `fill()`
+
+- Sahəni əvvəlcə təmizləyir (üçlü click etməyə ehtiyac yoxdur)
+- Tək `input` hadisəsi göndərir — sürətlidir
+- Form sahələrinin 95%-i üçün üstün tutulur
+
+```javascript
+// fill() — bir əməliyyatda sahəni təmizləyir və dəyər təyin edir
+await page.locator('#email').fill('customer@test.io');
+await page.locator('#password').fill('customer123');
+
+// Mətn qəbul edən istənilən elementdə işləyir
+await page.getByLabel('Shipping Name').fill('Jane Doe');
+await page.getByLabel('Shipping Address').fill('123 Main Street');
+await page.getByLabel('Shipping City').fill('Portland');
+await page.getByLabel('Shipping Zip Code').fill('97201');
+```
+
+### `type()`
+
+- Hər simvol üçün `keydown`, `keypress`, `keyup` işə salaraq simvol-simvol yazır
+- Sahəni əvvəlcə **təmizləmir** — mövcud mətnin sonuna əlavə edir
+- Daha yavaşdır — yalnız `fill()` düzgün davranışı işə salmadıqda istifadə edin
+
+```javascript
+// type() — real klaviatura zərbələrini simulyasiya edir, simvol-simvol
+await page.locator('#email').type('customer@test.io', { delay: 30 });
+
+// Ümumi istifadə halı: autocomplete / debounce edilmiş sahələr
+await page.locator('#search').type('Wire', { delay: 50 });
+// Hər klaviatura zərbəsi autocomplete komponentinin dinlediyi hadisələri işə salır
+```
+
+**`type()` nə vaxt lazımdır:** React-Select, typeahead komponentlər, zəngin mətn redaktorları və ya yekun dəyər əvəzinə hər bir ayrı klaviatura zərbəsinə reaksiya verən istənilən daxiletmə.
+
+**Tuz:** Sahədə artıq mətn varsa, `type()` ona əlavə edir. `fill()` isə həmişə əvvəlcə təmizləyir.
+
+```javascript
+// Sahə "old value" ilə başlayır — type() əlavə edir:
+await page.locator('#name').type(' new suffix'); // nəticə: "old value new suffix"
+
+// fill() əvvəlki dəyəri nəzərə almır:
+await page.locator('#name').fill('fresh value'); // nəticə: "fresh value"
+```
+
+---
+
+## Klaviatura `press()`
+
+`.press()` fokuslanmış elementə tək bir düymə zərbəsi göndərir. `page.keyboard.press()` isə hansı elementin fokusda olduğundan asılı olmayaraq düyməni qlobal olaraq göndərir.
+
+```javascript
+// Formu göndərmək üçün Enter düyməsini sıxın (lokator əhatəsindədir)
+await page.locator('#password').press('Enter');
+
+// Növbəti fokuslanabilən sahəyə keçmək üçün Tab düyməsini sıxın
+await page.locator('#shipping_name').press('Tab');
+
+// Modal ya da dropdown-u bağlamaq üçün Escape
+await page.keyboard.press('Escape');
+
+// Simvolları silmək üçün Backspace
+await page.keyboard.press('Backspace');
+
+// Naviqasiya üçün ox düymələri
+await page.keyboard.press('ArrowDown');
+await page.keyboard.press('ArrowUp');
+```
+
+### Düymə kombinasiyaları
+
+Modifier düymələri başqaları ilə birləşdirmək üçün `+` istifadə edin:
+
+```javascript
+// Fokuslanmış elementdəki bütün mətni seçin
+await page.keyboard.press('Control+A');
+
+// Seçilmiş mətni kopyalayın
+await page.keyboard.press('Control+C');
+
+// Yapışdırın
+await page.keyboard.press('Control+V');
+
+// Seçilmiş mətni silin
+await page.keyboard.press('Control+A');
+await page.keyboard.press('Delete');
+```
+
+**Düymə adlarının hərfi böyüklüyü önəmlidir:** Düzgün adlar `'Control'`, `'Shift'`, `'Alt'`, `'Meta'`-dır — `'ctrl'` ya da `'shift'` deyil.
+
+### Shift+Click və saxlama şablonları
+
+```javascript
+// Shift saxlayaraq bir neçə elementi çox seçim üçün click edin
+await page.keyboard.down('Shift');
+await page.locator('.list-item').nth(3).click();
+await page.keyboard.up('Shift');
+```
+
+**Əlçatanlıq ipucu:** `Tab` naviqasiyası klaviatura əlçatanlığını yoxlamaq üçün güclü bir vasitədir. Tab sırasının məntiqi olduğunu yoxlamaq üçün formdan mouse-a toxunmadan keçin.
+
+---
+
+## Checkboxlar və radio düymələri
+
+Intent-i özü-özünə sənədləşdirdiyindən `.click()` əvəzinə `.check()` və `.uncheck()` istifadə edin.
+
+```javascript
+// Checkboxu işarələyin
+await page.getByLabel('Remember me').check();
+
+// Checkboxu işarəsiz edin
+await page.getByLabel('Subscribe to newsletter').uncheck();
+
+// Cari vəziyyətdən asılı olmayaraq checkbox-ı müəyyən vəziyyətə qoyun
+await page.getByLabel('Terms and conditions').setChecked(true);
+await page.getByLabel('Marketing emails').setChecked(false);
+```
+
+**Fərq:** `.check()` checkbox artıq işarəlidirsə xəta atır (öz-özünü doğrulayır). `.click()` vəziyyətdən asılı olmayaraq dəyişdirir. `.setChecked(true/false)` xəta atmadan müəyyən vəziyyəti təyin edir.
+
+### Radio düymələri
+
+Radio qrupları eyni `name` atributunu paylaşır. Seçmək istədiyiniz seçenekdə `.check()` istifadə edin.
+
+```javascript
+// Radio düyməsini seçin
+await page.getByLabel('Express Shipping').check();
+await page.getByLabel('Standard Shipping').check();
+
+// Hansı radio-nun hazırda seçildiyini doğrulayın
+await expect(page.getByLabel('Express Shipping')).toBeChecked();
+```
+
+### Checkboxlar və radiolar üçün assertion-lar
+
+```javascript
+// Checkboxun işarəli olduğunu doğrulayın
+await expect(page.getByLabel('Remember me')).toBeChecked();
+
+// Checkboxun işarəsiz olduğunu doğrulayın
+await expect(page.getByLabel('Newsletter')).not.toBeChecked();
+```
+
+---
+
+## Native `<select>` dropdown-ları
+
+`selectOption()` native HTML `<select>` elementləri üçündür. Brauzer və framework-lərin gözlediyi düzgün dəyişiklik hadisələrini göndərir.
+
+```javascript
+// Dəyərlə seçin (option-un `value` atributu)
+await page.locator('#category').selectOption('electronics');
+
+// Görünən etiket mətni ilə seçin
+await page.locator('#category').selectOption({ label: 'Electronics' });
+
+// İndeksə görə seçin (0-dan başlayır)
+await page.locator('#sort').selectOption({ index: 2 });
+
+// Çoxlu seçim — massiv verin
+await page.locator('#tags').selectOption(['javascript', 'testing', 'playwright']);
+```
+
+**Capstone tətbiqi nümunəsi — məhsulları filtrləyin:**
+
+```javascript
+await page.goto('/products');
+
+// Kateqoriyaya görə filtrləyin
+await page.locator('#category').selectOption('electronics');
+
+// Qiymətə görə azalan sıralama
+await page.locator('#sort').selectOption('price_desc');
+
+// Filtrləri tətbiq edin
+await page.locator('button:has-text("Apply Filters")').click();
+```
+
+**Hazırkı seçimi doğrulayın:**
+
+```javascript
+await expect(page.locator('#category')).toHaveValue('electronics');
+await expect(page.locator('#sort')).toHaveValue('price_desc');
+```
+
+**Ümumi səhv:** `value` atributu `'electronics'` (kiçik hərflə) olan zaman `selectOption('Electronics')` böyük E ilə istifadə etmək. Dəyərlər hərfə həssasdır.
+
+---
+
+## Custom dropdown-lar
+
+Bütün dropdown-lar native `<select>` elementi deyil. Müasir UI framework-ləri (React-Select, Headless UI, Material UI) özlərinkini qururlar. Bu cür elementlərdə `selectOption()` istifadə edə bilməzsiniz.
+
+**Fərqi necə anlamaq:** DevTools → Elements tabını açın. `<option>` uşaqları olan `<select>` görürsünüzsə → `selectOption()` istifadə edin. `<li>` ilə `<div>`, `<button>`, `<ul>` görürsünüzsə → custom dropdown-dır.
+
+**Custom dropdown-lar üçün şablon həmişə eynidir:**
+
+```javascript
+// Addım 1: Dropdown-u açmaq üçün click edin
+await page.locator('.dropdown-trigger').click();
+
+// Addım 2: Menyunun görünməsini gözləyin (animasiya ola bilər)
+await page.locator('.dropdown-menu').waitFor({ state: 'visible' });
+
+// Addım 3: İstədiyiniz seçeneği click edin
+await page.locator('.dropdown-option:has-text("Option Name")').click();
+
+// Addım 4 (isteğe bağlı): Menyunun bağlandığını doğrulayın
+await expect(page.locator('.dropdown-menu')).toBeHidden();
+```
+
+**Custom dropdown-ları debug etmək:**
+
+- Menyu animasiya ilə açılır? Tetikleyici click-dən sonra `await page.waitForTimeout(300)` əlavə edin
+- Seçenek viewport xaricindədir? Click-dən əvvəl scroll edin
+- Click etmədən əvvəl menyu bağlanır? Seçenekdə `{ force: true }` istifadə edin
+
+```javascript
+// Click-away davranışı müdaxilə etdikdə seçeneyi force click edin
+await page.locator('.dropdown-option:has-text("Option Name")').click({ force: true });
+```
+
+---
+
+## Hover və tooltip-lər
+
+`.hover()` mausu elementin üzərinə gətirir, `mouseenter` və `mousemove` hadisələrini işə salır. Hover-da göstərilən tooltip-lər, dropdown menyular və məlumat popup-ları test edilə bilər hala gəlir.
+
+```javascript
+// "Quick View" düyməsini göstərmək üçün məhsul kartının üzərinə hover edin
+await page.locator('.product-card').filter({ hasText: 'Wireless Mouse' }).hover();
+
+// Hover etdikdən sonra tooltip / göstərilən element görünür olur
+await expect(page.locator('#hover-tooltip')).toBeVisible();
+await expect(page.locator('#hover-tooltip')).toContainText('Tooltip content');
+
+// Uzaqlaşın — tooltip gizlənir
+await page.locator('h1').hover();
+await expect(page.locator('#hover-tooltip')).toBeHidden();
+```
+
+**Koordinatlı hover** — element içindəki konkret pikseldə hover edin (qrafiklər ya da şəkil xəritələri üçün faydalıdır):
+
+```javascript
+// Elementin içindəki dəqiq piksel ofsetdə hover edin
+await page.locator('.chart-area').hover({ position: { x: 100, y: 50 } });
+```
+
+**Hover etdikdən sonra göstərilən elementi gözləyin:**
+
+```javascript
+await page.locator('#info-icon').hover();
+
+// Tooltip-in CSS keçidi var — görünür olmasını gözləyin
+await page.locator('.tooltip').waitFor({ state: 'visible' });
+await expect(page.locator('.tooltip')).toContainText('Additional info');
+```
+
+---
+
+## Date picker-lər
+
+### Native `<input type="date">`
+
+ISO format string-i ilə doldurun (`YYYY-MM-DD`). Bu ən etibarlı yanaşmadır.
+
+```javascript
+// Native tarix daxiletməsi — ISO formatı, həmişə işləyir
+await page.locator('#start-date').fill('2025-06-15');
+await page.locator('#end-date').fill('2025-07-31');
+```
+
+### Custom date picker vidjetlər
+
+React DatePicker, flatpickr, Pikaday və oxşarları üçün — vidjetin interfeysi ilə qarşılıqlı əlaqəyə girməlisiniz: tetikleyicini click edin, ayları keçin, gün xanasını click edin.
+
+```javascript
+// Addım 1: Təqvimi açın
+await page.locator('[data-testid="date-trigger"]').click();
+
+// Addım 2: Düzgün aya keçin
+// Hədəf: İyun 2025. Cari ay fərqli ola bilər.
+await page.locator('button[aria-label="Next month"]').click();
+
+// Addım 3: Gün xanasını click edin
+await page.locator('.calendar-day:has-text("15")').click();
+
+// Addım 4: Seçimi doğrulayın
+await expect(page.locator('#start-date')).toHaveValue('2025-06-15');
+```
+
+**Bir neçə ay proqramatik şəkildə keçmək üçün:**
+
+```javascript
+// Hədəf ay/il başlığına çatana qədər irəli keçin
+const target = 'June 2025';
+while (!(await page.locator('.calendar-header').textContent()).includes(target)) {
+  await page.locator('button[aria-label="Next month"]').click();
+}
+await page.locator('.calendar-day:has-text("15")').click();
+```
+
+---
+
+## Drag & drop
+
+Playwright üç yanaşma təklif edir. `dragTo()` ilə başlayın — framework düzgün cavab vermirsə manual ardıcıllığa keçin.
+
+### Metod 1: `dragTo()` (ən sadəsi)
+
+```javascript
+// Elementi hədəfə sürükləyin
+await page.locator('#drag-item').dragTo(page.locator('#drop-zone'));
+```
+
+### Metod 2: Manual mouse ardıcıllığı (ən etibarlısı)
+
+Bəzi drag-and-drop kitabxanaları (react-beautiful-dnd, SortableJS, Angular CDK) `dragTo()`-un düzgün göndərmədiyi custom hadisə işləmə mexanizmindən istifadə edir. Manual ardıcıllıq bu kitabxanaların dinlediyi `mousedown`, `mousemove`, `mouseup` hadisələrini işə salır.
+
+```javascript
+const source = page.locator('.drag-handle').nth(0);
+const target = page.locator('.drop-target');
+
+const sourceBox = await source.boundingBox();
+const targetBox = await target.boundingBox();
+
+await page.mouse.move(
+  sourceBox.x + sourceBox.width / 2,
+  sourceBox.y + sourceBox.height / 2
+);
+await page.mouse.down();
+await page.mouse.move(
+  targetBox.x + targetBox.width / 2,
+  targetBox.y + targetBox.height / 2,
+  { steps: 10 } // bəzi kitabxanalar üçün lazım olan hamar hərəkət
+);
+await page.mouse.up();
+```
+
+### Metod 3: Koordinatlarla `dragTo()`
+
+```javascript
+// Hədəf daxilindəki müəyyən mövqeyə sürükləyin
+await page.locator('#drag-item').dragTo(page.locator('#drop-zone'), {
+  targetPosition: { x: 10, y: 10 },
+});
+```
+
+**`dragTo()` uğursuz olduqda:** Brauzer konsolunu xətalara görə yoxlayın. DnD kitabxanası sintetik hadisələr istifadə edirsə, Metod 2-yə keçin.
+
+---
+
+## Fayl yükləmə
+
+`setInputFiles()` OS fayl dialoqlarını tamamilə əvəz edir. AutoIT, Robot class, OS səviyyəli avtomatlaşdırma lazım deyil.
+
+```javascript
+// Tək faylı path ilə yükləyin
+await page.locator('input[type="file"]').setInputFiles('/path/to/file.pdf');
+
+// Çoxlu fayl yükləyin
+await page.locator('input[type="file"]').setInputFiles([
+  '/path/to/file1.txt',
+  '/path/to/file2.txt',
+]);
+
+// Buffer-dən yükləyin — fiziki fayl lazım deyil
+await page.locator('input[type="file"]').setInputFiles({
+  name: 'data.csv',
+  mimeType: 'text/csv',
+  buffer: Buffer.from('id,name,price\n1,Widget,9.99\n2,Gadget,19.99'),
+});
+
+// Fayl seçimini ləğv edin
+await page.locator('input[type="file"]').setInputFiles([]);
+```
+
+**Portativ path-lər** — istənilən əməliyyat sistemdə işləməsi üçün `path.join` istifadə edin:
+
+```javascript
+const path = require('path');
+
+await page.locator('input[type="file"]').setInputFiles(
+  path.join(__dirname, '..', 'fixtures', 'test-upload.txt')
+);
+```
+
+**Gizli fayl daxiletməsi:** `<input type="file">` `display: none` ya da `opacity: 0` ilə stilləndirilibsə, `{ force: true }` istifadə edin:
+
+```javascript
+await page.locator('input[type="file"]').setInputFiles('file.pdf', { force: true });
+```
+
+**Faylın seçildiyini doğrulayın:**
+
+```javascript
+const files = await page.locator('input[type="file"]').evaluate(el =>
+  Array.from(el.files).map(f => f.name)
+);
+expect(files).toContain('test-upload.txt');
+```
+
+---
+
+## Dialoqlar və popup-lar
+
+`page.on('dialog')` bir hadisə dinləyicisidir. Dialoqu işə salan əməliyyatdan **əvvəl** qeydiyyatdan keçirilməlidir. Sil düyməsini click etdikdən sonra qeydiyyatdan keçirsəniz, dialoq artıq işə salınmış və avtomatik olaraq rədd edilmişdir.
+
+```javascript
+// ✅ DÜZGÜN — tetikləyici əməliyyatdan əvvəl qeydiyyatdan keçirin
+page.on('dialog', async (dialog) => {
+  await dialog.accept(); // qəbul et / təsdiqləyin
+});
+await page.locator('button:has-text("Delete")').click();
+
+// ❌ YANLIŞ — dialoq bu handler qeydiyyatdan keçirilmədən əvvəl işə salınır
+await page.locator('button:has-text("Delete")').click();
+page.on('dialog', async (dialog) => {
+  await dialog.accept(); // çox gec
+});
+```
+
+### Dialoq növləri və idarə edilməsi
+
+```javascript
+// Confirm dialoqunu qəbul edin
+page.on('dialog', async (dialog) => {
+  expect(dialog.message()).toContain('Are you sure');
+  await dialog.accept();
+});
+
+// Confirm dialoqunu rədd edin (ləğv et)
+page.on('dialog', async (dialog) => {
+  await dialog.dismiss();
+});
+
+// Prompt dialoquna mətn daxil edərək cavab verin
+page.on('dialog', async (dialog) => {
+  await dialog.accept('yazılmış mətn burada');
+});
+
+// Müxtəlif dialoq növlərini seçici şəkildə idarə edin
+page.on('dialog', async (dialog) => {
+  if (dialog.type() === 'confirm') {
+    await dialog.accept();
+  } else if (dialog.type() === 'prompt') {
+    await dialog.accept('test məlumatı');
+  } else {
+    await dialog.dismiss(); // alert
+  }
+});
+```
+
+**Ən yaxşı praktika:** Dialoq handler-ini ayrı-ayrı test funksiyalarında deyil, `beforeEach` içində ya da page object constructor-ında qeydiyyatdan keçirin. Bu handler-in istənilən dialoq tetikləyən əməliyyatdan əvvəl hazır olmasını təmin edir.
+
+```javascript
+// Page object constructor-ında
+class AdminProductsPage {
+  constructor(page) {
+    this.page = page;
+    // Bütün silmə təsdiqnamələrini avtomatik qəbul edin
+    page.on('dialog', async (dialog) => {
+      await dialog.accept();
+    });
+  }
+}
+```
+
+---
+
+## Iframelər
+
+`page.frameLocator()` bir `FrameLocator` qaytarır — bütün Playwright lokator metodları onun üzərində mövcuddur. Onu lokatorlar üçün `page` istifadə etdiyiniz kimi istifadə edin.
+
+```javascript
+// iframe üçün FrameLocator əldə edin
+const frame = page.frameLocator('#payment-iframe');
+
+// iframe içindəki bütün normal lokator metodlarını istifadə edin
+await frame.getByLabel('Card number').fill('4111 1111 1111 1111');
+await frame.getByLabel('Expiry date').fill('12/28');
+await frame.getByLabel('CVV').fill('123');
+await frame.getByRole('button', { name: 'Pay Now' }).click();
+```
+
+**iframe seçicisini tapmaq:**
+
+```javascript
+// id-li iframe
+const frame = page.frameLocator('#my-iframe');
+
+// id-siz iframe — src ya da başqa atribut istifadə edin
+const frame = page.frameLocator('iframe[src="/payment"]');
+const frame = page.frameLocator('iframe[title="Payment form"]');
+```
+
+**İç-içə iframelər:**
+
+```javascript
+// iframe içindəki iframelər üçün frameLocator-ları zəncirlə
+const innerFrame = page.frameLocator('#outer-frame').frameLocator('#inner-frame');
+await innerFrame.locator('#card-number').fill('4111...');
+```
+
+**`frameLocator`-da mövcud olmayan şeylər:** `goto()`, `evaluate()` — o, bir `Page` obyekti deyil. Bu əməliyyatlar üçün `page.frame()` istifadə edin:
+
+```javascript
+// page.frame() adı ya da URL ilə — qabaqcıl ssenarilər üçün
+const frame = page.frame({ url: /payment/ });
+await frame.evaluate(() => document.title);
+```
+
+**Cross-origin iframelər:** Playwright bunları şəffaf şəkildə idarə edir. `frameLocator()` iframe-in origin-indən asılı olmayaraq işləyir.
+
+---
+
+<Practice missions={['click-variants','fill-form','type-vs-fill','press-keys','select-option','drag-and-drop','date-picker','hover-tooltip-click','file-upload']} />
+
+---
+
+## Tapşırıqlar
+
+Bu tapşırıqlar `http://localhost:3000`-də yerli olaraq işləyən TestMarket Lab istifadə edir.
+
+---
+
+### Tapşırıq 1: Login forması — `fill()` vs `type()`
+
+`tests/starter/tests/actions/login-actions.spec.js` yaradın:
+
+```javascript
+const { test, expect } = require('@playwright/test');
+
+test.describe('Login form actions', () => {
+
+  test('fill() — sürətli, tək hadisə', async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('customer@test.io');
+    await page.locator('#password').fill('customer123');
+    await page.locator('button[type="submit"]').click();
+    await expect(page.locator('.alert.alert-success')).toBeVisible();
+  });
+
+  test('type() — simvol-simvol', async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').type('customer@test.io', { delay: 30 });
+    await page.locator('#password').type('customer123', { delay: 30 });
+    await page.locator('button[type="submit"]').click();
+    await expect(page.locator('.alert.alert-success')).toBeVisible();
+  });
+
+  test('göndərmək üçün Enter-a sıxın', async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('customer@test.io');
+    await page.locator('#password').fill('customer123');
+    await page.locator('#password').press('Enter');
+    await expect(page.locator('.alert.alert-success')).toBeVisible();
+  });
+});
+```
+
+**Tapşırıqlar:**
+- `npx playwright test --headed` ilə işlədin və yazma sürətini müşahidə edin: `fill()` anlıqdır, `type()` simvol-simvol yazır
+- `{ delay: 30 }` şərhə alın və yenidən işlədin — nə dəyişir?
+- Əvvəlcədən doldurulmuş sahədə əvvəlcə təmizləmədən `type()` istifadə edərək əlavə etmə davranışını görün
+
+---
+
+### Tapşırıq 2: Checkout forması — doldur və göndər
+
+`tests/starter/tests/actions/checkout-actions.spec.js` yaradın. `beforeEach` daxil olur, səbətə məhsul əlavə edir və `/checkout`-a keçir.
+
+```javascript
+test('bütün çatdırılma sahələrini doldurun və sifariş verin', async ({ page }) => {
+  const checkoutPage = new CheckoutPage(page);
+  await checkoutPage.fillShippingDetails({
+    name: 'Jane Doe',
+    address: '123 Main Street',
+    city: 'Portland',
+    zip: '97201',
+  });
+  await checkoutPage.placeOrder();
+  await expect(page).toHaveURL(/\/orders\/\d+/);
+  await expect(page.locator('h1')).toContainText('Order');
+});
+
+test('sahələri Tab-la keçin və type() ilə dəyər daxil edin', async ({ page }) => {
+  await page.locator('#shipping_name').type('John Smith', { delay: 20 });
+  await page.locator('#shipping_name').press('Tab');
+  await page.locator('#shipping_address').type('456 Oak Ave', { delay: 20 });
+  await page.locator('#shipping_address').press('Tab');
+  await page.locator('#shipping_city').type('Seattle', { delay: 20 });
+  await page.locator('#shipping_city').press('Tab');
+  await page.locator('#shipping_zip').type('98101', { delay: 20 });
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/orders\/\d+/);
+});
+
+test('boş formu göndərin — HTML5 validasiyası bloklayır', async ({ page }) => {
+  const checkoutPage = new CheckoutPage(page);
+  await checkoutPage.submitEmptyForm();
+  await expect(page).toHaveURL('/checkout');
+});
+```
+
+**İstinad:** `tests/final/pages/CheckoutPage.js`
+
+---
+
+### Tapşırıq 3: Məhsul filtri — `selectOption()`
+
+`tests/starter/tests/actions/product-filter-actions.spec.js` yaradın:
+
+```javascript
+test('selectOption ilə kateqoriyaya görə filtrləyin', async ({ page }) => {
+  await page.goto('/products');
+  await page.locator('#category').selectOption('electronics');
+  await page.locator('button:has-text("Apply Filters")').click();
+  expect(await page.locator('.product-card').count()).toBeGreaterThan(0);
+});
+
+test('görünən etiket mətni ilə seçin', async ({ page }) => {
+  await page.goto('/products');
+  await page.locator('#category').selectOption({ label: 'Electronics' });
+  await page.locator('button:has-text("Apply Filters")').click();
+  expect(await page.locator('.product-card').count()).toBeGreaterThan(0);
+});
+
+test('axtarış + filtr + sıralama kombinasiyası', async ({ page }) => {
+  await page.goto('/products');
+  await page.locator('#search').fill('Wireless');
+  await page.locator('#category').selectOption('electronics');
+  await page.locator('#sort').selectOption('price_asc');
+  await page.locator('button:has-text("Apply Filters")').click();
+  await expect(page.locator('.product-card, p:has-text("No products found")'))
+    .toBeVisible();
+});
+```
+
+**Tapşırıqlar:**
+- DevTools → Elements açın, `<select id="category">`-ni tapın, `<option>` nodlarını genişləndirin — `value` atributlarına diqqət edin
+- `selectOption('nonexistent')` cəhd edin — Playwright hansı xəta atır?
+- Böyük E ilə `selectOption('Electronics')` cəhd edin — uyğun gəlir?
+
+---
+
+### Tapşırıq 4: Tarix daxiletməsi və klaviatura qısayolları
+
+`tests/starter/tests/actions/date-input-actions.spec.js` yaradın:
+
+```javascript
+test('mətn daxiletməsinə tarix formatı doldurun', async ({ page }) => {
+  await page.goto('/auth/register');
+  await page.locator('#name').fill('Order-2025-06-15');
+  await page.locator('#name').click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+  expect(await page.locator('#name').inputValue()).toBe('');
+});
+
+test('klaviatura ilə seç, kopyala, yapışdır', async ({ page }) => {
+  await page.goto('/auth/login');
+  await page.locator('#email').fill('customer@test.io');
+  await page.locator('#email').click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Control+C');
+  await page.locator('#email').press('Tab');
+  await page.keyboard.press('Control+V');
+  expect(await page.locator('#password').inputValue()).toBe('customer@test.io');
+});
+
+test('Backspace simvolları silir', async ({ page }) => {
+  await page.goto('/auth/register');
+  await page.locator('#name').fill('Product Launch Event');
+  for (let i = 0; i < 6; i++) {
+    await page.keyboard.press('Backspace');
+  }
+  expect(await page.locator('#name').inputValue()).toBe('Product Launch');
+});
+```
+
+---
+
+### Tapşırıq 5: Fayl yükləmə — `setInputFiles()`
+
+`tests/starter/tests/actions/file-upload-actions.spec.js` yaradın:
+
+```javascript
+const { test, expect } = require('@playwright/test');
+const path = require('path');
+const fs = require('fs');
+
+test('path vasitəsilə fayl yükləyin', async ({ page }) => {
+  await page.goto('/auth/register');
+
+  const tmpDir = path.join(__dirname, '..', '..', 'tmp');
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+  const testFile = path.join(tmpDir, 'test-upload.txt');
+  fs.writeFileSync(testFile, 'Playwright-dən salam!');
+
+  // Fayl daxiletməsini inject edin (capstone register səhifəsindəki yoxdur)
+  await page.evaluate(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.id = 'test-file-upload';
+    document.body.appendChild(input);
+  });
+
+  await page.locator('#test-file-upload').setInputFiles(testFile);
+
+  const files = await page.locator('#test-file-upload').evaluate(el =>
+    Array.from(el.files).map(f => f.name)
+  );
+  expect(files).toContain('test-upload.txt');
+
+  fs.unlinkSync(testFile);
+});
+
+test('Buffer-dən yükləyin — diskdə fayl lazım deyil', async ({ page }) => {
+  await page.goto('/auth/register');
+
+  await page.evaluate(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.id = 'test-buffer-upload';
+    document.body.appendChild(input);
+  });
+
+  await page.locator('#test-buffer-upload').setInputFiles({
+    name: 'data.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('id,name,price\n1,Widget,9.99\n2,Gadget,19.99'),
+  });
+
+  const fileName = await page.locator('#test-buffer-upload').evaluate(el =>
+    el.files[0].name
+  );
+  expect(fileName).toBe('data.csv');
+});
+```
+
+**Tapşırıqlar:**
+- `setInputFiles()`-ın heç vaxt OS fayl dialoqu açmadığını müşahidə edin
+- Mövcud olmayan fayl path-i yükləməyə cəhd edin — Playwright hansı xəta atır?
+- İki path-lik bir massiv verin: çoxlu fayl yükləmə variantını sınayın
+
+---
+
+## Özünü yoxlama sualları
+
+1. `fill()` ilə `type()` arasındakı fundamental fərq nədir?
+2. `selectOption()` istifadə etmək ilə click → gözlə → click şablonu arasında nə vaxt seçim edərdiniz?
+3. `setInputFiles()` OS fayl dialoqundan nə ilə fərqlənir?
+4. `page.on('dialog', handler)` dialoqu işə salan düyməni click etmədən **əvvəl** qeydiyyatdan keçirilməlidir?
+5. iframe içindəki elementlərlə qarşılıqlı əlaqə üçün hansı metodu istifadə edirsiniz?
+6. `selectOption('nonexistent_value')` çağırıldıqda nə baş verir?
+7. Playwright-də Ctrl+A (hamısını seç) necə simulyasiya edilir?
+8. `.check()` ilə `.setChecked(true)` arasındakı fərq nədir?
+
+---
+
+## Əsas nəticələr
+
+Hər testə apardığınız dörd qayda:
+
+1. **Formlar üçün `fill()`, xüsusi hallar üçün `type()`** — `fill()` daha sürətlidir, həmişə əvvəlcə təmizləyir və daxiletmələrin 95%-i üçün düzgün hadisələri işə salır
+2. **Native `<select>` = `selectOption()`, custom dropdown = click → gözlə → click** — qərar vermədən əvvəl həmişə DOM-u yoxlayın
+3. **`setInputFiles()` OS fayl dialoqlarını tamamilə əvəz edir** — fayl path-ləri, massivlər və Buffer obyektləri ilə işləyir
+4. **Dialoqlar tetikleyicilərdən əvvəl dinləyici tələb edir; iframelər `frameLocator()` istifadə edir** — dialoq handler-ini onu açan əməliyyatdan əvvəl qeydiyyatdan keçirin
+
+Modul 4 assertion-ları əhatə edir — tam `expect()` API-ni öyrənəcək və həm dəqiq, həm də zamanlama baxımından davamlı assertion-lar yazmağı öyrənəcəksiniz.
