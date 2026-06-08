@@ -1,0 +1,605 @@
+---
+title: "Module 12: CI, Docker & Reporting"
+description: "Run Playwright in GitHub Actions, containerize tests with Docker, and publish rich HTML reports and artifacts so every CI run is fully transparent."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+Welcome to Module 12. You have mastered visual regression, mobile emulation, and accessibility auditing. Now we pull everything together by making your tests run automatically, reproducibly, and with full visibility: **CI with GitHub Actions**, **containerization with Docker**, and **reporting and artifact management**.
+
+By the end of this module you will have a workflow that triggers on every push and pull request, installs browsers, runs your suite in a clean Linux environment, publishes an HTML report as a downloadable artifact, and optionally runs the whole thing inside an official Playwright Docker container.
+
+<Video title="Module 12: CI, Docker & Reporting" />
+
+---
+
+## Running Playwright in CI with GitHub Actions
+
+Continuous Integration means running your tests on a remote server every time code changes. GitHub Actions is the most common choice for projects already hosted on GitHub — and it is free for public repositories.
+
+### The core workflow file
+
+Place this file at `.github/workflows/playwright-tests.yml` in your repository:
+
+```yaml
+name: Playwright Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install test dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Clone and start the TestMarket Lab app
+        run: |
+          git clone https://github.com/TesterBaku/testmarket-lab.git ../testmarket-lab
+          cd ../testmarket-lab
+          npm install
+          npm start &
+          npx wait-on http://localhost:3000
+
+      - name: Run tests
+        run: npx playwright test
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+```
+
+**Anatomy of the workflow:**
+
+- `on` — the trigger events. This workflow runs on every push to `main` and on every pull-request targeting `main`.
+- `runs-on: ubuntu-latest` — a fresh Linux virtual machine is provisioned for each run. Nothing from a previous run persists.
+- `actions/checkout@v4` — clones the exact commit that triggered the workflow. The default working directory is your **test project** — that is where every step below runs unless told otherwise.
+- `actions/setup-node@v4` — installs the specified Node version.
+- `npm ci` — installs your test project's dependencies (`@playwright/test`, etc.) from its lockfile.
+- `npx playwright install --with-deps` — installs the browser binaries **and** their system-level dependencies (libgtk, libnss, libgbm, etc.). Skipping `--with-deps` is the single most common cause of CI failures for new Playwright projects.
+- The "Clone and start the app" step — your tests need a running app to test against. It clones the standalone [TestMarket Lab](https://github.com/TesterBaku/testmarket-lab) app into a sibling directory, installs its dependencies, starts it in the background with `npm start &`, then blocks until `http://localhost:3000` answers (`npx wait-on`). Without the wait, the test step could race ahead and hit a server that has not finished booting. (Alternatively, let Playwright start and wait on the app for you via the `webServer` config — see the next section.)
+- `if: always()` on the upload step — this is critical. Without it, a failed test run would skip the upload step and you would lose the report precisely when you need it most.
+- `retention-days: 7` — artifacts are automatically deleted after one week.
+
+### `npm ci` vs `npm install`
+
+`npm ci` reads the lockfile exactly and fails if the lockfile is out of sync with `package.json`. It is faster and stricter than `npm install`, which is why it is the standard in CI. If `npm ci` fails with a lockfile error, run `npm install` locally and commit the updated `package-lock.json`.
+
+---
+
+## CI-aware configuration
+
+Playwright's config file can behave differently in CI and locally using the standard `process.env.CI` environment variable, which GitHub Actions (and most other CI platforms) set to `"true"` automatically.
+
+```js
+// playwright.config.js
+export default defineConfig({
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  workers: 1,
+
+  webServer: {
+    // The TestMarket Lab app lives in a sibling directory.
+    // Playwright starts it from there and waits for it to come up.
+    command: 'npm start',
+    cwd: '../testmarket-lab',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+  },
+});
+```
+
+**Each setting explained:**
+
+- `forbidOnly: !!process.env.CI` — prevents `test.only` from being committed to CI by mistake. If any test has `.only`, the entire run exits immediately with an error before executing a single test. This is your safety net against accidentally merging a suite that only runs one test.
+- `retries: process.env.CI ? 1 : 0` — one retry absorbs flaky tests caused by network hiccups or timing differences between your laptop and the CI VM. If a test fails twice, it is a real failure worth investigating.
+- `workers: 1` — avoids port conflicts when the app server and multiple browser processes share a single machine. For sharding (covered below), increase this.
+- `reuseExistingServer: !process.env.CI` — locally, if your app is already running, Playwright reuses that server. In CI, no server is running, so Playwright must start one. The `!` operator flips the value: `CI=true` → `false` (always start fresh); `CI=undefined` → `true` (reuse existing if running).
+
+> **Two ways to get the app running, pick one.** Either start the app yourself in a workflow step (the "Clone and start the app" step above) **or** let the `webServer` block start it for you. If you use `webServer` with `cwd: '../testmarket-lab'`, the app must already be cloned and its dependencies installed — so you still need a step that clones it and runs `npm install` (just drop the `npm start &` / `wait-on` lines, since Playwright now handles starting and waiting). Do not do both, or two servers will fight over port 3000. The examples that follow assume the app is reachable at `http://localhost:3000`, however you chose to start it.
+
+---
+
+## Sharding and parallelism in CI
+
+For large suites, you can split the work across multiple CI machines using Playwright's built-in sharding. Each shard runs an independent subset of tests in parallel:
+
+```yaml
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx playwright install --with-deps
+
+      - name: Clone and start the TestMarket Lab app
+        run: |
+          git clone https://github.com/TesterBaku/testmarket-lab.git ../testmarket-lab
+          cd ../testmarket-lab
+          npm install
+          npm start &
+          npx wait-on http://localhost:3000
+
+      - name: Run shard ${{ matrix.shard }}
+        run: npx playwright test --shard=${{ matrix.shard }}/4 --reporter=blob
+
+      - name: Upload blob report for shard ${{ matrix.shard }}
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 1
+```
+
+This creates four parallel jobs. Shard 1 runs the first quarter of the test suite, shard 2 the second quarter, and so on. Total wall-clock time drops by roughly 75%. Note the `--reporter=blob` override: each shard writes a machine-readable `blob-report/` (not a standalone HTML report) so the reports can be stitched back together afterward. Each shard uploads its blob report under a distinct name — `blob-report-1`, `blob-report-2`, and so on.
+
+**Merging shard reports.** A separate `merge-reports` job downloads every shard's blob report and stitches them into one unified HTML report:
+
+```yaml
+  merge-reports:
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+
+      - name: Download all blob reports
+        uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge into a single HTML report
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Upload merged HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+```
+
+The pieces line up end-to-end: shard jobs produce `blob-report/` with `--reporter=blob` and upload them as `blob-report-1` … `blob-report-4`; the merge job downloads everything matching `blob-report-*` (`merge-multiple: true` flattens them into one folder), runs `playwright merge-reports --reporter html` to rebuild a single HTML report, and uploads it. `if: always()` on the merge job means you still get a report even when a shard had failures — which is exactly when you need it.
+
+---
+
+## The HTML reporter and other built-in reporters
+
+### HTML reporter (default for CI)
+
+The HTML reporter produces a self-contained `playwright-report/index.html` file you can open in any browser. It shows:
+
+- A pass/fail summary for every test
+- Expandable test entries with step-by-step logs
+- Inline screenshots and videos captured on failure
+- A link to the trace viewer for any trace that was captured
+
+Enable it in config:
+
+```js
+reporter: [['html', { open: 'never' }]],
+```
+
+`open: 'never'` prevents the browser from opening automatically after a local run (and is required in CI where there is no display).
+
+### List reporter
+
+The list reporter prints each test name and result to stdout as tests execute. Ideal for watching a run in real time and for CI logs:
+
+```js
+reporter: [['list']],
+```
+
+### JSON reporter
+
+Outputs a machine-readable `results.json` file. Useful for post-processing: counting tests, building dashboards, or feeding results into a Slack notification:
+
+```js
+reporter: [['json', { outputFile: 'results.json' }]],
+```
+
+### JUnit reporter
+
+Produces a `results.xml` in JUnit format. Required by many CI/CD platforms (Jenkins, TeamCity, Azure DevOps) that parse JUnit XML to display test summaries in their own UIs:
+
+```js
+reporter: [['junit', { outputFile: 'results.xml' }]],
+```
+
+### Using multiple reporters simultaneously
+
+```js
+reporter: [
+  ['list'],
+  ['html', { open: 'never' }],
+  ['junit', { outputFile: 'results.xml' }],
+],
+```
+
+All three reporters run in parallel. The list output appears in the CI log, the HTML report is uploaded as an artifact, and the JUnit XML is consumed by the platform's test-results panel.
+
+---
+
+## Publishing reports as CI artifacts
+
+The upload step in the workflow saves the `playwright-report/` directory as a downloadable zip:
+
+```yaml
+- name: Upload test report
+  if: always()
+  uses: actions/upload-artifact@v4
+  with:
+    name: playwright-report
+    path: playwright-report/
+    retention-days: 7
+```
+
+To view the report: open your GitHub repository → **Actions** tab → click the workflow run → scroll to **Artifacts** → download `playwright-report.zip` → unzip → open `index.html`.
+
+**Tip:** If the HTML report references trace files via relative paths, the entire directory must be unzipped before opening `index.html`. Do not open it from inside the zip.
+
+---
+
+## Trace, screenshot, and video on failure
+
+Playwright can capture diagnostic artifacts automatically when a test fails. Configure these in the `use` block of `playwright.config.js`:
+
+```js
+use: {
+  // Record a trace only on the first retry (not the initial run)
+  trace: 'on-first-retry',
+
+  // Take a screenshot only when a test fails
+  screenshot: 'only-on-failure',
+
+  // Record video only when a test fails
+  video: 'retain-on-failure',
+},
+```
+
+**`trace: 'on-first-retry'`** is the recommended setting for CI. On the initial run no trace is recorded (saving disk space and time). If the test fails and is retried, a full trace is captured. A trace contains a timeline of every action, network request, console log, and DOM snapshot — you can scrub through it in the trace viewer like a video.
+
+**Why not `trace: 'on'` for everything?** Traces are large. Recording every test produces gigabytes of data in a large suite. `'on-first-retry'` is the sweet spot: you get traces for exactly the tests that were flaky or failed.
+
+To open a trace locally:
+
+```bash
+npx playwright show-trace path/to/trace.zip
+```
+
+The HTML report includes an embedded "Open Trace" link for any test that has a trace — clicking it launches the trace viewer directly in the browser.
+
+---
+
+## The official Playwright Docker image
+
+The Playwright team publishes an official Docker image that includes Node, all three browser binaries, and their system dependencies. This removes the need for `npx playwright install --with-deps` inside the container:
+
+```
+mcr.microsoft.com/playwright:v1.52.0-noble
+```
+
+The tag `noble` refers to Ubuntu 24.04 LTS. Always pin to the same version as your `@playwright/test` package to avoid version mismatches.
+
+### Running tests in a Docker container
+
+**One-shot `docker run`:**
+
+Run this from the root of your **test project**. It assumes the app is already running and reachable on the host:
+
+```bash
+docker run --rm \
+  -v $(pwd):/app \
+  -w /app \
+  --add-host=host.docker.internal:host-gateway \
+  -e BASE_URL=http://host.docker.internal:3000 \
+  mcr.microsoft.com/playwright:v1.52.0-noble \
+  npx playwright test
+```
+
+- `--rm` removes the container when it exits.
+- `-v $(pwd):/app` mounts your test project into the container at `/app`.
+- `-w /app` sets the working directory inside the container to your test project.
+- `--add-host` + `BASE_URL=http://host.docker.internal:3000` lets the container reach the app server running on your host machine. (Have your config read `process.env.BASE_URL` for `use.baseURL`.)
+
+**Using a Dockerfile for your tests:**
+
+This Dockerfile packages only your test project — the app runs separately (as a Compose service, below):
+
+```dockerfile
+FROM mcr.microsoft.com/playwright:v1.52.0-noble
+
+WORKDIR /app
+
+# Copy dependency manifests first — Docker caches this layer until they change
+COPY package.json package-lock.json ./
+
+RUN npm ci
+# Browsers are already installed in the base image — no install step needed
+
+COPY . .
+
+CMD ["npx", "playwright", "test", "--project=chromium", "--project=firefox"]
+```
+
+**Docker Compose for tests:**
+
+Compose runs the app and the tests as two services on a shared network. The `tests` service waits for the `app` service to be healthy, then runs the suite against `http://app:3000`:
+
+```yaml
+# docker-compose.test.yml
+services:
+  app:
+    image: node:20-bookworm
+    working_dir: /app
+    # Clone+install handled by the command for a self-contained example;
+    # in a real setup, build the app from its own Dockerfile instead.
+    command: sh -c "git clone https://github.com/TesterBaku/testmarket-lab.git . && npm install && npm start"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      BASE_URL: http://app:3000
+    volumes:
+      - ./playwright-report:/app/playwright-report
+```
+
+```bash
+# Build the image
+docker compose -f docker-compose.test.yml build
+
+# Run the tests (app starts first, tests wait for it, then run)
+docker compose -f docker-compose.test.yml up --abort-on-container-exit
+
+# Check the exit code (0 = all passed, 1 = failures)
+echo $?
+```
+
+The volume mount in the Compose file copies the `playwright-report` directory back to your host after the container exits, so you can open the HTML report locally. `--abort-on-container-exit` stops the long-running `app` service as soon as the `tests` service finishes.
+
+### Why Docker layer caching matters
+
+Copy `package.json` and `package-lock.json` **before** copying the rest of your source code. Docker rebuilds each layer only when the files that feed it change. If you copy everything at once, every source code change invalidates the `npm ci` layer and forces a full reinstall. Separating the dependency copy means `npm ci` is re-run only when your lockfile changes.
+
+```dockerfile
+# Good — npm ci layer is cached unless lockfile changes
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+
+# Bad — npm ci re-runs on every source change
+COPY . .
+RUN npm ci
+```
+
+---
+
+## Docker vs local development
+
+| Concern | Local | Docker / CI |
+|---|---|---|
+| Speed of iteration | Fast (no image rebuild) | Slower (image rebuild) |
+| Browser debugging | Headed mode available | Headless only |
+| Environment consistency | Depends on your OS | Identical to CI |
+| "Works on my machine" | Possible | Eliminated |
+| Suitable for | Day-to-day development | Pre-merge verification, CI |
+
+The recommended workflow: develop and debug locally with `--headed`, then verify in Docker before pushing to ensure the CI environment will agree.
+
+---
+
+## CI matrix across browsers
+
+To run your suite against Chromium, Firefox, and WebKit on every CI run, use a matrix strategy combined with the `--project` flag:
+
+```yaml
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    runs-on: ubuntu-latest
+    steps:
+      # ... checkout, setup, install ...
+      - name: Run tests on ${{ matrix.browser }}
+        run: npx playwright test --project=${{ matrix.browser }}
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ matrix.browser }}
+          path: playwright-report/
+```
+
+`fail-fast: false` means a failure on Chromium does not cancel the Firefox and WebKit jobs — you want results from all browsers even when one fails.
+
+**WebKit on Linux.** WebKit on the official Playwright Docker image is fully supported. When running natively on `ubuntu-latest` without Docker, ensure you run `npx playwright install --with-deps webkit` (or all browsers) to get the necessary system libraries (`libwoff1`, `libgstreamer`, etc.).
+
+---
+
+## Reading CI results
+
+When a workflow run finishes, the GitHub Actions UI shows a green checkmark (all jobs passed) or a red X (at least one job failed) next to each commit and on the pull-request status checks panel.
+
+**Diagnosing a failure:**
+
+1. Click **Details** on the failing check.
+2. Expand the failed step — the error is almost always near the bottom of the log.
+3. Download the `playwright-report` artifact and open `index.html`.
+4. Find the failing test, click **Open Trace**, and step through the timeline.
+
+**The most common CI failure modes:**
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| "Browser is not installed" | `--with-deps` step was skipped | Restore the install step |
+| "Timed out waiting for localhost:3000" | Wrong port or webServer not starting | Fix `url` in config; check `working-directory` |
+| `npm ci` fails | Lockfile out of sync | Run `npm install` locally and commit |
+| Tests flaky only in CI | Timing differences | Add `trace: 'on-first-retry'`; check for hardcoded waits |
+| Artifact not uploaded | Missing `if: always()` | Add `if: always()` to the upload step |
+
+---
+
+## Exercises
+
+Work through these exercises using a GitHub repository with your Playwright test suite in place.
+
+### Exercise 1 — Read and trace the workflow
+
+Open `.github/workflows/playwright-tests.yml` and answer:
+
+- What events trigger the workflow?
+- Why must the workflow clone and start the TestMarket Lab app before the "Run tests" step?
+- What does `npx wait-on http://localhost:3000` accomplish, and what could go wrong without it?
+- What does `npx playwright install --with-deps` install beyond the browser binaries?
+- What does `if: always()` on the artifact upload step accomplish?
+- What is the maximum job duration before GitHub kills it?
+
+### Exercise 2 — Understand CI vs local config
+
+Open `playwright.config.js` and locate `forbidOnly`, `retries`, `workers`, and `reuseExistingServer`. Answer:
+
+- What is `process.env.CI`? Which systems set it?
+- Add `test.only(...)` to one test, push to CI, and observe the error. Remove `.only` and push again.
+- What would happen if `reuseExistingServer` were always `true` in CI?
+
+### Exercise 3 — Push and watch a CI run
+
+```bash
+git add .
+git commit -m "Add Playwright CI workflow"
+git push origin main
+```
+
+Navigate to the **Actions** tab on GitHub. Time each step:
+
+- Checkout, Setup Node, Install test deps, Install browsers, Clone and start the app, Run tests, Upload report
+- Download the artifact and open the HTML report. Verify the pass/fail count matches your local run.
+
+### Exercise 4 — Debug deliberate CI failures
+
+**Part A — Wrong webServer port.** Change `url` to `http://localhost:9999`, push, observe the timeout error. Revert and push.
+
+**Part B — test.only in CI.** Add `.only` to a test, push, confirm `forbidOnly` rejects it. Remove `.only`, push.
+
+**Part C — Missing browser install.** Comment out the `playwright install --with-deps` step, push, observe "Browser is not installed". Restore it.
+
+### Exercise 5 — Add a lint step
+
+Insert this step before the `Run tests` step:
+
+```yaml
+- name: Run ESLint
+  run: npx eslint .
+```
+
+Push and confirm the step appears in the Actions log.
+
+**Stretch:** Add a step that posts a comment on the pull request when the workflow runs on a `pull_request` event:
+
+```yaml
+- name: Comment on PR
+  if: github.event_name == 'pull_request' && always()
+  uses: actions/github-script@v7
+  with:
+    script: |
+      github.rest.issues.createComment({
+        issue_number: context.issue.number,
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        body: 'Playwright tests completed. Check the Actions tab for the report.'
+      })
+```
+
+### Exercise 6 — Build and run tests in Docker
+
+```bash
+# Build the test image
+docker compose -f docker-compose.test.yml build
+
+# Run the suite inside the container
+docker compose -f docker-compose.test.yml up
+
+# Check exit code
+echo $?
+```
+
+While the image builds, answer:
+
+- What base image does your `Dockerfile.test` use?
+- Why are `package.json` files copied before the rest of the source?
+- What does `CMD` do when the container starts?
+
+After the run: open the HTML report that was written to the mounted volume. Confirm the test count matches your local run.
+
+### Exercise 7 — Break a test inside Docker, then fix it
+
+1. Edit a test expectation to something wrong (e.g., change the expected page title).
+2. Rebuild and run: `docker compose -f docker-compose.test.yml up --build`
+3. Note the exit code (should be `1`) and the failing test name.
+4. Revert the change, rebuild, confirm exit code `0`.
+
+### Bonus challenge — Matrix across browsers
+
+Modify the workflow to run on Chromium, Firefox, and WebKit using a matrix strategy (see the matrix example above). Push and observe three parallel jobs. Note whether any browser produces a different result.
+
+### Self-check questions
+
+1. What is `npm ci` and why is it preferred over `npm install` in CI?
+2. What does `--with-deps` add to `npx playwright install`?
+3. Why is `if: always()` required on the artifact upload step?
+4. What does `forbidOnly: !!process.env.CI` prevent?
+5. Explain `reuseExistingServer: !process.env.CI` — what does `!` do here?
+6. What is the difference between the `list`, `html`, `json`, and `junit` reporters?
+7. What does `trace: 'on-first-retry'` record, and why is it preferable to `trace: 'on'`?
+8. Why should `package.json` be copied before source code in a Dockerfile?
+9. When would you use Docker locally rather than running `npx playwright test` directly?
+10. What does `fail-fast: false` do in a matrix strategy?

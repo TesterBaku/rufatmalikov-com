@@ -1,0 +1,605 @@
+---
+title: "Modul 12: CI, Docker, hesabatlar"
+description: "Playwright-ı GitHub Actions-da işlədin, testləri Docker ilə konteynerləşdirin və hər CI işləməsini tam şəffaf edən zəngin HTML hesabatları və artefaktlar yayımlayın."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+Modul 12-yə xoş gəldiniz. Vizual reqressiya, mobil emulyasiya və əlçatımlılıq auditini mənimsədiniz. İndi hər şeyi bir araya gətirib testlərinizin avtomatik, təkrarlanabilir və tam görünən şəkildə işləməsini təmin edəcəyik: **GitHub Actions ilə CI**, **Docker ilə konteynerləşdirmə** və **hesabat və artefakt idarəetməsi**.
+
+Bu modulun sonunda hər push və pull request-də işə düşən, brauzerləri quraşdıran, testlər dəstini təmiz Linux mühitində işlədən, HTML hesabatını yüklənə bilən artefakt kimi yayımlayan və isteğe bağlı olaraq hər şeyi rəsmi Playwright Docker konteynerinin içində işlədən bir workflow-a sahib olacaqsınız.
+
+<Video title="Modul 12: CI, Docker, hesabatlar" />
+
+---
+
+## GitHub Actions ilə CI-da Playwright işlətmək
+
+Davamlı İnteqrasiya (CI) testlərinizin kod dəyişdikdə uzaq serverdə işlədilməsi deməkdir. GitHub Actions, artıq GitHub-da yerləşən layihələr üçün ən çox seçilən həlldir — açıq repolar üçün isə pulsuzdur.
+
+### Əsas workflow faylı
+
+Bu faylı repozitoriyanızda `.github/workflows/playwright-tests.yml` olaraq yerləşdirin:
+
+```yaml
+name: Playwright Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Test asılılıqlarını quraşdır
+        run: npm ci
+
+      - name: Playwright brauzerləri quraşdır
+        run: npx playwright install --with-deps
+
+      - name: TestMarket Lab tətbiqini klonla və başlat
+        run: |
+          git clone https://github.com/TesterBaku/testmarket-lab.git ../testmarket-lab
+          cd ../testmarket-lab
+          npm install
+          npm start &
+          npx wait-on http://localhost:3000
+
+      - name: Testləri işlət
+        run: npx playwright test
+
+      - name: Test hesabatını yüklə
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+```
+
+**Workflow-un quruluşu:**
+
+- `on` — tətikləmə hadisələri. Bu workflow `main`-ə hər push-da və `main`-i hədəf alan hər pull-request-də işləyir.
+- `runs-on: ubuntu-latest` — hər işlətmə üçün təzə Linux virtual maşını hazırlanır. Əvvəlki işlətmədən heç nə qalmır.
+- `actions/checkout@v4` — workflow-u tətikləyən commit-i klonlayır. Standart iş qovluğu sizin **test layihənizdir** — aşağıdakı hər addım, başqa cür göstərilməyibsə, orada işləyir.
+- `actions/setup-node@v4` — göstərilən Node versiyasını quraşdırır.
+- `npm ci` — test layihənizin asılılıqlarını (`@playwright/test` və s.) lockfile-dan quraşdırır.
+- `npx playwright install --with-deps` — brauzer binarilərini **və** onların sistem səviyyəsindəki asılılıqlarını (libgtk, libnss, libgbm və s.) quraşdırır. `--with-deps`-i unutmaq yeni Playwright layihələrinin CI-da uğursuz olmasının ən çox rast gəlinən səbəbidir.
+- "Tətbiqi klonla və başlat" addımı — testlərinizin sınaqdan keçirəcəyi işləyən bir tətbiqə ehtiyacı var. Bu addım müstəqil [TestMarket Lab](https://github.com/TesterBaku/testmarket-lab) tətbiqini qonşu qovluğa klonlayır, asılılıqlarını quraşdırır, `npm start &` ilə fonda başladır və `http://localhost:3000` cavab verənə qədər (`npx wait-on`) gözləyir. Gözləmə olmadan, test addımı qabağa qaça və hələ tam yüklənməmiş serverə müraciət edə bilər. (Alternativ olaraq, `webServer` konfiqurasiyası vasitəsilə tətbiqi sizin əvəzinizə Playwright-ın başlatmasına və gözləməsinə icazə verə bilərsiniz — növbəti bölməyə baxın.)
+- Yükləmə addımında `if: always()` — bu kritik önəm daşıyır. Onsuz, uğursuz test işlətməsi yükləmə addımını atlayacaq və məhz ehtiyac duyduğunuz anda hesabatı itirəcəksiniz.
+- `retention-days: 7` — artefaktlar bir həftə sonra avtomatik silinir.
+
+### `npm ci` vs `npm install`
+
+`npm ci` lockfile-ı tam olaraq oxuyur və `package.json` ilə uyğunsuzluq olduqda uğursuz olur. CI-da standart olaraq istifadə edilməsinin səbəbi `npm install`-dan daha sürətli və ciddi olmasıdır. `npm ci` lockfile xətası ilə uğursuz olarsa, lokalda `npm install` işlədib yenilənmiş `package-lock.json`-u commit edin.
+
+---
+
+## CI-a uyğun konfiqurasiya
+
+Playwright-ın konfiqurasiya faylı, GitHub Actions-ın (və əksər digər CI platformalarının) avtomatik olaraq `"true"`-ya təyin etdiyi standart `process.env.CI` mühit dəyişənindən istifadə edərək CI-da və lokalda fərqli davrana bilər.
+
+```js
+// playwright.config.js
+export default defineConfig({
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  workers: 1,
+
+  webServer: {
+    // TestMarket Lab tətbiqi qonşu qovluqda yerləşir.
+    // Playwright onu oradan başladır və qalxmasını gözləyir.
+    command: 'npm start',
+    cwd: '../testmarket-lab',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+  },
+});
+```
+
+**Hər parametrin izahı:**
+
+- `forbidOnly: !!process.env.CI` — `test.only`-nin səhvən CI-a commit edilməsinin qarşısını alır. Hər hansı bir test `.only` ilə işarələnibsə, bütün işlətmə tək bir test belə icra etmədən dərhal xəta ilə çıxır. Bu, yalnız bir testi işlədən suite-in birləşdirilməsindən qoruyan sizin təhlükəsizlik şəbəkənizdir.
+- `retries: process.env.CI ? 1 : 0` — bir yenidən sınaq şəbəkə qısamüddətli kəsilmələri və ya noutbukunuzla CI VM arasındakı vaxtlama fərqlərindən qaynaqlanan qeyri-sabit testləri udur. Test iki dəfə uğursuz olarsa, araşdırmağa dəyər real bir xətadır.
+- `workers: 1` — tək maşında tətbiq serveri və çoxsaylı brauzer prosesləri port münaqişəsinin qarşısını alır. Sharding üçün (aşağıda izah olunur) bu dəyəri artırın.
+- `reuseExistingServer: !process.env.CI` — lokalda tətbiqiniz artıq işləyirsə, Playwright həmin serverı yenidən istifadə edir. CI-da heç bir server işləmir, ona görə Playwright birini başlatmalıdır. `!` operatoru dəyəri əks çevirir: `CI=true` → `false` (həmişə təzədən başlat); `CI=undefined` → `true` (işləyən varsa yenidən istifadə et).
+
+> **Tətbiqi işə salmağın iki yolu var, birini seçin.** Ya tətbiqi özünüz bir workflow addımında başladırsınız (yuxarıdakı "Tətbiqi klonla və başlat" addımı), **ya da** `webServer` blokunun onu sizin əvəzinizə başlatmasına icazə verirsiniz. `cwd: '../testmarket-lab'` ilə `webServer` istifadə etsəniz, tətbiq artıq klonlanmış və asılılıqları quraşdırılmış olmalıdır — yəni yenə də onu klonlayan və `npm install` işlədən bir addıma ehtiyacınız var (sadəcə `npm start &` / `wait-on` sətirlərini silin, çünki başlatma və gözləməni indi Playwright idarə edir). Hər ikisini etməyin, əks halda iki server 3000 portu üstündə dalaşacaq. Aşağıdakı nümunələr, tətbiqi necə başlatmağınızdan asılı olmayaraq, onun `http://localhost:3000`-də əlçatan olduğunu fərz edir.
+
+---
+
+## CI-da sharding və parallellik
+
+Böyük test dəstləri üçün işi Playwright-ın daxili sharding-dən istifadə edərək bir neçə CI maşınına bölüşdürə bilərsiniz. Hər shard testlərin müstəqil alt çoxluğunu paralel olaraq işlədir:
+
+```yaml
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx playwright install --with-deps
+
+      - name: TestMarket Lab tətbiqini klonla və başlat
+        run: |
+          git clone https://github.com/TesterBaku/testmarket-lab.git ../testmarket-lab
+          cd ../testmarket-lab
+          npm install
+          npm start &
+          npx wait-on http://localhost:3000
+
+      - name: Shard ${{ matrix.shard }} işlət
+        run: npx playwright test --shard=${{ matrix.shard }}/4 --reporter=blob
+
+      - name: Shard ${{ matrix.shard }} üçün blob hesabatını yüklə
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 1
+```
+
+Bu, dörd paralel iş yaradır. Shard 1 test dəstinin ilk dörddə birini, shard 2 ikinci dörddə birini işlədir və bu şəkildə davam edir. Ümumi işlətmə müddəti təxminən 75% azalır. `--reporter=blob` üstələməsinə diqqət edin: hər shard maşın tərəfindən oxuna bilən `blob-report/` yazır (müstəqil HTML hesabatı yox) ki, hesabatlar sonradan yenidən bir araya gətirilə bilsin. Hər shard öz blob hesabatını fərqli ad altında yükləyir — `blob-report-1`, `blob-report-2` və s.
+
+**Shard hesabatlarını birləşdirmək.** Ayrıca `merge-reports` işi hər shard-ın blob hesabatını endirir və onları vahid bir HTML hesabatında tikir:
+
+```yaml
+  merge-reports:
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+
+      - name: Bütün blob hesabatlarını endir
+        uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Tək HTML hesabatına birləşdir
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Birləşdirilmiş HTML hesabatını yüklə
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+```
+
+Hissələr başdan-başa bir-birinə uyğun gəlir: shard işləri `--reporter=blob` ilə `blob-report/` hazırlayır və onları `blob-report-1` … `blob-report-4` kimi yükləyir; birləşdirmə işi `blob-report-*` ilə uyğun gələn hər şeyi endirir (`merge-multiple: true` onları tək qovluğa düzür), `playwright merge-reports --reporter html` işlədib vahid HTML hesabatını yenidən qurur və yükləyir. Birləşdirmə işindəki `if: always()` o deməkdir ki, bir shard-da uğursuzluq olsa belə yenə hesabat alırsınız — məhz buna ehtiyacınız olan an.
+
+---
+
+## HTML reporter və digər daxili reporterlər
+
+### HTML reporter (CI üçün varsayılan)
+
+HTML reporter hər hansı bir brauzerdə aça biləcəyiniz öz-özünə yetərli `playwright-report/index.html` faylı hazırlayır. Göstərir:
+
+- Hər test üçün keçdi/uğursuz oldu xülasəsi
+- Addım-addım log ilə genişlənə bilən test girişləri
+- Uğursuzluq zamanı çəkilmiş ekran görüntüləri və videolar
+- Çəkilmiş hər trace üçün trace viewer linki
+
+Konfiqurasiyada aktivləşdirmək üçün:
+
+```js
+reporter: [['html', { open: 'never' }]],
+```
+
+`open: 'never'` brauzerin lokal işlətmədən sonra avtomatik açılmasının qarşısını alır (ekranı olmayan CI-da tələb olunur).
+
+### List reporter
+
+List reporter testlər işləyərkən hər test adını və nəticəsini stdout-a çıxarır. İşlətməyə real vaxtda baxmaq və CI logları üçün idealdır:
+
+```js
+reporter: [['list']],
+```
+
+### JSON reporter
+
+Maşın tərəfindən oxuna bilən `results.json` faylı çıxarır. Post-emal üçün faydalıdır: testləri saymaq, idarə panelləri qurmaq və ya nəticələri Slack bildirişinə ötürmək:
+
+```js
+reporter: [['json', { outputFile: 'results.json' }]],
+```
+
+### JUnit reporter
+
+JUnit formatında `results.xml` hazırlayır. Öz UI-larında test xülasələrini göstərmək üçün JUnit XML analiz edən bir çox CI/CD platforması (Jenkins, TeamCity, Azure DevOps) tərəfindən tələb olunur:
+
+```js
+reporter: [['junit', { outputFile: 'results.xml' }]],
+```
+
+### Bir neçə reporteri eyni anda istifadə etmək
+
+```js
+reporter: [
+  ['list'],
+  ['html', { open: 'never' }],
+  ['junit', { outputFile: 'results.xml' }],
+],
+```
+
+Üç reporter paralel işləyir. List çıxışı CI logunda görünür, HTML hesabatı artefakt kimi yüklənir, JUnit XML isə platformanın test-nəticələri paneli tərəfindən istehlak edilir.
+
+---
+
+## CI artefaktları kimi hesabat yayımlamaq
+
+Workflow-dakı yükləmə addımı `playwright-report/` qovluğunu yüklənə bilən zip kimi saxlayır:
+
+```yaml
+- name: Test hesabatını yüklə
+  if: always()
+  uses: actions/upload-artifact@v4
+  with:
+    name: playwright-report
+    path: playwright-report/
+    retention-days: 7
+```
+
+Hesabatı görmək üçün: GitHub repozitoriyasını açın → **Actions** bölməsi → workflow işlətməsini vurun → **Artifacts** bölməsinə daxil olun → `playwright-report.zip`-i endirin → açın → `index.html`-i açın.
+
+**İpucu:** HTML hesabatı nisbi yollar vasitəsilə trace fayllarına istinad edirsə, `index.html`-i açmadan əvvəl bütün qovluq açılmalıdır. Zip-in içindən açmayın.
+
+---
+
+## Uğursuzluqda trace, ekran görüntüsü və video
+
+Playwright, test uğursuz olanda diaqnostik artefaktları avtomatik çəkə bilər. Bunları `playwright.config.js`-in `use` blokunda konfiqurasiya edin:
+
+```js
+use: {
+  // Yalnız ilk yenidən sınaqda trace yaz (ilkin işlətmədə deyil)
+  trace: 'on-first-retry',
+
+  // Yalnız test uğursuz olduqda ekran görüntüsü al
+  screenshot: 'only-on-failure',
+
+  // Yalnız test uğursuz olduqda video saxla
+  video: 'retain-on-failure',
+},
+```
+
+**`trace: 'on-first-retry'`** CI üçün tövsiyə olunan parametrdir. İlkin işlətmədə heç bir trace yazılmır (disk sahəsinə və vaxta qənaət edir). Test uğursuz olub yenidən sınaqdan keçirilsə, tam trace çəkilir. Trace hər hərəkətin, şəbəkə sorğusunun, konsol logunun və DOM snapshot-ının zaman xəttini ehtiva edir — trace viewer-da video kimi gözdən keçirə bilərsiniz.
+
+**Niyə hər şey üçün `trace: 'on'` istifadə etmirsiniz?** Trace-lər böyük həcm tutur. Böyük test dəstindəki hər testi yazmaq gigabaytlarca məlumat hazırlayır. `'on-first-retry'` optimal nöqtədir: tam olaraq qeyri-sabit olan və ya uğursuz olan testlər üçün trace alırsınız.
+
+Trace-i lokalda açmaq üçün:
+
+```bash
+npx playwright show-trace path/to/trace.zip
+```
+
+HTML hesabatı, trace-i olan hər test üçün quraşdırılmış "Open Trace" linki ehtiva edir — üzərinə klikləmək trace viewer-ı birbaşa brauzerdə işə salır.
+
+---
+
+## Rəsmi Playwright Docker obrazı
+
+Playwright komandası Node, bütün üç brauzer binarisini və onların sistem asılılıqlarını ehtiva edən rəsmi Docker obrazı yayımlayır. Bu, konteynerin içindəki `npx playwright install --with-deps` ehtiyacını aradan qaldırır:
+
+```
+mcr.microsoft.com/playwright:v1.52.0-noble
+```
+
+`noble` teqi Ubuntu 24.04 LTS-ə istinad edir. Versiya uyğunsuzluqlarının qarşısını almaq üçün həmişə `@playwright/test` paketinizdəkiylə eyni versiyaya sabitləyin.
+
+### Docker konteynerinin içindəki testləri işlətmək
+
+**Bir dəfəlik `docker run`:**
+
+Bunu **test layihənizin** kök qovluğundan işlədin. Tətbiqin artıq işlədiyini və host üzərində əlçatan olduğunu fərz edir:
+
+```bash
+docker run --rm \
+  -v $(pwd):/app \
+  -w /app \
+  --add-host=host.docker.internal:host-gateway \
+  -e BASE_URL=http://host.docker.internal:3000 \
+  mcr.microsoft.com/playwright:v1.52.0-noble \
+  npx playwright test
+```
+
+- `--rm` konteyneri çıxdıqda silir.
+- `-v $(pwd):/app` test layihənizi konteynerin içindəki `/app`-a qoşur.
+- `-w /app` konteynerin içindəki iş qovluğunu test layihənizə təyin edir.
+- `--add-host` + `BASE_URL=http://host.docker.internal:3000` konteynerin host maşınınızda işləyən tətbiq serverinə çatmasına imkan verir. (Konfiqurasiyanızın `use.baseURL` üçün `process.env.BASE_URL`-i oxumasını təmin edin.)
+
+**Testləriniz üçün Dockerfile istifadə etmək:**
+
+Bu Dockerfile yalnız test layihənizi paketləyir — tətbiq ayrıca işləyir (aşağıdakı Compose servisi kimi):
+
+```dockerfile
+FROM mcr.microsoft.com/playwright:v1.52.0-noble
+
+WORKDIR /app
+
+# Asılılıq manifestlərini əvvəl kopyalayın — Docker bu layeri dəyişənə qədər keşləyir
+COPY package.json package-lock.json ./
+
+RUN npm ci
+# Brauzerlər artıq əsas obrazda quraşdırılmışdır — əlavə quraşdırma addımı tələb olunmur
+
+COPY . .
+
+CMD ["npx", "playwright", "test", "--project=chromium", "--project=firefox"]
+```
+
+**Testlər üçün Docker Compose:**
+
+Compose tətbiqi və testləri paylaşılan şəbəkədə iki servis kimi işlədir. `tests` servisi `app` servisinin sağlam olmasını gözləyir, sonra dəsti `http://app:3000`-ə qarşı işlədir:
+
+```yaml
+# docker-compose.test.yml
+services:
+  app:
+    image: node:20-bookworm
+    working_dir: /app
+    # Bu özünütəmin nümunədə klon+install komanda ilə həyata keçirilir;
+    # real quruluşda tətbiqi öz Dockerfile-ından qurun.
+    command: sh -c "git clone https://github.com/TesterBaku/testmarket-lab.git . && npm install && npm start"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      BASE_URL: http://app:3000
+    volumes:
+      - ./playwright-report:/app/playwright-report
+```
+
+```bash
+# Obrazı qurun
+docker compose -f docker-compose.test.yml build
+
+# Testləri işlədin (əvvəl tətbiq başlayır, testlər onu gözləyir, sonra işləyir)
+docker compose -f docker-compose.test.yml up --abort-on-container-exit
+
+# Çıxış kodunu yoxlayın (0 = hamısı keçdi, 1 = uğursuzluqlar)
+echo $?
+```
+
+Compose faylındakı volume qoşulması konteyner çıxdıqdan sonra `playwright-report` qovluğunu yerinizə kopyalayır ki, HTML hesabatını lokalda aça biləsiniz. `--abort-on-container-exit` `tests` servisi bitən kimi uzunmüddətli `app` servisini dayandırır.
+
+### Docker layer keşinin önəmi
+
+`package.json` və `package-lock.json`-u mənbə kodunun qalan hissəsini kopyalamadan **əvvəl** kopyalayın. Docker hər layeri yalnız onu besləyən fayllar dəyişəndə yenidən qurar. Hər şeyi birdən kopyalarsanız, hər mənbə kod dəyişikliyi `npm ci` layerini etibarsızlaşdırır və tam yenidən quraşdırmanı məcbur edir. Asılılıq kopyasını ayırmaq `npm ci`-nin yalnız lockfile dəyişdikdə yenidən işlədilməsini təmin edir.
+
+```dockerfile
+# Yaxşı — npm ci layeri lockfile dəyişənə qədər keşlənir
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+
+# Pis — npm ci hər mənbə dəyişikliyində yenidən işləyir
+COPY . .
+RUN npm ci
+```
+
+---
+
+## Docker vs lokal inkişaf
+
+| Narahatlıq | Lokal | Docker / CI |
+|---|---|---|
+| İterasiya sürəti | Sürətli (obraz yenidən qurma yox) | Daha yavaş (obraz yenidən qurma) |
+| Brauzer sazlaması | Headed rejim mövcuddur | Yalnız headless |
+| Mühit tutarlılığı | OS-ə bağlıdır | CI ilə eynidir |
+| "Mənim maşınımda işləyir" | Mümkündür | Aradan qaldırılmışdır |
+| Uyğun | Gündəlik inkişaf | Birləşmə öncəsi yoxlama, CI |
+
+Tövsiyə olunan workflow: `--headed` ilə lokalda inkişaf edin və sazlayın, sonra push etmədən əvvəl CI mühitinin razılaşacağından əmin olmaq üçün Docker-da yoxlayın.
+
+---
+
+## Brauzerlərdə CI matrix
+
+Hər CI işlətməsində test dəstinizi Chromium, Firefox və WebKit-ə qarşı işlətmək üçün `--project` bayrağı ilə matrix strategiyasından istifadə edin:
+
+```yaml
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    runs-on: ubuntu-latest
+    steps:
+      # ... checkout, setup, install ...
+      - name: ${{ matrix.browser }}-da testləri işlət
+        run: npx playwright test --project=${{ matrix.browser }}
+      - name: Hesabatı yüklə
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ matrix.browser }}
+          path: playwright-report/
+```
+
+`fail-fast: false` Chromium-da uğursuzluğun Firefox və WebKit işlərini ləğv etməməsi deməkdir — biri uğursuz olsa belə bütün brauzerlərdən nəticə istəyirsiniz.
+
+**Linux-da WebKit.** Rəsmi Playwright Docker obrazında WebKit tam dəstəklənir. Docker olmadan `ubuntu-latest`-də yerli olaraq işlədərkən, lazımi sistem kitabxanalarını (`libwoff1`, `libgstreamer` və s.) almaq üçün `npx playwright install --with-deps webkit` (və ya bütün brauzerləri) işlətdiyinizə əmin olun.
+
+---
+
+## CI nəticələrini oxumaq
+
+Workflow işlətməsi bitdikdə, GitHub Actions UI hər commit yanında və pull-request status yoxlamaları panelində yaşıl işarəti (bütün işlər keçdi) və ya qırmızı X (ən azından bir iş uğursuz oldu) göstərir.
+
+**Uğursuzluğu diaqnostika etmək:**
+
+1. Uğursuz yoxlamada **Details**-ə klikləyin.
+2. Uğursuz addımı genişləndirin — xəta demək olar ki, həmişə logun altında olur.
+3. `playwright-report` artefaktını endirin və `index.html`-i açın.
+4. Uğursuz testi tapın, **Open Trace**-ə klikləyin və zaman xəttindən keçin.
+
+**Ən çox rast gəlinən CI uğursuzluq nümunələri:**
+
+| Simptom | Ehtimal olunan səbəb | Həll |
+|---|---|---|
+| "Browser is not installed" | `--with-deps` addımı atlandı | Quraşdırma addımını bərpa edin |
+| "Timed out waiting for localhost:3000" | Yanlış port və ya webServer başlamadı | Konfiqurasiyada `url`-i düzəldin; `working-directory`-ni yoxlayın |
+| `npm ci` uğursuz olur | Lockfile sinxronizasiyası pozulub | Lokalda `npm install` işlədin və commit edin |
+| Yalnız CI-da qeyri-sabit testlər | Vaxtlama fərqləri | `trace: 'on-first-retry'` əlavə edin; hardcoded gözləmələri yoxlayın |
+| Artefakt yüklənmədi | `if: always()` yoxdur | Yükləmə addımına `if: always()` əlavə edin |
+
+---
+
+## Tapşırıqlar
+
+Bu tapşırıqları test dəstinizin yerləşdirildiyi GitHub repozitoriyasından istifadə edərək həll edin.
+
+### Tapşırıq 1 — Workflow-u oxuyun və izləyin
+
+`.github/workflows/playwright-tests.yml`-i açın və cavab verin:
+
+- Workflow-u hansı hadisələr işə salır?
+- Workflow niyə "Testləri işlət" addımından əvvəl TestMarket Lab tətbiqini klonlamalı və başlatmalıdır?
+- `npx wait-on http://localhost:3000` nəyə nail olur və onsuz nə səhv gedə bilər?
+- `npx playwright install --with-deps` brauzer binarilərindən başqa nə quraşdırır?
+- Artefakt yükləmə addımındakı `if: always()` nəyə nail olur?
+- GitHub onu öldürməzdən əvvəl işin maksimum müddəti nədir?
+
+### Tapşırıq 2 — CI vs lokal konfiqurasiyanı anlayın
+
+`playwright.config.js`-i açın və `forbidOnly`, `retries`, `workers` ilə `reuseExistingServer`-i tapın. Cavab verin:
+
+- `process.env.CI` nədir? Hansı sistemlər onu təyin edir?
+- Bir testə `test.only(...)` əlavə edin, CI-a push edin və xətanı izləyin. `.only`-ni silin və yenidən push edin.
+- `reuseExistingServer` həmişə `true` olsaydı CI-da nə baş verərdi?
+
+### Tapşırıq 3 — Push edin və CI işlətməsini izləyin
+
+```bash
+git add .
+git commit -m "Playwright CI workflow əlavə et"
+git push origin main
+```
+
+GitHub-da **Actions** bölməsinə keçin. Hər addımın vaxtını ölçün:
+
+- Checkout, Setup Node, Test asılılıqlarını quraşdır, Brauzerləri quraşdır, Tətbiqi klonla və başlat, Testləri işlət, Hesabatı yüklə
+- Artefaktı endirin və HTML hesabatını açın. Keçdi/uğursuz sayının lokal işlətmənizə uyğun olduğunu yoxlayın.
+
+### Tapşırıq 4 — Qəsdən CI uğursuzluqlarını sazlayın
+
+**A hissəsi — Yanlış webServer portu.** `url`-i `http://localhost:9999`-a dəyişin, push edin, timeout xətasını izləyin. Geri qaytarın və push edin.
+
+**B hissəsi — CI-da test.only.** Bir testə `.only` əlavə edin, push edin, `forbidOnly`-nin onu rədd etdiyini təsdiqləyin. `.only`-ni silin, push edin.
+
+**C hissəsi — Brauzer quraşdırma addımı yox.** Workflow-da `playwright install --with-deps` addımını şərhə alın, push edin, "Browser is not installed" xətasını izləyin. Bərpa edin.
+
+### Tapşırıq 5 — Lint addımı əlavə edin
+
+`Run tests` addımından əvvəl bu addımı daxil edin:
+
+```yaml
+- name: ESLint işlət
+  run: npx eslint .
+```
+
+Push edin və addımın Actions logunda göründüyünü təsdiqləyin.
+
+**Əlavə tapşırıq:** Workflow `pull_request` hadisəsindəki işlədikdə pull request üzərindəki şərh yazan bir addım əlavə edin:
+
+```yaml
+- name: PR-da şərh yaz
+  if: github.event_name == 'pull_request' && always()
+  uses: actions/github-script@v7
+  with:
+    script: |
+      github.rest.issues.createComment({
+        issue_number: context.issue.number,
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        body: 'Playwright testlər tamamlandı. Hesabat üçün Actions bölməsinə baxın.'
+      })
+```
+
+### Tapşırıq 6 — Docker-da testlər qurun və işlədin
+
+```bash
+# Test obrazını qurun
+docker compose -f docker-compose.test.yml build
+
+# Dəsti konteynerin içindəki işlədin
+docker compose -f docker-compose.test.yml up
+
+# Çıxış kodunu yoxlayın
+echo $?
+```
+
+Obraz qurularkən cavab verin:
+
+- `Dockerfile.test`-inizin istifadə etdiyi əsas obraz hansıdır?
+- `package.json` faylları niyə mənbə kodunun qalan hissəsindən əvvəl kopyalanır?
+- Konteyner başladıqda `CMD` nə edir?
+
+İşlətmədən sonra: volume qoşulmasına yazılmış HTML hesabatını açın. Test sayının lokal işlətmənizə uyğun olduğunu təsdiqləyin.
+
+### Tapşırıq 7 — Docker-da bir testi qırın, sonra düzəldin
+
+1. Test gözləntisini yanlış bir şeyə dəyişin (məsələn, gözlənilən səhifə başlığını dəyişin).
+2. Yenidən qurun və işlədin: `docker compose -f docker-compose.test.yml up --build`
+3. Çıxış kodunu (1 olmalıdır) və uğursuz test adını qeyd edin.
+4. Dəyişikliyi geri qaytarın, yenidən qurun, çıxış kodunun `0` olduğunu təsdiqləyin.
+
+### Bonus tapşırıq — Brauzerlərdə matrix
+
+Workflow-u matrix strategiyasından istifadə edərək Chromium, Firefox və WebKit-də işlətmək üçün dəyişdirin (yuxarıdakı matrix nümunəsinə baxın). Push edin və üç paralel işi izləyin. Hər hansı bir brauzerin fərqli nəticə verəcəyini qeyd edin.
+
+### Öz-özünü yoxlama sualları
+
+1. `npm ci` nədir və CI-da `npm install`-a niyə üstün tutulur?
+2. `npx playwright install`-a `--with-deps` nə əlavə edir?
+3. Artefakt yükləmə addımında `if: always()` niyə tələb olunur?
+4. `forbidOnly: !!process.env.CI` nəyin qarşısını alır?
+5. `reuseExistingServer: !process.env.CI`-ı izah edin — burada `!` nə edir?
+6. `list`, `html`, `json` və `junit` reporterları arasındakı fərq nədir?
+7. `trace: 'on-first-retry'` nəyi qeydə alır və niyə `trace: 'on'`-dan üstündür?
+8. Dockerfile-da mənbə kodundan əvvəl `package.json`-un kopyalanması niyə vacibdir?
+9. `npx playwright test`-i birbaşa işlətmək əvəzinə Docker-ı lokalda nə zaman istifadə edərdiniz?
+10. Matrix strategiyasında `fail-fast: false` nə edir?
