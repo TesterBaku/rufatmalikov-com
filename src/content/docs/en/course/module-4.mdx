@@ -1,0 +1,557 @@
+---
+title: "Module 4: Assertions"
+description: "The full Playwright expect() API — web-first assertions, toBeVisible, toHaveText vs toContainText, toHaveValue, toHaveAttribute, toHaveCount, toBeEnabled/toBeDisabled, negative assertions, soft assertions, and custom expect timeouts."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Practice from '../../../../components/course/Practice.astro';
+
+You've learned to interact with the page. Now let's talk about the other half of every test: verifying that the app actually did what you asked. This module covers the full Playwright `expect()` API — and explains why writing assertions the right way eliminates entire categories of flaky tests.
+
+<Video title="Module 4: Assertions" />
+
+---
+
+## Web-first assertions
+
+Playwright assertions are **web-first**: they don't evaluate once and report pass or fail. They poll the DOM on a tight loop (roughly every 50 ms) and retry until the assertion passes — or until the timeout expires.
+
+This single design decision means you rarely need explicit waits before an assertion.
+
+```javascript
+// This retries automatically until the element is visible (or times out)
+await expect(page.locator('.success-banner')).toBeVisible();
+
+// WRONG — this evaluates once, no retries, fails on slow pages
+const visible = await page.locator('.success-banner').isVisible();
+expect(visible).toBe(true);
+```
+
+**The golden rule:** pass a `Locator` into `expect()`, never an already-awaited value. The first form auto-retries. The second does not.
+
+| Pattern | Auto-retries? | Use this |
+|---------|:---:|---------|
+| `expect(locator).toBeVisible()` | Yes | Always |
+| `expect(await locator.isVisible()).toBe(true)` | No | Never |
+| `expect(locator).toHaveText('...')` | Yes | Always |
+| `expect(await locator.textContent()).toBe('...')` | No | Never |
+
+---
+
+## `toBeVisible`
+
+`toBeVisible()` passes when the element is in the DOM **and** visible — not hidden via `display: none`, `visibility: hidden`, `opacity: 0`, or outside the viewport.
+
+```javascript
+// Assert that an element is visible
+await expect(page.locator('.welcome-message')).toBeVisible();
+
+// Assert that a loading spinner has disappeared
+await expect(page.locator('.spinner')).not.toBeVisible();
+
+// Assert that a modal is shown after clicking
+await page.getByRole('button', { name: 'Open Modal' }).click();
+await expect(page.locator('.modal')).toBeVisible();
+```
+
+**`toBeVisible` vs `toBeAttached`:**
+
+- `toBeVisible` — element is in the DOM **and** visible on screen
+- `toBeAttached` — element is in the DOM, even if hidden
+
+Use `toBeAttached` when you want to assert that React rendered a component but it might be hidden. Use `toBeVisible` for everything that the user can actually see.
+
+```javascript
+// Use toBeAttached when presence matters but visibility does not
+await expect(page.locator('[data-testid="lazy-component"]')).toBeAttached();
+
+// Use toBeVisible when the user must be able to see it
+await expect(page.locator('.notification')).toBeVisible();
+```
+
+---
+
+## `toHaveText` vs `toContainText`
+
+This is the most common source of assertion confusion. Choosing the wrong one costs real debugging time.
+
+### `toHaveText` — exact match
+
+`toHaveText` asserts that the element's full text content **exactly** matches the expected string (after trimming whitespace).
+
+```javascript
+// Passes only if the full text is exactly "Order Confirmed"
+await expect(page.locator('h1')).toHaveText('Order Confirmed');
+
+// With a regex — full match required
+await expect(page.locator('.status-badge')).toHaveText(/Processing/);
+```
+
+**When it trips you up:** If the element contains `"  Order Confirmed  "` (with extra whitespace), Playwright normalizes whitespace, so it still passes. But if the element contains `"Your Order Confirmed"`, it fails.
+
+### `toContainText` — substring match
+
+`toContainText` asserts that the element's text **includes** the expected string anywhere within it.
+
+```javascript
+// Passes if the text contains "Order" anywhere
+await expect(page.locator('h1')).toContainText('Order');
+
+// Very useful for dynamic content — IDs, dates, usernames
+await expect(page.locator('.confirmation')).toContainText('order #');
+
+// Regex with substring semantics
+await expect(page.locator('.message')).toContainText(/\d+ items/);
+```
+
+### Choosing between them
+
+```javascript
+// toHaveText — when you control the exact string
+await expect(page.locator('.cart-empty')).toHaveText('Your cart is empty');
+
+// toContainText — when the string is dynamic or surrounded by other text
+await expect(page.locator('h1')).toContainText('Order'); // matches "Order #12345"
+
+// toHaveURL with regex — for dynamic URLs
+await expect(page).toHaveURL(/\/orders\/\d+/);
+```
+
+**Rule of thumb:** reach for `toContainText` when the exact text includes anything dynamic (IDs, timestamps, usernames). Use `toHaveText` when you own the string entirely.
+
+---
+
+## `toHaveValue`
+
+`toHaveValue` asserts the current value of a form field — `<input>`, `<textarea>`, or `<select>`.
+
+```javascript
+// Assert the value of a text input
+await expect(page.locator('#email')).toHaveValue('customer@test.io');
+
+// Assert a textarea
+await expect(page.locator('#description')).toHaveValue('Test product description');
+
+// Assert a select dropdown's current selection
+await expect(page.locator('#category')).toHaveValue('electronics');
+
+// Use a regex for partial value matching
+await expect(page.locator('#search')).toHaveValue(/widget/i);
+```
+
+**A common pattern — fill then verify:**
+
+```javascript
+await page.locator('#shipping_name').fill('Jane Doe');
+await expect(page.locator('#shipping_name')).toHaveValue('Jane Doe');
+
+await page.locator('#category').selectOption('electronics');
+await expect(page.locator('#category')).toHaveValue('electronics');
+```
+
+**Note:** `toHaveValue` reads the DOM `value` property, not the visible text. For `<select>`, it returns the option's `value` attribute, not its label text.
+
+---
+
+## `toHaveAttribute`
+
+`toHaveAttribute` asserts that an element has a specific attribute with a specific value.
+
+```javascript
+// Assert an href attribute
+await expect(page.getByRole('link', { name: 'Terms' })).toHaveAttribute(
+  'href',
+  '/terms'
+);
+
+// Assert a data attribute
+await expect(page.locator('.product-card').first()).toHaveAttribute(
+  'data-product-id',
+  '42'
+);
+
+// Assert aria attributes for accessibility testing
+await expect(page.getByRole('button', { name: 'Submit' })).toHaveAttribute(
+  'aria-disabled',
+  'true'
+);
+
+// Use regex for partial attribute values
+await expect(page.locator('img.hero')).toHaveAttribute('src', /\/images\//);
+```
+
+**Tip:** `toHaveAttribute` is especially useful for asserting `disabled`, `aria-label`, `data-testid`, `type`, and `href` values.
+
+```javascript
+// Assert the type attribute on an input
+await expect(page.locator('#password')).toHaveAttribute('type', 'password');
+
+// After toggling "show password"
+await page.locator('#show-password').click();
+await expect(page.locator('#password')).toHaveAttribute('type', 'text');
+```
+
+---
+
+## `toHaveCount`
+
+`toHaveCount` asserts the number of elements that match a locator. Like all web-first assertions, it retries until the count matches or times out.
+
+```javascript
+// Assert exactly 3 items in a list
+await expect(page.locator('.cart-item')).toHaveCount(3);
+
+// Assert the table has exactly 5 rows
+await expect(page.locator('.product-table tbody tr')).toHaveCount(5);
+
+// Assert that items were removed — retries until count reaches 0
+await expect(page.locator('.cart-item')).toHaveCount(0);
+```
+
+**`toHaveCount(0)` is powerful.** If there are currently 3 items and you assert `toHaveCount(0)`, Playwright will retry the check until all 3 are gone. This is the right way to test deletion flows.
+
+```javascript
+// Add 3 items, then remove all, then assert clean state
+await expect(page.locator('.cart-item')).toHaveCount(3);
+
+await page.locator('.remove-all-btn').click();
+
+// Retries until all items are removed from the DOM
+await expect(page.locator('.cart-item')).toHaveCount(0);
+await expect(page.locator('.empty-cart-message')).toBeVisible();
+```
+
+**`toHaveCount` vs manual count:**
+
+```javascript
+// AUTO-RETRYING — use this when elements appear asynchronously
+await expect(page.locator('.search-result')).toHaveCount(5);
+
+// NOT auto-retrying — use only for synchronous snapshots
+const count = await page.locator('.search-result').count();
+expect(count).toBeGreaterThan(0);
+```
+
+---
+
+## `toBeEnabled` and `toBeDisabled`
+
+These assertions check whether a form control is interactive. They auto-retry — useful for asserting that a submit button becomes enabled after required fields are filled in.
+
+```javascript
+// Assert a submit button is enabled
+await expect(page.locator('button[type="submit"]')).toBeEnabled();
+
+// Assert a submit button is disabled when the form is empty
+await expect(page.locator('button[type="submit"]')).toBeDisabled();
+```
+
+**Realistic form validation pattern:**
+
+```javascript
+// Button starts disabled
+await page.goto('/checkout');
+await expect(page.locator('#place-order-btn')).toBeDisabled();
+
+// Fill required fields
+await page.locator('#shipping_name').fill('Jane Doe');
+await page.locator('#shipping_address').fill('123 Main St');
+await page.locator('#shipping_city').fill('Portland');
+await page.locator('#shipping_zip').fill('97201');
+
+// Playwright retries until the button becomes enabled
+await expect(page.locator('#place-order-btn')).toBeEnabled();
+```
+
+**`toBeEnabled` vs `not.toBeDisabled`:** They are equivalent. Choose whichever reads more naturally for your test scenario.
+
+```javascript
+// These two lines assert the same thing
+await expect(page.locator('#submit')).toBeEnabled();
+await expect(page.locator('#submit')).not.toBeDisabled();
+```
+
+---
+
+## Negative assertions
+
+Any Playwright assertion can be negated with `.not`. The negated assertion also auto-retries — it waits until the condition is **false**.
+
+```javascript
+// Wait until an element is no longer visible (e.g., a loading spinner)
+await expect(page.locator('.loading-spinner')).not.toBeVisible();
+
+// Assert that non-admin users cannot see admin controls
+await expect(page.locator('#admin-panel')).not.toBeVisible();
+
+// Assert that a URL did NOT navigate to the admin section
+await expect(page).not.toHaveURL('/admin');
+
+// Assert text is NOT present
+await expect(page.locator('.status')).not.toHaveText('Error');
+
+// Assert a field has been cleared
+await expect(page.locator('#search')).not.toHaveValue('old query');
+```
+
+**Negative assertions for access control:**
+
+```javascript
+test('non-admin is redirected away from admin', async ({ page }) => {
+  // Log in as a regular customer (not admin)
+  await page.goto('/admin');
+
+  // Assert that the page redirected — URL should not contain /admin
+  await expect(page).not.toHaveURL(/\/admin/);
+
+  // Assert that the admin dashboard title is not visible
+  await expect(page.locator('h1')).not.toHaveText('Admin Dashboard');
+
+  // Assert the error alert is visible instead
+  await expect(page.locator('.alert.alert-error')).toBeVisible();
+});
+```
+
+---
+
+## Soft assertions
+
+By default, a failed assertion immediately stops the test. **Soft assertions** are different — the test continues even when a soft assertion fails. All failures are collected and reported together at the end of the test.
+
+```javascript
+// Soft assertions — test continues even if these fail
+await expect.soft(page.locator('.widget-revenue')).toBeVisible();
+await expect.soft(page.locator('.widget-orders')).toBeVisible();
+await expect.soft(page.locator('.widget-users')).toBeVisible();
+await expect.soft(page.locator('.widget-products')).toBeVisible();
+
+// At the end of the test, Playwright reports ALL failures at once
+// even if one of the above failed
+```
+
+**When to use soft assertions:**
+
+- **Dashboard smoke tests** — you want to check 10+ widgets and see all failures, not just the first
+- **Visual completeness checks** — verifying that all sections of a page rendered correctly
+- **Parallel form validation** — checking multiple fields at once
+
+```javascript
+test('admin dashboard smoke test', async ({ page }) => {
+  await page.goto('/admin');
+
+  // Check all stat cards — report all missing ones at once
+  await expect.soft(page.locator('[data-testid="stat-orders"]')).toBeVisible();
+  await expect.soft(page.locator('[data-testid="stat-revenue"]')).toBeVisible();
+  await expect.soft(page.locator('[data-testid="stat-users"]')).toBeVisible();
+  await expect.soft(page.locator('[data-testid="stat-products"]')).toBeVisible();
+
+  // Check navigation links
+  await expect.soft(page.getByRole('link', { name: 'Products' })).toBeVisible();
+  await expect.soft(page.getByRole('link', { name: 'Orders' })).toBeVisible();
+  await expect.soft(page.getByRole('link', { name: 'Users' })).toBeVisible();
+
+  // Optional: assert no soft failures accumulated
+  expect(test.info().errors).toHaveLength(0);
+});
+```
+
+**Caution:** Soft assertions are powerful but easy to misuse. If a test has 15 soft assertions and 10 fail, the report becomes noisy. Use them deliberately for smoke checks, not as a way to avoid thinking about test structure.
+
+---
+
+## Custom `expect` timeouts
+
+By default, every web-first assertion waits up to **5 seconds** before failing. You can override this per-assertion or globally.
+
+### Per-assertion timeout
+
+```javascript
+// Wait up to 10 seconds for this specific assertion
+await expect(page.locator('.slow-component')).toBeVisible({ timeout: 10_000 });
+
+// Short timeout — fail fast if the element doesn't appear quickly
+await expect(page.locator('.instant-feedback')).toBeVisible({ timeout: 1_000 });
+
+// Custom timeout on any assertion
+await expect(page.locator('.report-table')).toHaveCount(50, { timeout: 15_000 });
+```
+
+### Global timeout in `playwright.config.js`
+
+```javascript
+// playwright.config.js
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  expect: {
+    timeout: 10_000, // 10 seconds for all assertions
+  },
+});
+```
+
+**When to use custom timeouts:**
+
+- Known-slow operations (report generation, file processing, email delivery)
+- CI environments that are significantly slower than local dev
+- Third-party widgets that take time to initialize
+
+**When NOT to use custom timeouts:** as a band-aid for a slow or flaky app. If you're adding `timeout: 30_000` everywhere, the right fix is to profile the app, not the test.
+
+---
+
+<Practice missions={['text-vs-contain','have-value','have-attribute','assertions-count','enabled-disabled','negative-assertions']} locale="en" />
+
+---
+
+## Exercises
+
+These exercises use TestMarket Lab running locally at `http://localhost:3000`.
+
+---
+
+### Exercise 1: Assert cart state
+
+Create `tests/starter/mod4/cart-assertions.spec.js`. Assert every cart state using web-first assertions.
+
+```javascript
+const { test, expect } = require('@playwright/test');
+const CartPage = require('../../pages/CartPage');
+
+test.describe('Cart Assertions', () => {
+
+  test('cart with items shows non-zero total', async ({ page }) => {
+    const cart = new CartPage(page);
+    await cart.goto();
+
+    await expect(cart.totalAmount).toBeVisible();
+    await expect(cart.cartRows).not.toHaveCount(0);
+    await expect(cart.checkoutButton).toBeEnabled();
+  });
+
+  test('empty cart shows empty state', async ({ page }) => {
+    const cart = new CartPage(page);
+    await cart.goto();
+
+    await expect(cart.emptyCartMessage).toBeVisible();
+    await expect(cart.cartRows).toHaveCount(0);
+    await expect(cart.totalAmount).not.toBeVisible();
+  });
+
+});
+```
+
+**Reference selectors:**
+- `cartRows` — `.cart-table .table-row`
+- `totalAmount` — `.total-row h3`
+- `emptyCartMessage` — `getByText('Your cart is empty')`
+- `checkoutButton` — `a:has-text("Proceed to Checkout")`
+
+---
+
+### Exercise 2: Checkout confirmation assertions
+
+After placing an order, assert the confirmation URL and page content.
+
+```javascript
+test('order confirmation shows correct URL', async ({ customerPage }) => {
+  // ... (beforeEach adds item to cart and navigates to checkout)
+  await checkoutPage.fillShippingDetails(TestData.shippingDetails());
+  await checkoutPage.placeOrder();
+
+  // Assert dynamic order URL with regex
+  await expect(customerPage).toHaveURL(/\/orders\/\d+/);
+
+  // Assert heading contains the word "Order"
+  await expect(customerPage.locator('h1')).toContainText('Order');
+
+  // Assert success flash is visible
+  await expect(customerPage.locator('.alert.alert-success')).toBeVisible();
+});
+
+test('empty form stays on checkout page', async ({ customerPage }) => {
+  await checkoutPage.submitEmptyForm();
+
+  await expect(customerPage).toHaveURL('/checkout');
+  await expect(customerPage.locator('.alert.alert-error')).toBeVisible();
+});
+```
+
+---
+
+### Exercise 3: Admin table assertions
+
+```javascript
+test('products page shows table rows', async ({ adminPage }) => {
+  const productsPage = new AdminProductsPage(adminPage);
+  await productsPage.goto();
+
+  await expect(productsPage.productRows).not.toHaveCount(0);
+  await expect(productsPage.newProductBtn).toBeVisible();
+  await expect(adminPage.locator('.alert.alert-success')).not.toBeVisible();
+});
+
+test('non-admin cannot access admin area', async ({ customerPage }) => {
+  await customerPage.goto('/admin');
+
+  await expect(customerPage).not.toHaveURL(/\/admin/);
+  await expect(customerPage.locator('.alert.alert-error')).toBeVisible();
+});
+```
+
+---
+
+### Exercise 4: Replace fixed waits with assertions
+
+Refactor this flaky test — replace every `waitForTimeout` with the correct web-first assertion:
+
+```javascript
+// BEFORE (flaky)
+test('flaky search test', async ({ page }) => {
+  await page.goto('/products');
+  await page.waitForTimeout(2000);
+  await page.fill('#search', 'widget');
+  await page.waitForTimeout(1000);
+  await page.click('#search-btn');
+  await page.waitForTimeout(3000);
+  const count = await page.locator('.product-card').count();
+  expect(count).toBeGreaterThan(0);
+  await page.waitForTimeout(1000);
+  expect(page.url()).toContain('?q=widget');
+});
+```
+
+| Sleep | Replace with |
+|-------|-------------|
+| `waitForTimeout(2000)` | Remove — `fill()` already auto-waits |
+| `waitForTimeout(1000)` | Remove — `click()` already auto-waits |
+| `waitForTimeout(3000)` + manual count | `expect(locator).not.toHaveCount(0)` |
+| `waitForTimeout(1000)` + `page.url()` | `expect(page).toHaveURL(/\?q=widget/)` |
+
+---
+
+## Self-check questions
+
+1. Why does `expect(locator).toBeVisible()` retry automatically, but `expect(await locator.isVisible()).toBe(true)` does not?
+2. When would you use `toHaveText` vs `toContainText`? Give an example of each.
+3. What does `toHaveCount(0)` do if there are currently 5 matching elements?
+4. What is the difference between a regular assertion and a soft assertion (`expect.soft`)?
+5. How do you set a per-assertion timeout? How do you set a global default?
+6. Why is `toBeEnabled` useful for form validation tests?
+7. What does `toHaveAttribute('href', '/terms')` assert?
+8. Why is `expect(page.url()).toContain('/admin')` worse than `expect(page).toHaveURL('/admin')`?
+
+---
+
+## Key takeaways
+
+Four rules to carry into every test:
+
+1. **Always pass a `Locator` into `expect()`** — never an awaited value. `expect(locator).toBeVisible()` retries; `expect(await locator.isVisible()).toBe(true)` does not.
+2. **`toContainText` for dynamic content, `toHaveText` for exact strings** — when in doubt, prefer `toContainText`
+3. **`toHaveCount` retries on element lists** — use it instead of `count()` whenever elements appear asynchronously
+4. **Soft assertions for smoke tests, hard assertions for flow tests** — collect all failures on a page-level check; fail fast on critical path tests
+
+Module 5 covers auto-waiting — you'll learn how Playwright's built-in action checks eliminate explicit waits, and what to do when they're not enough.
