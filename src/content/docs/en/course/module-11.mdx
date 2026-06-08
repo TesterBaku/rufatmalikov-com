@@ -1,0 +1,497 @@
+---
+title: "Module 11: Visual, Mobile & Accessibility Testing"
+description: "Lock down your UI with screenshot regression, emulate real devices with the devices[] map, and catch WCAG violations automatically with @axe-core/playwright."
+pagefind: false
+sidebar:
+  hidden: true
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+Welcome to Module 11. You've mastered authentication state, API testing, CI pipelines, and fixtures. Now we tackle three capabilities that separate a basic passing suite from one that catches real user-facing bugs: **visual regression**, **mobile device emulation**, and **automated accessibility auditing**.
+
+By the end of this module you'll know how to lock down your UI with pixel-level screenshot assertions, run the same tests against an iPhone 13 viewport without a real device, and surface WCAG violations automatically with a single `checkA11y()` call.
+
+<Video title="Module 11: Visual, Mobile & Accessibility Testing" />
+
+---
+
+## Visual regression with `toHaveScreenshot`
+
+Playwright ships with built-in screenshot comparison — no third-party visual diff tool required. The assertion is `expect(locator).toHaveScreenshot()` or `expect(page).toHaveScreenshot()`.
+
+```ts
+import { test, expect } from '@playwright/test';
+
+test('product card matches baseline', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.product-card').first()).toBeVisible();
+  await expect(page.locator('.product-card').first()).toHaveScreenshot('product-card.png');
+});
+```
+
+**How baselines work.** On the very first run the snapshot file does not yet exist, so Playwright writes it — the test is marked as "written" rather than passed or failed. Every subsequent run performs a pixel-by-pixel comparison against that baseline file. If the diff exceeds the configured tolerance, the test fails and Playwright writes a `-diff.png` and `-actual.png` alongside the baseline for easy inspection.
+
+**Where snapshots are stored.** By default each spec gets its own `<spec-file>-snapshots/` folder right next to it, and the project name and platform are part of each file name (e.g. `...-chromium-linux.png`):
+
+```
+tests/
+  visual/
+    product-card.spec.ts
+    product-card.spec.ts-snapshots/
+      product-card-chromium-linux.png
+```
+
+The platform suffix (`linux`, `darwin`, `win32`) is appended automatically because rendering differs across OSes. Commit the baseline files for your target CI platform.
+
+---
+
+## Managing snapshot baselines
+
+### Updating baselines after intentional UI changes
+
+When you ship a deliberate visual change (a redesigned card, a new color, an adjusted font) your existing baseline is no longer correct. Update it with the `--update-snapshots` flag (or its alias `-u`):
+
+```bash
+npx playwright test --update-snapshots
+```
+
+Always review the diff in the HTML reporter **before** updating. The diff view shows the baseline on the left, the actual on the right, and the diff in the middle. Updating without reviewing is how regressions sneak in unnoticed.
+
+### CI considerations
+
+Visual tests are environment-sensitive. The same pixel can render slightly differently across OS font stacks, GPU drivers, and subpixel anti-aliasing implementations. The recommended approach is:
+
+1. Run visual tests only on a single platform in CI (typically Linux).
+2. Generate the baseline on that same Linux runner and commit it.
+3. Locally, accept small diffs as noise — only fail CI when the diff exceeds your threshold.
+
+Never commit Windows or macOS baselines alongside Linux baselines. They will cause false failures in CI.
+
+### Masking dynamic regions
+
+Some page areas change on every load: timestamps, user avatars, recommendation carousels. Masking them prevents false positives:
+
+```ts
+await expect(page).toHaveScreenshot('checkout.png', {
+  mask: [
+    page.locator('.timestamp'),
+    page.locator('.user-avatar'),
+    page.locator('[data-testid="recommended-products"]'),
+  ],
+});
+```
+
+Masked regions are replaced with a solid rectangle in the diff, so their content is ignored while the surrounding layout is still compared.
+
+---
+
+## `maxDiffPixels` and `threshold`
+
+Two config knobs control how strict the comparison is.
+
+**`maxDiffPixels`** — the absolute number of pixels that may differ before the test fails. Good for suppressing sub-pixel anti-aliasing noise:
+
+```ts
+// playwright.config.ts
+export default defineConfig({
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixels: 100,
+    },
+  },
+});
+```
+
+Or inline per assertion:
+
+```ts
+await expect(page).toHaveScreenshot('homepage.png', { maxDiffPixels: 50 });
+```
+
+**`threshold`** — a ratio from 0 to 1 expressing the acceptable percentage of differing pixels relative to the total pixel count. Use this when the page size varies:
+
+```ts
+await expect(page).toHaveScreenshot('homepage.png', { threshold: 0.02 }); // 2 %
+```
+
+Use `maxDiffPixels` for small, fixed-size components. Use `threshold` for full pages where the total pixel count changes with viewport or content.
+
+---
+
+## Full-page vs element screenshots
+
+**Element screenshot** — captures only the bounding box of the matched locator:
+
+```ts
+await expect(page.locator('.product-card').first()).toHaveScreenshot('card.png');
+```
+
+Use this for component-level regression: you test only the card, so changes elsewhere on the page do not affect this snapshot.
+
+**Full-page screenshot** — captures the entire scrollable document, not just the visible viewport:
+
+```ts
+await expect(page).toHaveScreenshot('checkout.png', { fullPage: true });
+```
+
+Use this when you need to lock down the complete page layout, including content below the fold. Be aware that full-page screenshots are slower and produce larger files.
+
+**When to prefer which:**
+
+| Scope | Use |
+|---|---|
+| Single component | Element screenshot |
+| Above-the-fold layout | Viewport screenshot (default) |
+| Full document | `fullPage: true` |
+
+Always wait for the element or page to finish loading before taking the screenshot. Taking a screenshot of an empty or partially rendered page produces a baseline that will fail on every subsequent run when timing differs slightly.
+
+---
+
+## Mobile emulation via `devices[...]`
+
+Playwright ships with 50+ device definitions in the `devices` map exported from `@playwright/test`. Each definition bundles:
+
+- `viewport` — pixel dimensions
+- `deviceScaleFactor` — DPR (device pixel ratio)
+- `userAgent` — the real device user-agent string
+- `isMobile: true` — signals the browser to behave as a mobile browser
+- `hasTouch: true` — enables touch event simulation
+
+```ts
+import { test, expect, devices } from '@playwright/test';
+
+const iPhone13 = devices['iPhone 13'];
+
+test.use({ ...iPhone13 });
+
+test('home page loads on iPhone 13', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.product-card').first()).toBeVisible();
+});
+```
+
+Mobile emulation is not a visual trick. Applying `...devices['iPhone 13']` changes the browser's actual behavior: touch events fire instead of mouse events, the meta viewport tag is respected, and CSS media queries that target `pointer: coarse` activate.
+
+---
+
+## Testing responsive layouts
+
+The recommended approach is to add a device as a separate Playwright project so every test in your suite runs on that device automatically:
+
+```ts
+// playwright.config.ts
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 13'] },
+    },
+  ],
+});
+```
+
+Now running `npx playwright test` executes every test three times — once per device. A responsive layout regression surfaces immediately: the desktop project passes, the mobile project fails, you know exactly which breakpoint broke.
+
+For targeted responsive checks within a single spec, use `test.use()` at the describe level:
+
+```ts
+test.describe('mobile layout', () => {
+  test.use({ ...devices['iPhone 13'] });
+
+  test('nav collapses to hamburger on mobile', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('[aria-label="Open navigation"]')).toBeVisible();
+    await expect(page.locator('nav ul')).not.toBeVisible();
+  });
+});
+```
+
+### Popular built-in device definitions
+
+| Device name | Viewport | DPR |
+|---|---|---|
+| `Desktop Chrome` | 1280×720 | 1 |
+| `iPhone 13` | 390×844 | 3 |
+| `iPhone 13 Pro Max` | 428×926 | 3 |
+| `Pixel 5` | 393×851 | 3 |
+| `Pixel 7` | 412×915 | 3 |
+| `iPad Pro 11` | 834×1194 | 2 |
+| `Galaxy S21` | 360×800 | 3 |
+
+---
+
+## Geolocation, locale, and permissions context options
+
+Beyond viewport and user-agent, Playwright browser contexts accept options that simulate device and user environment settings. These are set at context level (or in the config's `use` block):
+
+### Geolocation
+
+```ts
+const context = await browser.newContext({
+  geolocation: { latitude: 40.4093, longitude: 49.8671 }, // Baku, Azerbaijan
+  permissions: ['geolocation'],
+});
+```
+
+This is required together — granting the `geolocation` permission tells the browser to allow API access; providing `geolocation` coordinates sets the value the `navigator.geolocation` API returns.
+
+### Locale and timezone
+
+```ts
+const context = await browser.newContext({
+  locale: 'az-AZ',
+  timezoneId: 'Asia/Baku',
+});
+```
+
+`locale` affects `Intl.DateTimeFormat`, `Number.prototype.toLocaleString`, and browser UI language. `timezoneId` affects the `Date` object and any timezone-aware rendering in the app.
+
+### Permissions
+
+```ts
+const context = await browser.newContext({
+  permissions: ['geolocation', 'notifications', 'clipboard-read'],
+});
+```
+
+Grant permissions before the page loads so the app never sees a browser permission prompt. Available values match the Permissions API — `'camera'`, `'microphone'`, `'geolocation'`, `'notifications'`, `'clipboard-read'`, `'clipboard-write'`.
+
+All of these options compose freely with device definitions:
+
+```ts
+const context = await browser.newContext({
+  ...devices['iPhone 13'],
+  locale: 'az-AZ',
+  geolocation: { latitude: 40.4093, longitude: 49.8671 },
+  permissions: ['geolocation'],
+});
+```
+
+---
+
+## Accessibility testing with `@axe-core/playwright`
+
+`axe-core` is the most widely used open-source accessibility engine. The `@axe-core/playwright` package wraps it for Playwright, letting you scan any page for WCAG violations with a single call.
+
+### Installation
+
+```bash
+npm install --save-dev @axe-core/playwright
+```
+
+### Basic scan
+
+```ts
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+test('home page has no accessibility violations', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.product-card').first()).toBeVisible();
+
+  const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
+
+  expect(accessibilityScanResults.violations).toEqual([]);
+});
+```
+
+`AxeBuilder` attaches to the active page, runs the axe-core engine inside the browser, and returns a results object. `violations` is an array of rule failures — asserting it equals `[]` means zero violations.
+
+### Scanning a specific element
+
+To scope the audit to a component rather than the whole page:
+
+```ts
+const results = await new AxeBuilder({ page })
+  .include('.checkout-form')
+  .analyze();
+
+expect(results.violations).toEqual([]);
+```
+
+### Disabling known false positives
+
+If a third-party widget consistently fails a rule you cannot fix, exclude it:
+
+```ts
+const results = await new AxeBuilder({ page })
+  .exclude('#third-party-chat-widget')
+  .analyze();
+```
+
+Or disable a specific rule:
+
+```ts
+const results = await new AxeBuilder({ page })
+  .disableRules(['color-contrast'])
+  .analyze();
+```
+
+Use exclusions sparingly and document why each one exists. An unchecked exclusion list grows until the audit is meaningless.
+
+---
+
+## Common WCAG checks covered by axe-core
+
+When `checkA11y` (or `.analyze()`) fails, the violations array entries each contain:
+
+- `id` — the axe rule identifier, e.g. `"color-contrast"`, `"image-alt"`, `"label"`
+- `impact` — `"critical"`, `"serious"`, `"moderate"`, or `"minor"`
+- `nodes` — the DOM elements that failed, with CSS selectors and HTML snippets
+
+The most common WCAG failures caught automatically:
+
+| Rule ID | What it checks | WCAG criterion |
+|---|---|---|
+| `color-contrast` | Text contrast ratio ≥ 4.5:1 (normal) / 3:1 (large) | 1.4.3 |
+| `image-alt` | `<img>` elements have an `alt` attribute | 1.1.1 |
+| `label` | Form inputs have associated labels | 1.3.1 |
+| `button-name` | Buttons have an accessible name | 4.1.2 |
+| `link-name` | Anchor elements have descriptive text | 2.4.4 |
+| `aria-required-attr` | ARIA roles have their required attributes | 4.1.2 |
+| `heading-order` | Heading levels do not skip (h1→h3 with no h2) | 1.3.1 |
+| `html-lang` | `<html>` has a `lang` attribute | 3.1.1 |
+
+### Printing a helpful failure message
+
+The default Playwright assertion output for `expect(violations).toEqual([])` is not very readable when violations exist. A helper function improves this significantly:
+
+```ts
+function formatViolations(violations: import('@axe-core/playwright').Result[]) {
+  return violations
+    .map(v => `[${v.impact}] ${v.id}: ${v.description}\n  ${v.nodes.map(n => n.target.join(', ')).join('\n  ')}`)
+    .join('\n\n');
+}
+
+test('checkout form is accessible', async ({ page }) => {
+  await page.goto('/checkout');
+  const results = await new AxeBuilder({ page }).include('.checkout-form').analyze();
+  expect(results.violations, formatViolations(results.violations)).toEqual([]);
+});
+```
+
+---
+
+## Exercises
+
+These exercises mirror the worksheet for this module. Work through them against the training application.
+
+### Exercise 1 — Product card screenshot
+
+Create `tests/starter/tests/visual/product-card.spec.js`:
+
+1. Navigate to `/`
+2. Wait for `.product-card` elements to render
+3. Take an element-level screenshot of the first product card: `await expect(page.locator('.product-card').first()).toHaveScreenshot('product-card.png')`
+4. Run the test twice — first run writes the baseline, second run passes (comparison)
+
+Verify the baseline file is created inside the new `*-snapshots/` folder next to your spec file.
+
+### Exercise 2 — Full-page checkout screenshot
+
+Create `tests/starter/tests/visual/checkout.spec.js`:
+
+1. Log in as `customer@test.io` / `customer123`
+2. Add a product to cart and navigate to `/checkout`
+3. Wait for the checkout form to be visible
+4. Take a full-page screenshot: `await expect(page).toHaveScreenshot('checkout.png', { fullPage: true })`
+
+Verify both the shipping form and the order summary are captured.
+
+### Exercise 3 — Mobile checkout smoke test
+
+Create `tests/starter/tests/visual/mobile-checkout.spec.js`:
+
+```js
+const { test, expect, devices } = require('@playwright/test');
+const iPhone13 = devices['iPhone 13'];
+
+test.use({ ...iPhone13 });
+
+test('home page renders on iPhone 13', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.product-card').first()).toBeVisible();
+  // Viewport width must be 390 (iPhone 13)
+  expect(page.viewportSize().width).toBe(390);
+});
+```
+
+Device emulation only works with Chromium. If you see an error on Firefox, this is expected behavior.
+
+### Exercise 4 — Accessibility-first locators
+
+Create `tests/starter/tests/visual/a11y-checkout.spec.js`:
+
+1. Log in as `customer@test.io` and navigate to `/checkout`
+2. Fill every shipping field using `getByLabel()` — `'Shipping Name'`, `'Shipping Address'`, `'Shipping City'`, `'Shipping Zip Code'`
+3. Submit using `getByRole('button', { name: 'Place Order' })`
+4. Assert the URL matches `/orders/`
+5. **Bonus:** write a second test that submits the empty form and asserts the URL stays at `/checkout` (HTML5 required validation prevents submission)
+
+### Exercise 5 — Axe-core accessibility scan
+
+Install `@axe-core/playwright` and create `tests/starter/tests/visual/a11y-scan.spec.ts`:
+
+```ts
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+test('home page passes accessibility audit', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.product-card').first()).toBeVisible();
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
+```
+
+If violations are reported, inspect `results.violations[0].id` and `results.violations[0].nodes` to understand what element failed and why.
+
+### Bonus challenge — Cross-device visual regression
+
+Run the same homepage screenshot on Desktop, iPhone 13, and Pixel 5:
+
+```js
+const { test, expect, devices } = require('@playwright/test');
+
+const VIEWPORTS = [
+  { name: 'Desktop', viewport: { width: 1920, height: 1080 } },
+  { name: 'iPhone 13', ...devices['iPhone 13'] },
+  { name: 'Pixel 5', ...devices['Pixel 5'] },
+];
+
+for (const vp of VIEWPORTS) {
+  test.describe(`${vp.name}`, () => {
+    test.use({ ...vp });
+    test(`homepage screenshot — ${vp.name}`, async ({ page }) => {
+      await page.goto('/');
+      await expect(page.locator('.product-card').first()).toBeVisible();
+      await expect(page).toHaveScreenshot(
+        `homepage-${vp.name.toLowerCase().replace(/\s+/g, '-')}.png`
+      );
+    });
+  });
+}
+```
+
+### Self-check questions
+
+1. What happens on the very first run of a `toHaveScreenshot()` test — does it pass, fail, or write?
+2. When should you use `maxDiffPixels` vs `threshold`?
+3. What does the `mask` option do in a screenshot assertion?
+4. What does `isMobile: true` change in the browser beyond viewport dimensions?
+5. Name two context options (other than `viewport`) that simulate real-device or real-user conditions.
+6. What does `@axe-core/playwright` scan for — does it test visual appearance?
+7. What is the `impact` field on an axe violation, and why does it matter for triage?
+8. Why should you always run visual tests on the same OS in CI?
