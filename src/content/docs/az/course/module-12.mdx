@@ -10,7 +10,7 @@ import Video from '../../../../components/course/Video.astro';
 
 Modul 12-yə xoş gəldiniz. Vizual reqressiya, mobil emulyasiya və əlçatımlılıq auditini mənimsədiniz. İndi hər şeyi bir araya gətirib testlərinizin avtomatik, təkrarlanabilir və tam görünən şəkildə işləməsini təmin edəcəyik: **GitHub Actions ilə CI**, **Docker ilə konteynerləşdirmə** və **hesabat və artefakt idarəetməsi**.
 
-Bu modulun sonunda hər push və pull request-də tetiklənən, brauzerləri quraşdıran, testlər dəstini təmiz Linux mühitində işlədən, HTML hesabatını yüklənə bilən artefakt kimi yayımlayan və isteğe bağlı olaraq hər şeyi rəsmi Playwright Docker konteynerinin içində işlədən bir workflow-a sahib olacaqsınız.
+Bu modulun sonunda hər push və pull request-də işə düşən, brauzerləri quraşdıran, testlər dəstini təmiz Linux mühitində işlədən, HTML hesabatını yüklənə bilən artefakt kimi yayımlayan və isteğe bağlı olaraq hər şeyi rəsmi Playwright Docker konteynerinin içində işlədən bir workflow-a sahib olacaqsınız.
 
 <Video title="Modul 12: CI, Docker, hesabatlar" />
 
@@ -44,20 +44,21 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Tətbiq asılılıqlarını quraşdır
-        working-directory: capstone-app
-        run: npm ci
-
       - name: Test asılılıqlarını quraşdır
-        working-directory: tests/final
         run: npm ci
 
       - name: Playwright brauzerləri quraşdır
-        working-directory: tests/final
         run: npx playwright install --with-deps
 
+      - name: TestMarket Lab tətbiqini klonla və başlat
+        run: |
+          git clone https://github.com/TesterBaku/testmarket-lab.git ../testmarket-lab
+          cd ../testmarket-lab
+          npm install
+          npm start &
+          npx wait-on http://localhost:3000
+
       - name: Testləri işlət
-        working-directory: tests/final
         run: npx playwright test
 
       - name: Test hesabatını yüklə
@@ -65,18 +66,19 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: tests/final/playwright-report/
+          path: playwright-report/
           retention-days: 7
 ```
 
 **Workflow-un quruluşu:**
 
-- `on` — tetikləmə hadisələri. Bu workflow `main`-ə hər push-da və `main`-i hədəf alan hər pull-request-də işləyir.
+- `on` — tətikləmə hadisələri. Bu workflow `main`-ə hər push-da və `main`-i hədəf alan hər pull-request-də işləyir.
 - `runs-on: ubuntu-latest` — hər işlətmə üçün təzə Linux virtual maşını hazırlanır. Əvvəlki işlətmədən heç nə qalmır.
-- `actions/checkout@v4` — workflow-u tetikləyən commit-i klonlayır.
+- `actions/checkout@v4` — workflow-u tətikləyən commit-i klonlayır. Standart iş qovluğu sizin **test layihənizdir** — aşağıdakı hər addım, başqa cür göstərilməyibsə, orada işləyir.
 - `actions/setup-node@v4` — göstərilən Node versiyasını quraşdırır.
-- İki ayrı `npm ci` əmri — tətbiq və testlər ayrı `package.json` faylları olan ayrı qovluqlarda yerləşir. Hər ikisi quraşdırılmalıdır.
+- `npm ci` — test layihənizin asılılıqlarını (`@playwright/test` və s.) lockfile-dan quraşdırır.
 - `npx playwright install --with-deps` — brauzer binarilərini **və** onların sistem səviyyəsindəki asılılıqlarını (libgtk, libnss, libgbm və s.) quraşdırır. `--with-deps`-i unutmaq yeni Playwright layihələrinin CI-da uğursuz olmasının ən çox rast gəlinən səbəbidir.
+- "Tətbiqi klonla və başlat" addımı — testlərinizin sınaqdan keçirəcəyi işləyən bir tətbiqə ehtiyacı var. Bu addım müstəqil [TestMarket Lab](https://github.com/TesterBaku/testmarket-lab) tətbiqini qonşu qovluğa klonlayır, asılılıqlarını quraşdırır, `npm start &` ilə fonda başladır və `http://localhost:3000` cavab verənə qədər (`npx wait-on`) gözləyir. Gözləmə olmadan, test addımı qabağa qaça və hələ tam yüklənməmiş serverə müraciət edə bilər. (Alternativ olaraq, `webServer` konfiqurasiyası vasitəsilə tətbiqi sizin əvəzinizə Playwright-ın başlatmasına və gözləməsinə icazə verə bilərsiniz — növbəti bölməyə baxın.)
 - Yükləmə addımında `if: always()` — bu kritik önəm daşıyır. Onsuz, uğursuz test işlətməsi yükləmə addımını atlayacaq və məhz ehtiyac duyduğunuz anda hesabatı itirəcəksiniz.
 - `retention-days: 7` — artefaktlar bir həftə sonra avtomatik silinir.
 
@@ -98,7 +100,10 @@ export default defineConfig({
   workers: 1,
 
   webServer: {
+    // TestMarket Lab tətbiqi qonşu qovluqda yerləşir.
+    // Playwright onu oradan başladır və qalxmasını gözləyir.
     command: 'npm start',
+    cwd: '../testmarket-lab',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
   },
@@ -109,8 +114,10 @@ export default defineConfig({
 
 - `forbidOnly: !!process.env.CI` — `test.only`-nin səhvən CI-a commit edilməsinin qarşısını alır. Hər hansı bir test `.only` ilə işarələnibsə, bütün işlətmə tək bir test belə icra etmədən dərhal xəta ilə çıxır. Bu, yalnız bir testi işlədən suite-in birləşdirilməsindən qoruyan sizin təhlükəsizlik şəbəkənizdir.
 - `retries: process.env.CI ? 1 : 0` — bir yenidən sınaq şəbəkə qısamüddətli kəsilmələri və ya noutbukunuzla CI VM arasındakı vaxtlama fərqlərindən qaynaqlanan qeyri-sabit testləri udur. Test iki dəfə uğursuz olarsa, araşdırmağa dəyər real bir xətadır.
-- `workers: 1` — tək maşında tətbiq serveri və çoxsaylı brauzer prosesləri port münaqişəsinin qarşısını alır.
+- `workers: 1` — tək maşında tətbiq serveri və çoxsaylı brauzer prosesləri port münaqişəsinin qarşısını alır. Sharding üçün (aşağıda izah olunur) bu dəyəri artırın.
 - `reuseExistingServer: !process.env.CI` — lokalda tətbiqiniz artıq işləyirsə, Playwright həmin serverı yenidən istifadə edir. CI-da heç bir server işləmir, ona görə Playwright birini başlatmalıdır. `!` operatoru dəyəri əks çevirir: `CI=true` → `false` (həmişə təzədən başlat); `CI=undefined` → `true` (işləyən varsa yenidən istifadə et).
+
+> **Tətbiqi işə salmağın iki yolu var, birini seçin.** Ya tətbiqi özünüz bir workflow addımında başladırsınız (yuxarıdakı "Tətbiqi klonla və başlat" addımı), **ya da** `webServer` blokunun onu sizin əvəzinizə başlatmasına icazə verirsiniz. `cwd: '../testmarket-lab'` ilə `webServer` istifadə etsəniz, tətbiq artıq klonlanmış və asılılıqları quraşdırılmış olmalıdır — yəni yenə də onu klonlayan və `npm install` işlədən bir addıma ehtiyacınız var (sadəcə `npm start &` / `wait-on` sətirlərini silin, çünki başlatma və gözləməni indi Playwright idarə edir). Hər ikisini etməyin, əks halda iki server 3000 portu üstündə dalaşacaq. Aşağıdakı nümunələr, tətbiqi necə başlatmağınızdan asılı olmayaraq, onun `http://localhost:3000`-də əlçatan olduğunu fərz edir.
 
 ---
 
@@ -122,22 +129,9 @@ Böyük test dəstləri üçün işi Playwright-ın daxili sharding-dən istifad
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
-    runs-on: ubuntu-latest
-    steps:
-      # ... checkout, setup, install ...
-      - name: Shard ${{ matrix.shard }} işlət
-        run: npx playwright test --shard=${{ matrix.shard }}/4
-```
-
-Bu, dörd paralel iş yaradır. Shard 1 test dəstinin ilk dörddə birini, shard 2 ikinci dörddə birini işlədir və bu şəkildə davam edir. Ümumi işlətmə müddəti təxminən 75% azalır.
-
-**Shard hesabatlarını birləşdirmək.** Hər shard öz blob hesabatını hazırlayır. Onları tək HTML hesabatında birləşdirmək üçün:
-
-```yaml
-  merge-reports:
-    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -145,18 +139,64 @@ Bu, dörd paralel iş yaradır. Shard 1 test dəstinin ilk dörddə birini, shar
         with:
           node-version: '20'
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - run: npx playwright install --with-deps
+
+      - name: TestMarket Lab tətbiqini klonla və başlat
+        run: |
+          git clone https://github.com/TesterBaku/testmarket-lab.git ../testmarket-lab
+          cd ../testmarket-lab
+          npm install
+          npm start &
+          npx wait-on http://localhost:3000
+
+      - name: Shard ${{ matrix.shard }} işlət
+        run: npx playwright test --shard=${{ matrix.shard }}/4 --reporter=blob
+
+      - name: Shard ${{ matrix.shard }} üçün blob hesabatını yüklə
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 1
+```
+
+Bu, dörd paralel iş yaradır. Shard 1 test dəstinin ilk dörddə birini, shard 2 ikinci dörddə birini işlədir və bu şəkildə davam edir. Ümumi işlətmə müddəti təxminən 75% azalır. `--reporter=blob` üstələməsinə diqqət edin: hər shard maşın tərəfindən oxuna bilən `blob-report/` yazır (müstəqil HTML hesabatı yox) ki, hesabatlar sonradan yenidən bir araya gətirilə bilsin. Hər shard öz blob hesabatını fərqli ad altında yükləyir — `blob-report-1`, `blob-report-2` və s.
+
+**Shard hesabatlarını birləşdirmək.** Ayrıca `merge-reports` işi hər shard-ın blob hesabatını endirir və onları vahid bir HTML hesabatında tikir:
+
+```yaml
+  merge-reports:
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+
+      - name: Bütün blob hesabatlarını endir
+        uses: actions/download-artifact@v4
         with:
           path: all-blob-reports
           pattern: blob-report-*
           merge-multiple: true
-      - run: npx playwright merge-reports --reporter html ./all-blob-reports
-      - uses: actions/upload-artifact@v4
+
+      - name: Tək HTML hesabatına birləşdir
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Birləşdirilmiş HTML hesabatını yüklə
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
           path: playwright-report/
+          retention-days: 7
 ```
+
+Hissələr başdan-başa bir-birinə uyğun gəlir: shard işləri `--reporter=blob` ilə `blob-report/` hazırlayır və onları `blob-report-1` … `blob-report-4` kimi yükləyir; birləşdirmə işi `blob-report-*` ilə uyğun gələn hər şeyi endirir (`merge-multiple: true` onları tək qovluğa düzür), `playwright merge-reports --reporter html` işlədib vahid HTML hesabatını yenidən qurur və yükləyir. Birləşdirmə işindəki `if: always()` o deməkdir ki, bir shard-da uğursuzluq olsa belə yenə hesabat alırsınız — məhz buna ehtiyacınız olan an.
 
 ---
 
@@ -168,7 +208,7 @@ HTML reporter hər hansı bir brauzerdə aça biləcəyiniz öz-özünə yetərl
 
 - Hər test üçün keçdi/uğursuz oldu xülasəsi
 - Addım-addım log ilə genişlənə bilən test girişləri
-- Uğursuzluq zamanı çəkilmiş sıradan görüntüler və videolar
+- Uğursuzluq zamanı çəkilmiş ekran görüntüləri və videolar
 - Çəkilmiş hər trace üçün trace viewer linki
 
 Konfiqurasiyada aktivləşdirmək üçün:
@@ -227,7 +267,7 @@ Workflow-dakı yükləmə addımı `playwright-report/` qovluğunu yüklənə bi
   uses: actions/upload-artifact@v4
   with:
     name: playwright-report
-    path: tests/final/playwright-report/
+    path: playwright-report/
     retention-days: 7
 ```
 
@@ -282,19 +322,26 @@ mcr.microsoft.com/playwright:v1.52.0-noble
 
 **Bir dəfəlik `docker run`:**
 
+Bunu **test layihənizin** kök qovluğundan işlədin. Tətbiqin artıq işlədiyini və host üzərində əlçatan olduğunu fərz edir:
+
 ```bash
 docker run --rm \
   -v $(pwd):/app \
-  -w /app/tests/final \
+  -w /app \
+  --add-host=host.docker.internal:host-gateway \
+  -e BASE_URL=http://host.docker.internal:3000 \
   mcr.microsoft.com/playwright:v1.52.0-noble \
   npx playwright test
 ```
 
 - `--rm` konteyneri çıxdıqda silir.
-- `-v $(pwd):/app` layihə qovluğunuzu konteynerin içindəki `/app`-a qoşur.
-- `-w /app/tests/final` konteynerin içindəki iş qovluğunu təyin edir.
+- `-v $(pwd):/app` test layihənizi konteynerin içindəki `/app`-a qoşur.
+- `-w /app` konteynerin içindəki iş qovluğunu test layihənizə təyin edir.
+- `--add-host` + `BASE_URL=http://host.docker.internal:3000` konteynerin host maşınınızda işləyən tətbiq serverinə çatmasına imkan verir. (Konfiqurasiyanızın `use.baseURL` üçün `process.env.BASE_URL`-i oxumasını təmin edin.)
 
 **Testləriniz üçün Dockerfile istifadə etmək:**
+
+Bu Dockerfile yalnız test layihənizi paketləyir — tətbiq ayrıca işləyir (aşağıdakı Compose servisi kimi):
 
 ```dockerfile
 FROM mcr.microsoft.com/playwright:v1.52.0-noble
@@ -302,12 +349,10 @@ FROM mcr.microsoft.com/playwright:v1.52.0-noble
 WORKDIR /app
 
 # Asılılıq manifestlərini əvvəl kopyalayın — Docker bu layeri dəyişənə qədər keşləyir
-COPY tests/final/package.json tests/final/package-lock.json ./tests/final/
-COPY capstone-app/package.json capstone-app/package-lock.json ./capstone-app/
+COPY package.json package-lock.json ./
 
-RUN cd capstone-app && npm ci
-RUN cd tests/final && npm ci
-# Brauezrlər artıq əsas obrazda quraşdırılmışdır — əlavə quraşdırma addımı tələb olunmur
+RUN npm ci
+# Brauzerlər artıq əsas obrazda quraşdırılmışdır — əlavə quraşdırma addımı tələb olunmur
 
 COPY . .
 
@@ -316,29 +361,48 @@ CMD ["npx", "playwright", "test", "--project=chromium", "--project=firefox"]
 
 **Testlər üçün Docker Compose:**
 
+Compose tətbiqi və testləri paylaşılan şəbəkədə iki servis kimi işlədir. `tests` servisi `app` servisinin sağlam olmasını gözləyir, sonra dəsti `http://app:3000`-ə qarşı işlədir:
+
 ```yaml
 # docker-compose.test.yml
 services:
+  app:
+    image: node:20-bookworm
+    working_dir: /app
+    # Bu özünütəmin nümunədə klon+install komanda ilə həyata keçirilir;
+    # real quruluşda tətbiqi öz Dockerfile-ından qurun.
+    command: sh -c "git clone https://github.com/TesterBaku/testmarket-lab.git . && npm install && npm start"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   tests:
     build:
       context: .
       dockerfile: Dockerfile.test
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      BASE_URL: http://app:3000
     volumes:
-      - ./tests/final/playwright-report:/app/tests/final/playwright-report
+      - ./playwright-report:/app/playwright-report
 ```
 
 ```bash
 # Obrazı qurun
 docker compose -f docker-compose.test.yml build
 
-# Testləri işlədin
-docker compose -f docker-compose.test.yml up
+# Testləri işlədin (əvvəl tətbiq başlayır, testlər onu gözləyir, sonra işləyir)
+docker compose -f docker-compose.test.yml up --abort-on-container-exit
 
 # Çıxış kodunu yoxlayın (0 = hamısı keçdi, 1 = uğursuzluqlar)
 echo $?
 ```
 
-Compose faylındakı volume qoşulması konteyner çıxdıqdan sonra `playwright-report` qovluğunu yerinizə kopyalayır ki, HTML hesabatını lokalda aça biləsiniz.
+Compose faylındakı volume qoşulması konteyner çıxdıqdan sonra `playwright-report` qovluğunu yerinizə kopyalayır ki, HTML hesabatını lokalda aça biləsiniz. `--abort-on-container-exit` `tests` servisi bitən kimi uzunmüddətli `app` servisini dayandırır.
 
 ### Docker layer keşinin önəmi
 
@@ -432,8 +496,9 @@ Bu tapşırıqları test dəstinizin yerləşdirildiyi GitHub repozitoriyasında
 
 `.github/workflows/playwright-tests.yml`-i açın və cavab verin:
 
-- Workflow-u hansı hadisələr tetikləyir?
-- Niyə iki ayrı `npm ci` əmri var?
+- Workflow-u hansı hadisələr işə salır?
+- Workflow niyə "Testləri işlət" addımından əvvəl TestMarket Lab tətbiqini klonlamalı və başlatmalıdır?
+- `npx wait-on http://localhost:3000` nəyə nail olur və onsuz nə səhv gedə bilər?
 - `npx playwright install --with-deps` brauzer binarilərindən başqa nə quraşdırır?
 - Artefakt yükləmə addımındakı `if: always()` nəyə nail olur?
 - GitHub onu öldürməzdən əvvəl işin maksimum müddəti nədir?
@@ -456,7 +521,7 @@ git push origin main
 
 GitHub-da **Actions** bölməsinə keçin. Hər addımın vaxtını ölçün:
 
-- Checkout, Setup Node, Tətbiq asılılıqlarını quraşdır, Test asılılıqlarını quraşdır, Brauzerləri quraşdır, Testləri işlət, Hesabatı yüklə
+- Checkout, Setup Node, Test asılılıqlarını quraşdır, Brauzerləri quraşdır, Tətbiqi klonla və başlat, Testləri işlət, Hesabatı yüklə
 - Artefaktı endirin və HTML hesabatını açın. Keçdi/uğursuz sayının lokal işlətmənizə uyğun olduğunu yoxlayın.
 
 ### Tapşırıq 4 — Qəsdən CI uğursuzluqlarını sazlayın
@@ -473,7 +538,6 @@ GitHub-da **Actions** bölməsinə keçin. Hər addımın vaxtını ölçün:
 
 ```yaml
 - name: ESLint işlət
-  working-directory: tests/final
   run: npx eslint .
 ```
 

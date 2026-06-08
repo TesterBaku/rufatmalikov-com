@@ -44,20 +44,21 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install app dependencies
-        working-directory: capstone-app
-        run: npm ci
-
       - name: Install test dependencies
-        working-directory: tests/final
         run: npm ci
 
       - name: Install Playwright browsers
-        working-directory: tests/final
         run: npx playwright install --with-deps
 
+      - name: Clone and start the TestMarket Lab app
+        run: |
+          git clone https://github.com/TesterBaku/testmarket-lab.git ../testmarket-lab
+          cd ../testmarket-lab
+          npm install
+          npm start &
+          npx wait-on http://localhost:3000
+
       - name: Run tests
-        working-directory: tests/final
         run: npx playwright test
 
       - name: Upload test report
@@ -65,7 +66,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: tests/final/playwright-report/
+          path: playwright-report/
           retention-days: 7
 ```
 
@@ -73,10 +74,11 @@ jobs:
 
 - `on` — the trigger events. This workflow runs on every push to `main` and on every pull-request targeting `main`.
 - `runs-on: ubuntu-latest` — a fresh Linux virtual machine is provisioned for each run. Nothing from a previous run persists.
-- `actions/checkout@v4` — clones the exact commit that triggered the workflow.
+- `actions/checkout@v4` — clones the exact commit that triggered the workflow. The default working directory is your **test project** — that is where every step below runs unless told otherwise.
 - `actions/setup-node@v4` — installs the specified Node version.
-- Two `npm ci` commands — the app and the tests live in separate directories with separate `package.json` files. Both must be installed.
+- `npm ci` — installs your test project's dependencies (`@playwright/test`, etc.) from its lockfile.
 - `npx playwright install --with-deps` — installs the browser binaries **and** their system-level dependencies (libgtk, libnss, libgbm, etc.). Skipping `--with-deps` is the single most common cause of CI failures for new Playwright projects.
+- The "Clone and start the app" step — your tests need a running app to test against. It clones the standalone [TestMarket Lab](https://github.com/TesterBaku/testmarket-lab) app into a sibling directory, installs its dependencies, starts it in the background with `npm start &`, then blocks until `http://localhost:3000` answers (`npx wait-on`). Without the wait, the test step could race ahead and hit a server that has not finished booting. (Alternatively, let Playwright start and wait on the app for you via the `webServer` config — see the next section.)
 - `if: always()` on the upload step — this is critical. Without it, a failed test run would skip the upload step and you would lose the report precisely when you need it most.
 - `retention-days: 7` — artifacts are automatically deleted after one week.
 
@@ -98,7 +100,10 @@ export default defineConfig({
   workers: 1,
 
   webServer: {
+    // The TestMarket Lab app lives in a sibling directory.
+    // Playwright starts it from there and waits for it to come up.
     command: 'npm start',
+    cwd: '../testmarket-lab',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
   },
@@ -112,6 +117,8 @@ export default defineConfig({
 - `workers: 1` — avoids port conflicts when the app server and multiple browser processes share a single machine. For sharding (covered below), increase this.
 - `reuseExistingServer: !process.env.CI` — locally, if your app is already running, Playwright reuses that server. In CI, no server is running, so Playwright must start one. The `!` operator flips the value: `CI=true` → `false` (always start fresh); `CI=undefined` → `true` (reuse existing if running).
 
+> **Two ways to get the app running, pick one.** Either start the app yourself in a workflow step (the "Clone and start the app" step above) **or** let the `webServer` block start it for you. If you use `webServer` with `cwd: '../testmarket-lab'`, the app must already be cloned and its dependencies installed — so you still need a step that clones it and runs `npm install` (just drop the `npm start &` / `wait-on` lines, since Playwright now handles starting and waiting). Do not do both, or two servers will fight over port 3000. The examples that follow assume the app is reachable at `http://localhost:3000`, however you chose to start it.
+
 ---
 
 ## Sharding and parallelism in CI
@@ -122,22 +129,9 @@ For large suites, you can split the work across multiple CI machines using Playw
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
-    runs-on: ubuntu-latest
-    steps:
-      # ... checkout, setup, install ...
-      - name: Run shard ${{ matrix.shard }}
-        run: npx playwright test --shard=${{ matrix.shard }}/4
-```
-
-This creates four parallel jobs. Shard 1 runs the first quarter of the test suite, shard 2 the second quarter, and so on. Total wall-clock time drops by roughly 75%.
-
-**Merging shard reports.** Each shard produces its own blob report. To merge them into a single HTML report:
-
-```yaml
-  merge-reports:
-    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -145,18 +139,64 @@ This creates four parallel jobs. Shard 1 runs the first quarter of the test suit
         with:
           node-version: '20'
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - run: npx playwright install --with-deps
+
+      - name: Clone and start the TestMarket Lab app
+        run: |
+          git clone https://github.com/TesterBaku/testmarket-lab.git ../testmarket-lab
+          cd ../testmarket-lab
+          npm install
+          npm start &
+          npx wait-on http://localhost:3000
+
+      - name: Run shard ${{ matrix.shard }}
+        run: npx playwright test --shard=${{ matrix.shard }}/4 --reporter=blob
+
+      - name: Upload blob report for shard ${{ matrix.shard }}
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 1
+```
+
+This creates four parallel jobs. Shard 1 runs the first quarter of the test suite, shard 2 the second quarter, and so on. Total wall-clock time drops by roughly 75%. Note the `--reporter=blob` override: each shard writes a machine-readable `blob-report/` (not a standalone HTML report) so the reports can be stitched back together afterward. Each shard uploads its blob report under a distinct name — `blob-report-1`, `blob-report-2`, and so on.
+
+**Merging shard reports.** A separate `merge-reports` job downloads every shard's blob report and stitches them into one unified HTML report:
+
+```yaml
+  merge-reports:
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+
+      - name: Download all blob reports
+        uses: actions/download-artifact@v4
         with:
           path: all-blob-reports
           pattern: blob-report-*
           merge-multiple: true
-      - run: npx playwright merge-reports --reporter html ./all-blob-reports
-      - uses: actions/upload-artifact@v4
+
+      - name: Merge into a single HTML report
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Upload merged HTML report
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
           path: playwright-report/
+          retention-days: 7
 ```
+
+The pieces line up end-to-end: shard jobs produce `blob-report/` with `--reporter=blob` and upload them as `blob-report-1` … `blob-report-4`; the merge job downloads everything matching `blob-report-*` (`merge-multiple: true` flattens them into one folder), runs `playwright merge-reports --reporter html` to rebuild a single HTML report, and uploads it. `if: always()` on the merge job means you still get a report even when a shard had failures — which is exactly when you need it.
 
 ---
 
@@ -227,7 +267,7 @@ The upload step in the workflow saves the `playwright-report/` directory as a do
   uses: actions/upload-artifact@v4
   with:
     name: playwright-report
-    path: tests/final/playwright-report/
+    path: playwright-report/
     retention-days: 7
 ```
 
@@ -282,19 +322,26 @@ The tag `noble` refers to Ubuntu 24.04 LTS. Always pin to the same version as yo
 
 **One-shot `docker run`:**
 
+Run this from the root of your **test project**. It assumes the app is already running and reachable on the host:
+
 ```bash
 docker run --rm \
   -v $(pwd):/app \
-  -w /app/tests/final \
+  -w /app \
+  --add-host=host.docker.internal:host-gateway \
+  -e BASE_URL=http://host.docker.internal:3000 \
   mcr.microsoft.com/playwright:v1.52.0-noble \
   npx playwright test
 ```
 
 - `--rm` removes the container when it exits.
-- `-v $(pwd):/app` mounts your project directory into the container at `/app`.
-- `-w /app/tests/final` sets the working directory inside the container.
+- `-v $(pwd):/app` mounts your test project into the container at `/app`.
+- `-w /app` sets the working directory inside the container to your test project.
+- `--add-host` + `BASE_URL=http://host.docker.internal:3000` lets the container reach the app server running on your host machine. (Have your config read `process.env.BASE_URL` for `use.baseURL`.)
 
 **Using a Dockerfile for your tests:**
+
+This Dockerfile packages only your test project — the app runs separately (as a Compose service, below):
 
 ```dockerfile
 FROM mcr.microsoft.com/playwright:v1.52.0-noble
@@ -302,11 +349,9 @@ FROM mcr.microsoft.com/playwright:v1.52.0-noble
 WORKDIR /app
 
 # Copy dependency manifests first — Docker caches this layer until they change
-COPY tests/final/package.json tests/final/package-lock.json ./tests/final/
-COPY capstone-app/package.json capstone-app/package-lock.json ./capstone-app/
+COPY package.json package-lock.json ./
 
-RUN cd capstone-app && npm ci
-RUN cd tests/final && npm ci
+RUN npm ci
 # Browsers are already installed in the base image — no install step needed
 
 COPY . .
@@ -316,29 +361,48 @@ CMD ["npx", "playwright", "test", "--project=chromium", "--project=firefox"]
 
 **Docker Compose for tests:**
 
+Compose runs the app and the tests as two services on a shared network. The `tests` service waits for the `app` service to be healthy, then runs the suite against `http://app:3000`:
+
 ```yaml
 # docker-compose.test.yml
 services:
+  app:
+    image: node:20-bookworm
+    working_dir: /app
+    # Clone+install handled by the command for a self-contained example;
+    # in a real setup, build the app from its own Dockerfile instead.
+    command: sh -c "git clone https://github.com/TesterBaku/testmarket-lab.git . && npm install && npm start"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   tests:
     build:
       context: .
       dockerfile: Dockerfile.test
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      BASE_URL: http://app:3000
     volumes:
-      - ./tests/final/playwright-report:/app/tests/final/playwright-report
+      - ./playwright-report:/app/playwright-report
 ```
 
 ```bash
 # Build the image
 docker compose -f docker-compose.test.yml build
 
-# Run the tests
-docker compose -f docker-compose.test.yml up
+# Run the tests (app starts first, tests wait for it, then run)
+docker compose -f docker-compose.test.yml up --abort-on-container-exit
 
 # Check the exit code (0 = all passed, 1 = failures)
 echo $?
 ```
 
-The volume mount in the Compose file copies the `playwright-report` directory back to your host after the container exits, so you can open the HTML report locally.
+The volume mount in the Compose file copies the `playwright-report` directory back to your host after the container exits, so you can open the HTML report locally. `--abort-on-container-exit` stops the long-running `app` service as soon as the `tests` service finishes.
 
 ### Why Docker layer caching matters
 
@@ -433,7 +497,8 @@ Work through these exercises using a GitHub repository with your Playwright test
 Open `.github/workflows/playwright-tests.yml` and answer:
 
 - What events trigger the workflow?
-- Why are there two separate `npm ci` commands?
+- Why must the workflow clone and start the TestMarket Lab app before the "Run tests" step?
+- What does `npx wait-on http://localhost:3000` accomplish, and what could go wrong without it?
 - What does `npx playwright install --with-deps` install beyond the browser binaries?
 - What does `if: always()` on the artifact upload step accomplish?
 - What is the maximum job duration before GitHub kills it?
@@ -456,7 +521,7 @@ git push origin main
 
 Navigate to the **Actions** tab on GitHub. Time each step:
 
-- Checkout, Setup Node, Install app deps, Install test deps, Install browsers, Run tests, Upload report
+- Checkout, Setup Node, Install test deps, Install browsers, Clone and start the app, Run tests, Upload report
 - Download the artifact and open the HTML report. Verify the pass/fail count matches your local run.
 
 ### Exercise 4 — Debug deliberate CI failures
@@ -473,7 +538,6 @@ Insert this step before the `Run tests` step:
 
 ```yaml
 - name: Run ESLint
-  working-directory: tests/final
   run: npx eslint .
 ```
 
