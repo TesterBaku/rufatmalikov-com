@@ -1,0 +1,154 @@
+---
+/**
+ * ModuleProgress — a small XP/badge panel for one module. Reads localStorage,
+ * shows missions-done / total as a bar, the total course XP, and the module
+ * badge once every listed mission is complete. Live-updates when a <Mission>
+ * on the same page fires `py:progress`.
+ *
+ * Authoring:
+ *   <ModuleProgress moduleId="01" missions={["m01-l01-m1", "m01-l02-m1"]}
+ *     badgeLabel="Modul 1 nişanı" />
+ */
+interface Props {
+	/** Module id; the badge is stored as `module-<moduleId>`. */
+	moduleId: string;
+	/** Every mission id in this module. */
+	missions: string[];
+	/** Label shown on the earned badge. */
+	badgeLabel?: string;
+}
+
+const { moduleId, missions, badgeLabel } = Astro.props;
+
+const locale = Astro.url.pathname.startsWith('/az') ? 'az' : 'en';
+const t =
+	locale === 'en'
+		? { heading: 'Module progress', xp: 'Total XP', badge: badgeLabel ?? `Module ${moduleId} badge` }
+		: { heading: 'Modul tərəqqisi', xp: 'Ümumi XP', badge: badgeLabel ?? `Modul ${moduleId} nişanı` };
+---
+
+<aside
+	class="py-modprog"
+	data-modprog
+	data-module={moduleId}
+	data-missions={JSON.stringify(missions)}
+>
+	<div class="py-modprog-top">
+		<strong>{t.heading}</strong>
+		<span class="py-modprog-count" data-count>0 / {missions.length}</span>
+	</div>
+	<div class="py-modprog-bar" role="progressbar" aria-valuemin="0" aria-valuemax={missions.length}>
+		<span class="py-modprog-fill" data-fill style="width:0%"></span>
+	</div>
+	<div class="py-modprog-meta">
+		<span class="py-modprog-xp" data-xp>{t.xp}: 0</span>
+		<span class="py-modprog-badge" data-badge hidden>🏅 {t.badge}</span>
+	</div>
+</aside>
+
+<script>
+	import { moduleStatus, totalXp } from './progress';
+
+	class ModProg {
+		root: HTMLElement;
+		moduleId: string;
+		missions: string[];
+		xpLabel: string;
+		countEl: HTMLElement;
+		fillEl: HTMLElement;
+		barEl: HTMLElement;
+		xpEl: HTMLElement;
+		badgeEl: HTMLElement;
+
+		constructor(root: HTMLElement) {
+			this.root = root;
+			this.moduleId = root.dataset.module!;
+			try {
+				this.missions = JSON.parse(root.dataset.missions || '[]');
+			} catch {
+				this.missions = [];
+			}
+			this.countEl = root.querySelector<HTMLElement>('[data-count]')!;
+			this.fillEl = root.querySelector<HTMLElement>('[data-fill]')!;
+			this.barEl = root.querySelector<HTMLElement>('.py-modprog-bar')!;
+			this.xpEl = root.querySelector<HTMLElement>('[data-xp]')!;
+			this.badgeEl = root.querySelector<HTMLElement>('[data-badge]')!;
+			// Keep the exact label wording rendered server-side ("Ümumi XP" / "Total XP").
+			this.xpLabel = (this.xpEl.textContent || 'XP').split(':')[0];
+
+			this.render();
+			// A Mission completion anywhere on the page updates this panel live.
+			document.addEventListener('py:progress', () => this.render());
+		}
+
+		render() {
+			const s = moduleStatus(this.moduleId, this.missions);
+			this.countEl.textContent = `${s.done} / ${s.total}`;
+			const pct = s.total > 0 ? Math.round((s.done / s.total) * 100) : 0;
+			this.fillEl.style.width = `${pct}%`;
+			this.barEl.setAttribute('aria-valuenow', String(s.done));
+			this.xpEl.textContent = `${this.xpLabel}: ${totalXp()}`;
+			this.badgeEl.hidden = !s.badge;
+			this.root.classList.toggle('is-complete', s.complete);
+		}
+	}
+
+	document.querySelectorAll<HTMLElement>('[data-modprog]').forEach((el) => new ModProg(el));
+</script>
+
+<style>
+	.py-modprog {
+		margin-block: 1.5rem;
+		padding: 0.9rem 1.1rem;
+		border: 1px solid var(--sl-color-gray-5, #d0d5dd);
+		border-radius: 0.6rem;
+		background: var(--sl-color-bg-nav, #f8fafc);
+	}
+	.py-modprog.is-complete {
+		border-color: var(--sl-color-green, #16a34a);
+	}
+	.py-modprog-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 0.5rem;
+		margin-bottom: 0.5rem;
+	}
+	.py-modprog-count {
+		font-variant-numeric: tabular-nums;
+		font-weight: 700;
+		color: var(--sl-color-text-accent, #2563eb);
+	}
+	.py-modprog-bar {
+		height: 0.6rem;
+		border-radius: 1rem;
+		background: var(--sl-color-gray-5, #e5e7eb);
+		overflow: hidden;
+	}
+	.py-modprog-fill {
+		display: block;
+		height: 100%;
+		border-radius: 1rem;
+		background: var(--sl-color-text-accent, #2563eb);
+		transition: width 0.4s ease;
+	}
+	.py-modprog.is-complete .py-modprog-fill {
+		background: var(--sl-color-green, #16a34a);
+	}
+	.py-modprog-meta {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+		font-size: 0.85rem;
+	}
+	.py-modprog-xp {
+		color: var(--sl-color-gray-2, #475569);
+		font-weight: 600;
+	}
+	.py-modprog-badge {
+		font-weight: 700;
+		color: var(--sl-color-green, #15803d);
+	}
+</style>
