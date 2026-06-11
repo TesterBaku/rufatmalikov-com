@@ -1,0 +1,91 @@
+---
+title: İlk proqramın
+description: print əmrinin quruluşu, dırnaqlar, mötərizələr — və xətaların əslində dost olduğu.
+sidebar:
+  order: 2
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+
+Keçən dərsdə `print` ilə ekrana mətn çap etdin. İndi bu əmri hissələrə ayıraq.
+
+:::tip[Bu dərsdə]
+`print`-in dəqiq quruluşunu öyrənəcəksən, ilk xətanı görəcəksən və onu özün düzəldəcəksən.
+:::
+
+## print-in anatomiyası
+
+```python
+print("Salam!")
+```
+
+Üç hissə var:
+
+- `print` — əmrin adı: *«çap et»*
+- `(` `)` — mötərizələr: çap ediləcək şey onların **içində** olur
+- `"Salam!"` — dırnaq içində **mətn**. Dırnaqlar kompüterə deyir: *«bu, əmr deyil, sadəcə mətndir»*
+
+Hər üçü vacibdir. Birini unutsan, nə baş verir? Gəl yoxlayaq. 🙂
+
+## Xəta — dostundur
+
+Aşağıdakı kodda bağlayan dırnaq **qəsdən** unudulub. İşə sal və nə baş verdiyinə bax:
+
+<PyRunner
+	id="ex-xeta"
+	starterCode={`print("Salam, dostum!`}
+	height="5rem"
+/>
+
+Qırmızı yazı gördün? Bu, **xətadır** (error). Kompüter deyir: *«bu sətri başa düşmədim»* — və **hansı sətirdə** problem olduğunu göstərir.
+
+Bunu yadda saxla: **xəta cəza deyil, ipucudur.** Ən təcrübəli proqramçılar da hər gün xəta görür. Fərq sadəcə bundadır: onlar xətanı oxuyub düzəltməyi bacarırlar. İndi sən də bacaracaqsan — yuxarıdakı kodda `!` işarəsindən sonra `"` əlavə et və yenidən işə sal.
+
+## Sətirlər sıra ilə işləyir
+
+Proqramda neçə istəyirsən `print` ola bilər — kompüter onları yuxarıdan aşağı yerinə yetirir:
+
+<PyRunner
+	id="ex-sira"
+	starterCode={`print("Bir")\nprint("İki")\nprint("Üç deyəndə başlayırıq...")\nprint("🚀")`}
+/>
+
+## Missiyalar
+
+<Mission
+	id="m00-l02-m1"
+	xp={10}
+	title="Özünü təqdim et"
+	starterCode={`# Hər sətirdə bir print yaz:\n# 1) adın  2) yaşın  3) yaşadığın şəhər\n`}
+	checkCode={`_lines = [l for l in _stdout.strip().splitlines() if l.strip()]\nassert len(_lines) >= 3, "HINT:Ən azı 3 sətir çap olunmalıdır — hər məlumat üçün ayrıca print yaz."`}
+	inputs={[]}
+>
+	Üç `print` əmri ilə özünü təqdim et: adın, yaşın, şəhərin. (`#` ilə başlayan sətirlər **şərhdir** — kompüter onları oxumur, onlar sənin üçündür.)
+</Mission>
+
+<Mission
+	id="m00-l02-m2"
+	xp={10}
+	title="Xətanı düzəlt"
+	starterCode={`print("Futbol əladır!)`}
+	checkCode={`assert "futbol" in _stdout.lower(), "HINT:Bağlayan dırnaq çatışmır — mətnin sonunda, mötərizədən əvvəl \\" əlavə et."`}
+	inputs={[]}
+>
+	Bu proqram xarabdır — işə salsan, xəta görəcəksən. Xətanı oxu, səbəbi tap, düzəlt və işə sal.
+</Mission>
+
+<Mission
+	id="m00-l02-m3"
+	xp={10}
+	title="Dəqiq çap"
+	starterCode={`# Elə proqram yaz ki, dəqiq bunu çap etsin:\n# Mən proqramçıyam!\n`}
+	checkCode={`assert _stdout.strip() == "Mən proqramçıyam!", "HINT:Çap olunan mətn hərfi-hərfinə belə olmalıdır: Mən proqramçıyam! — böyük hərflərə və ! işarəsinə fikir ver."`}
+	inputs={[]}
+>
+	Elə proqram yaz ki, ekrana **dəqiq** bu cümləni çap etsin: `Mən proqramçıyam!`
+</Mission>
+
+---
+
+**Növbəti modulda:** Python ilə əsl söhbət başlayır — mətnləri birləşdirəcək, riyaziyyat edəcək və proqramına **danışmağı** öyrədəcəksən. [Davam et →](../../01-python-ile-danis/print-ve-metnler/)

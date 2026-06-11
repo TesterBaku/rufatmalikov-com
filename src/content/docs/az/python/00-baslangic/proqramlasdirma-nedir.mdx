@@ -1,0 +1,69 @@
+---
+title: Proqramlaşdırma nədir?
+description: Proqram nədir, kompüter onu necə başa düşür — və ilk Python kodunu elə indi işə sal.
+sidebar:
+  order: 1
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+
+Telefonundakı oyunlar, YouTube, WhatsApp, hətta liftin düymələri — bunların hamısı **proqramdır**.
+
+Proqram — kompüter üçün yazılmış **addım-addım təlimatlardır**. Kompüter çox sürətlidir, amma özü düşünmür: sən nə yazsan, **dəqiq onu** edir. Nə az, nə çox.
+
+:::tip[Bu dərsdə]
+Proqramın nə olduğunu öyrənəcəksən və ilk Python kodunu **elə indi** işə salacaqsan. Bəli, birinci dərsdə!
+:::
+
+## Proqram = resept
+
+Çay dəmləməyi resept kimi yazsaq:
+
+1. Çaydana su tök
+2. Suyu qaynat
+3. Çayniki isladıb çay vur
+4. 5 dəqiqə gözlə
+
+Proqram da eynidir — sadəcə təlimatlar kompüterin başa düşdüyü dildə yazılır. Biz **Python** dilini öyrənəcəyik: dünyada ən populyar proqramlaşdırma dillərindən biridir və yeni başlayanlar üçün ən asanıdır.
+
+## Birinci kodunu işə sal
+
+Aşağıdakı qutu — sənin **kod meydançandır**. İçində əsl Python işləyir. **▶ İşə sal** düyməsinə bas və nə baş verdiyinə bax:
+
+<PyRunner
+	id="ex-salam"
+	starterCode={`print("Salam! Mən Python-am 🐍")\nprint("Sən indicə proqram işə saldın!")\nprint("=" * 30)\nprint("Proqramlaşdırmaya xoş gəlmisən!")`}
+/>
+
+Nə baş verdi? Hər `print(...)` sətri kompüterə bir əmr verir: *«mötərizənin içindəkini ekrana çap et»*. Kompüter sətirləri **yuxarıdan aşağı, sıra ilə** yerinə yetirdi.
+
+İstəyirsən, mətnləri dəyiş və yenidən işə sal — qorxma, burada heç nəyi xarab etmək mümkün deyil. 😄
+
+## Missiyalar
+
+<Mission
+	id="m00-l01-m1"
+	xp={5}
+	title="Maşını işə sal"
+	starterCode={`print("Salam, Dünya!")`}
+	checkCode={`assert "salam" in _stdout.lower(), "HINT:▶ İşə sal düyməsinə bas — kod özü işləyəcək."`}
+	inputs={[]}
+>
+	Proqramçıların 50 ildən çox ənənəsi var: ilk proqram həmişə «Salam, Dünya!» deyir. Sadəcə **işə sal** — ilk XP-ni qazan!
+</Mission>
+
+<Mission
+	id="m00-l01-m2"
+	xp={10}
+	title="Öz sözünü de"
+	starterCode={`print("Mən proqramlaşdırmanı öyrənirəm!")`}
+	checkCode={`assert _stdout.strip(), "HINT:Proqram heç nə çap etmədi — print sətrini saxla, yalnız dırnaq içindəki mətni dəyiş."\nassert _stdout.strip() != "Mən proqramlaşdırmanı öyrənirəm!", "HINT:Mətni özünə aid bir cümlə ilə əvəz et — dırnaqların içini dəyiş."`}
+	inputs={[]}
+>
+	Dırnaq içindəki mətni **öz cümlənlə** əvəz et — adın, sevimli komandan, nə istəyirsən — və işə sal.
+</Mission>
+
+---
+
+**Növbəti dərsdə:** `print`-i daha yaxından tanıyacağıq və ilk **xətanı** görəcəksən. Bəli, bu, yaxşı xəbərdir — xətalar proqramçının ən yaxşı müəllimidir. 😉

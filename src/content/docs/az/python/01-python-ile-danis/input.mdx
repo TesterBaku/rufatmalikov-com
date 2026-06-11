@@ -1,0 +1,89 @@
+---
+title: input() — proqram səndən soruşur
+description: İstifadəçidən məlumat almaq, mətnə çevrilən cavablar və int() çevirməsi.
+sidebar:
+  order: 4
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+
+İndiyə qədər proqramların yalnız danışırdı. İndi onlara **dinləməyi** öyrədək: `input()` istifadəçidən məlumat alır.
+
+:::note[Bizim meydançada input() necə işləyir?]
+Adi kompüterdə `input()` proqramı dayandırıb istifadəçinin yazmasını gözləyir. Bizim kod meydançasında isə cavabları **əvvəlcədən** «Daxiletmələr» qutusuna yazırsan — hər sətirdə bir cavab. Proqram `input()` çağırdıqca cavabları sıra ilə oradan götürür.
+:::
+
+## İlk söhbət
+
+Aşağıdakı nümunədə «Daxiletmələr» qutusuna artıq `Aysel` yazılıb. Qutunu açıb bax, sonra işə sal:
+
+<PyRunner
+	id="ex-input"
+	starterCode={`ad = input("Adın nədir? ")\nprint(f"Salam, {ad}! Tanış olduğuma şadam.")`}
+	inputs={'Aysel'}
+	height="5rem"
+/>
+
+`input("Adın nədir? ")` — sualı göstərir, cavabı götürür və `ad` qutusuna qoyur. Daxiletmələr qutusundakı adı dəyişib yenidən işə sal!
+
+## Diqqət: input() həmişə mətn qaytarır
+
+Tələ burdadır. İstifadəçi `12` yazsa belə, `input()` onu **mətn** kimi qaytarır — `"12"`. Mətnlə hesab aparmaq olmaz:
+
+<PyRunner
+	id="ex-tele"
+	starterCode={`yas = input("Neçə yaşın var? ")\nprint(yas + 1)`}
+	inputs={'12'}
+	height="5rem"
+/>
+
+İşə sal — xəta görəcəksən: Python deyir ki, mətnlə rəqəmi toplaya bilmirəm. Həll: `int()` ilə mətni **tam ədədə** çevir:
+
+<PyRunner
+	id="ex-int"
+	starterCode={`yas = int(input("Neçə yaşın var? "))\nprint(f"Gələn il {yas + 1} yaşın olacaq!")`}
+	inputs={'12'}
+	height="5rem"
+/>
+
+Qayda sadədir: **rəqəmlə hesab lazımdırsa — `int(input(...))`.**
+
+## Missiyalar
+
+<Mission
+	id="m01-l04-m1"
+	xp={10}
+	title="Salamlaşan proqram"
+	starterCode={`# Adı soruş, sonra "Salam, <ad>!" çap et\n`}
+	checkCode={`assert "salam, tural" in _stdout.lower(), "HINT:input() ilə adı oxu, f-string ilə çap et: print(f\\"Salam, {ad}!\\") — Daxiletmələrdə Tural yazılıb."`}
+	inputs={['Tural']}
+>
+	`input()` ilə istifadəçinin adını soruş və `Salam, <ad>!` formasında cavab ver. (Yoxlama üçün Daxiletmələrdə `Tural` hazır yazılıb.)
+</Mission>
+
+<Mission
+	id="m01-l04-m2"
+	xp={15}
+	title="Gələn il"
+	starterCode={`# Yaşı soruş və gələn il neçə yaşı olacağını çap et\n`}
+	checkCode={`assert "13" in _stdout, "HINT:Cavab mətn gəlir — int() ilə çevir: yas = int(input(...)), sonra yas + 1 çap et. Daxiletmələrdə 12 yazılıb."`}
+	inputs={['12']}
+>
+	Yaşı soruş, üstünə 1 gəl və nəticəni çap et. `int()` çevirməsini unutma! (Daxiletmələrdə `12` var — deməli cavabda `13` görünməlidir.)
+</Mission>
+
+<Mission
+	id="m01-l04-m3"
+	xp={15}
+	title="Toplama maşını"
+	starterCode={`# İki ədədi soruş və cəmini çap et\n`}
+	checkCode={`assert "12" in _stdout, "HINT:İki dəfə int(input(...)) çağır, cəmi çap et. Daxiletmələrdə 7 və 5 var — cavab 12 olmalıdır."`}
+	inputs={['7', '5']}
+>
+	İlk kalkulyatorunu düzəlt: proqram iki ədəd soruşsun və cəmini çap etsin. (Daxiletmələrdə `7` və `5` hazırdır.)
+</Mission>
+
+---
+
+🏅 **Bu modulu bitirdin!** Artıq proqramın danışır, hesablayır, yadda saxlayır və dinləyir. **Növbəti modulda** ən maraqlı hissə başlayır: proqramın **qərar verməyi** öyrənəcək — `if/else`. Oyunların «düz cavab / səhv cavab» məntiqi məhz oradan gəlir.

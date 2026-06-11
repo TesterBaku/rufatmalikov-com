@@ -1,0 +1,86 @@
+---
+title: Dəyişənlər
+description: Məlumatı yadda saxlayan qutular — və f-string sehri.
+sidebar:
+  order: 3
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+
+**Dəyişən** — üstündə ad yazılmış qutudur. İçinə məlumat qoyursan, sonra adı ilə çağırırsan:
+
+<PyRunner
+	id="ex-qutu"
+	starterCode={`ad = "Aysel"\nyas = 12\nprint(ad)\nprint(yas)`}
+/>
+
+`ad = "Aysel"` belə oxunur: *«ad adlı qutu yarat, içinə Aysel mətnini qoy»*. `=` burada «bərabərdir» yox, **«mənimsət»** deməkdir.
+
+## f-string sehri
+
+Dəyişəni cümlənin içində işlətmək üçün ən rahat yol — **f-string**. Dırnaqdan əvvəl `f` yaz, dəyişəni isə fiqurlu mötərizəyə al:
+
+<PyRunner
+	id="ex-fstring"
+	starterCode={`ad = "Tural"\nyas = 13\nprint(f"Mənim adım {ad}-dır, {yas} yaşım var.")`}
+	height="5rem"
+/>
+
+Python fiqurlu mötərizələrin `{}` içini dəyişənin **dəyəri** ilə əvəz edir. Sehr kimidir, amma əsl texnologiyadır. ✨
+
+## Qutunun içi dəyişə bilər
+
+Adı da elə buradan gəlir — **dəyişən**:
+
+<PyRunner
+	id="ex-deyis"
+	starterCode={`xal = 0\nprint(f"Oyun başladı: {xal} xal")\nxal = xal + 10\nprint(f"Qızıl tapdın: {xal} xal")\nxal = xal + 10\nprint(f"Daha bir qızıl: {xal} xal")`}
+/>
+
+`xal = xal + 10` qəribə görünür, amma məntiqi sadədir: *«xal qutusunun köhnə dəyərini götür, üstünə 10 gəl, nəticəni yenidən qutuya qoy»*. Kompüter oyunlarındakı xal sayğacı məhz belə işləyir. 🎮
+
+## Ad qoymaq qaydaları
+
+- Boşluq olmaz: `mənim adım` ❌ → `menim_adim` ✅ (boşluq əvəzinə `_`)
+- Rəqəmlə başlamaz: `1xal` ❌ → `xal1` ✅
+- Böyük-kiçik hərf fərqlidir: `Ad` və `ad` — iki ayrı qutudur!
+
+## Missiyalar
+
+<Mission
+	id="m01-l03-m1"
+	xp={10}
+	title="Tanışlıq kartı"
+	starterCode={`# ad və yas dəyişənlərini yarat,\n# sonra f-string ilə bir cümlədə çap et\n`}
+	checkCode={`assert "ad" in globals() and isinstance(globals()["ad"], str), "HINT:ad adlı dəyişən yarat: ad = \\"...\\""\nassert "yas" in globals(), "HINT:yas adlı dəyişən yarat: yas = ..."\nassert str(globals()["ad"]) in _stdout and str(globals()["yas"]) in _stdout, "HINT:Hər iki dəyişəni f-string içində işlət: print(f\\"...{ad}...{yas}...\\")"`}
+	inputs={[]}
+>
+	`ad` və `yas` dəyişənlərini yarat (öz məlumatlarınla) və **bir** f-string ilə hər ikisini cümlədə çap et.
+</Mission>
+
+<Mission
+	id="m01-l03-m2"
+	xp={15}
+	title="Yaş hesablayıcısı"
+	starterCode={`il = 2026\ndogum_ili = ...\n# Fərqi hesablayıb çap et\n`}
+	checkCode={`assert "dogum_ili" in globals() and isinstance(globals()["dogum_ili"], int), "HINT:dogum_ili dəyişəninə öz doğum ilini rəqəmlə ver (dırnaqsız!)."\nassert str(globals()["il"] - globals()["dogum_ili"]) in _stdout, "HINT:Fərqi çap et: print(il - dogum_ili)"`}
+	inputs={[]}
+>
+	`dogum_ili` dəyişəninə öz doğum ilini yaz və proqram sənin neçə yaşında olduğunu (təxminən) hesablayıb çap etsin.
+</Mission>
+
+<Mission
+	id="m01-l03-m3"
+	xp={15}
+	title="Xal sayğacı"
+	starterCode={`xal = 0\n# Üç dəfə 10 xal əlavə et (hər dəfə ayrıca sətirdə),\n# sonda nəticəni çap et\n`}
+	checkCode={`assert "30" in _stdout, "HINT:Sonda xal 30 olmalıdır — xal = xal + 10 sətrini üç dəfə yaz, sonra print(xal)."\nassert globals().get("xal") == 30, "HINT:xal dəyişəninin son dəyəri 30 olmalıdır."`}
+	inputs={[]}
+>
+	Oyun sayğacı düzəlt: `xal` sıfırdan başlasın, üç dəfə `xal = xal + 10` ilə artsın, sonda `print` ilə göstərilsin.
+</Mission>
+
+---
+
+**Növbəti dərsdə:** proqramın **səninlə danışacaq** — `input()` ilə istifadəçidən məlumat almağı öyrənirik. [Davam et →](../input/)
