@@ -1,0 +1,89 @@
+---
+title: və, və ya, deyil
+description: and, or, not — bir neçə şərti birləşdirib güclü qərarlar vermək.
+sidebar:
+  order: 3
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Bəzən bir şərt azlıq edir. *«Yaşın 13-dən çoxdursa **və** biletin varsa — keç»*. Python-da bunun üçün üç sözcük var:
+
+| Söz | Mənası | Doğru olur ki... |
+|---|---|---|
+| `and` | və | **hər iki** şərt doğru olsun |
+| `or` | və ya | **ən azı biri** doğru olsun |
+| `not` | deyil | şərtin **tərsi** doğru olsun |
+
+## and — hər ikisi lazımdır
+
+<PyRunner
+	id="ex-and"
+	starterCode={`yas = 14\nbilet = "var"\nif yas >= 13 and bilet == "var":\n    print("Kinoya buyur! 🎬")\nelse:\n    print("Təəssüf, girə bilməzsən.")`}
+/>
+
+`bilet = "yox"` yazıb yenidən işə sal — `and` ikisindən birini doğru görməyəndə bütöv şərt yanlış olur.
+
+## or — biri bəsdir
+
+<PyRunner
+	id="ex-or"
+	starterCode={`yagis = "bəli"\nkulek = "xeyr"\nif yagis == "bəli" or kulek == "bəli":\n    print("Çətiri götür! ☔")\nelse:\n    print("Hava əladır, çıx gəz! 😎")`}
+/>
+
+## not — tərsinə çevir
+
+<PyRunner
+	id="ex-not"
+	starterCode={`ev_tapsirigi_bitib = False\nif not ev_tapsirigi_bitib:\n    print("Əvvəlcə tapşırığı bitir! 📚")`}
+	height="5rem"
+/>
+
+`not False` → `True` olur, ona görə xəbərdarlıq çap edildi. `True` yazıb yoxla.
+
+## Missiyalar
+
+<Mission
+	id="m02-l03-m1"
+	xp={10}
+	title="İdman zalına giriş"
+	starterCode={`yas = int(input("Yaşın: "))\nboy = int(input("Boyun (sm): "))\n# Yaş 10+ VƏ boy 140+ olarsa: "Keçə bilərsən!"\n# əks halda: "Hələ yox."\n`}
+	checkCode={`assert "keçə" in _stdout.lower() or "kece" in _stdout.lower(), "HINT:if yas >= 10 and boy >= 140 şərtini qur — Daxiletmələrdə 12 və 150 var, hər ikisi keçir."`}
+	inputs={['12', '150']}
+>
+	Attraksion qaydası: yaş **10+** və boy **140 sm+** olmalıdır — ikisi birdən! `and` ilə yoxla. (Daxiletmələrdə `12` və `150` var.)
+</Mission>
+
+<Mission
+	id="m02-l03-m2"
+	xp={15}
+	title="Çətir lazımdır?"
+	starterCode={`yagis = input("Yağış yağır? (bəli/xeyr): ")\nkulek = input("Güclü külək var? (bəli/xeyr): ")\n# Biri "bəli" olsa belə: "Çətiri götür!"\n# heç biri olmasa: "Hava əladır!"\n`}
+	checkCode={`assert "çətir" in _stdout.lower() or "cetir" in _stdout.lower(), "HINT:if yagis == \\"bəli\\" or kulek == \\"bəli\\" qur — Daxiletmələrdə yağış bəli-dir, deməli çətir lazımdır."`}
+	inputs={['bəli', 'xeyr']}
+>
+	`or` ilə hava məsləhətçisi: yağış **və ya** külək varsa `Çətiri götür!`, heç biri yoxdursa `Hava əladır!`. (Daxiletmələrdə: yağış `bəli`, külək `xeyr`.)
+</Mission>
+
+<Mission
+	id="m02-l03-m3"
+	xp={15}
+	title="Giriş sistemi"
+	starterCode={`ad = input("İstifadəçi adı: ")\nparol = input("Parol: ")\n# ad "admin" VƏ parol "1234" olarsa:\n#   "Xoş gəldin, admin!"\n# əks halda: "Giriş rədd edildi."\n`}
+	checkCode={`assert "xoş gəldin" in _stdout.lower() or "xos geldin" in _stdout.lower(), "HINT:if ad == \\"admin\\" and parol == \\"1234\\" qur — Daxiletmələrdə düzgün ad və parol var."`}
+	inputs={['admin', '1234']}
+>
+	Əsl saytlardakı kimi giriş sistemi: istifadəçi adı **və** parol ikisi də düz olmalıdır. (Daxiletmələrdə düzgün cütlük hazırdır.)
+</Mission>
+
+<ModuleProgress
+	moduleId="02"
+	missions={['m02-l01-m1', 'm02-l01-m2', 'm02-l01-m3', 'm02-l02-m1', 'm02-l02-m2', 'm02-l02-m3', 'm02-l03-m1', 'm02-l03-m2', 'm02-l03-m3']}
+	badgeLabel="Qərar ver nişanı"
+/>
+
+---
+
+🏅 **Bu modulu bitirdin!** Proqramın artıq qərar verir. **Növbəti modulda** ona ən böyük super-gücünü veririk: **təkrarlamaq**. Kompüter eyni işi milyon dəfə, yorulmadan edə bilir — `for` və `while` dövrləri ilə tanış ol. [Davam et →](../../03-tekrarla/for-dovru/)

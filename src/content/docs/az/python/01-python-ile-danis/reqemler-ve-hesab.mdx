@@ -1,5 +1,5 @@
 ---
-title: Rəqəmlər və hesab
+title: Ədədlər və hesab
 description: Python-da riyaziyyat — toplama, vurma, bölmə, qalıq və qüvvət.
 sidebar:
   order: 2
@@ -7,8 +7,9 @@ sidebar:
 
 import PyRunner from '../../../../../components/python/PyRunner.astro';
 import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
 
-Rəqəmlər mətnlərdən fərqlidir: **dırnaqsız** yazılır. Dırnaqsız yazanda Python onları hesablayır:
+Ədədlər mətnlərdən fərqlidir: **dırnaqsız** yazılır. Dırnaqsız yazanda Python onları hesablayır:
 
 <PyRunner
 	id="ex-ferq"
@@ -16,7 +17,7 @@ Rəqəmlər mətnlərdən fərqlidir: **dırnaqsız** yazılır. Dırnaqsız yaz
 	height="4rem"
 />
 
-Gördün? `5 + 3` hesablandı və `8` çıxdı, `"5 + 3"` isə adi mətn kimi çap olundu. **Dırnaq = mətn, dırnaqsız = rəqəm.**
+Gördün? `5 + 3` hesablandı və `8` çıxdı, `"5 + 3"` isə adi mətn kimi çap olundu. **Dırnaq = mətn, dırnaqsız = ədəd.**
 
 ## Hesab əməlləri
 
@@ -54,7 +55,7 @@ Bir gündə neçə saniyə var? Hesablamağa nə var ki:
 	checkCode={`assert "8760" in _stdout, "HINT:İldə 365 gün, hər gündə 24 saat var — print(365 * 24) yaz."`}
 	inputs={[]}
 >
-	Python-a bir ildə neçə **saat** olduğunu hesablat. (Rəqəmi özün yazma — vurma əməlindən istifadə et!)
+	Python-a bir ildə neçə **saat** olduğunu hesablat. (Cavabı özün yazma — vurma əməlindən istifadə et!)
 </Mission>
 
 <Mission
@@ -76,8 +77,14 @@ Bir gündə neçə saniyə var? Hesablamağa nə var ki:
 	checkCode={`assert "1024" in _stdout, "HINT:Qüvvət üçün ** işarəsidir: print(2 ** 10)."`}
 	inputs={[]}
 >
-	Kompüter dünyasında məşhur rəqəm var: 2-nin 10-cu qüvvəti. Python-a hesablat və nəticəni gör.
+	Kompüter dünyasında məşhur ədəd var: 2-nin 10-cu qüvvəti. Python-a hesablat və nəticəni gör.
 </Mission>
+
+<ModuleProgress
+	moduleId="01"
+	missions={['m01-l01-m1', 'm01-l01-m2', 'm01-l01-m3', 'm01-l02-m1', 'm01-l02-m2', 'm01-l02-m3', 'm01-l03-m1', 'm01-l03-m2', 'm01-l03-m3', 'm01-l04-m1', 'm01-l04-m2', 'm01-l04-m3']}
+	badgeLabel="Python ilə danış nişanı"
+/>
 
 ---
 

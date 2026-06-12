@@ -1,0 +1,91 @@
+---
+title: if — əgər
+description: Proqramın qərar verməyi öyrənir — if, else və girintinin sirri.
+sidebar:
+  order: 1
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+İndiyə qədər proqramların hər sətri sıra ilə, sözsüz yerinə yetirirdi. Amma əsl proqramlar **qərar verir**: parol düzdürsə — qapını aç, səhvdirsə — buraxma. Oyunlarda «düz cavab / səhv cavab» da məhz budur.
+
+:::tip[Bu modulda nə öyrənəcəksən]
+Bu modulun 3 dərsində proqramına qərar verməyi öyrədəcəksən: `if/else`, müqayisə operatorları və `and/or/not`.
+:::
+
+## if — «əgər belədirsə...»
+
+<PyRunner
+	id="ex-if"
+	starterCode={`yas = 14\nif yas >= 13:\n    print("Sən yeniyetməsən!")\nprint("Proqram bitdi.")`}
+/>
+
+Sətir-sətir oxuyaq:
+
+- `if yas >= 13:` — *«əgər yas 13-dən böyük və ya bərabərdirsə»*. Sonda **iki nöqtə** `:` mütləqdir.
+- `    print(...)` — şərt doğru olanda işləyən sətir. Diqqət: sətrin əvvəlində **4 boşluq** var!
+- Sonuncu `print` girintisizdir — o, şərtdən asılı deyil, həmişə işləyir.
+
+`yas = 14`-ü `yas = 10` ilə əvəz edib yenidən işə sal. Nə dəyişdi?
+
+## Girinti — Python-un qızıl qaydası
+
+O 4 boşluq bəzək deyil. Python **girinti** (indentation) ilə bilir ki, hansı sətirlər şərtə aiddir: girintili sətirlər — şərtin «içində», girintisizlər — «çölündə». Girintini unutsan və ya əyri-üyrü yazsan, Python xəta verəcək. Qayda sadədir: **şərtin içindəki hər sətir — 4 boşluq içəridə.**
+
+## else — «yoxsa...»
+
+Şərt doğru olmayanda nə baş versin? `else` bunu deyir:
+
+<PyRunner
+	id="ex-else"
+	starterCode={`parol = "alma123"\nif parol == "alma123":\n    print("Qapı açıldı! 🔓")\nelse:\n    print("Yanlış parol! 🔒")`}
+/>
+
+Bir vacib detal: müqayisə üçün **iki** bərabər işarəsi yazılır — `==`. Tək `=` mənimsətmədir (*qutuya qoy*), `==` isə sualdır (*bərabərdirmi?*). Bunları qarışdırmaq — yeni başlayanların 1 nömrəli səhvidir. 🙂
+
+## Missiyalar
+
+<Mission
+	id="m02-l01-m1"
+	xp={10}
+	title="Qapı keşikçisi"
+	starterCode={`parol = input("Parolu yaz: ")\n# Əgər parol "python123"-dürsə, "Qapı açıldı!" çap et,\n# yoxsa "Yanlış parol!" çap et\n`}
+	checkCode={`assert "açıldı" in _stdout.lower(), "HINT:if parol == \\"python123\\": yoxla — Daxiletmələrdə düz parol yazılıb, deməli qapı açılmalıdır."`}
+	inputs={['python123']}
+>
+	Parol yoxlayıcısı düzəlt: parol `python123`-dürsə `Qapı açıldı!`, yoxsa `Yanlış parol!` desin. (Daxiletmələrdə düzgün parol hazırdır.)
+</Mission>
+
+<Mission
+	id="m02-l01-m2"
+	xp={10}
+	title="Mənfi, yoxsa müsbət?"
+	starterCode={`eded = int(input("Bir ədəd yaz: "))\n# Mənfidirsə "mənfi", əks halda "müsbət" çap et\n`}
+	checkCode={`assert "mənfi" in _stdout.lower() or "menfi" in _stdout.lower(), "HINT:if eded < 0 şərtini yoxla — Daxiletmələrdə -5 var, deməli cavab mənfi olmalıdır."`}
+	inputs={['-5']}
+>
+	Proqram bir ədəd oxusun: sıfırdan kiçikdirsə `mənfi`, əks halda `müsbət` çap etsin. (Daxiletmələrdə `-5` var.)
+</Mission>
+
+<Mission
+	id="m02-l01-m3"
+	xp={15}
+	title="Kino bileti"
+	starterCode={`yas = int(input("Yaşın: "))\n# 16 və yuxarıdırsa: "Filmə buyur!"\n# əks halda: "Bu film böyüklər üçündür."\n`}
+	checkCode={`assert "böyüklər" in _stdout.lower() or "boyukler" in _stdout.lower(), "HINT:if yas >= 16 / else qur — Daxiletmələrdə 14 var, deməli else qolu işləməlidir."`}
+	inputs={['14']}
+>
+	Kinoteatr proqramı: yaş 16 və yuxarıdırsa `Filmə buyur!`, yoxsa `Bu film böyüklər üçündür.` desin. (Daxiletmələrdə `14` var — hansı cavab çıxmalıdır?)
+</Mission>
+
+<ModuleProgress
+	moduleId="02"
+	missions={['m02-l01-m1', 'm02-l01-m2', 'm02-l01-m3', 'm02-l02-m1', 'm02-l02-m2', 'm02-l02-m3', 'm02-l03-m1', 'm02-l03-m2', 'm02-l03-m3']}
+	badgeLabel="Qərar ver nişanı"
+/>
+
+---
+
+**Növbəti dərsdə:** müqayisə operatorlarının hamısı və `elif` — ikidən çox yol arasında seçim. [Davam et →](../muqayise-ve-elif/)

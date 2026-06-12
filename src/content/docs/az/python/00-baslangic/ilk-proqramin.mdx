@@ -1,12 +1,13 @@
 ---
 title: İlk proqramın
-description: print əmrinin quruluşu, dırnaqlar, mötərizələr — və xətaların əslində dost olduğu.
+description: print əmrinin quruluşu, dırnaqlar, mötərizələr — və xətaların əslində dost olduğunu görəcəksən.
 sidebar:
   order: 2
 ---
 
 import PyRunner from '../../../../../components/python/PyRunner.astro';
 import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
 
 Keçən dərsdə `print` ilə ekrana mətn çap etdin. İndi bu əmri hissələrə ayıraq.
 
@@ -85,6 +86,12 @@ Proqramda neçə istəyirsən `print` ola bilər — kompüter onları yuxarıda
 >
 	Elə proqram yaz ki, ekrana **dəqiq** bu cümləni çap etsin: `Mən proqramçıyam!`
 </Mission>
+
+<ModuleProgress
+	moduleId="00"
+	missions={['m00-l01-m1', 'm00-l01-m2', 'm00-l02-m1', 'm00-l02-m2', 'm00-l02-m3']}
+	badgeLabel="Başlanğıc nişanı"
+/>
 
 ---
 

@@ -7,6 +7,7 @@ sidebar:
 
 import PyRunner from '../../../../../components/python/PyRunner.astro';
 import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
 
 **Dəyişən** — üstündə ad yazılmış qutudur. İçinə məlumat qoyursan, sonra adı ilə çağırırsan:
 
@@ -80,6 +81,12 @@ Adı da elə buradan gəlir — **dəyişən**:
 >
 	Oyun sayğacı düzəlt: `xal` sıfırdan başlasın, üç dəfə `xal = xal + 10` ilə artsın, sonda `print` ilə göstərilsin.
 </Mission>
+
+<ModuleProgress
+	moduleId="01"
+	missions={['m01-l01-m1', 'm01-l01-m2', 'm01-l01-m3', 'm01-l02-m1', 'm01-l02-m2', 'm01-l02-m3', 'm01-l03-m1', 'm01-l03-m2', 'm01-l03-m3', 'm01-l04-m1', 'm01-l04-m2', 'm01-l04-m3']}
+	badgeLabel="Python ilə danış nişanı"
+/>
 
 ---
 

@@ -7,6 +7,7 @@ sidebar:
 
 import PyRunner from '../../../../../components/python/PyRunner.astro';
 import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
 
 Dırnaq içindəki hər şeyə proqramlaşdırmada **mətn** deyilir (ingiliscə: *string*). Python mətnlərlə çox maraqlı şeylər edə bilir.
 
@@ -89,6 +90,12 @@ Amma mətnin **içində** dırnaq varsa, çöldəkini fərqli seç:
 	Adını `=` işarələrindən düzəlmiş xətlərin arasına al — yuxarıda xətt, ortada adın, aşağıda xətt.
 </Mission>
 
+<ModuleProgress
+	moduleId="01"
+	missions={['m01-l01-m1', 'm01-l01-m2', 'm01-l01-m3', 'm01-l02-m1', 'm01-l02-m2', 'm01-l02-m3', 'm01-l03-m1', 'm01-l03-m2', 'm01-l03-m3', 'm01-l04-m1', 'm01-l04-m2', 'm01-l04-m3']}
+	badgeLabel="Python ilə danış nişanı"
+/>
+
 ---
 
-**Növbəti dərsdə:** rəqəmlər və hesab — Python sənin cib kalkulyatorundan qat-qat güclüdür. [Davam et →](../reqemler-ve-hesab/)
+**Növbəti dərsdə:** ədədlər və hesab — Python sənin cib kalkulyatorundan qat-qat güclüdür. [Davam et →](../reqemler-ve-hesab/)

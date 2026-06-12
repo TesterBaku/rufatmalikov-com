@@ -25,8 +25,15 @@ Proqramlaşdırma dünyasının öz dili var. Bu səhifə kursda işlənən term
 | şərh | comment | `#` ilə başlayan, kompüterin oxumadığı qeyd |
 | f-string | f-string | İçində `{dəyişən}` işlədilə bilən mətn |
 | çevirmə | conversion, casting | Tipi dəyişmək: `int("12")` |
-| şərt | condition | Doğru/yanlış yoxlanılan ifadə *(Modul 02)* |
-| dövr | loop | Təkrarlanan kod bloku *(Modul 03)* |
+| şərt | condition | Doğru/yanlış yoxlanılan ifadə |
+| girinti | indentation | Sətrin əvvəlindəki boşluqlar — Python blokları belə tanıyır |
+| müqayisə | comparison | İki dəyəri tutuşdurmaq: `==`, `!=`, `<`, `>` |
+| doğru / yanlış | True / False (boolean) | Python-un «hə» və «yox» dəyərləri |
+| məntiqi operator | logical operator | Şərtləri birləşdirən `and`, `or`, `not` |
+| dövr | loop | Təkrarlanan kod bloku |
+| sayğac | counter | Dövrədə dəyəri artan/azalan dəyişən (`i`) |
+| toplayıcı | accumulator | Dövr boyu nəticə yığan dəyişən |
+| sonsuz dövr | infinite loop | Heç vaxt bitməyən dövr — `while` yazanda diqqət! |
 | siyahı | list | Sıra ilə düzülmüş elementlər toplusu *(Modul 04)* |
 | lüğət | dictionary (dict) | Açar–dəyər cütlükləri saxlayan struktur *(Modul 04)* |
 | funksiya | function | Ada malik, çağırıla bilən kod bloku *(Modul 05)* |

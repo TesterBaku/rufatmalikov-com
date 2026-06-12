@@ -1,0 +1,93 @@
+---
+title: Dövrlə hesabla
+description: Toplayıcı dəyişən, += qısayolu və dövrün içində şərt.
+sidebar:
+  order: 2
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Balaca Karl Qaussdan müəllimi xahiş edir: *«1-dən 100-ə qədər bütün ədədləri topla»* — uzun məşğuliyyət olsun deyə. Qauss cavabı **bir neçə saniyəyə** tapır. Sənin isə Python-un var. 😏
+
+## Toplayıcı dəyişən
+
+Fənd: dövrdən **əvvəl** boş sayğac yarat, dövrün **içində** üstünə gəl:
+
+<PyRunner
+	id="ex-qauss"
+	starterCode={`cem = 0\nfor i in range(1, 101):\n    cem = cem + i\nprint(f"1-dən 100-ə cəm: {cem}")`}
+	height="6rem"
+/>
+
+Bu naxışın adı **toplayıcıdır** (accumulator) və proqramlaşdırmada hər yerdə qarşına çıxacaq: xal toplamaq, pul saymaq, orta qiymət hesablamaq...
+
+Yeri gəlmişkən, `cem = cem + i` üçün qısayol var: `cem += i` — eyni şeydir, amma qısa.
+
+## Dövrün içində şərt
+
+Modul 02 ilə Modul 03 görüşür: dövrün içinə `if` qoymaq olar. Məsələn, 1-dən 20-yə qədər yalnız **cüt** ədədləri çap edək:
+
+<PyRunner
+	id="ex-dovr-if"
+	starterCode={`for i in range(1, 21):\n    if i % 2 == 0:\n        print(i)`}
+	height="6rem"
+/>
+
+İkiqat girintiyə bax: `if` dövrün içindədir (4 boşluq), `print` isə `if`-in içindədir (8 boşluq).
+
+## Mətn üzərində dövr
+
+`for` təkcə ədədlərlə işləmir — mətnin hərflərini də gəzə bilir:
+
+<PyRunner
+	id="ex-herf"
+	starterCode={`for herf in "Salam":\n    print(herf)`}
+	height="6rem"
+/>
+
+## Missiyalar
+
+<Mission
+	id="m03-l02-m1"
+	xp={15}
+	title="Qauss ol"
+	starterCode={`cem = 0\n# 1-dən 100-ə qədər ədədləri toplayıb çap et\n`}
+	checkCode={`assert "5050" in _stdout, "HINT:for i in range(1, 101): içində cem += i, dövrdən sonra print(cem). Cavab 5050 olmalıdır."`}
+	inputs={[]}
+>
+	1-dən 100-ə qədər bütün ədədlərin cəmini hesablat. Qaussun cavabı `5050` idi — sənin proqramınki də elə olmalıdır!
+</Mission>
+
+<Mission
+	id="m03-l02-m2"
+	xp={15}
+	title="Cütlərin cəmi"
+	starterCode={`cem = 0\n# 1-dən 50-yə qədər YALNIZ cüt ədədləri topla\n# (dövrün içində if işlət!)\n`}
+	checkCode={`assert "650" in _stdout, "HINT:Dövrün içində if i % 2 == 0: yoxla, yalnız o halda cem += i. Cavab 650 olmalıdır."`}
+	inputs={[]}
+>
+	1-dən 50-yə qədər yalnız **cüt** ədədlərin cəmini tap. Dövr + şərt + toplayıcı — üç silahın birləşməsi!
+</Mission>
+
+<Mission
+	id="m03-l02-m3"
+	xp={15}
+	title="Ulduz piramidası"
+	starterCode={`# Belə piramida çap et (5 mərtəbə):\n# *\n# **\n# ***\n# ****\n# *****\n`}
+	checkCode={`_lines = [l.rstrip() for l in _stdout.splitlines() if l.strip()]\nassert _lines == ["*" * n for n in range(1, 6)], "HINT:for i in range(1, 6): içində print(\\"*\\" * i) — mətni təkrarlama fəndini xatırla!"`}
+	inputs={[]}
+>
+	Modul 01-dəki `"*" * i` fəndini dövrlə birləşdir: 1 ulduzdan 5 ulduza qədər böyüyən piramida çap et.
+</Mission>
+
+<ModuleProgress
+	moduleId="03"
+	missions={['m03-l01-m1', 'm03-l01-m2', 'm03-l01-m3', 'm03-l02-m1', 'm03-l02-m2', 'm03-l02-m3', 'm03-l03-m1', 'm03-l03-m2', 'm03-l03-m3']}
+	badgeLabel="Təkrarla nişanı"
+/>
+
+---
+
+**Növbəti dərsdə:** `while` — «nə qədər ki belədir, təkrarla». Və məşhur **sonsuz dövr** tələsi ilə üz-üzə gələcəksən. [Davam et →](../while-dovru/)
