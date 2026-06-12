@@ -76,3 +76,43 @@ test('ModuleProgress on a real lesson updates after a passing mission', async ({
 	await expect(mod.locator('[data-count]')).toHaveText('1 / 5');
 	await expect(mod.locator('[data-xp]')).toContainText('5');
 });
+
+test('Module 06 capstone m06-p1: typed if/elif solution passes and awards XP', async ({
+	page,
+	context,
+}) => {
+	test.setTimeout(90_000);
+	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+	await page.goto('/az/python/06-layihe-missiyalari/kalkulyator/');
+
+	const mission = page.locator('[data-mission][data-id="m06-p1"]');
+	// The if/elif calculator solution. Pre-filled inputs are 8, 2, * → "8 * 2 = 16".
+	const solution = [
+		'eded1 = int(input("a: "))',
+		'eded2 = int(input("b: "))',
+		'emel = input("op: ")',
+		'if emel == "+":',
+		'    print(f"{eded1} + {eded2} = {eded1 + eded2}")',
+		'elif emel == "-":',
+		'    print(f"{eded1} - {eded2} = {eded1 - eded2}")',
+		'elif emel == "*":',
+		'    print(f"{eded1} * {eded2} = {eded1 * eded2}")',
+		'else:',
+		'    print(f"{eded1} / {eded2} = {eded1 / eded2}")',
+	].join('\n');
+
+	// Replace the editor contents via clipboard paste — CodeMirror inserts pasted
+	// text verbatim, which preserves the Python indentation (typing would trigger
+	// auto-indent).
+	const editor = mission.locator('.cm-content');
+	await editor.click();
+	await page.keyboard.press('ControlOrMeta+A');
+	await page.evaluate((text) => navigator.clipboard.writeText(text), solution);
+	await page.keyboard.press('ControlOrMeta+V');
+	await expect(editor).toContainText('elif emel =='); // paste landed
+
+	await mission.locator('[data-run]').click();
+
+	await expect(mission.locator('[data-state]')).toBeVisible({ timeout: 45_000 });
+	await expect(mission.locator('[data-feedback]')).toContainText('25'); // +25 XP awarded
+});
