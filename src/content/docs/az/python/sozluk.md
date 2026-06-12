@@ -34,9 +34,15 @@ Proqramlaşdırma dünyasının öz dili var. Bu səhifə kursda işlənən term
 | sayğac | counter | Dövrdə dəyəri artan/azalan dəyişən (`i`) |
 | toplayıcı | accumulator | Dövr boyu nəticə yığan dəyişən |
 | sonsuz dövr | infinite loop | Heç vaxt bitməyən dövr — `while` yazanda diqqət! |
-| siyahı | list | Sıra ilə düzülmüş elementlər toplusu *(Modul 04)* |
-| lüğət | dictionary (dict) | Açar–dəyər cütlükləri saxlayan struktur *(Modul 04)* |
-| funksiya | function | Ada malik, çağırıla bilən kod bloku *(Modul 05)* |
+| siyahı | list | Sıra ilə düzülmüş elementlər toplusu |
+| indeks | index | Elementin siyahıdakı nömrəsi — 0-dan başlayır! |
+| dilim | slice | Siyahının bir hissəsi: `siyahi[1:3]` |
+| metod | method | Nöqtə ilə çağırılan əməliyyat: `.append()`, `.sort()` |
+| lüğət | dictionary (dict) | Açar–dəyər cütlükləri saxlayan struktur |
+| açar | key | Lüğətdə dəyərə aparan ad: `oyuncu["xal"]` |
+| funksiya | function | Ada malik, çağırıla bilən kod bloku |
+| parametr | parameter | Funksiyaya ötürülən məlumatın funksiya içindəki adı |
+| qaytarmaq | return | Funksiyanın nəticəni geri verməsi (çap etmədən) |
 
 :::note[Termin seçimləri haqqında]
 Azərbaycan dilində proqramlaşdırma terminologiyası hələ tam standartlaşmayıb. Bu kursda yuxarıdakı qarşılıqlar ardıcıl işlənir; rast gəldiyin başqa mənbələrdə fərqli variantlar ola bilər.
