@@ -1,0 +1,67 @@
+---
+title: İlk funksiyan
+description: def — öz əmrini yarat və onu istədiyin qədər çağır.
+sidebar:
+  order: 1
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+`print()`, `len()`, `input()` — bunların hamısı **funksiyadır**: ada malik, çağırılan kod parçaları. İndi ən maraqlısı: **özün** funksiya yaradacaqsan.
+
+:::tip[Bu modulda nə öyrənəcəksən]
+Bu modulun 3 dərsində öz funksiyalarını yazacaqsan: `def`, parametrlər və `return`.
+:::
+
+## def — funksiya yarat
+
+<PyRunner
+	id="ex-def"
+	starterCode={`def salamla():\n    print("Salam!")\n    print("Xoş gördük!")\n\nsalamla()\nsalamla()\nsalamla()`}
+	height="8rem"
+/>
+
+İki mərhələ var:
+
+1. **Tərif:** `def salamla():` — *«salamla adlı funksiya yaradıram»*. İçindəki sətirlər girintilidir (tanış qayda!). Bu hissə hələ **heç nə etmir** — sadəcə resepti yazır.
+2. **Çağırış:** `salamla()` — *«indi onu işə sal!»*. Hər çağırışda funksiyanın içi bir dəfə icra olunur.
+
+## Niyə lazımdır?
+
+Eyni 2 sətri 3 dəfə yazmaq əvəzinə 1 dəfə yazdıq, 3 dəfə çağırdıq. Proqramçıların qızıl qaydası: **özünü təkrarlama!** Kodda nəyisə dəyişmək lazım olanda da bir yerdə dəyişirsən — hər nüsxəni axtarmırsan.
+
+## Missiyalar
+
+<Mission
+	id="m05-l01-m1"
+	xp={10}
+	title="Öz əmrin"
+	starterCode={`# "salamla" adlı funksiya yarat — "Salam, dünya!" çap etsin.\n# Sonra onu İKİ dəfə çağır.\n`}
+	checkCode={`assert "salamla" in globals() and callable(globals()["salamla"]), "HINT:def salamla(): ilə başla — adından sonra mötərizə və iki nöqtə."\nassert _stdout.lower().count("salam") >= 2, "HINT:Funksiyanı iki dəfə çağır: salamla() iki ayrı sətirdə."`}
+	inputs={[]}
+>
+	`salamla` adlı funksiya yarat və onu **iki dəfə** çağır.
+</Mission>
+
+<Mission
+	id="m05-l01-m2"
+	xp={15}
+	title="Banner funksiyası"
+	starterCode={`# "banner" funksiyası yarat — üç sətir çap etsin:\n# ====================\n# PYTHON KURSU\n# ====================\n# Sonra onu çağır.\n`}
+	checkCode={`assert "banner" in globals() and callable(globals()["banner"]), "HINT:def banner(): ilə funksiya yarat."\n_lines = [l for l in _stdout.strip().splitlines() if l.strip()]\nassert len(_lines) >= 3 and "=" in _lines[0], "HINT:Funksiyanın içində üç print olsun, xətlər üçün \\"=\\" * 20 fəndini işlət — və çağırmağı unutma!"`}
+	inputs={[]}
+>
+	Modul 01-dəki çərçivə fəndini funksiyaya çevir: `banner()` çağırılanda üç sətirlik başlıq çap etsin.
+</Mission>
+
+<ModuleProgress
+	moduleId="05"
+	missions={['m05-l01-m1', 'm05-l01-m2', 'm05-l02-m1', 'm05-l02-m2', 'm05-l02-m3', 'm05-l03-m1', 'm05-l03-m2', 'm05-l03-m3']}
+	badgeLabel="Funksiyalar nişanı"
+/>
+
+---
+
+**Növbəti dərsdə:** funksiyaya məlumat ötürmək — parametrlər. `salamla("Aysel")` yazanda nə baş verir? [Davam et →](../parametrler/)

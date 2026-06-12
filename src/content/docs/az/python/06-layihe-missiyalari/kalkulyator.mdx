@@ -1,0 +1,48 @@
+---
+title: "Layihə 1: Kalkulyator"
+description: İlk əsl proqramın — iki ədəd, bir əməl, hazır kalkulyator.
+sidebar:
+  order: 1
+---
+
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Bu modul fərqlidir: dərs yoxdur, **layihə** var. Hər səhifə — öyrəndiklərini birləşdirən bir əsl proqram. Hazır kodu kimsə verməyəcək — plan var, qalanı səndədir. 😎
+
+:::tip[Bu layihədə işlədəcəksən]
+`input()` + `int()` (Modul 01) · `if/elif/else` (Modul 02) · f-string (Modul 01)
+:::
+
+## Plan
+
+1. İstifadəçidən **birinci ədədi** al (`int(input(...))`)
+2. **İkinci ədədi** al
+3. **Əməli** al: `+`, `-`, `*` və ya `/` (bu, mətndir — `int()` lazım deyil!)
+4. `if/elif` ilə əməli yoxla və uyğun nəticəni hesabla
+5. Nəticəni `f-string` ilə gözəl formada çap et: `8 * 2 = 16`
+
+Bonus ideya (istəyə görə): tanımadığı əməl üçün `else` qolunda «Belə əməl bilmirəm» desin.
+
+## Missiya
+
+<Mission
+	id="m06-p1"
+	xp={25}
+	title="Kalkulyator"
+	starterCode={`eded1 = int(input("Birinci ədəd: "))\neded2 = int(input("İkinci ədəd: "))\nemel = input("Əməl (+, -, *, /): ")\n# İndi if/elif ilə hesabla və nəticəni çap et\n`}
+	checkCode={`assert "16" in _stdout, "HINT:Daxiletmələrdə 8, 2 və * var — deməli proqram 8 * 2 = 16 hesablamalıdır. if emel == \\"+\\": ... elif emel == \\"*\\": ... qur."`}
+	inputs={['8', '2', '*']}
+>
+	Planı izlə və kalkulyatoru tamamla. (Daxiletmələrdə sınaq ssenarisi hazırdır: `8`, `2`, `*` — cavab `16` olmalıdır.) İstəsən Daxiletmələri dəyişib başqa əməlləri də yoxla!
+</Mission>
+
+<ModuleProgress
+	moduleId="06"
+	missions={['m06-p1', 'm06-p2', 'm06-p3', 'm06-p4']}
+	badgeLabel="Python Kəşfiyyatçısı"
+/>
+
+---
+
+**Növbəti layihə:** «Ədədi tap» oyununun **peşəkar** versiyası — indi proqram ipucu da verəcək. [Davam et →](../eded-tap-oyunu/)

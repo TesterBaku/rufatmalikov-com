@@ -1,0 +1,48 @@
+---
+title: "Layihə 3: Viktorina"
+description: Suallar siyahıda, cavablar yoxlanılır, xal toplanır — öz bilik yarışın.
+sidebar:
+  order: 3
+---
+
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Müəllimlər Kahoot işlədir, sən özünküni **yazacaqsan**. Suallar və cavablar siyahılarda, dövr onları bir-bir verir, düz cavaba xal.
+
+:::tip[Bu layihədə işlədəcəksən]
+Siyahılar + indeks (Modul 04) · `for` + `range` (Modul 03) · `if` (Modul 02) · toplayıcı (Modul 03)
+:::
+
+## Plan
+
+1. İki **paralel siyahı** yarat: `suallar` və `cavablar` — eyni indeksdə sual və onun cavabı
+2. `xal = 0`
+3. `for i in range(len(suallar)):` — hər sual üçün:
+   - sualı göstər: `input(suallar[i])`
+   - cavab `cavablar[i]`-yə bərabərdirsə: «Düzdür! ✅» + xal
+   - deyilsə: «Səhvdir ❌»
+4. Sonda: `f"Nəticə: {xal}/{len(suallar)}"`
+
+## Missiya
+
+<Mission
+	id="m06-p3"
+	xp={25}
+	title="Viktorina"
+	starterCode={`suallar = ["Azərbaycanın paytaxtı? ", "2 ** 3 neçədir? ", "Python-da siyahı hansı mötərizə ilə yaranır? "]\ncavablar = ["Bakı", "8", "kvadrat"]\nxal = 0\n# for ilə sualları ver, cavabları yoxla, xal topla,\n# sonda nəticəni çap et\n`}
+	checkCode={`assert "2/3" in _stdout, "HINT:Daxiletmələrdə 2 düz, 1 səhv cavab var — nəticə 2/3 olmalıdır: print(f\\"Nəticə: {xal}/{len(suallar)}\\")"\nassert "düz" in _stdout.lower() or "duz" in _stdout.lower(), "HINT:Düz cavabda təsdiq mesajı çap et: if cavab == cavablar[i]:"`}
+	inputs={['Bakı', 'səkkiz', 'kvadrat']}
+>
+	Planı izlə və viktorinanı işlət. (Daxiletmələrdə oyunçunun cavabları: `Bakı` ✅, `səkkiz` ❌ — proqram «8» gözləyir! — və `kvadrat` ✅. Nəticə `2/3` olmalıdır.) Sonra sualları öz fənnindən olanlarla əvəz et!
+</Mission>
+
+<ModuleProgress
+	moduleId="06"
+	missions={['m06-p1', 'm06-p2', 'm06-p3', 'm06-p4']}
+	badgeLabel="Python Kəşfiyyatçısı"
+/>
+
+---
+
+**Sonuncu layihə:** məxfi mesajlar — öz şifrələyicini yaz. 🕵️ [Davam et →](../sezar-sifresi/)

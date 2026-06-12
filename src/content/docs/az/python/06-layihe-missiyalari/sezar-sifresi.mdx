@@ -1,0 +1,54 @@
+---
+title: "Layihə 4: Sezar şifrəsi"
+description: Yuli Sezarın 2000 illik şifrəsi — hər hərfi əlifbada bir addım sürüşdür.
+sidebar:
+  order: 4
+---
+
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Yuli Sezar məxfi məktublarında hər hərfi əlifbada bir neçə addım **sürüşdürürdü**: `a → b`, `b → c`... Düşmən oxuya bilmirdi, dostlar isə sirri bilirdi. Bu, tarixin ilk şifrələrindən biridir — və sən onu indi **yazacaqsan**.
+
+:::tip[Bu layihədə işlədəcəksən]
+Mətn üzərində `for` (Modul 03) · `.index()` və indeks (Modul 04) · mətn birləşdirmə `+` (Modul 01) · qalıq `%` (Modul 01)
+:::
+
+## Necə işləyir
+
+Əlifbanı mətn kimi saxla: `elifba = "abcdefghijklmnopqrstuvwxyz"`. Hər hərfin yerini `.index()` tapır, `+1` onu sürüşdürür:
+
+- `elifba.index("s")` → `18`, deməli şifrəsi `elifba[19]` → `"t"`
+- Tələ: `"z"`-in (indeks 25) sürüşməsi 26 olur — belə indeks yoxdur! Həll: `% 26` qalığı dairəni bağlayır: `26 % 26 = 0` → `"a"`. (Modul 01-in `%`-i burada qəhrəmana çevrilir!)
+
+## Plan
+
+1. `elifba` mətnini yarat
+2. Sözü `input()` ilə al, `sifre = ""` boş mətnlə başla
+3. `for herf in soz:` — hər hərf üçün:
+   - `yer = elifba.index(herf)`
+   - `sifre = sifre + elifba[(yer + 1) % 26]`
+4. Şifrəni çap et
+
+## Missiya
+
+<Mission
+	id="m06-p4"
+	xp={30}
+	title="Sezar şifrəsi"
+	starterCode={`elifba = "abcdefghijklmnopqrstuvwxyz"\nsoz = input("Şifrələnəcək söz (kiçik latın hərfləri): ")\nsifre = ""\n# for ilə hər hərfi sürüşdür və sifre-yə əlavə et,\n# sonda çap et\n`}
+	checkCode={`assert "tbmbn" in _stdout, "HINT:salam sözünün şifrəsi tbmbn-dir. Hər hərf üçün: sifre = sifre + elifba[(elifba.index(herf) + 1) % 26]"`}
+	inputs={['salam']}
+>
+	Planı izlə və şifrələyicini tamamla. (Daxiletmələrdə `salam` var — şifrəsi `tbmbn` olmalıdır.) Sonra dostuna şifrəli mesaj göndər və deşifrə qaydasını da fikirləş: əks istiqamətə sürüşdürmək kifayətdir. 🕵️
+</Mission>
+
+<ModuleProgress
+	moduleId="06"
+	missions={['m06-p1', 'm06-p2', 'm06-p3', 'm06-p4']}
+	badgeLabel="Python Kəşfiyyatçısı"
+/>
+
+---
+
+🏆 **Təbriklər — kursu bitirdin!** Dörd əsl layihə yazdın və «Python Kəşfiyyatçısı» nişanını qazandın. Bundan sonra nə? Öz ideyanı yaz — ən yaxşı öyrənmə yolu budur. Sualların olsa, [əlaqə saxla](/az/about/). Uğurlar, proqramçı! 🐍

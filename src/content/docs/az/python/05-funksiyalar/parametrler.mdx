@@ -1,0 +1,77 @@
+---
+title: Parametrlər
+description: Funksiyaya məlumat ötür — eyni funksiya, fərqli nəticələr.
+sidebar:
+  order: 2
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+`salamla()` həmişə eyni şeyi deyir. Bəs `print` necə hər dəfə **fərqli** şey çap edir? Çünki ona mötərizədə məlumat veririk. Öz funksiyamıza da verə bilərik — buna **parametr** deyilir.
+
+## Parametrli funksiya
+
+<PyRunner
+	id="ex-param"
+	starterCode={`def salamla(ad):\n    print(f"Salam, {ad}!")\n\nsalamla("Aysel")\nsalamla("Tural")\nsalamla("Nigar")`}
+	height="8rem"
+/>
+
+`def salamla(ad):` — `ad` parametrdir: funksiyanın içində adi dəyişən kimi işləyir, dəyərini isə **çağırış** verir. `salamla("Aysel")` → `ad = "Aysel"` olur.
+
+## Bir neçə parametr
+
+Vergüllə ayır — sıra vacibdir:
+
+<PyRunner
+	id="ex-iki-param"
+	starterCode={`def teqdim_et(ad, yas):\n    print(f"{ad}, {yas} yaş")\n\nteqdim_et("Aysel", 14)\nteqdim_et("Tural", 12)`}
+	height="7rem"
+/>
+
+## Missiyalar
+
+<Mission
+	id="m05-l02-m1"
+	xp={10}
+	title="Şəxsi salam"
+	starterCode={`# "salamla" funksiyası yarat — ad parametri ilə,\n# "Salam, <ad>!" çap etsin.\n# İki fərqli adla çağır.\n`}
+	checkCode={`assert "salamla" in globals() and callable(globals()["salamla"]), "HINT:def salamla(ad): — parametr mötərizənin içində."\n_lines = [l for l in _stdout.strip().splitlines() if "salam" in l.lower()]\nassert len(_lines) >= 2 and _lines[0] != _lines[1], "HINT:İki FƏRQLİ adla çağır: salamla(\\"Aysel\\") və salamla(\\"Tural\\") — sətirlər fərqli olmalıdır."`}
+	inputs={[]}
+>
+	`ad` parametrli `salamla` funksiyası yaz və onu **iki fərqli** adla çağır.
+</Mission>
+
+<Mission
+	id="m05-l02-m2"
+	xp={15}
+	title="Kvadrat maşını"
+	starterCode={`# "kvadrat" funksiyası yarat — eded parametri ilə,\n# ededin kvadratını çap etsin.\n# kvadrat(4) və kvadrat(9) çağır.\n`}
+	checkCode={`assert "kvadrat" in globals() and callable(globals()["kvadrat"]), "HINT:def kvadrat(eded): qur."\nassert "16" in _stdout and "81" in _stdout, "HINT:Funksiyanın içində print(eded ** 2) — kvadrat(4) → 16, kvadrat(9) → 81 verməlidir."`}
+	inputs={[]}
+>
+	`kvadrat(eded)` funksiyası yaz — ədədin kvadratını çap etsin. `kvadrat(4)` və `kvadrat(9)` ilə yoxla.
+</Mission>
+
+<Mission
+	id="m05-l02-m3"
+	xp={15}
+	title="Universal vurma cədvəli"
+	starterCode={`# Modul 03-dakı vurma cədvəlini funksiyaya çevir:\n# cedvel(eded) — istənilən ədədin cədvəlini çap etsin (1-dən 10-a).\n# cedvel(7) ilə çağır.\n`}
+	checkCode={`assert "cedvel" in globals() and callable(globals()["cedvel"]), "HINT:def cedvel(eded): içində for i in range(1, 11): qur."\nassert "21" in _stdout and "70" in _stdout, "HINT:cedvel(7) çağırışı 7 x 3 = 21 və 7 x 10 = 70 sətirlərini verməlidir — print(f\\"{eded} x {i} = {eded * i}\\")."`}
+	inputs={[]}
+>
+	Köhnə vurma cədvəli missiyasını **universal** et: `cedvel(eded)` istənilən ədəd üçün işləsin. `cedvel(7)` ilə yoxla. Dövr + funksiya = 🔥
+</Mission>
+
+<ModuleProgress
+	moduleId="05"
+	missions={['m05-l01-m1', 'm05-l01-m2', 'm05-l02-m1', 'm05-l02-m2', 'm05-l02-m3', 'm05-l03-m1', 'm05-l03-m2', 'm05-l03-m3']}
+	badgeLabel="Funksiyalar nişanı"
+/>
+
+---
+
+**Növbəti dərsdə:** funksiya nəticəni təkcə çap etməsin — **qaytarsın**: `return`. [Davam et →](../return/)

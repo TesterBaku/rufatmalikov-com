@@ -1,0 +1,79 @@
+---
+title: Lüğətlər (dict)
+description: Açar–dəyər cütlükləri — telefon kitabçası kimi işləyən kolleksiya.
+sidebar:
+  order: 4
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Telefon kitabçasında nömrəni **sıra nömrəsi** ilə yox, **adla** axtarırsan. Python-da bunun üçün **lüğət** (dictionary) var: hər **açara** bir **dəyər** uyğun gəlir.
+
+## Lüğət necə yaranır
+
+Fiqurlu mötərizə `{ }` + `açar: dəyər` cütlükləri:
+
+<PyRunner
+	id="ex-dict"
+	starterCode={`oyuncu = {"ad": "Aysel", "xal": 120, "səviyyə": 3}\nprint(oyuncu["ad"])\nprint(oyuncu["xal"])`}
+	height="5rem"
+/>
+
+`oyuncu["ad"]` — indekslə yox, **açarla** müraciət: *«oyuncu lüğətində ad açarının dəyəri»*.
+
+## Dəyəri dəyiş, yenisini əlavə et
+
+<PyRunner
+	id="ex-dict-deyis"
+	starterCode={`oyuncu = {"ad": "Aysel", "xal": 120}\noyuncu["xal"] = oyuncu["xal"] + 50\noyuncu["komanda"] = "Ulduzlar"\nprint(oyuncu)`}
+	height="6rem"
+/>
+
+Mövcud açara mənimsətmə dəyəri **yeniləyir**, yeni açara mənimsətmə cütlük **əlavə edir**. Kompüter oyunlarındakı personaj məlumatları məhz belə saxlanılır. 🎮
+
+## Missiyalar
+
+<Mission
+	id="m04-l04-m1"
+	xp={10}
+	title="Oyunçu kartı"
+	starterCode={`# "oyuncu" adlı lüğət yarat: "ad" və "xal" açarları ilə,\n# sonra f-string ilə çap et: "<ad> — <xal> xal"\n`}
+	checkCode={`assert "oyuncu" in globals() and isinstance(globals()["oyuncu"], dict), "HINT:Fiqurlu mötərizə ilə yarat: oyuncu = {\\"ad\\": \\"...\\", \\"xal\\": ...}"\nassert "ad" in globals()["oyuncu"] and "xal" in globals()["oyuncu"], "HINT:Lüğətdə ad və xal açarları olmalıdır."\nassert str(globals()["oyuncu"]["xal"]) in _stdout, "HINT:Çap üçün f-string içində açara tək dırnaqla müraciət et: print(f\\"{oyuncu['ad']} — {oyuncu['xal']} xal\\")"`}
+	inputs={[]}
+>
+	`oyuncu` lüğəti yarat (`ad` və `xal` açarları ilə) və məlumatı `Aysel — 120 xal` formasında çap et. İpucu: f-string içində lüğət açarını **tək** dırnaqla yaz: `{oyuncu['ad']}`.
+</Mission>
+
+<Mission
+	id="m04-l04-m2"
+	xp={15}
+	title="Xal yağışı"
+	starterCode={`oyuncu = {"ad": "Tural", "xal": 120}\n# Oyunçu bonus qazandı: xalını 50 artır,\n# sonra yeni xalı çap et\n`}
+	checkCode={`assert globals()["oyuncu"]["xal"] == 170, "HINT:oyuncu[\\"xal\\"] = oyuncu[\\"xal\\"] + 50 — köhnə dəyərin üstünə gəl."\nassert "170" in _stdout, "HINT:Yeni xalı çap et: print(oyuncu[\\"xal\\"])"`}
+	inputs={[]}
+>
+	Oyunçunun xalını **50 artır** (köhnə dəyərin üstünə gələrək!) və yeni xalı çap et.
+</Mission>
+
+<Mission
+	id="m04-l04-m3"
+	xp={15}
+	title="Telefon kitabçası"
+	starterCode={`nomreler = {"Aysel": "050-123-45-67", "Tural": "055-987-65-43"}\nad = input("Kimin nömrəsi lazımdır? ")\n# Həmin adamın nömrəsini çap et\n`}
+	checkCode={`assert "050-123-45-67" in _stdout, "HINT:Açar dəyişəndə saxlanılıb: print(nomreler[ad]) — Daxiletmələrdə Aysel var."`}
+	inputs={['Aysel']}
+>
+	İstifadəçinin soruşduğu adamın nömrəsini lüğətdən tapıb çap et. (Daxiletmələrdə `Aysel` var.)
+</Mission>
+
+<ModuleProgress
+	moduleId="04"
+	missions={['m04-l01-m1', 'm04-l01-m2', 'm04-l01-m3', 'm04-l02-m1', 'm04-l02-m2', 'm04-l02-m3', 'm04-l03-m1', 'm04-l03-m2', 'm04-l03-m3', 'm04-l04-m1', 'm04-l04-m2', 'm04-l04-m3']}
+	badgeLabel="Kolleksiyalar nişanı"
+/>
+
+---
+
+🏅 **Bu modulu bitirdin!** Siyahılar və lüğətlər — proqramların yaddaş anbarı. **Növbəti modulda** kodu səliqəyə salırıq: öz **funksiyalarını** yazacaqsan. [Davam et →](../../05-funksiyalar/ilk-funksiyan/)

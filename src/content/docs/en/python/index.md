@@ -1,6 +1,10 @@
 ---
 title: Python Course
 description: A free, interactive Python course for beginners — written in Azerbaijani first. An English version is planned.
+# Standalone stub: the AZ-only lessons/glossary have no EN pages, so disable the
+# prev/next pager (its "next" would 404 on the AZ-only glossary).
+prev: false
+next: false
 ---
 
 This interactive, browser-based Python course is **written in Azerbaijani first**.
