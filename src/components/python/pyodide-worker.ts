@@ -118,14 +118,58 @@ function post(msg: unknown) {
   (self as unknown as Worker).postMessage(msg);
 }
 
+// Output streaming with coalescing + a hard cap. Pyodide calls the batched
+// stdout/stderr callback once *per line*, synchronously, from inside the running
+// Python. A printing infinite loop (e.g. `while True: print(...)`) would post a
+// message per iteration and saturate the main thread's message queue, which
+// starves the main-thread 5s kill-timer so the loop is never terminated. We
+// therefore (1) coalesce output into ~1KB chunks to bound the message count, and
+// (2) stop streaming after OUTPUT_CAP bytes per run. A runaway loop then emits a
+// bounded number of messages, the main thread drains them, and the kill-timer
+// fires. The mission check is unaffected: it reads Python's own captured buffer
+// (HELPER_PY `_stdout`), not this stream.
+const FLUSH_AT = 1024; // post once the buffer reaches ~1 KB
+const OUTPUT_CAP = 128 * 1024; // max streamed chars per run before truncating
+let streamedChars = 0;
+let truncated = false;
+
+function makeStreamer(type: 'stdout' | 'stderr') {
+  let buf = '';
+  const flush = () => {
+    if (!buf) return;
+    post({ type, text: buf });
+    buf = '';
+  };
+  const write = (text: string) => {
+    if (truncated) return;
+    streamedChars += text.length;
+    buf += text;
+    if (buf.length >= FLUSH_AT) flush();
+    if (streamedChars >= OUTPUT_CAP) {
+      flush();
+      truncated = true;
+      post({ type: 'stderr', text: '\n…[çıxış həddi keçildi — qalan hissə göstərilmir]\n' });
+    }
+  };
+  return { write, flush };
+}
+
+const stdoutStreamer = makeStreamer('stdout');
+const stderrStreamer = makeStreamer('stderr');
+
+function flushStreams() {
+  stdoutStreamer.flush();
+  stderrStreamer.flush();
+}
+
 let pyodide: AnyPyodide | null = null;
 let loading: Promise<AnyPyodide> | null = null;
 
 async function loadOnce(): Promise<AnyPyodide> {
   const mod: any = await import(/* @vite-ignore */ `${CDN}pyodide.mjs`);
   const py: AnyPyodide = await mod.loadPyodide({ indexURL: CDN });
-  py.setStdout({ batched: (text) => post({ type: 'stdout', text }) });
-  py.setStderr({ batched: (text) => post({ type: 'stderr', text }) });
+  py.setStdout({ batched: stdoutStreamer.write });
+  py.setStderr({ batched: stderrStreamer.write });
   py.runPython(HELPER_PY);
   pyodide = py;
   post({ type: 'ready' });
@@ -159,10 +203,14 @@ self.onmessage = async (e: MessageEvent) => {
     py.globals.set('_user_code', String(data.code ?? ''));
     py.globals.set('_user_inputs_json', JSON.stringify(data.inputs ?? []));
     py.globals.set('_user_check', String(data.checkCode ?? ''));
+    // Reset the per-run output budget before execution begins.
+    streamedChars = 0;
+    truncated = false;
     post({ type: 'started' });
     const resProxy = await py.runPythonAsync(
       '_run_user(_user_code, _user_inputs_json, _user_check)'
     );
+    flushStreams(); // push any sub-threshold tail before reporting the result
     const res = resProxy.toJs({ dict_converter: Object.fromEntries });
     resProxy.destroy?.();
     if (res.check) {
@@ -174,6 +222,7 @@ self.onmessage = async (e: MessageEvent) => {
       post({ type: 'error', errorType: res.err.type, message: res.err.msg, line: res.err.line ?? null });
     }
   } catch (err: any) {
+    flushStreams();
     // _run_user swallows user-level exceptions, so reaching here means an
     // infrastructure-level failure (e.g. a SyntaxError while compiling helpers).
     post({

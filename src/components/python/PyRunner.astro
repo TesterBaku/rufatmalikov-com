@@ -56,7 +56,7 @@ const t =
 	<details class="py-inputs-wrap">
 		<summary>{t.inputs}</summary>
 		<p class="py-inputs-hint">{t.inputsHint}</p>
-		<textarea class="py-inputs" data-inputs rows="3" spellcheck="false">{inputs}</textarea>
+		<textarea class="py-inputs" data-inputs rows="3" spellcheck="false" aria-label={t.inputs}>{inputs}</textarea>
 	</details>
 
 	<div class="py-toolbar">
@@ -74,10 +74,51 @@ const t =
 <script>
 	import { EditorView, basicSetup } from 'codemirror';
 	import { python } from '@codemirror/lang-python';
-	import { StateEffect, StateField } from '@codemirror/state';
+	import { Prec, StateEffect, StateField } from '@codemirror/state';
 	import { Decoration } from '@codemirror/view';
 	import type { DecorationSet } from '@codemirror/view';
+	import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+	import { tags as t } from '@lezer/highlight';
 	import PyWorker from './pyodide-worker.ts?worker';
+
+	// --- Theme-aware editor chrome + syntax colours ----------------------------
+	// CodeMirror's default theme is light-only, so on a dark Starlight page the
+	// gutter and token colours would look broken. We drive both from CSS custom
+	// properties (Starlight's --sl-* tokens + our --py-cm-* palette, both defined
+	// per-theme in the <style> below), so the editor follows the page theme live
+	// with no JS — including the dark/light toggle.
+	const cmTheme = EditorView.theme({
+		'&': { backgroundColor: 'transparent', color: 'var(--sl-color-text)' },
+		'.cm-content': { caretColor: 'var(--sl-color-text-accent)' },
+		'.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--sl-color-text-accent)' },
+		'&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-line ::selection': {
+			backgroundColor: 'var(--py-cm-selection)',
+		},
+		'.cm-gutters': {
+			backgroundColor: 'var(--sl-color-bg-nav)',
+			color: 'var(--sl-color-gray-3)',
+			border: 'none',
+			borderRight: '1px solid var(--sl-color-gray-5)',
+		},
+		'.cm-activeLine': { backgroundColor: 'var(--py-cm-active)' },
+		'.cm-activeLineGutter': { backgroundColor: 'var(--py-cm-active)' },
+		'.cm-foldPlaceholder': {
+			backgroundColor: 'transparent',
+			border: 'none',
+			color: 'var(--sl-color-gray-3)',
+		},
+	});
+
+	const cmHighlight = HighlightStyle.define([
+		{ tag: [t.keyword, t.controlKeyword, t.operatorKeyword, t.moduleKeyword, t.self], color: 'var(--py-cm-keyword)' },
+		{ tag: [t.comment, t.lineComment, t.blockComment], color: 'var(--py-cm-comment)', fontStyle: 'italic' },
+		{ tag: [t.string, t.special(t.string), t.regexp], color: 'var(--py-cm-string)' },
+		{ tag: [t.number, t.integer, t.float, t.bool, t.null, t.atom], color: 'var(--py-cm-number)' },
+		{ tag: [t.function(t.variableName), t.function(t.definition(t.variableName))], color: 'var(--py-cm-function)' },
+		{ tag: [t.className, t.typeName], color: 'var(--py-cm-type)' },
+		{ tag: [t.propertyName], color: 'var(--py-cm-property)' },
+		{ tag: [t.operator, t.punctuation, t.bracket, t.separator], color: 'var(--py-cm-operator)' },
+	]);
 
 	// --- Localised runtime strings (button labels are server-rendered) ---------
 	const I18N = {
@@ -89,6 +130,7 @@ const t =
 			timeout:
 				'⏱ Proqram çox uzun çəkdi və dayandırıldı (5 saniyə limiti). Sonsuz dövr (məs. while True) ola bilər.',
 			lineWord: 'sətir',
+			editorLabel: 'Python kod redaktoru',
 		},
 		en: {
 			loading: 'Loading Python…',
@@ -98,6 +140,7 @@ const t =
 			timeout:
 				'⏱ Program took too long and was stopped (5s limit). Possible infinite loop (e.g. while True).',
 			lineWord: 'line',
+			editorLabel: 'Python code editor',
 		},
 	} as const;
 
@@ -177,7 +220,16 @@ const t =
 
 			this.view = new EditorView({
 				doc: starter.value,
-				extensions: [basicSetup, python(), errorLineField],
+				extensions: [
+					basicSetup,
+					python(),
+					errorLineField,
+					cmTheme,
+					// Accessible name for the contenteditable editor (role=textbox).
+					EditorView.contentAttributes.of({ 'aria-label': this.strings.editorLabel }),
+					// Prec.highest so these token colours win over basicSetup's light-only default.
+					Prec.highest(syntaxHighlighting(cmHighlight)),
+				],
 				parent: root.querySelector<HTMLElement>('[data-editor]')!,
 			});
 
@@ -335,11 +387,41 @@ const t =
 
 <style>
 	.py-runner {
+		/* Editor palette — light theme. Consumed by the CodeMirror theme/highlight
+		   (defined in <script>) via CSS vars, so the editor follows the page theme. */
+		--py-cm-keyword: #cf222e;
+		--py-cm-comment: #6e7781;
+		--py-cm-string: #0a3069;
+		--py-cm-number: #0550ae;
+		--py-cm-function: #6639ba; /* darker purple → ≥4.5:1 on the active-line bg */
+		--py-cm-type: #0e7490;
+		--py-cm-property: #0550ae;
+		--py-cm-operator: var(--sl-color-text);
+		--py-cm-selection: rgba(37, 99, 235, 0.18);
+		--py-cm-active: rgba(0, 0, 0, 0.045);
+		--py-error-line-bg: rgba(220, 38, 38, 0.16);
+		--py-error-bg: rgba(220, 38, 38, 0.05);
+
 		margin-block: 1.5rem;
 		border: 1px solid var(--sl-color-gray-5, #d0d5dd);
 		border-radius: 0.6rem;
 		overflow: hidden;
 		background: var(--sl-color-bg-nav, #f8fafc);
+	}
+
+	/* Dark theme: brighter syntax hues + stronger error tints for contrast. */
+	:global([data-theme='dark']) .py-runner {
+		--py-cm-keyword: #ff7b72;
+		--py-cm-comment: #8b949e;
+		--py-cm-string: #a5d6ff;
+		--py-cm-number: #79c0ff;
+		--py-cm-function: #d2a8ff;
+		--py-cm-type: #56d4dd;
+		--py-cm-property: #79c0ff;
+		--py-cm-selection: rgba(56, 139, 253, 0.32);
+		--py-cm-active: rgba(255, 255, 255, 0.055);
+		--py-error-line-bg: rgba(248, 81, 73, 0.22);
+		--py-error-bg: rgba(248, 81, 73, 0.12);
 	}
 
 	.py-editor {
@@ -357,8 +439,8 @@ const t =
 	:global(.py-runner .cm-scroller) {
 		font-family: var(--__sl-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 	}
-	:global(.py-error-line) {
-		background: rgba(220, 38, 38, 0.16);
+	:global(.py-runner .py-error-line) {
+		background: var(--py-error-line-bg, rgba(220, 38, 38, 0.16));
 	}
 
 	.py-inputs-wrap {
@@ -451,7 +533,7 @@ const t =
 		color: var(--sl-color-text, #111);
 	}
 	.py-output.has-error {
-		background: rgba(220, 38, 38, 0.05);
+		background: var(--py-error-bg, rgba(220, 38, 38, 0.05));
 	}
 	.py-stderr {
 		color: var(--sl-color-red, #dc2626);

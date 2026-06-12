@@ -11,6 +11,23 @@ import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
 //    sidebar free of empty groups and dead links.
 export const onRequest = defineRouteMiddleware((context) => {
 	const route = context.locals.starlightRoute;
+
+	// OG defaults for the Python course. Starlight emits og:/twitter: tags and a
+	// `twitter:card=summary_large_image` from each page's frontmatter `description`,
+	// but no image — so social cards render blank. Add a shared course OG image on
+	// every /python/ route (asset: public/og/python-course.png, built by
+	// tasks/og/make-python-og.mjs). Scoped here so we don't touch 25 MDX files.
+	if (context.url.pathname.includes('/python/')) {
+		const img = new URL('/og/python-course.png', context.site ?? context.url).href;
+		route.head.push(
+			{ tag: 'meta', attrs: { property: 'og:image', content: img } },
+			{ tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
+			{ tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
+			{ tag: 'meta', attrs: { name: 'twitter:image', content: img } },
+			{ tag: 'meta', attrs: { name: 'twitter:image:alt', content: 'Python Dərsləri — rufatmalikov.com' } }
+		);
+	}
+
 	if (route.lang !== 'en') return;
 
 	type Entry = (typeof route.sidebar)[number];

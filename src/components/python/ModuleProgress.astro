@@ -37,7 +37,7 @@ const t =
 		<strong>{t.heading}</strong>
 		<span class="py-modprog-count" data-count>0 / {missions.length}</span>
 	</div>
-	<div class="py-modprog-bar" role="progressbar" aria-valuemin="0" aria-valuemax={missions.length}>
+	<div class="py-modprog-bar" role="progressbar" aria-label={t.heading} aria-valuemin="0" aria-valuemax={missions.length}>
 		<span class="py-modprog-fill" data-fill style="width:0%"></span>
 	</div>
 	<div class="py-modprog-meta">
