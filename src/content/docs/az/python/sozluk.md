@@ -10,12 +10,12 @@ Proqramlaşdırma dünyasının öz dili var. Bu səhifə kursda işlənən term
 | proqram | program | Kompüter üçün addım-addım təlimatlar toplusu |
 | proqramlaşdırma | programming, coding | Proqram yazmaq işi |
 | kod | code | Proqramın mətni |
-| əmr | command, statement | Kompüterə verilən bir təlimat |
+| əmr | command, statement | Kompüterə verilən bir təlimat (dərsliklərdə: «operator», «komanda») |
 | işə salmaq | run, execute | Proqramı başlatmaq |
 | çap etmək | print | Ekrana yazı çıxarmaq |
-| mətn | string | Dırnaq içində yazılan simvollar ardıcıllığı |
+| mətn | string | Dırnaq içində yazılan simvollar ardıcıllığı (məktəb dərsliklərində: «sətir») |
 | tam ədəd | integer (int) | Kəsrsiz ədəd: 5, -3, 1024 |
-| kəsr ədəd | float | Vergüllü ədəd: 3.5, 0.1 |
+| həqiqi ədəd | float | Tam və kəsr hissəsi olan ədəd: 3.5, 0.1 — Python-da vergül yox, **nöqtə** yazılır! |
 | dəyişən | variable | Məlumat saxlayan adlı «qutu» |
 | mənimsətmə | assignment | Dəyişənə dəyər vermək: `x = 5` |
 | daxiletmə | input | İstifadəçidən alınan məlumat |
@@ -31,7 +31,7 @@ Proqramlaşdırma dünyasının öz dili var. Bu səhifə kursda işlənən term
 | doğru / yanlış | True / False (boolean) | Python-un «hə» və «yox» dəyərləri |
 | məntiqi operator | logical operator | Şərtləri birləşdirən `and`, `or`, `not` |
 | dövr | loop | Təkrarlanan kod bloku |
-| sayğac | counter | Dövrədə dəyəri artan/azalan dəyişən (`i`) |
+| sayğac | counter | Dövrdə dəyəri artan/azalan dəyişən (`i`) |
 | toplayıcı | accumulator | Dövr boyu nəticə yığan dəyişən |
 | sonsuz dövr | infinite loop | Heç vaxt bitməyən dövr — `while` yazanda diqqət! |
 | siyahı | list | Sıra ilə düzülmüş elementlər toplusu *(Modul 04)* |

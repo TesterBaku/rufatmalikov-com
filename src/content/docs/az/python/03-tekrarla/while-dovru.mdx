@@ -15,19 +15,19 @@ import ModuleProgress from '../../../../../components/python/ModuleProgress.astr
 
 <PyRunner
 	id="ex-while"
-	starterCode={`i = 1\nwhile i <= 5:\n    print(f"{i}-ci dövrə")\n    i = i + 1\nprint("Bitdi!")`}
+	starterCode={`i = 1\nwhile i <= 5:\n    print(f"Təkrar {i}")\n    i = i + 1\nprint("Bitdi!")`}
 	height="7rem"
 />
 
 Üç vacib hissə:
 
 1. **Başlanğıc:** `i = 1` — sayğac dövrdən əvvəl yaradılır
-2. **Şərt:** `while i <= 5:` — hər dövrədən əvvəl yoxlanılır
+2. **Şərt:** `while i <= 5:` — hər təkrardan əvvəl yoxlanılır
 3. **Dəyişiklik:** `i = i + 1` — sayğac irəliləyir, yoxsa şərt heç vaxt yanlış olmaz!
 
 ## ⚠️ Sonsuz dövr tələsi
 
-3-cü hissəni unutsan nə olar? Şərt **həmişə** doğru qalar və dövr **heç vaxt bitməz**. Yoxla — qorxma, bizim meydança 5 saniyəyə özü dayandırır:
+3-cü hissəni unutsan nə olar? Şərt **həmişə** doğru qalar və dövr **heç vaxt bitməz**. Yoxla — qorxma, bizim meydança 5 saniyədən sonra onu özü dayandırır:
 
 <PyRunner
 	id="ex-sonsuz"
@@ -42,7 +42,7 @@ Gördün? `i` heç vaxt 5-i keçmir, çünki onu artıran yoxdur. Öz kompüteri
 <Mission
 	id="m03-l03-m1"
 	xp={10}
-	title="Geri sayım"
+	title="Geriyə sayma"
 	starterCode={`# 5-dən 1-ə geri say, sonda "Start!" çap et\n# 5\n# 4\n# ...\n# 1\n# Start!\n`}
 	checkCode={`_lines = [l.strip() for l in _stdout.strip().splitlines() if l.strip()]\nassert _lines[:5] == ["5", "4", "3", "2", "1"], "HINT:i = 5-dən başla, while i >= 1: içində print(i) və i = i - 1."\nassert "start" in _stdout.lower(), "HINT:Dövr bitəndən sonra (girintisiz!) print(\\"Start!\\") yaz."`}
 	inputs={[]}
@@ -64,12 +64,12 @@ Gördün? `i` heç vaxt 5-i keçmir, çünki onu artıran yoxdur. Öz kompüteri
 <Mission
 	id="m03-l03-m3"
 	xp={20}
-	title="Rəqəmi tap oyunu"
-	starterCode={`gizli = 7\ncavab = int(input("Rəqəmi tap (1-10): "))\n# Nə qədər ki cavab gizli rəqəmə bərabər deyil,\n# yenidən soruş. Tapanda: "Tapdın! 🎉"\n`}
+	title="Ədədi tap oyunu"
+	starterCode={`gizli = 7\ncavab = int(input("Ədədi tap (1-10): "))\n# Nə qədər ki cavab gizli ədədə bərabər deyil,\n# yenidən soruş. Tapanda: "Tapdın! 🎉"\n`}
 	checkCode={`assert "tapdın" in _stdout.lower() or "tapdin" in _stdout.lower(), "HINT:while cavab != gizli: içində cavab = int(input(...)) — Daxiletmələrdə 3 cəhd var, üçüncüsü düzdür."`}
 	inputs={['5', '9', '7']}
 >
-	İlk **əsl oyununu** yaz! Gizli rəqəm `7`-dir. Oyunçu tapana qədər `while` soruşmağa davam etsin, tapanda `Tapdın! 🎉` desin. (Daxiletmələrdə oyunçunun 3 cəhdi hazırdır: `5`, `9`, `7`.)
+	İlk **əsl oyununu** yaz! Gizli ədəd `7`-dir. Oyunçu tapana qədər `while` soruşmağa davam etsin, tapanda `Tapdın! 🎉` desin. (Daxiletmələrdə oyunçunun 3 cəhdi hazırdır: `5`, `9`, `7`.)
 </Mission>
 
 <ModuleProgress

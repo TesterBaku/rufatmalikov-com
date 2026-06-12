@@ -9,7 +9,7 @@ import PyRunner from '../../../../../components/python/PyRunner.astro';
 import Mission from '../../../../../components/python/Mission.astro';
 import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
 
-İndiyə qədər proqramların hər sətri sıra ilə, sözsüz yerinə yetirirdi. Amma əsl proqramlar **qərar verir**: parol düzdürsə — qapını aç, səhvdirsə — buraxma. Oyunlarda «düz cavab / səhv cavab» da məhz budur.
+İndiyə qədər proqramlarında hər sətir sıra ilə, sözsüz icra olunurdu. Amma əsl proqramlar **qərar verir**: parol düzdürsə — qapını aç, səhvdirsə — buraxma. Oyunlarda «düz cavab / səhv cavab» da məhz budur.
 
 :::tip[Bu modulda nə öyrənəcəksən]
 Bu modulun 3 dərsində proqramına qərar verməyi öyrədəcəksən: `if/else`, müqayisə operatorları və `and/or/not`.
@@ -62,11 +62,11 @@ Bir vacib detal: müqayisə üçün **iki** bərabər işarəsi yazılır — `=
 	id="m02-l01-m2"
 	xp={10}
 	title="Mənfi, yoxsa müsbət?"
-	starterCode={`eded = int(input("Bir ədəd yaz: "))\n# Mənfidirsə "mənfi", əks halda "müsbət" çap et\n`}
+	starterCode={`eded = int(input("Bir ədəd yaz: "))\n# Mənfidirsə "mənfi", əks halda "müsbət və ya sıfır" çap et\n`}
 	checkCode={`assert "mənfi" in _stdout.lower() or "menfi" in _stdout.lower(), "HINT:if eded < 0 şərtini yoxla — Daxiletmələrdə -5 var, deməli cavab mənfi olmalıdır."`}
 	inputs={['-5']}
 >
-	Proqram bir ədəd oxusun: sıfırdan kiçikdirsə `mənfi`, əks halda `müsbət` çap etsin. (Daxiletmələrdə `-5` var.)
+	Proqram bir ədəd oxusun: sıfırdan kiçikdirsə `mənfi`, əks halda `müsbət və ya sıfır` çap etsin. (Daxiletmələrdə `-5` var.)
 </Mission>
 
 <Mission
