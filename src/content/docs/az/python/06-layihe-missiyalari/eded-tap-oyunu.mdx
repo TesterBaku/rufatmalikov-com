@@ -1,0 +1,48 @@
+---
+title: "Layihə 2: Ədədi tap 2.0"
+description: Oyun indi ipucu verir — böyükdür, kiçikdir — və cəhdləri sayır.
+sidebar:
+  order: 2
+---
+
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Modul 03-da «Ədədi tap» yazmışdın. İndi onu **əsl oyuna** çevirək: proqram hər səhv cəhddə ipucu versin və sonda neçə cəhd lazım olduğunu desin.
+
+:::tip[Bu layihədə işlədəcəksən]
+`while` (Modul 03) · `if/elif` (Modul 02) · sayğac dəyişən (Modul 03) · f-string
+:::
+
+## Plan
+
+1. `gizli = 7` və `cehd = 0` ilə başla
+2. İlk cavabı oxu (`int(input(...))`) və cəhdi say
+3. `while cavab != gizli:` — tapılmayana qədər:
+   - cavab gizlidən **kiçikdirsə**: «Gizli ədəd daha böyükdür ⬆️»
+   - **böyükdürsə**: «Gizli ədəd daha kiçikdir ⬇️»
+   - yeni cavab oxu, cəhdi yenə say
+4. Dövr bitəndə: `f"Tapdın! {cehd} cəhdə 🎉"`
+
+## Missiya
+
+<Mission
+	id="m06-p2"
+	xp={25}
+	title="Ədədi tap 2.0"
+	starterCode={`gizli = 7\ncehd = 0\ncavab = int(input("Ədədi tap (1-10): "))\ncehd = cehd + 1\n# while ilə davam etdir: ipucu ver, yenidən oxu, cəhdləri say\n`}
+	checkCode={`assert "tapdın" in _stdout.lower() or "tapdin" in _stdout.lower(), "HINT:while cavab != gizli: içində ipucu + yeni input, dövrdən sonra Tapdın mesajı."\nassert "böyük" in _stdout.lower() or "boyuk" in _stdout.lower(), "HINT:İlk cəhd 3-dür (gizli 7-dən kiçik) — proqram «daha böyükdür» ipucusu verməlidir: if cavab < gizli:"\nassert "4" in _stdout, "HINT:Cəhdləri say (hər input-dan sonra cehd = cehd + 1) və sonda çap et — bu ssenaridə 4 cəhd olur."`}
+	inputs={['3', '9', '6', '7']}
+>
+	Planı izlə. (Daxiletmələrdə oyunçunun ssenarisi: `3` → böyükdür, `9` → kiçikdir, `6` → böyükdür, `7` → tapdı! Proqram sonda `4 cəhdə` deməlidir.)
+</Mission>
+
+<ModuleProgress
+	moduleId="06"
+	missions={['m06-p1', 'm06-p2', 'm06-p3', 'm06-p4']}
+	badgeLabel="Python Kəşfiyyatçısı"
+/>
+
+---
+
+**Növbəti layihə:** öz viktorinanı yarat — suallar siyahıda, xallar sayğacda. [Davam et →](../viktorina/)

@@ -1,0 +1,91 @@
+---
+title: Ədədlər və hesab
+description: Python-da riyaziyyat — toplama, vurma, bölmə, qalıq və qüvvət.
+sidebar:
+  order: 2
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Ədədlər mətnlərdən fərqlidir: **dırnaqsız** yazılır. Dırnaqsız yazanda Python onları hesablayır:
+
+<PyRunner
+	id="ex-ferq"
+	starterCode={`print(5 + 3)\nprint("5 + 3")`}
+	height="4rem"
+/>
+
+Gördün? `5 + 3` hesablandı və `8` çıxdı, `"5 + 3"` isə adi mətn kimi çap olundu. **Dırnaq = mətn, dırnaqsız = ədəd.**
+
+## Hesab əməlləri
+
+| İşarə | Əməl | Nümunə | Nəticə |
+|---|---|---|---|
+| `+` | toplama | `7 + 2` | `9` |
+| `-` | çıxma | `7 - 2` | `5` |
+| `*` | vurma | `7 * 2` | `14` |
+| `/` | bölmə | `7 / 2` | `3.5` |
+| `//` | tam bölmə | `7 // 2` | `3` |
+| `%` | qalıq | `7 % 2` | `1` |
+| `**` | qüvvət | `7 ** 2` | `49` |
+
+`//` və `%` cütlüyünü belə yadda saxla: 7 konfeti 2 uşağa bölsək — hərəsinə `7 // 2 = 3` konfet düşür, `7 % 2 = 1` konfet artıq qalır. 🍬
+
+## Python — superkalkulyator
+
+Bir gündə neçə saniyə var? Hesablamağa nə var ki:
+
+<PyRunner
+	id="ex-saniye"
+	starterCode={`print(24 * 60 * 60)\nprint(2 ** 100)`}
+	height="4rem"
+/>
+
+İkinci sətrə bax: 2-nin 100-cü qüvvəti — adi kalkulyator bunu bacarmır, Python isə gözünü də qırpmır. 😎
+
+## Missiyalar
+
+<Mission
+	id="m01-l02-m1"
+	xp={10}
+	title="İldə neçə saat?"
+	starterCode={`# Bir ildə neçə saat var? Özün hesablama — Python hesablasın!\nprint(...)`}
+	checkCode={`assert "8760" in _stdout, "HINT:İldə 365 gün, hər gündə 24 saat var — print(365 * 24) yaz."`}
+	inputs={[]}
+>
+	Python-a bir ildə neçə **saat** olduğunu hesablat. (Cavabı özün yazma — vurma əməlindən istifadə et!)
+</Mission>
+
+<Mission
+	id="m01-l02-m2"
+	xp={15}
+	title="Alma payı"
+	starterCode={`# 17 almanı 5 uşağa bərabər bölürük.\n# 1-ci sətirdə: hər uşağa neçə alma düşür? (tam bölmə)\n# 2-ci sətirdə: neçə alma artıq qalır? (qalıq)\n`}
+	checkCode={`_lines = [l.strip() for l in _stdout.strip().splitlines() if l.strip()]\nassert len(_lines) >= 2, "HINT:İki print lazımdır — biri tam bölmə (//), biri qalıq (%) üçün."\nassert "3" in _lines[0], "HINT:Birinci sətir 17 // 5 nəticəsini göstərməlidir."\nassert "2" in _lines[1], "HINT:İkinci sətir 17 % 5 nəticəsini göstərməlidir."`}
+	inputs={[]}
+>
+	17 alma, 5 uşaq. `//` və `%` ilə hesabla: hər uşağa neçə alma düşür və neçəsi artıq qalır?
+</Mission>
+
+<Mission
+	id="m01-l02-m3"
+	xp={10}
+	title="Qüvvət gücü"
+	starterCode={`# 2-nin 10-cu qüvvətini hesablat\nprint(...)`}
+	checkCode={`assert "1024" in _stdout, "HINT:Qüvvət üçün ** işarəsidir: print(2 ** 10)."`}
+	inputs={[]}
+>
+	Kompüter dünyasında məşhur ədəd var: 2-nin 10-cu qüvvəti. Python-a hesablat və nəticəni gör.
+</Mission>
+
+<ModuleProgress
+	moduleId="01"
+	missions={['m01-l01-m1', 'm01-l01-m2', 'm01-l01-m3', 'm01-l02-m1', 'm01-l02-m2', 'm01-l02-m3', 'm01-l03-m1', 'm01-l03-m2', 'm01-l03-m3', 'm01-l04-m1', 'm01-l04-m2', 'm01-l04-m3']}
+	badgeLabel="Python ilə danış nişanı"
+/>
+
+---
+
+**Növbəti dərsdə:** dəyişənlər — məlumatı **yadda saxlamaq** üçün qutular. Proqramlaşdırmanın ən vacib anlayışlarından biri. [Davam et →](../deyisenler/)

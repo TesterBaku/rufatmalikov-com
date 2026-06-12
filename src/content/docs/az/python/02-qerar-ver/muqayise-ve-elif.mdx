@@ -1,0 +1,86 @@
+---
+title: Müqayisə və elif
+description: Bütün müqayisə operatorları, True/False və elif ilə çoxyollu seçim.
+sidebar:
+  order: 2
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Keçən dərsdə `>=` və `==` gördün. İndi bütün dəsti tanıyaq.
+
+## Müqayisə operatorları
+
+| İşarə | Mənası | Nümunə | Nəticə |
+|---|---|---|---|
+| `==` | bərabərdir | `5 == 5` | `True` |
+| `!=` | bərabər deyil | `5 != 3` | `True` |
+| `>` | böyükdür | `5 > 7` | `False` |
+| `<` | kiçikdir | `5 < 7` | `True` |
+| `>=` | böyük və ya bərabər | `5 >= 5` | `True` |
+| `<=` | kiçik və ya bərabər | `5 <= 4` | `False` |
+
+`True` (doğru) və `False` (yanlış) — Python-un «hə» və «yox»udur. Müqayisəni `print`-ə qoysan, cavabı birbaşa görərsən:
+
+<PyRunner
+	id="ex-bool"
+	starterCode={`print(10 > 5)\nprint(3 == 7)\nprint("alma" == "alma")`}
+/>
+
+## elif — «yox, bəs belədirsə?»
+
+İki yol azlıq edəndə `elif` (*else if*) köməyə gəlir. Python şərtləri **yuxarıdan aşağı** yoxlayır və **ilk doğru** olanda dayanır:
+
+<PyRunner
+	id="ex-elif"
+	starterCode={`qiymet = 85\nif qiymet >= 90:\n    print("Əla! 🥇")\nelif qiymet >= 70:\n    print("Yaxşı! 🥈")\nelif qiymet >= 50:\n    print("Kafi 🥉")\nelse:\n    print("Gərək bir az da çalışasan 💪")`}
+/>
+
+`qiymet`-i dəyişib hər dörd cavabı almağa çalış. `95`, `60`, `30` yoxla!
+
+## Missiyalar
+
+<Mission
+	id="m02-l02-m1"
+	xp={10}
+	title="Doğru, yoxsa yanlış?"
+	starterCode={`# Üç müqayisə çap et:\n# biri True, biri False versin, üçüncüsü öz seçimin\nprint(...)\nprint(...)\nprint(...)`}
+	checkCode={`assert "True" in _stdout, "HINT:Ən azı bir müqayisə True verməlidir — məsələn print(10 > 5)."\nassert "False" in _stdout, "HINT:Ən azı bir müqayisə False verməlidir — məsələn print(3 == 7)."`}
+	inputs={[]}
+>
+	Üç müqayisə yaz və `print` ilə nəticələrini çap et — ən azı biri `True`, biri `False` olsun.
+</Mission>
+
+<Mission
+	id="m02-l02-m2"
+	xp={15}
+	title="Hava məsləhətçisi"
+	starterCode={`temp = int(input("Temperatur neçə dərəcədir? "))\n# 30 və yuxarı: "isti"\n# 15-dən 29-a qədər: "mülayim"\n# 15-dən aşağı: "soyuq"\n`}
+	checkCode={`assert "mülayim" in _stdout.lower() or "mulayim" in _stdout.lower(), "HINT:if temp >= 30 / elif temp >= 15 / else qur — Daxiletmələrdə 22 var, deməli cavab mülayim olmalıdır."`}
+	inputs={['22']}
+>
+	Temperatura görə məsləhət ver: 30°+ `isti`, 15–29° `mülayim`, 15°-dən aşağı `soyuq`. (Daxiletmələrdə `22` var.)
+</Mission>
+
+<Mission
+	id="m02-l02-m3"
+	xp={15}
+	title="Tək, yoxsa cüt?"
+	starterCode={`eded = int(input("Bir ədəd yaz: "))\n# Qalıq operatorunu (%) xatırla:\n# 2-yə bölünəndə qalıq 0-dırsa — cütdür\n`}
+	checkCode={`assert "tək" in _stdout.lower() or "tek" in _stdout.lower(), "HINT:if eded % 2 == 0 şərtini yoxla: qalıq 0-dırsa cüt, yoxsa tək. Daxiletmələrdə 7 var — cavab tək olmalıdır."`}
+	inputs={['7']}
+>
+	Köhnə dostumuz `%` qayıdır: ədəd cütdürsə `cüt`, təkdirsə `tək` çap et. (Daxiletmələrdə `7` var.)
+</Mission>
+
+<ModuleProgress
+	moduleId="02"
+	missions={['m02-l01-m1', 'm02-l01-m2', 'm02-l01-m3', 'm02-l02-m1', 'm02-l02-m2', 'm02-l02-m3', 'm02-l03-m1', 'm02-l03-m2', 'm02-l03-m3']}
+	badgeLabel="Qərar ver nişanı"
+/>
+
+---
+
+**Növbəti dərsdə:** bir neçə şərti birləşdirməyi öyrənirik — `and`, `or`, `not`. [Davam et →](../ve-veya-deyil/)

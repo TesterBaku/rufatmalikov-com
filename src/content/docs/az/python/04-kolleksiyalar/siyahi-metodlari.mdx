@@ -1,0 +1,88 @@
+---
+title: Siyahını dəyiş
+description: append, remove, sort — və "in" ilə axtarış.
+sidebar:
+  order: 3
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Siyahı canlıdır: oyun zamanı xal əlavə olunur, səbətə məhsul atılır, reytinq dəyişir. Siyahının öz **metodları** var — nöqtə ilə çağırılan əməliyyatlar.
+
+## Əlavə et, sil
+
+<PyRunner
+	id="ex-append"
+	starterCode={`bazarliq = ["çörək", "süd"]\nbazarliq.append("pendir")\nprint(bazarliq)\nbazarliq.remove("süd")\nprint(bazarliq)`}
+	height="6rem"
+/>
+
+- `.append(x)` — sona əlavə edir
+- `.remove(x)` — ilk rast gəldiyi `x`-i silir
+
+## Sırala
+
+<PyRunner
+	id="ex-sort"
+	starterCode={`xallar = [42, 7, 99, 23]\nxallar.sort()\nprint(xallar)\n\nadlar = ["Tural", "Aysel", "Nigar"]\nadlar.sort()\nprint(adlar)`}
+	height="6rem"
+/>
+
+`.sort()` ədədləri kiçikdən böyüyə, mətnləri əlifba sırası ilə düzür.
+
+## in — «içindədirmi?»
+
+Elementin siyahıda olub-olmadığını `in` yoxlayır — nəticə `True`/`False`, yəni birbaşa `if`-ə qoşulur:
+
+<PyRunner
+	id="ex-in"
+	starterCode={`qonaqlar = ["Aysel", "Tural", "Nigar"]\nif "Tural" in qonaqlar:\n    print("Buyur, keç! 🎉")\nelse:\n    print("Siyahıda adın yoxdur.")`}
+	height="6rem"
+/>
+
+## Missiyalar
+
+<Mission
+	id="m04-l03-m1"
+	xp={10}
+	title="Səbəti doldur"
+	starterCode={`bazarliq = ["çörək", "süd"]\n# "pendir" və "yumurta" əlavə et, sonra siyahını çap et\n`}
+	checkCode={`assert "bazarliq" in globals() and len(globals()["bazarliq"]) == 4, "HINT:İki dəfə .append(...) çağır — siyahıda 4 məhsul olmalıdır."\nassert "pendir" in _stdout and "yumurta" in _stdout, "HINT:Sonda print(bazarliq) ilə yoxla."`}
+	inputs={[]}
+>
+	Səbətə `pendir` və `yumurta` əlavə et (`.append()` ilə) və yekun siyahını çap et.
+</Mission>
+
+<Mission
+	id="m04-l03-m2"
+	xp={15}
+	title="Turnir cədvəli"
+	starterCode={`xallar = [42, 7, 99, 23, 56]\n# Sırala və çap et\n`}
+	checkCode={`assert "[7, 23, 42, 56, 99]" in _stdout, "HINT:xallar.sort() çağır (mötərizələr boş), sonra print(xallar)."`}
+	inputs={[]}
+>
+	Xalları kiçikdən böyüyə sırala və siyahını çap et.
+</Mission>
+
+<Mission
+	id="m04-l03-m3"
+	xp={15}
+	title="Qonaq siyahısı"
+	starterCode={`qonaqlar = ["Aysel", "Tural", "Nigar", "Kamran"]\nad = input("Adın nədir? ")\n# Ad siyahıdadırsa: "Buyur, keç!"\n# deyilsə: "Bağışla, siyahıda yoxsan."\n`}
+	checkCode={`assert "buyur" in _stdout.lower(), "HINT:if ad in qonaqlar: yoxla — Daxiletmələrdə Nigar var, o, siyahıdadır."`}
+	inputs={['Nigar']}
+>
+	Şənliyin qapı keşikçisi: ad siyahıdadırsa içəri burax, deyilsə nəzakətlə imtina et. (Daxiletmələrdə `Nigar` var.)
+</Mission>
+
+<ModuleProgress
+	moduleId="04"
+	missions={['m04-l01-m1', 'm04-l01-m2', 'm04-l01-m3', 'm04-l02-m1', 'm04-l02-m2', 'm04-l02-m3', 'm04-l03-m1', 'm04-l03-m2', 'm04-l03-m3', 'm04-l04-m1', 'm04-l04-m2', 'm04-l04-m3']}
+	badgeLabel="Kolleksiyalar nişanı"
+/>
+
+---
+
+**Növbəti dərsdə:** siyahı sıra ilə saxlayır, bəs **ad → dəyər** uyğunluğu lazımdırsa? Lüğətlər (dict) gəlir. [Davam et →](../lugetler/)

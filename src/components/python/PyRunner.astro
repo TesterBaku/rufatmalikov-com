@@ -1,0 +1,541 @@
+---
+/**
+ * PyRunner — the in-browser Python editor + runner used by every lesson and
+ * mission. Wraps a CodeMirror 6 editor, a queued-input box, Run/Stop controls,
+ * and a stdout/stderr panel. Pyodide runs in a Web Worker (see
+ * ./pyodide-worker.ts); this component owns the worker lifecycle and the 5s
+ * kill-timer on the main thread.
+ *
+ * Lazy by design: the worker (and therefore Pyodide) is only created on the
+ * first Run click, so non-Python pages never pay the cost.
+ */
+interface Props {
+	/** Unique id for this runner on the page (used for the hidden starter field). */
+	id: string;
+	/** Code shown in the editor on load. */
+	starterCode?: string;
+	/** Newline-separated default values fed to input(), one per line. */
+	inputs?: string;
+	/** Editor min-height (CSS length). */
+	height?: string;
+	/**
+	 * Hidden Python check snippet (mission mode). Runs in the same namespace
+	 * after the user's code, with captured stdout as `_stdout`. On finish the
+	 * runner emits a `py:result` CustomEvent; <Mission> listens for it.
+	 */
+	checkCode?: string;
+}
+
+const { id, starterCode = '', inputs = '', height = '8rem', checkCode = '' } = Astro.props;
+
+const locale = Astro.url.pathname.startsWith('/az') ? 'az' : 'en';
+const t =
+	locale === 'en'
+		? {
+				run: 'Run',
+				stop: 'Stop',
+				inputs: 'Inputs (for input())',
+				inputsHint: 'One value per line — read in order by input().',
+				output: 'Output',
+			}
+		: {
+				run: 'İşə sal',
+				stop: 'Dayandır',
+				inputs: 'Daxiletmələr (input() üçün)',
+				inputsHint: 'Hər sətirdə bir dəyər — input() onları sıra ilə oxuyur.',
+				output: 'Nəticə',
+			};
+---
+
+<div class="py-runner" id={id} data-py-runner data-locale={locale} style={`--py-editor-h:${height}`}>
+	<div class="py-editor" data-editor></div>
+	{/* No-JS fallback + starter source for the editor to read (auto-escaped; decoded via .value). */}
+	<textarea class="py-starter" data-starter hidden aria-hidden="true">{starterCode}</textarea>
+	{checkCode && <textarea class="py-check" data-check hidden aria-hidden="true">{checkCode}</textarea>}
+
+	<details class="py-inputs-wrap">
+		<summary>{t.inputs}</summary>
+		<p class="py-inputs-hint">{t.inputsHint}</p>
+		<textarea class="py-inputs" data-inputs rows="3" spellcheck="false" aria-label={t.inputs}>{inputs}</textarea>
+	</details>
+
+	<div class="py-toolbar">
+		<button type="button" class="py-btn py-run" data-run>▶ {t.run}</button>
+		<button type="button" class="py-btn py-stop" data-stop hidden>■ {t.stop}</button>
+		<span class="py-status" data-status aria-live="polite"></span>
+	</div>
+
+	<div class="py-output-wrap">
+		<span class="py-output-label">{t.output}</span>
+		<pre class="py-output" data-output aria-live="polite"></pre>
+	</div>
+</div>
+
+<script>
+	import { EditorView, basicSetup } from 'codemirror';
+	import { python } from '@codemirror/lang-python';
+	import { Prec, StateEffect, StateField } from '@codemirror/state';
+	import { Decoration } from '@codemirror/view';
+	import type { DecorationSet } from '@codemirror/view';
+	import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+	import { tags as t } from '@lezer/highlight';
+	import PyWorker from './pyodide-worker.ts?worker';
+
+	// --- Theme-aware editor chrome + syntax colours ----------------------------
+	// CodeMirror's default theme is light-only, so on a dark Starlight page the
+	// gutter and token colours would look broken. We drive both from CSS custom
+	// properties (Starlight's --sl-* tokens + our --py-cm-* palette, both defined
+	// per-theme in the <style> below), so the editor follows the page theme live
+	// with no JS — including the dark/light toggle.
+	const cmTheme = EditorView.theme({
+		'&': { backgroundColor: 'transparent', color: 'var(--sl-color-text)' },
+		'.cm-content': { caretColor: 'var(--sl-color-text-accent)' },
+		'.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--sl-color-text-accent)' },
+		'&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-line ::selection': {
+			backgroundColor: 'var(--py-cm-selection)',
+		},
+		'.cm-gutters': {
+			backgroundColor: 'var(--sl-color-bg-nav)',
+			color: 'var(--sl-color-gray-3)',
+			border: 'none',
+			borderRight: '1px solid var(--sl-color-gray-5)',
+		},
+		'.cm-activeLine': { backgroundColor: 'var(--py-cm-active)' },
+		'.cm-activeLineGutter': { backgroundColor: 'var(--py-cm-active)' },
+		'.cm-foldPlaceholder': {
+			backgroundColor: 'transparent',
+			border: 'none',
+			color: 'var(--sl-color-gray-3)',
+		},
+	});
+
+	const cmHighlight = HighlightStyle.define([
+		{ tag: [t.keyword, t.controlKeyword, t.operatorKeyword, t.moduleKeyword, t.self], color: 'var(--py-cm-keyword)' },
+		{ tag: [t.comment, t.lineComment, t.blockComment], color: 'var(--py-cm-comment)', fontStyle: 'italic' },
+		{ tag: [t.string, t.special(t.string), t.regexp], color: 'var(--py-cm-string)' },
+		{ tag: [t.number, t.integer, t.float, t.bool, t.null, t.atom], color: 'var(--py-cm-number)' },
+		{ tag: [t.function(t.variableName), t.function(t.definition(t.variableName))], color: 'var(--py-cm-function)' },
+		{ tag: [t.className, t.typeName], color: 'var(--py-cm-type)' },
+		{ tag: [t.propertyName], color: 'var(--py-cm-property)' },
+		{ tag: [t.operator, t.punctuation, t.bracket, t.separator], color: 'var(--py-cm-operator)' },
+	]);
+
+	// --- Localised runtime strings (button labels are server-rendered) ---------
+	const I18N = {
+		az: {
+			loading: 'Python yüklənir…',
+			running: 'İşləyir…',
+			done: 'Hazırdır ✓',
+			stopped: 'Dayandırıldı',
+			timeout:
+				'⏱ Proqram çox uzun çəkdi və dayandırıldı (5 saniyə limiti). Sonsuz dövr (məs. while True) ola bilər.',
+			lineWord: 'sətir',
+			editorLabel: 'Python kod redaktoru',
+		},
+		en: {
+			loading: 'Loading Python…',
+			running: 'Running…',
+			done: 'Done ✓',
+			stopped: 'Stopped',
+			timeout:
+				'⏱ Program took too long and was stopped (5s limit). Possible infinite loop (e.g. while True).',
+			lineWord: 'line',
+			editorLabel: 'Python code editor',
+		},
+	} as const;
+
+	// --- Error-line highlight extension ----------------------------------------
+	const setErrorLine = StateEffect.define<number | null>();
+	const errorLineField = StateField.define<DecorationSet>({
+		create() {
+			return Decoration.none;
+		},
+		update(deco, tr) {
+			deco = deco.map(tr.changes);
+			for (const e of tr.effects) {
+				if (e.is(setErrorLine)) {
+					const n = e.value;
+					if (n != null && n >= 1 && n <= tr.state.doc.lines) {
+						const line = tr.state.doc.line(n);
+						deco = Decoration.set([
+							Decoration.line({ class: 'py-error-line' }).range(line.from),
+						]);
+					} else {
+						deco = Decoration.none;
+					}
+				}
+			}
+			return deco;
+		},
+		provide: (f) => EditorView.decorations.from(f),
+	});
+
+	type Msg =
+		| { type: 'ready' }
+		| { type: 'started' }
+		| { type: 'stdout' | 'stderr'; text: string }
+		| { type: 'checkresult'; passed: boolean; hint: string | null }
+		| { type: 'done' }
+		| { type: 'error'; errorType: string; message: string; line: number | null };
+
+	/** Detail of the `py:result` event a runner emits when a run finishes. */
+	type PyResult = {
+		/** True if the user's code raised, timed out, or was stopped. */
+		errored: boolean;
+		/** Mission check outcome, or null when this runner has no check. */
+		checkPassed: boolean | null;
+		/** AZ hint shown on a failed check. */
+		hint: string | null;
+	};
+
+	const TIMEOUT_MS = 5000;
+
+	class Runner {
+		root: HTMLElement;
+		strings: (typeof I18N)[keyof typeof I18N];
+		view: EditorView;
+		inputsEl: HTMLTextAreaElement;
+		runEl: HTMLButtonElement;
+		stopEl: HTMLButtonElement;
+		statusEl: HTMLElement;
+		outputEl: HTMLElement;
+		worker: Worker | null = null;
+		timer: number | null = null;
+		checkCode: string;
+		lastCheck: { passed: boolean; hint: string | null } | null = null;
+		errored = false;
+
+		constructor(root: HTMLElement) {
+			this.root = root;
+			const locale = root.dataset.locale === 'en' ? 'en' : 'az';
+			this.strings = I18N[locale];
+
+			const starter = root.querySelector<HTMLTextAreaElement>('[data-starter]')!;
+			this.checkCode = root.querySelector<HTMLTextAreaElement>('[data-check]')?.value ?? '';
+			this.inputsEl = root.querySelector<HTMLTextAreaElement>('[data-inputs]')!;
+			this.runEl = root.querySelector<HTMLButtonElement>('[data-run]')!;
+			this.stopEl = root.querySelector<HTMLButtonElement>('[data-stop]')!;
+			this.statusEl = root.querySelector<HTMLElement>('[data-status]')!;
+			this.outputEl = root.querySelector<HTMLElement>('[data-output]')!;
+
+			this.view = new EditorView({
+				doc: starter.value,
+				extensions: [
+					basicSetup,
+					python(),
+					errorLineField,
+					cmTheme,
+					// Accessible name for the contenteditable editor (role=textbox).
+					EditorView.contentAttributes.of({ 'aria-label': this.strings.editorLabel }),
+					// Prec.highest so these token colours win over basicSetup's light-only default.
+					Prec.highest(syntaxHighlighting(cmHighlight)),
+				],
+				parent: root.querySelector<HTMLElement>('[data-editor]')!,
+			});
+
+			this.runEl.addEventListener('click', () => this.run());
+			this.stopEl.addEventListener('click', () => this.stop());
+		}
+
+		run() {
+			this.outputEl.textContent = '';
+			this.outputEl.classList.remove('has-error');
+			this.view.dispatch({ effects: setErrorLine.of(null) });
+			this.runEl.disabled = true;
+			this.stopEl.hidden = false;
+			this.lastCheck = null;
+			this.errored = false;
+
+			if (!this.worker) {
+				this.worker = new PyWorker();
+				this.worker.onmessage = (e: MessageEvent<Msg>) => this.onMessage(e.data);
+				this.worker.onerror = () => {
+					this.errored = true;
+					this.appendError('Xəta', null, 'Worker xətası baş verdi.');
+					this.kill();
+					this.finish();
+				};
+				this.setStatus(this.strings.loading, 'busy');
+			} else {
+				this.setStatus(this.strings.running, 'busy');
+			}
+
+			this.worker.postMessage({
+				type: 'run',
+				code: this.code(),
+				inputs: this.queuedInputs(),
+				checkCode: this.checkCode,
+			});
+			// Kill-timer is armed on the 'started' message, not here, so the
+			// one-time Pyodide download is never counted against the 5s budget.
+		}
+
+		code() {
+			return this.view.state.doc.toString();
+		}
+
+		queuedInputs() {
+			const lines = this.inputsEl.value.split(/\r?\n/);
+			// Drop a single trailing empty line (the usual textarea artifact) so an
+			// empty box yields [] rather than [''].
+			if (lines.length && lines[lines.length - 1] === '') lines.pop();
+			return lines;
+		}
+
+		onMessage(m: Msg) {
+			switch (m.type) {
+				case 'started':
+					this.setStatus(this.strings.running, 'busy');
+					this.arm();
+					break;
+				case 'stdout':
+					this.append(m.text);
+					break;
+				case 'stderr':
+					this.append(m.text, true);
+					break;
+				case 'checkresult':
+					this.lastCheck = { passed: m.passed, hint: m.hint };
+					break;
+				case 'done':
+					this.setStatus(this.strings.done, 'ok');
+					this.finish();
+					break;
+				case 'error':
+					this.errored = true;
+					this.appendError(m.errorType, m.line, m.message);
+					this.setStatus('', '');
+					this.finish();
+					break;
+				// 'ready' is informational; no UI action needed.
+			}
+		}
+
+		arm() {
+			this.disarm();
+			this.timer = window.setTimeout(() => this.onTimeout(), TIMEOUT_MS);
+		}
+
+		disarm() {
+			if (this.timer !== null) {
+				clearTimeout(this.timer);
+				this.timer = null;
+			}
+		}
+
+		onTimeout() {
+			this.timer = null;
+			this.errored = true;
+			this.kill(); // terminate so the next Run recreates a fresh worker (recycle)
+			this.append('\n' + this.strings.timeout + '\n', true);
+			this.outputEl.classList.add('has-error');
+			this.setStatus('', '');
+			this.finish();
+		}
+
+		stop() {
+			this.errored = true;
+			this.kill();
+			this.setStatus(this.strings.stopped, '');
+			this.finish();
+		}
+
+		kill() {
+			this.disarm();
+			if (this.worker) {
+				this.worker.terminate();
+				this.worker = null;
+			}
+		}
+
+		finish() {
+			this.disarm();
+			this.runEl.disabled = false;
+			this.stopEl.hidden = true;
+			const detail: PyResult = {
+				errored: this.errored,
+				checkPassed: this.lastCheck ? this.lastCheck.passed : null,
+				hint: this.lastCheck ? this.lastCheck.hint : null,
+			};
+			this.root.dispatchEvent(new CustomEvent('py:result', { detail, bubbles: true }));
+		}
+
+		append(text: string, isErr = false) {
+			const node = document.createElement('span');
+			if (isErr) node.className = 'py-stderr';
+			node.textContent = text;
+			this.outputEl.appendChild(node);
+		}
+
+		appendError(errorType: string, line: number | null, message: string) {
+			const where = line != null ? ` — ${line}. ${this.strings.lineWord}` : '';
+			this.append(`🔴 ${errorType}${where}: ${message}\n`, true);
+			this.outputEl.classList.add('has-error');
+			if (line != null) this.view.dispatch({ effects: setErrorLine.of(line) });
+		}
+
+		setStatus(text: string, kind: 'busy' | 'ok' | '') {
+			this.statusEl.textContent = text;
+			this.statusEl.dataset.kind = kind;
+		}
+	}
+
+	document
+		.querySelectorAll<HTMLElement>('[data-py-runner]')
+		.forEach((el) => new Runner(el));
+</script>
+
+<style>
+	.py-runner {
+		/* Editor palette — light theme. Consumed by the CodeMirror theme/highlight
+		   (defined in <script>) via CSS vars, so the editor follows the page theme. */
+		--py-cm-keyword: #cf222e;
+		--py-cm-comment: #6e7781;
+		--py-cm-string: #0a3069;
+		--py-cm-number: #0550ae;
+		--py-cm-function: #6639ba; /* darker purple → ≥4.5:1 on the active-line bg */
+		--py-cm-type: #0e7490;
+		--py-cm-property: #0550ae;
+		--py-cm-operator: var(--sl-color-text);
+		--py-cm-selection: rgba(37, 99, 235, 0.18);
+		--py-cm-active: rgba(0, 0, 0, 0.045);
+		--py-error-line-bg: rgba(220, 38, 38, 0.16);
+		--py-error-bg: rgba(220, 38, 38, 0.05);
+
+		margin-block: 1.5rem;
+		border: 1px solid var(--sl-color-gray-5, #d0d5dd);
+		border-radius: 0.6rem;
+		overflow: hidden;
+		background: var(--sl-color-bg-nav, #f8fafc);
+	}
+
+	/* Dark theme: brighter syntax hues + stronger error tints for contrast. */
+	:global([data-theme='dark']) .py-runner {
+		--py-cm-keyword: #ff7b72;
+		--py-cm-comment: #8b949e;
+		--py-cm-string: #a5d6ff;
+		--py-cm-number: #79c0ff;
+		--py-cm-function: #d2a8ff;
+		--py-cm-type: #56d4dd;
+		--py-cm-property: #79c0ff;
+		--py-cm-selection: rgba(56, 139, 253, 0.32);
+		--py-cm-active: rgba(255, 255, 255, 0.055);
+		--py-error-line-bg: rgba(248, 81, 73, 0.22);
+		--py-error-bg: rgba(248, 81, 73, 0.12);
+	}
+
+	.py-editor {
+		font-size: 0.9rem;
+	}
+
+	/* CodeMirror renders into runtime DOM, so its styles must be global. */
+	:global(.py-runner .cm-editor) {
+		min-height: var(--py-editor-h, 8rem);
+	}
+	:global(.py-runner .cm-editor.cm-focused) {
+		outline: 2px solid var(--sl-color-text-accent, #3b82f6);
+		outline-offset: -2px;
+	}
+	:global(.py-runner .cm-scroller) {
+		font-family: var(--__sl-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+	}
+	:global(.py-runner .py-error-line) {
+		background: var(--py-error-line-bg, rgba(220, 38, 38, 0.16));
+	}
+
+	.py-inputs-wrap {
+		border-top: 1px solid var(--sl-color-gray-5, #e5e7eb);
+		padding: 0.5rem 0.75rem;
+		font-size: 0.85rem;
+	}
+	.py-inputs-wrap summary {
+		cursor: pointer;
+		font-weight: 600;
+		color: var(--sl-color-gray-2, #475569);
+	}
+	.py-inputs-hint {
+		margin: 0.4rem 0 0.3rem;
+		color: var(--sl-color-gray-3, #64748b);
+		font-size: 0.8rem;
+	}
+	.py-inputs {
+		width: 100%;
+		box-sizing: border-box;
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.85rem;
+		padding: 0.4rem 0.5rem;
+		border: 1px solid var(--sl-color-gray-5, #d0d5dd);
+		border-radius: 0.4rem;
+		background: var(--sl-color-bg, #fff);
+		color: var(--sl-color-text, #111);
+		resize: vertical;
+	}
+
+	.py-toolbar {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		padding: 0.6rem 0.75rem;
+		border-top: 1px solid var(--sl-color-gray-5, #e5e7eb);
+	}
+	.py-btn {
+		font: inherit;
+		font-weight: 600;
+		font-size: 0.9rem;
+		padding: 0.4rem 0.95rem;
+		border-radius: 0.45rem;
+		border: 1px solid transparent;
+		cursor: pointer;
+	}
+	.py-run {
+		background: var(--sl-color-text-accent, #2563eb);
+		color: var(--sl-color-black, #fff);
+	}
+	.py-run:disabled {
+		opacity: 0.55;
+		cursor: progress;
+	}
+	.py-stop {
+		background: transparent;
+		border-color: var(--sl-color-red, #dc2626);
+		color: var(--sl-color-red, #dc2626);
+	}
+	.py-status {
+		font-size: 0.85rem;
+		color: var(--sl-color-gray-3, #64748b);
+	}
+	.py-status[data-kind='ok'] {
+		color: var(--sl-color-green, #16a34a);
+	}
+
+	.py-output-wrap {
+		border-top: 1px solid var(--sl-color-gray-5, #e5e7eb);
+	}
+	.py-output-label {
+		display: block;
+		padding: 0.4rem 0.75rem 0;
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--sl-color-gray-3, #64748b);
+	}
+	.py-output {
+		margin: 0;
+		padding: 0.5rem 0.75rem 0.75rem;
+		min-height: 2.5rem;
+		max-height: 18rem;
+		overflow: auto;
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.85rem;
+		white-space: pre-wrap;
+		word-break: break-word;
+		background: var(--sl-color-bg, #fff);
+		color: var(--sl-color-text, #111);
+	}
+	.py-output.has-error {
+		background: var(--py-error-bg, rgba(220, 38, 38, 0.05));
+	}
+	.py-stderr {
+		color: var(--sl-color-red, #dc2626);
+	}
+</style>

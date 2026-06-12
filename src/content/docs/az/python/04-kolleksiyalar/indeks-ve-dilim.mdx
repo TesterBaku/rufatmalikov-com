@@ -1,0 +1,85 @@
+---
+title: İndeks və dilim
+description: Siyahıdan tək elementi və ya bir hissəni götürmək — 0-dan saymağı unutma!
+sidebar:
+  order: 2
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Siyahıdakı hər elementin öz nömrəsi var — buna **indeks** deyilir. Və bəli, `range`-dəki kimi: **saymaq 0-dan başlayır.**
+
+## İndekslə element götür
+
+<PyRunner
+	id="ex-indeks"
+	starterCode={`meyveler = ["alma", "armud", "heyva", "nar"]\nprint(meyveler[0])\nprint(meyveler[2])\nprint(meyveler[-1])`}
+	height="6rem"
+/>
+
+- `meyveler[0]` — **birinci** element (indeks 0!)
+- `meyveler[2]` — üçüncü element
+- `meyveler[-1]` — mənfi indeks **sondan** sayır: sonuncu element. Çox işlək fənddir!
+
+## Dilim — siyahının bir hissəsi
+
+İki nöqtə ilə aralıq götürülür: `siyahi[başlanğıc:son]`. `range`-dəki kimi **son indeks daxil deyil**:
+
+<PyRunner
+	id="ex-dilim"
+	starterCode={`meyveler = ["alma", "armud", "heyva", "nar"]\nprint(meyveler[1:3])\nprint(meyveler[:2])`}
+	height="5rem"
+/>
+
+`[1:3]` → indeks 1 və 2 (3 daxil deyil). `[:2]` → əvvəldən indeks 2-yə qədər.
+
+## Olmayan indeks = xəta
+
+Siyahıda 4 element varsa, `meyveler[10]` nə verər? `IndexError` — *«belə indeks yoxdur»*. Bu xətanı tezliklə missiyada özün görəcəksən. 😉
+
+## Missiyalar
+
+<Mission
+	id="m04-l02-m1"
+	xp={10}
+	title="Birinci və sonuncu"
+	starterCode={`reytinq = ["Qarabağ", "Neftçi", "Sabah", "Zirə"]\n# Birinci və sonuncu komandanı çap et\n`}
+	checkCode={`assert "Qarabağ" in _stdout, "HINT:Birinci element üçün reytinq[0]."\nassert "Zirə" in _stdout, "HINT:Sonuncu üçün mənfi indeks işlət: reytinq[-1]."`}
+	inputs={[]}
+>
+	Cədvəlin **birinci** və **sonuncu** komandasını çap et — sonuncu üçün mənfi indeksdən istifadə et.
+</Mission>
+
+<Mission
+	id="m04-l02-m2"
+	xp={15}
+	title="Ortadakılar"
+	starterCode={`meyveler = ["alma", "armud", "heyva", "nar"]\n# Dilimlə YALNIZ ortadakı ikisini çap et: armud və heyva\n`}
+	checkCode={`assert "armud" in _stdout and "heyva" in _stdout, "HINT:Dilim işlət: meyveler[1:3] — indeks 1-dən 3-ə qədər (3 daxil deyil)."\nassert "alma" not in _stdout and "nar" not in _stdout, "HINT:alma və nar çıxmamalıdır — dilimin sərhədlərini yoxla: [1:3]."`}
+	inputs={[]}
+>
+	Dilimlə siyahının yalnız **ortadakı iki** meyvəsini çap et.
+</Mission>
+
+<Mission
+	id="m04-l02-m3"
+	xp={15}
+	title="Xətanı tut"
+	starterCode={`oyunlar = ["Minecraft", "FIFA", "Roblox"]\nprint(oyunlar[10])`}
+	checkCode={`assert "Roblox" in _stdout or "Minecraft" in _stdout or "FIFA" in _stdout, "HINT:İndeks 10 yoxdur — IndexError! Mövcud indeks işlət, məsələn oyunlar[-1]."`}
+	inputs={[]}
+>
+	Bu proqram `IndexError` verir — işə sal, xətanı oxu və **mövcud** indekslə düzəlt.
+</Mission>
+
+<ModuleProgress
+	moduleId="04"
+	missions={['m04-l01-m1', 'm04-l01-m2', 'm04-l01-m3', 'm04-l02-m1', 'm04-l02-m2', 'm04-l02-m3', 'm04-l03-m1', 'm04-l03-m2', 'm04-l03-m3', 'm04-l04-m1', 'm04-l04-m2', 'm04-l04-m3']}
+	badgeLabel="Kolleksiyalar nişanı"
+/>
+
+---
+
+**Növbəti dərsdə:** siyahı donmuş deyil — element əlavə et, sil, sırala. [Davam et →](../siyahi-metodlari/)

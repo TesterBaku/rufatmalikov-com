@@ -1,0 +1,101 @@
+---
+title: Mətnlər (strings)
+description: Mətnləri birləşdirmək, təkrarlamaq və print ilə oynamaq.
+sidebar:
+  order: 1
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Dırnaq içindəki hər şeyə proqramlaşdırmada **mətn** deyilir (ingiliscə: *string*). Python mətnlərlə çox maraqlı şeylər edə bilir.
+
+:::tip[Bu modulda nə öyrənəcəksən]
+Bu modulun 4 dərsində Python ilə «danışmağı» öyrənəcəksən: mətnlər, rəqəmlər, dəyişənlər və proqramın səndən məlumat istəməsi (`input`).
+:::
+
+## Mətnləri birləşdir: +
+
+`+` işarəsi iki mətni yapışdırır:
+
+<PyRunner
+	id="ex-birlesdir"
+	starterCode={`print("Salam, " + "Aysel!")\nprint("Py" + "thon")`}
+	height="5rem"
+/>
+
+Diqqət: `"Salam,"` sözündən sonra boşluq qoymasan, sözlər bitişik çıxar. Yoxla! 🙂
+
+## Mətni təkrarla: *
+
+`*` işarəsi mətni istədiyin qədər təkrarlayır:
+
+<PyRunner
+	id="ex-tekrar"
+	starterCode={`print("Na" * 4 + " Batman!")\nprint("=" * 30)\nprint("🎉" * 5)`}
+/>
+
+`"=" * 30` — otuz dənə bərabər işarəsi. Cədvəl və çərçivə düzəltmək üçün əla fənddir.
+
+## Tək, yoxsa cüt dırnaq?
+
+İkisi də olar — Python üçün fərqi yoxdur:
+
+```python
+print("Salam")
+print('Salam')
+```
+
+Amma mətnin **içində** dırnaq varsa, çöldəkini fərqli seç:
+
+<PyRunner
+	id="ex-dirnaq"
+	starterCode={`print('Müəllim dedi: "Afərin!"')`}
+	height="4rem"
+/>
+
+## Missiyalar
+
+<Mission
+	id="m01-l01-m1"
+	xp={10}
+	title="Yapışdır"
+	starterCode={`print("Python " + "...")`}
+	checkCode={`assert _stdout.strip() == "Python əladır", "HINT:Üç nöqtənin yerinə əladır sözünü yaz — nəticə dəqiq belə olmalıdır: Python əladır"`}
+	inputs={[]}
+>
+	`+` ilə iki mətni elə birləşdir ki, ekrana dəqiq `Python əladır` çıxsın.
+</Mission>
+
+<Mission
+	id="m01-l01-m2"
+	xp={10}
+	title="Gülüş generatoru"
+	starterCode={`# "ha" mətnini * ilə 5 dəfə təkrarla\nprint(...)`}
+	checkCode={`assert "hahahahaha" in _stdout, "HINT:print(\\"ha\\" * 5) formasından istifadə et — ha sözü 5 dəfə, arada boşluqsuz."`}
+	inputs={[]}
+>
+	`*` işarəsi ilə ekrana `hahahahaha` çap et — amma `"ha"` sözünü yalnız **bir dəfə** yaz!
+</Mission>
+
+<Mission
+	id="m01-l01-m3"
+	xp={15}
+	title="Çərçivəli ad"
+	starterCode={`# 1-ci sətir: 20 dənə =\n# 2-ci sətir: adın\n# 3-cü sətir: yenə 20 dənə =\n`}
+	checkCode={`_lines = [l for l in _stdout.strip().splitlines() if l.strip()]\nassert len(_lines) >= 3, "HINT:Üç sətir lazımdır: xətt, adın, xətt."\nassert "=" in _lines[0] and "=" in _lines[-1], "HINT:Birinci və sonuncu sətirlər = işarələrindən ibarət xətt olmalıdır — məsələn print(\\"=\\" * 20)."`}
+	inputs={[]}
+>
+	Adını `=` işarələrindən düzəlmiş xətlərin arasına al — yuxarıda xətt, ortada adın, aşağıda xətt.
+</Mission>
+
+<ModuleProgress
+	moduleId="01"
+	missions={['m01-l01-m1', 'm01-l01-m2', 'm01-l01-m3', 'm01-l02-m1', 'm01-l02-m2', 'm01-l02-m3', 'm01-l03-m1', 'm01-l03-m2', 'm01-l03-m3', 'm01-l04-m1', 'm01-l04-m2', 'm01-l04-m3']}
+	badgeLabel="Python ilə danış nişanı"
+/>
+
+---
+
+**Növbəti dərsdə:** ədədlər və hesab — Python sənin cib kalkulyatorundan qat-qat güclüdür. [Davam et →](../reqemler-ve-hesab/)

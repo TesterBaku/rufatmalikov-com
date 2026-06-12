@@ -1,0 +1,85 @@
+---
+title: Siyahılar (list)
+description: Bir dəyişəndə çoxlu məlumat — siyahı yaratmaq, çap etmək və üzərində dövr.
+sidebar:
+  order: 1
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+30 şagirdin adını saxlamaq üçün 30 dəyişən yaradacaqsan? `ad1`, `ad2`, `ad3`... Yox! Bunun üçün **siyahı** (list) var — çoxlu məlumatı **bir** dəyişəndə saxlayan sıralı qutu.
+
+:::tip[Bu modulda nə öyrənəcəksən]
+Bu modulun 4 dərsində kolleksiyaları öyrənəcəksən: siyahılar, indeks və dilim, siyahı metodları və lüğətlər.
+:::
+
+## Siyahı necə yaranır
+
+Kvadrat mötərizə `[ ]` + vergüllə ayrılmış elementlər:
+
+<PyRunner
+	id="ex-siyahi"
+	starterCode={`dostlar = ["Aysel", "Tural", "Nigar"]\nprint(dostlar)\nprint(len(dostlar))`}
+	height="5rem"
+/>
+
+`len(...)` — siyahının **uzunluğunu** (neçə element olduğunu) deyir. Siyahıda hər şey saxlamaq olar: mətnlər, ədədlər, hətta qarışıq.
+
+## Siyahı + dövr = güclü cütlük
+
+Modul 03-dakı `for` siyahı ilə əla işləyir — hər elementi bir-bir gəzir:
+
+<PyRunner
+	id="ex-siyahi-for"
+	starterCode={`dostlar = ["Aysel", "Tural", "Nigar"]\nfor dost in dostlar:\n    print(f"Salam, {dost}!")`}
+	height="6rem"
+/>
+
+Oxunuşu: *«dostlar siyahısındakı hər dost üçün: onu salamla»*. Siyahıda 3 yox, 300 ad olsaydı da, kod **eyni** qalardı. Supergüc budur. 💪
+
+## Missiyalar
+
+<Mission
+	id="m04-l01-m1"
+	xp={10}
+	title="Yemək siyahısı"
+	starterCode={`# "yemekler" adlı siyahı yarat — ən azı 3 sevimli yeməyin,\n# sonra siyahını çap et\n`}
+	checkCode={`assert "yemekler" in globals() and isinstance(globals()["yemekler"], list), "HINT:Kvadrat mötərizə ilə siyahı yarat: yemekler = [\\"plov\\", \\"dolma\\", \\"kabab\\"]"\nassert len(globals()["yemekler"]) >= 3, "HINT:Siyahıda ən azı 3 yemək olmalıdır — vergüllə ayır."\nassert _stdout.strip(), "HINT:Siyahını çap etməyi unutma: print(yemekler)"`}
+	inputs={[]}
+>
+	`yemekler` adlı siyahı yarat — içində ən azı 3 sevimli yeməyin olsun — və onu çap et.
+</Mission>
+
+<Mission
+	id="m04-l01-m2"
+	xp={10}
+	title="Hamını salamla"
+	starterCode={`dostlar = ["Aysel", "Tural", "Nigar", "Kamran"]\n# for ilə hər dostu ayrıca sətirdə salamla\n`}
+	checkCode={`assert _stdout.lower().count("salam") >= 4, "HINT:for dost in dostlar: içində print(f\\"Salam, {dost}!\\") — siyahıda 4 dost var, 4 salam çıxmalıdır."`}
+	inputs={[]}
+>
+	`for` ilə siyahıdakı **hər** dostu ayrıca sətirdə salamla: `Salam, Aysel!` və s.
+</Mission>
+
+<Mission
+	id="m04-l01-m3"
+	xp={15}
+	title="Neçə nəfərik?"
+	starterCode={`sinif = ["Leyla", "Murad", "Aytac", "Elvin", "Zəhra"]\n# Siyahının uzunluğunu f-string ilə cümlə içində çap et:\n# "Sinifdə N şagird var"\n`}
+	checkCode={`assert "5" in _stdout, "HINT:len(sinif) uzunluğu verir — print(f\\"Sinifdə {len(sinif)} şagird var\\")"\nassert "şagird" in _stdout.lower() or "sagird" in _stdout.lower(), "HINT:Cavab cümlə şəklində olsun: Sinifdə 5 şagird var"`}
+	inputs={[]}
+>
+	`len()` ilə sinif siyahısının uzunluğunu tap və `Sinifdə 5 şagird var` formasında çap et.
+</Mission>
+
+<ModuleProgress
+	moduleId="04"
+	missions={['m04-l01-m1', 'm04-l01-m2', 'm04-l01-m3', 'm04-l02-m1', 'm04-l02-m2', 'm04-l02-m3', 'm04-l03-m1', 'm04-l03-m2', 'm04-l03-m3', 'm04-l04-m1', 'm04-l04-m2', 'm04-l04-m3']}
+	badgeLabel="Kolleksiyalar nişanı"
+/>
+
+---
+
+**Növbəti dərsdə:** siyahıdan **tək bir** elementi necə götürmək olar? İndeks — və Python-un yenə 0-dan sayması. [Davam et →](../indeks-ve-dilim/)

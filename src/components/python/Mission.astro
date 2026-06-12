@@ -1,0 +1,287 @@
+---
+/**
+ * Mission — a checked exercise. Wraps <PyRunner> with a hidden Python check
+ * snippet; on a passing run it awards XP, persists completion to localStorage,
+ * and celebrates (toast + confetti-lite). The task prompt is the default slot.
+ *
+ * Authoring (inside MDX):
+ *   <Mission id="m01-l02-mission-1" xp={10} title="Öz adını çap et"
+ *     starterCode={`print(...)`}
+ *     checkCode={`assert "salam" in _stdout.lower(), "HINT:..."`}
+ *     inputs={[]}>
+ *     Elə proqram yaz ki, «Salam!» çap etsin.
+ *   </Mission>
+ */
+import PyRunner from './PyRunner.astro';
+
+interface Props {
+	/** Stable, unique mission id (also the localStorage key). */
+	id: string;
+	/** XP awarded on first completion. */
+	xp: number;
+	/** Mission title. */
+	title: string;
+	/** Editor starter code. */
+	starterCode?: string;
+	/** Hidden check snippet. Asserts and raises AssertionError("HINT:..") on fail. */
+	checkCode: string;
+	/** Values fed to input(), in order. */
+	inputs?: string[];
+}
+
+const { id, xp, title, starterCode = '', checkCode, inputs = [] } = Astro.props;
+const inputsStr = inputs.join('\n');
+
+const locale = Astro.url.pathname.startsWith('/az') ? 'az' : 'en';
+const t =
+	locale === 'en'
+		? { tag: 'Mission', xp: 'XP', done: '✓ Completed' }
+		: { tag: 'Missiya', xp: 'XP', done: '✓ Tamamlandı' };
+---
+
+<section class="py-mission" data-mission data-id={id} data-xp={xp} data-locale={locale}>
+	<header class="py-mission-head">
+		<span class="py-mission-tag">{t.tag}</span>
+		<h3 class="py-mission-title">{title}</h3>
+		<span class="py-mission-xp">+{xp} {t.xp}</span>
+		<span class="py-mission-state" data-state hidden>{t.done}</span>
+	</header>
+
+	<div class="py-mission-task">
+		<slot />
+	</div>
+
+	<PyRunner id={`${id}-runner`} starterCode={starterCode} checkCode={checkCode} inputs={inputsStr} />
+
+	<p class="py-mission-feedback" data-feedback hidden aria-live="polite"></p>
+</section>
+
+<script>
+	import { isDone, completeMission } from './progress';
+
+	const I18N = {
+		az: {
+			success: (xp: number) => `🎉 Təbriklər! +${xp} XP qazandın.`,
+			already: '✓ Bu missiya artıq tamamlanıb.',
+			error: '❌ Kodda xəta var — yuxarıdakı nəticəyə bax və düzəlt.',
+			toast: (xp: number) => `🎉 +${xp} XP`,
+		},
+		en: {
+			success: (xp: number) => `🎉 Well done! +${xp} XP earned.`,
+			already: '✓ This mission is already completed.',
+			error: '❌ Your code has an error — check the output above and fix it.',
+			toast: (xp: number) => `🎉 +${xp} XP`,
+		},
+	};
+
+	type PyResult = { errored: boolean; checkPassed: boolean | null; hint: string | null };
+
+	const reduceMotion =
+		typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	function celebrate(label: string) {
+		// Toast
+		const toast = document.createElement('div');
+		toast.className = 'py-toast';
+		toast.textContent = label;
+		document.body.appendChild(toast);
+		setTimeout(() => toast.remove(), 2200);
+
+		if (reduceMotion) return;
+
+		// Confetti-lite: a short burst of small falling squares.
+		const colors = ['#2563eb', '#16a34a', '#f59e0b', '#dc2626', '#7c3aed'];
+		const layer = document.createElement('div');
+		layer.className = 'py-confetti';
+		for (let i = 0; i < 18; i++) {
+			const piece = document.createElement('span');
+			piece.className = 'py-confetti-piece';
+			piece.style.left = `${50 + (i - 9) * 4}%`;
+			piece.style.background = colors[i % colors.length];
+			piece.style.animationDelay = `${(i % 6) * 40}ms`;
+			layer.appendChild(piece);
+		}
+		document.body.appendChild(layer);
+		setTimeout(() => layer.remove(), 1600);
+	}
+
+	class MissionEl {
+		root: HTMLElement;
+		id: string;
+		xp: number;
+		strings: (typeof I18N)[keyof typeof I18N];
+		stateEl: HTMLElement;
+		feedbackEl: HTMLElement;
+
+		constructor(root: HTMLElement) {
+			this.root = root;
+			this.id = root.dataset.id!;
+			this.xp = Number(root.dataset.xp) || 0;
+			this.strings = I18N[root.dataset.locale === 'en' ? 'en' : 'az'];
+			this.stateEl = root.querySelector<HTMLElement>('[data-state]')!;
+			this.feedbackEl = root.querySelector<HTMLElement>('[data-feedback]')!;
+
+			if (isDone(this.id)) this.markDoneUI();
+
+			root.addEventListener('py:result', (e) =>
+				this.onResult((e as CustomEvent<PyResult>).detail)
+			);
+		}
+
+		onResult(detail: PyResult) {
+			if (detail.checkPassed === true) {
+				const { firstTime } = completeMission(this.id, this.xp);
+				this.markDoneUI();
+				if (firstTime) {
+					this.setFeedback(this.strings.success(this.xp), 'ok');
+					celebrate(this.strings.toast(this.xp));
+					document.dispatchEvent(new CustomEvent('py:progress'));
+				} else {
+					this.setFeedback(this.strings.already, 'ok');
+				}
+			} else if (detail.checkPassed === false) {
+				this.setFeedback(`💡 ${detail.hint ?? ''}`.trim(), 'hint');
+			} else if (detail.errored) {
+				this.setFeedback(this.strings.error, 'hint');
+			}
+			// checkPassed === null && !errored → no check ran; leave feedback as-is.
+		}
+
+		markDoneUI() {
+			this.stateEl.hidden = false;
+			this.root.classList.add('is-done');
+		}
+
+		setFeedback(text: string, kind: 'ok' | 'hint') {
+			this.feedbackEl.hidden = false;
+			this.feedbackEl.textContent = text;
+			this.feedbackEl.dataset.kind = kind;
+		}
+	}
+
+	document
+		.querySelectorAll<HTMLElement>('[data-mission]')
+		.forEach((el) => new MissionEl(el));
+</script>
+
+<style>
+	.py-mission {
+		/* Accessible XP accent (Starlight's --sl-color-orange is too light on the
+		   light card to clear 4.5:1). Light default here; dark override below. */
+		--py-xp-color: #b45309;
+		margin-block: 2rem;
+		padding: 1rem 1.1rem 1.2rem;
+		border: 1px solid var(--sl-color-gray-5, #d0d5dd);
+		border-left: 4px solid var(--sl-color-text-accent, #2563eb);
+		border-radius: 0.6rem;
+		background: var(--sl-color-bg-sidebar, #f8fafc);
+	}
+	:global([data-theme='dark']) .py-mission {
+		--py-xp-color: #fbbf24;
+	}
+	.py-mission.is-done {
+		border-left-color: var(--sl-color-green, #16a34a);
+	}
+
+	.py-mission-head {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		flex-wrap: wrap;
+	}
+	.py-mission-tag {
+		font-size: 0.7rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--sl-color-text-accent, #2563eb);
+		background: var(--sl-color-bg, #fff);
+		border: 1px solid currentcolor;
+		border-radius: 1rem;
+		padding: 0.1rem 0.55rem;
+	}
+	.py-mission-title {
+		margin: 0;
+		font-size: 1.1rem;
+		flex: 1;
+		min-width: 8rem;
+	}
+	.py-mission-xp {
+		font-weight: 700;
+		font-size: 0.85rem;
+		color: var(--py-xp-color, #b45309);
+	}
+	.py-mission-state {
+		font-weight: 700;
+		font-size: 0.85rem;
+		color: var(--sl-color-green, #16a34a);
+	}
+
+	.py-mission-task {
+		margin: 0.6rem 0 0.2rem;
+	}
+
+	.py-mission-feedback {
+		margin: 0.4rem 0 0;
+		padding: 0.55rem 0.75rem;
+		border-radius: 0.45rem;
+		font-size: 0.9rem;
+		font-weight: 500;
+	}
+	.py-mission-feedback[data-kind='ok'] {
+		background: rgba(22, 163, 74, 0.12);
+		color: var(--sl-color-green, #15803d);
+	}
+	.py-mission-feedback[data-kind='hint'] {
+		background: rgba(245, 158, 11, 0.12);
+		color: var(--sl-color-orange, #b45309);
+	}
+
+	/* Toast + confetti are appended to <body>, so they must be global. */
+	:global(.py-toast) {
+		position: fixed;
+		left: 50%;
+		bottom: 2rem;
+		transform: translateX(-50%);
+		z-index: 9999;
+		padding: 0.6rem 1.1rem;
+		border-radius: 2rem;
+		background: #16a34a;
+		color: #fff;
+		font-weight: 700;
+		box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+		animation: py-toast-in 0.25s ease-out;
+	}
+	@keyframes py-toast-in {
+		from {
+			opacity: 0;
+			transform: translate(-50%, 12px);
+		}
+	}
+	:global(.py-confetti) {
+		position: fixed;
+		inset: 0;
+		pointer-events: none;
+		z-index: 9998;
+		overflow: hidden;
+	}
+	:global(.py-confetti-piece) {
+		position: absolute;
+		top: 40%;
+		width: 9px;
+		height: 9px;
+		border-radius: 1px;
+		opacity: 0.9;
+		animation: py-confetti-fall 1.2s ease-in forwards;
+	}
+	@keyframes py-confetti-fall {
+		0% {
+			transform: translateY(0) rotate(0deg);
+			opacity: 1;
+		}
+		100% {
+			transform: translateY(60vh) rotate(540deg);
+			opacity: 0;
+		}
+	}
+</style>

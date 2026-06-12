@@ -1,0 +1,73 @@
+---
+title: return — nəticəni qaytar
+description: Funksiya nəticəni çap etməsin, qaytarsın — onda nəticə ilə işləmək olar.
+sidebar:
+  order: 3
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+`kvadrat(4)` nəticəni **çap edirdi**. Bəs nəticəni başqa hesablamada işlətmək istəsək? `print` ekrana yazır və... itir. **`return`** isə nəticəni **qaytarır** — onu dəyişəndə saxlamaq, toplamaq, müqayisə etmək olar.
+
+## print yox, return
+
+<PyRunner
+	id="ex-return"
+	starterCode={`def topla(a, b):\n    return a + b\n\nnetice = topla(3, 4)\nprint(netice)\nprint(topla(10, 20) + topla(1, 2))`}
+	height="7rem"
+/>
+
+`topla(3, 4)` çağırışı **7 dəyərinə çevrilir** — sanki yerində 7 yazılıb. Ona görə `topla(10, 20) + topla(1, 2)` = `30 + 3` = `33` işləyir. `print`-li funksiya ilə bunu etmək olmazdı!
+
+Yadda saxla: **`return` funksiyanı dərhal bitirir** — ondan sonrakı sətirlər icra olunmur.
+
+## len() sirri açıldı
+
+İndi bilirsən `len()` necə işləyir: o da nəticəni **qaytarır**. Ona görə `print(len(siyahi))` yazanda iç-içə işləyir: əvvəl `len` qaytarır, sonra `print` çap edir. Sən artıq belə funksiyalar yaza bilirsən.
+
+## Missiyalar
+
+<Mission
+	id="m05-l03-m1"
+	xp={15}
+	title="Toplama funksiyası"
+	starterCode={`# topla(a, b) funksiyası yaz — cəmi QAYTARSIN (return!),\n# sonra print(topla(3, 4)) ilə yoxla.\n`}
+	checkCode={`assert "topla" in globals() and callable(globals()["topla"]), "HINT:def topla(a, b): qur."\nassert globals()["topla"](2, 3) == 5 and globals()["topla"](10, -2) == 8, "HINT:Funksiya cəmi return etməlidir: return a + b (print yox!)."\nassert "7" in _stdout, "HINT:Nəticəni çap et: print(topla(3, 4))."`}
+	inputs={[]}
+>
+	`topla(a, b)` yaz — cəmi `return` etsin. Yoxlayıcı funksiyanı **özü çağırıb** yoxlayacaq, ona görə `print` bəs etməz — mütləq `return` lazımdır!
+</Mission>
+
+<Mission
+	id="m05-l03-m2"
+	xp={15}
+	title="Kvadrat 2.0"
+	starterCode={`# kvadrat(eded) funksiyasını return ilə yenidən yaz,\n# sonra print(kvadrat(5) + kvadrat(3)) çap et.\n`}
+	checkCode={`assert "kvadrat" in globals() and callable(globals()["kvadrat"]), "HINT:def kvadrat(eded): qur."\nassert globals()["kvadrat"](6) == 36, "HINT:return eded ** 2 — çap etmə, qaytar."\nassert "34" in _stdout, "HINT:print(kvadrat(5) + kvadrat(3)) → 25 + 9 = 34 çıxmalıdır."`}
+	inputs={[]}
+>
+	`kvadrat`ı `return`-lə yenidən yaz və iki kvadratın **cəmini** çap et: `kvadrat(5) + kvadrat(3)` → `34`.
+</Mission>
+
+<Mission
+	id="m05-l03-m3"
+	xp={20}
+	title="Orta qiymət"
+	starterCode={`# orta(siyahi) funksiyası yaz — siyahıdakı ədədlərin\n# ortasını QAYTARSIN.\n# İpucu: sum(siyahi) cəmi, len(siyahi) sayı verir.\nqiymetler = [4, 5, 3, 5, 4]\n# print ilə yoxla\n`}
+	checkCode={`assert "orta" in globals() and callable(globals()["orta"]), "HINT:def orta(siyahi): qur."\nassert globals()["orta"]([2, 4, 6]) == 4, "HINT:return sum(siyahi) / len(siyahi) — cəmi saya böl."\nassert "4.2" in _stdout, "HINT:print(orta(qiymetler)) — [4, 5, 3, 5, 4] üçün orta 4.2-dir."`}
+	inputs={[]}
+>
+	`orta(siyahi)` funksiyası yaz — ədədlərin ortasını qaytarsın. Jurnaldakı qiymətlərinlə yoxla! (Yeni dost: `sum()` siyahının cəmini qaytarır.)
+</Mission>
+
+<ModuleProgress
+	moduleId="05"
+	missions={['m05-l01-m1', 'm05-l01-m2', 'm05-l02-m1', 'm05-l02-m2', 'm05-l02-m3', 'm05-l03-m1', 'm05-l03-m2', 'm05-l03-m3']}
+	badgeLabel="Funksiyalar nişanı"
+/>
+
+---
+
+🏅 **Bu modulu bitirdin!** Artıq Python-un bütün təməl alətləri səndədir: dəyişənlər, şərtlər, dövrlər, kolleksiyalar, funksiyalar. **Sonuncu modul** — sınaq meydanı: dörd **əsl layihə** səni gözləyir. [Layihələrə keç →](../../06-layihe-missiyalari/kalkulyator/)

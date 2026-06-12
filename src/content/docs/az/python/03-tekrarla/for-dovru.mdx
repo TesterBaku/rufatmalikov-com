@@ -1,0 +1,94 @@
+---
+title: for dövrü
+description: Kompüterin supergücü — eyni işi yorulmadan təkrarlamaq. for və range.
+sidebar:
+  order: 1
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+«Salam» sözünü 100 dəfə çap etmək lazımdırsa, 100 dənə `print` yazacaqsan? Yox! Bunun üçün **dövr** (loop) var.
+
+:::tip[Bu modulda nə öyrənəcəksən]
+Bu modulun 3 dərsində proqramına təkrarlamağı öyrədəcəksən: `for`, `range`, dövrlə hesablamalar və `while`.
+:::
+
+## for — «bu qədər dəfə təkrarla»
+
+<PyRunner
+	id="ex-for"
+	starterCode={`for i in range(5):\n    print("Salam!")`}
+	height="6rem"
+/>
+
+Oxunuşu: *«5 dəfə təkrarla: Salam çap et»*. Girinti qaydası burada da işləyir — dövrün **içindəki** sətirlər 4 boşluq içəridə.
+
+## i — sayğac
+
+`i` adi dəyişəndir və hər təkrarda dəyəri dəyişir. Bax:
+
+<PyRunner
+	id="ex-sayqac"
+	starterCode={`for i in range(5):\n    print(f"Addım: {i}")`}
+	height="6rem"
+/>
+
+Gözlədiyin kimi deyil, hə? **0-dan başladı və 4-də bitdi!** Proqramçılar 0-dan saymağı sevir. `range(5)` = «0, 1, 2, 3, 4» — cəmi 5 ədəd, amma 0-dan.
+
+## range-in iki forması
+
+- `range(5)` → 0, 1, 2, 3, 4
+- `range(1, 6)` → 1, 2, 3, 4, 5 — *başlanğıcdan* *sona qədər* (son ədəd **daxil deyil**!)
+
+<PyRunner
+	id="ex-range"
+	starterCode={`for i in range(1, 6):\n    print(f"Addım {i}")`}
+	height="6rem"
+/>
+
+## Missiyalar
+
+<Mission
+	id="m03-l01-m1"
+	xp={10}
+	title="Təkrar maşını"
+	starterCode={`# "Python əladır!" cümləsini for ilə 10 dəfə çap et\n# (print-i yalnız BİR dəfə yaz!)\n`}
+	checkCode={`assert _stdout.lower().count("python əladır") >= 10 or _stdout.lower().count("python eladir") >= 10, "HINT:for i in range(10): qur, içində bir dənə print olsun."`}
+	inputs={[]}
+>
+	`Python əladır!` cümləsini **10 dəfə** çap et — amma `print` kodda yalnız bir dəfə yazılsın.
+</Mission>
+
+<Mission
+	id="m03-l01-m2"
+	xp={15}
+	title="1-dən 10-a"
+	starterCode={`# 1-dən 10-a qədər ədədləri çap et (hər biri öz sətrində)\n`}
+	checkCode={`_lines = [l.strip() for l in _stdout.strip().splitlines() if l.strip()]\nassert _lines == [str(n) for n in range(1, 11)], "HINT:range(1, 11) lazımdır — son ədəd daxil olmadığı üçün 11 yazırıq. Hər addımda print(i)."`}
+	inputs={[]}
+>
+	1-dən 10-a qədər ədədləri sıra ilə çap et. Diqqət: `range`-də son ədəd daxil deyil!
+</Mission>
+
+<Mission
+	id="m03-l01-m3"
+	xp={15}
+	title="Vurma cədvəli"
+	starterCode={`# 5-in vurma cədvəlini çap et:\n# 5 x 1 = 5\n# 5 x 2 = 10\n# ... 10-a qədər\n`}
+	checkCode={`assert "35" in _stdout, "HINT:Hər addımda f-string işlət: print(f\\"5 x {i} = {5 * i}\\") — i 1-dən 10-a."\nassert "50" in _stdout, "HINT:Cədvəl 10-a qədər getməlidir: range(1, 11)."`}
+	inputs={[]}
+>
+	Müəllimlər bunu lövhəyə yazana qədər sən proqramla həll et: 5-in vurma cədvəli, 1-dən 10-a qədər, `5 x 3 = 15` formasında.
+</Mission>
+
+<ModuleProgress
+	moduleId="03"
+	missions={['m03-l01-m1', 'm03-l01-m2', 'm03-l01-m3', 'm03-l02-m1', 'm03-l02-m2', 'm03-l02-m3', 'm03-l03-m1', 'm03-l03-m2', 'm03-l03-m3']}
+	badgeLabel="Təkrarla nişanı"
+/>
+
+---
+
+**Növbəti dərsdə:** dövr + dəyişən = supergüc. 1-dən 100-ə qədər ədədlərin cəmini 1 saniyəyə hesablayacağıq — balaca Qauss kimi. [Davam et →](../dovrle-hesabla/)
