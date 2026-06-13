@@ -439,6 +439,16 @@ const t =
 	:global(.py-runner .cm-scroller) {
 		font-family: var(--__sl-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 	}
+	/* Starlight's prose adds margin-top between sibling block elements, which leaks
+	   onto CodeMirror's internals — its per-line <div>s AND gutter line numbers.
+	   That pushes lines/numbers apart while CodeMirror still measures them as
+	   margin-less, so the caret lands in the gap, clicks miss the intended line,
+	   and the gutter numbers stop aligning with the code. CodeMirror lays out via
+	   padding/positioning (never margins), so zeroing all internal margins is safe
+	   and restores correct alignment. */
+	:global(.py-runner .cm-editor *) {
+		margin: 0;
+	}
 	:global(.py-runner .py-error-line) {
 		background: var(--py-error-line-bg, rgba(220, 38, 38, 0.16));
 	}
