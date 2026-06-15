@@ -88,6 +88,8 @@ Built with Python.
 
 A self-contained math app I built for my sister, a (non-technical) math and Russian-language tutor. She — or her students — can download it, unzip, and start it with a double-click; no command line. It covers the Grade 5 mathematics curriculum, in Russian.
 
+It's the standalone, **downloadable predecessor** to [Exam Helper](/en/exam-helper/)'s Grade 5 maths bank — the same content, packaged to run offline on a tutor's own machine rather than in the browser.
+
 **What's inside:**
 
 - **57 lessons across 8 chapters** — explanations with visual examples

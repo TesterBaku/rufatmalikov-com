@@ -90,6 +90,8 @@ Python ilə qurulub.
 
 Riyaziyyat və rus dili müəllimi olan (texniki olmayan) bacım üçün qurduğum müstəqil riyaziyyat tətbiqi. O — və ya şagirdləri — tətbiqi yükləyib, arxivdən çıxarıb bir cüt kliklə başlada bilər; terminal lazım deyil. 5-ci sinif riyaziyyat kurrikulumunu rus dilində əhatə edir.
 
+Bu, [İmtahan Köməkçisi](/az/exam-helper/)-nin 5-ci sinif riyaziyyat bölməsinin **yüklənə bilən sələfidir** — eyni məzmun, brauzer əvəzinə müəllimin öz kompüterində oflayn işləməsi üçün paketlənib.
+
 **İçərisində nə var:**
 
 - **8 fəsil üzrə 57 dərs** — vizual nümunələrlə izahlar

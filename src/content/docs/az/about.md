@@ -9,7 +9,7 @@ Salam, mən **Rüfət Məlikovam** — veb, mobil, REST API və AWS əsaslı dat
 
 Son zamanlar xüsusilə **AI-dəstəkli test** ilə maraqlanıram: test yazımını sürətləndirmək, real test datası yaratmaq və defekt nümunələrini aşkar etmək üçün Claude, Claude Code və MCP əsaslı agent alətlərindən istifadə edirəm. Bunu YouTube kanalımda da paylaşıram: [AI with Rufat](https://www.youtube.com/@AIwithRufat).
 
-Bu sayt öyrəndiklərimi və qurduqlarımı paylaşdığım yerdir — pulsuz, interaktiv Playwright məşqçisi ([BrauzerLab](/az/playwright/)), test və AI haqqında qeydlər və [müsahibə məşqçisi](/az/projects/) kimi yan layihələr. Buradakı hər şey pulsuzdur.
+Bu sayt öyrəndiklərimi və qurduqlarımı paylaşdığım yerdir — pulsuz, interaktiv Playwright məşqçisi ([BrauzerLab](/az/playwright/)), pulsuz [Python kursu](/az/python/) (yeni başlayanlar üçün), Azərbaycandakı şagirdlər üçün [İmtahan Köməkçisi](/az/exam-helper/), test və AI haqqında qeydlər və [müsahibə məşqçisi](/az/projects/) kimi yan layihələr. Buradakı hər şey pulsuzdur.
 
 ## Mənimlə əlaqə
 
