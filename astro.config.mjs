@@ -24,23 +24,13 @@ export default defineConfig({
 				az: 'Rüfət Məlikov',
 			},
 			description: 'QA automation enthusiast and educator. Playwright training, engineering writing, and side projects.',
-			customCss: ['./src/styles/brand.css'],
-			head: [
-				{
-					tag: 'link',
-					attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-				},
-				{
-					tag: 'link',
-					attrs: { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: true },
-				},
-				{
-					tag: 'link',
-					attrs: {
-						rel: 'stylesheet',
-						href: 'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..600&family=Inter:wght@400;500;600;700&display=swap',
-					},
-				},
+			// Fonts are self-hosted via @fontsource-variable (bundled below), so there
+			// is no render-blocking cross-origin Google Fonts request. fontsource CSS
+			// comes first so the @font-face rules are defined before brand.css uses them.
+			customCss: [
+				'@fontsource-variable/fraunces/index.css',
+				'@fontsource-variable/inter/index.css',
+				'./src/styles/brand.css',
 			],
 			defaultLocale: 'en',
 			locales: {

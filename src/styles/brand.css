@@ -9,10 +9,12 @@
 /* Accent stays Starlight's blue; the brand identity is carried by the
    serif display type, hero treatment, and card styling below. */
 :root {
-	--brand-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+	/* Self-hosted via @fontsource-variable (see astro.config customCss). The
+	   "Variable" suffix is the family name fontsource registers. */
+	--brand-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
 
 	/* Body / UI font */
-	--sl-font: 'Inter', var(--sl-font-system);
+	--sl-font: 'Inter Variable', var(--sl-font-system);
 }
 
 /* ---------- Headings: serif display ---------- */
