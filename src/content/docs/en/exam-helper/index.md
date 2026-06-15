@@ -36,4 +36,4 @@ Students preparing for school exams in Azerbaijan — and the teachers and paren
 
 ## Start now
 
-It's live — **[Open Exam Helper →](https://exam.rufatmalikov.com/)** — free, in your browser. [View the code →](https://github.com/TesterBaku/az-exam-helper)
+It's live — **[Open Exam Helper →](https://exam.rufatmalikov.com/)** — free, in your browser.

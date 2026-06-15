@@ -33,4 +33,4 @@ Azərbaycanda məktəb imtahanlarına hazırlaşan şagirdlər — və onlara k�
 
 ## İndi başla
 
-Canlıdır — **[İmtahan Köməkçisini aç →](https://exam.rufatmalikov.com/)** — pulsuz, brauzerinizdə. [Koda bax →](https://github.com/TesterBaku/az-exam-helper)
+Canlıdır — **[İmtahan Köməkçisini aç →](https://exam.rufatmalikov.com/)** — pulsuz, brauzerinizdə.

@@ -24,19 +24,19 @@ Qurub paylaşdığım layihələr. Hər biri inkişaf etdikcə öz yazısını a
 
 ## İmtahan Köməkçisi — Azərbaycandakı şagirdlər üçün imtahan hazırlığı
 
-Azərbaycandakı şagirdlər üçün pulsuz, brauzer əsaslı təhsil tətbiqi. Fənn seçirsiniz, qısa dərsləri oxuyursunuz, sonra dərhal qiymətləndirən və hər səhvi izah edən pilləli testlərlə məşq edirsiniz — quraşdırma yoxdur, brauzerdə işləyir. Bir məzmun-bilən tətbiq eyni koddan iki fənni təqdim edir və hər riyaziyyat cavabı avtomatik cavab-yoxlayıcısı ilə yoxlanılır.
+Azərbaycandakı şagirdlər üçün pulsuz, brauzer əsaslı təhsil tətbiqi. Fənn seçirsiniz, qısa dərsləri oxuyursunuz, sonra dərhal qiymətləndirən və hər səhvi izah edən pilləli testlərlə məşq edirsiniz — quraşdırma yoxdur, brauzerdə işləyir. Bir məzmun-bilən tətbiq eyni koddan 24 bölməni (5–11-ci sinif + abituriyent) təqdim edir və hər riyaziyyat cavabı avtomatik cavab-yoxlayıcısı ilə yoxlanılır.
 
 **İçərisində nə var:**
 
+- **24 bölmə** — 5–11-ci sinif və abituriyent; riyaziyyat, elmlər, dillər və ədəbiyyat
 - **5-ci sinif riyaziyyatı** — 8 fəsil üzrə 57 mövzu, **1 710 sual**, rus dilində
-- **9-cu sinif buraxılış hazırlığı** — Azərbaycan dilində, 10 mövzu üzrə imtahan tipli riyaziyyat məşqi, buraxılış imtahanına köklənib
+- **9-cu sinif buraxılış riyaziyyatı** — 11 fəsil üzrə 38 mövzu, **1 140 sual**, ayrıca DİM formatında tam məşq imtahanı
 - **Pilləli testlər** — asan / orta / çətin / qarışıq, hər səhv üçün rəylə
-- **Səhvləri təkrarla & tərəqqi** — yalnız səhv etdiyiniz sualları yenidən işləyin və nəticənizi izləyin
 - **Yoxlanmış cavablar** — deterministik cavab-yoxlayıcısı hər riyaziyyat sualını yayımdan əvvəl təsdiqləyir
 
 TypeScript və Next.js ilə qurulub (statik export).
 
-[İmtahan Köməkçisini aç →](https://exam.rufatmalikov.com/) · [Ətraflı →](/az/exam-helper/) · [Koda bax →](https://github.com/TesterBaku/az-exam-helper)
+[İmtahan Köməkçisini aç →](https://exam.rufatmalikov.com/) · [Ətraflı →](/az/exam-helper/)
 
 ## Universal Appliances Repair — müştəri vebsaytı
 

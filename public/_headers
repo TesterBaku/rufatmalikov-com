@@ -1,0 +1,15 @@
+# Cloudflare Pages headers. Build assets under /_astro/ and /pagefind/ are
+# content-hashed (the filename changes whenever the content does), so they are
+# safe to cache for a year. Without this, Cloudflare's short default TTL forces
+# revalidation round-trips for returning visitors.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/pagefind/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Static brand assets (not hashed) — a week is a safe middle ground.
+/og/*
+  Cache-Control: public, max-age=604800
+/favicon.svg
+  Cache-Control: public, max-age=604800

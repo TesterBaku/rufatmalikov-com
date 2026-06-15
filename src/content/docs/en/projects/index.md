@@ -24,19 +24,19 @@ Available in English and Azerbaijani.
 
 ## Exam Helper — exam prep for students in Azerbaijan
 
-A free, browser-based study app for students in Azerbaijan. Pick a subject, read short lessons, then practise with tiered quizzes that grade instantly and explain every mistake — no install, runs in the browser. One bank-aware app serves two subjects from the same code, and every math answer is verified by an automatic answer-checker.
+A free, browser-based study app for students in Azerbaijan. Pick a subject, read short lessons, then practise with tiered quizzes that grade instantly and explain every mistake — no install, runs in the browser. One bank-aware app serves 24 subject banks (grades 5–11 + abituriyent) from the same code, and every math answer is verified by an automatic answer-checker.
 
 **What's inside:**
 
-- **Grade 5 Mathematics** — 57 topics across 8 chapters, **1,710 questions**, taught in Russian
-- **Grade 9 buraxılış prep** — exam-style math practice in Azerbaijani across 10 topics, tuned for the exit exam
+- **24 subject banks** — grades 5–11 and abituriyent, across maths, sciences, languages and literature
+- **Grade 5 Mathematics** — 57 topics / 8 chapters, **1,710 questions**, in Russian
+- **Grade 9 buraxılış maths** — 38 topics / 11 chapters, **1,140 questions**, plus a full DİM-format practice exam
 - **Tiered quizzes** — easy / medium / hard / mixed, with per-mistake feedback
-- **Retry-wrong & progress** — re-run only the questions you missed and track your score
 - **Verified answers** — a deterministic answer-checker validates every math item before it ships
 
 Built with TypeScript and Next.js (static export).
 
-[Open Exam Helper →](https://exam.rufatmalikov.com/) · [More about it →](/en/exam-helper/) · [View the code →](https://github.com/TesterBaku/az-exam-helper)
+[Open Exam Helper →](https://exam.rufatmalikov.com/) · [More about it →](/en/exam-helper/)
 
 ## Universal Appliances Repair — client website
 
