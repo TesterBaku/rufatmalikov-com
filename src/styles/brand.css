@@ -75,10 +75,12 @@ h1#_top,
 	}
 }
 
-/* Solid accent primary CTA in both themes (white text for strong contrast). */
+/* Solid accent primary CTA in both themes (white text for strong contrast).
+   Darkened ~10% off the raw accent so white text clears WCAG AA with headroom
+   in the light theme (the raw accent was a borderline 4.54:1). */
 .sl-link-button.primary {
-	background: var(--sl-color-accent);
-	border-color: var(--sl-color-accent);
+	background: color-mix(in srgb, var(--sl-color-accent) 90%, #000);
+	border-color: color-mix(in srgb, var(--sl-color-accent) 90%, #000);
 	color: #fff;
 	border-radius: 0.55rem;
 	padding: 0.6rem 1.25rem;
