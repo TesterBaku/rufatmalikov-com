@@ -37,6 +37,65 @@ export const onRequest = defineRouteMiddleware((context) => {
 		);
 	}
 
+	// Structured data (JSON-LD): Person + WebSite on the home pages, Person on
+	// About, and a Course on the course/Python landing pages — the highest-ROI
+	// schema for a personal site (knowledge panel + course rich results). Kept
+	// here so it stays in one place and out of the MDX.
+	{
+		const path = context.url.pathname;
+		const abs = (p: string) => new URL(p, context.site ?? context.url).href;
+		const ld = (obj: object) =>
+			route.head.push({ tag: 'script', attrs: { type: 'application/ld+json' }, content: JSON.stringify(obj) });
+		const person = {
+			'@type': 'Person',
+			'@id': abs('/') + '#person',
+			name: 'Rufat Malikov',
+			url: abs('/'),
+			jobTitle: 'QA Automation Engineer',
+			sameAs: [
+				'https://www.linkedin.com/in/rufat-malikov-295aab22',
+				'https://github.com/TesterBaku',
+				'https://www.youtube.com/@AIwithRufat',
+			],
+		};
+
+		const isHome = path === '/' || path === '/en/' || path === '/az/';
+		const isAbout = path.endsWith('/about/');
+		const isCourseLanding =
+			path === '/en/course/' || path === '/az/course/' || path === '/az/python/' || path === '/en/python/';
+
+		if (isHome) {
+			ld({
+				'@context': 'https://schema.org',
+				'@graph': [
+					{
+						'@type': 'WebSite',
+						'@id': abs('/') + '#website',
+						url: abs('/'),
+						name: 'Rufat Malikov',
+						inLanguage: route.lang,
+						publisher: { '@id': abs('/') + '#person' },
+					},
+					person,
+				],
+			});
+		} else if (isAbout) {
+			ld({ '@context': 'https://schema.org', ...person });
+		}
+		if (isCourseLanding) {
+			ld({
+				'@context': 'https://schema.org',
+				'@type': 'Course',
+				name: route.entry.data.title,
+				description: route.entry.data.description ?? undefined,
+				url: abs(path),
+				inLanguage: route.lang,
+				isAccessibleForFree: true,
+				provider: { '@type': 'Person', name: 'Rufat Malikov', url: abs('/') },
+			});
+		}
+	}
+
 	if (route.lang !== 'en') return;
 
 	type Entry = (typeof route.sidebar)[number];
