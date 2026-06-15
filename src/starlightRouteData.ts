@@ -12,19 +12,28 @@ import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
 export const onRequest = defineRouteMiddleware((context) => {
 	const route = context.locals.starlightRoute;
 
-	// OG defaults for the Python course. Starlight emits og:/twitter: tags and a
-	// `twitter:card=summary_large_image` from each page's frontmatter `description`,
-	// but no image — so social cards render blank. Add a shared course OG image on
-	// every /python/ route (asset: public/og/python-course.png, built by
-	// tasks/og/make-python-og.mjs). Scoped here so we don't touch 25 MDX files.
-	if (context.url.pathname.includes('/python/')) {
-		const img = new URL('/og/python-course.png', context.site ?? context.url).href;
+	// OG image defaults. Starlight emits og:/twitter: tags + `twitter:card=
+	// summary_large_image` from each page's frontmatter description, but no image —
+	// so social cards render blank. Add a brand default image on every Starlight
+	// route, with the Python course overriding it with its own card. Both are
+	// 1200×630 (public/og/*.png, built by tasks/og/make-*-og.mjs). Done here so we
+	// don't touch dozens of MDX files. (The standalone /resume page is not a
+	// Starlight route and sets its own tags.)
+	{
+		const isPython = context.url.pathname.includes('/python/');
+		const file = isPython ? '/og/python-course.png' : '/og/default.png';
+		const img = new URL(file, context.site ?? context.url).href;
+		const alt = isPython
+			? route.lang === 'az'
+				? 'Python Dərsləri — rufatmalikov.com'
+				: 'Python course — rufatmalikov.com'
+			: 'Rufat Malikov — rufatmalikov.com';
 		route.head.push(
 			{ tag: 'meta', attrs: { property: 'og:image', content: img } },
 			{ tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
 			{ tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
 			{ tag: 'meta', attrs: { name: 'twitter:image', content: img } },
-			{ tag: 'meta', attrs: { name: 'twitter:image:alt', content: 'Python Dərsləri — rufatmalikov.com' } }
+			{ tag: 'meta', attrs: { name: 'twitter:image:alt', content: alt } }
 		);
 	}
 
