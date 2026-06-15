@@ -8,15 +8,23 @@ pagefind: false
 
 **Exam Helper** is a free, browser-based study app for students in Azerbaijan. Pick a subject, read short lessons, then practise with tiered quizzes that grade you instantly and explain every mistake. Nothing to install — it runs in your browser.
 
-> Two subjects so far: **Grade 5 Mathematics** (in Russian) and **Grade 9 buraxılış** math prep (in Azerbaijani).
+> **24 subject banks** now: grades 5–11 plus **abituriyent** (university-entrance) prep — across math, physics, chemistry, biology, geography, history, Azerbaijani, English and literature. Most banks are in Azerbaijani; Grade 5 maths is in Russian and the English banks are in English.
 
 ## What's inside
 
-- **Grade 5 Mathematics** — 57 topics across 8 chapters, **1,710 practice questions**, taught in Russian. Each topic has a short explanation and rules, then quizzes.
-- **Grade 9 buraxılış prep** — exam-style math practice in Azerbaijani across 10 topics, tuned for the exit exam.
+- **24 banks, grades 5–11 and abituriyent** — each topic has a short explanation, rules, then quizzes.
+- **Grade 5 Mathematics** — 57 topics across 8 chapters, **1,710 practice questions**, taught in Russian.
+- **Grade 9 buraxılış maths** — 38 topics across 11 chapters, **1,140 practice questions**, plus a full DİM-format **practice exam**.
 - **Tiered quizzes** — easy, medium, hard, or mixed, with per-mistake feedback so you learn from each wrong answer.
 - **Retry-wrong & progress** — re-run just the questions you missed and watch your score climb.
 - **Verified answers** — every math item is checked by an automatic answer-checker, so the practice is correct by construction.
+
+## Popular sections
+
+- [Maths — Grade 9 exit exam](https://exam.rufatmalikov.com/grade9-math) · [full practice exam](https://exam.rufatmalikov.com/grade9-math/exam)
+- [Azerbaijani — Grade 9 exit exam](https://exam.rufatmalikov.com/grade9-azerbaijani)
+- [Maths — Abituriyent (Group I)](https://exam.rufatmalikov.com/entrance-g1-math)
+- [Mathematics — Grade 5](https://exam.rufatmalikov.com/grade5-math) (in Russian)
 
 ## How it works
 
@@ -24,7 +32,7 @@ Each subject is a self-contained **content bank**. You move from a topic's lesso
 
 ## Who it's for
 
-Students preparing for school exams in Azerbaijan — and the teachers and parents helping them. The Grade 5 track is in Russian; the Grade 9 exit-exam track is in Azerbaijani.
+Students preparing for school exams in Azerbaijan — and the teachers and parents helping them. Most banks are in Azerbaijani; Grade 5 maths is in Russian and the English banks are in English.
 
 ## Start now
 
