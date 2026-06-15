@@ -9,7 +9,7 @@ A lot of my work has been the high-stakes, unglamorous side of quality: flaky-te
 
 These days I'm especially interested in **AI-assisted testing**: using Claude, Claude Code, and MCP-based agentic tooling to speed up test authoring, generate realistic test data, and spot defect patterns. That's also what I explore on my YouTube channel, [AI with Rufat](https://www.youtube.com/@AIwithRufat).
 
-This site is where I share what I learn and build — a free, interactive Playwright trainer ([BrauzerLab](/en/playwright/)), notes on testing and AI, and side projects like an [interview trainer](/en/projects/). Everything here is free.
+This site is where I share what I learn and build — a free, interactive Playwright trainer ([BrauzerLab](/en/playwright/)), a free [Python course for beginners](/en/python/) (in Azerbaijani), an [exam-prep app for students in Azerbaijan](/en/exam-helper/), notes on testing and AI, and side projects like an [interview trainer](/en/projects/). Everything here is free.
 
 I'm currently open to QA automation / SDET roles — remote, hybrid, or on-site.
 
