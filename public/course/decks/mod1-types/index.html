@@ -1,0 +1,511 @@
+
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TypeScript — Qırmızı Dalğalı Xətt — AI with Rufat</title>
+  <style>
+    /* ===========================================================
+       Deck framework — DO NOT EDIT the rules in this <style> block.
+       =========================================================== */
+    :root {
+      /* SLOT: theme tokens — AI with Rufat brand */
+      --bg:      oklch(9% 0.06 255);
+      --fg:      oklch(97% 0.006 255);
+      --muted:   oklch(52% 0.05 255);
+      --accent:  oklch(72% 0.23 210);
+      --accent2: oklch(58% 0.28 265);
+      --surface: oklch(14% 0.08 255);
+      --border:  oklch(22% 0.10 255);
+      --shell:   oklch(5% 0.03 252);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--shell);
+      color: var(--fg);
+      font: 18px/1.5 -apple-system, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .deck-shell {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+    .deck-stage {
+      width: 1920px;
+      height: 1080px;
+      background: var(--bg);
+      position: relative;
+      transform-origin: top left;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+    }
+    .slide {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+    .slide:not(.active) { display: none !important; }
+    :where(.slide.active) { display: flex; flex-direction: column; }
+    .deck-counter {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(10, 14, 26, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font: 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.18em;
+      z-index: 1000;
+    }
+    .deck-counter button {
+      width: 36px; height: 36px;
+      background: transparent;
+      color: #fff;
+      border: 0;
+      border-radius: 50%;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 0.15s;
+    }
+    .deck-counter button:hover { background: rgba(255, 255, 255, 0.12); }
+    .deck-counter button[disabled] { opacity: 0.3; cursor: default; }
+    .deck-counter .deck-count {
+      padding: 0 14px;
+      letter-spacing: 0.22em;
+    }
+    .deck-counter .deck-count .total { color: rgba(255, 255, 255, 0.5); }
+    .deck-hint {
+      position: fixed;
+      bottom: 26px;
+      right: 28px;
+      color: rgba(255, 255, 255, 0.4);
+      font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      z-index: 999;
+      pointer-events: none;
+    }
+    @media print {
+      @page { size: 1920px 1080px; margin: 0; }
+      html, body {
+        width: 1920px !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
+      }
+      .deck-shell {
+        position: static !important;
+        display: block !important;
+        inset: auto !important;
+      }
+      .deck-stage {
+        width: 1920px !important;
+        height: auto !important;
+        transform: none !important;
+        box-shadow: none !important;
+        position: static !important;
+      }
+      .slide {
+        display: flex !important;
+        position: relative !important;
+        inset: auto !important;
+        width: 1920px !important;
+        height: 1080px !important;
+        page-break-after: always;
+        break-after: page;
+      }
+      .slide:last-child { page-break-after: auto; break-after: auto; }
+      .deck-counter, .deck-hint { display: none !important; }
+    }
+  </style>
+  <style>
+    /* SLOT: per-deck styles */
+
+    .circuit-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 60% at 8% 50%,  oklch(22% 0.16 265 / 0.35) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 92% 40%, oklch(28% 0.20 220 / 0.28) 0%, transparent 55%),
+        radial-gradient(ellipse 45% 40% at 50% 110%, oklch(15% 0.10 250 / 0.4) 0%, transparent 50%);
+    }
+
+    .grad-text {
+      background: linear-gradient(135deg, oklch(84% 0.25 200) 0%, oklch(62% 0.30 265) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-bar {
+      position: absolute;
+      bottom: 44px;
+      right: 64px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10;
+    }
+    .brand-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .brand-name {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: oklch(70% 0.04 252);
+    }
+    .brand-name strong {
+      background: linear-gradient(135deg, oklch(84% 0.25 200), oklch(62% 0.30 265));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Title */
+    .s-title {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px;
+    }
+    .s-title .kicker {
+      font-size: 26px; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 28px;
+    }
+    .s-title .headline {
+      font-size: 100px; font-weight: 900;
+      line-height: 1.0; letter-spacing: -0.03em;
+      max-width: 1400px;
+      margin-bottom: 36px;
+    }
+    .s-title .subtitle {
+      font-size: 34px; font-weight: 400;
+      color: var(--muted);
+      max-width: 980px; line-height: 1.4;
+    }
+    .s-title .pills { display: flex; gap: 16px; margin-top: 48px; }
+    .pill {
+      padding: 10px 30px;
+      border-radius: 999px;
+      border: 1px solid oklch(30% 0.10 255);
+      font-size: 22px; font-weight: 500;
+      color: var(--muted);
+      background: oklch(12% 0.06 255 / 0.5);
+    }
+
+    /* Code block */
+    .code-block {
+      background: oklch(10% 0.05 255);
+      border: 1px solid oklch(22% 0.10 255);
+      border-radius: 10px;
+      padding: 28px 32px;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 22px;
+      line-height: 1.8;
+    }
+
+    /* VS Code editor mockup */
+    .vscode {
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 28px 72px rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.08);
+      width: 100%;
+      max-width: 1360px;
+      font-family: ui-monospace, Consolas, monospace;
+    }
+    .vscode-bar {
+      height: 44px; background: #323233;
+      display: flex; align-items: flex-end;
+    }
+    .vscode-tab {
+      background: #1e1e1e; color: #d4d4d4;
+      padding: 10px 22px; font-size: 18px;
+      border-top: 2px solid #0078d4;
+      display: flex; gap: 12px; align-items: center;
+    }
+    .vscode-tab .dot { color: #d4d4d4; }
+    .vscode-body { background: #1e1e1e; padding: 26px 0; display: flex; position: relative; }
+    .vscode-gutter {
+      color: #6e7681; text-align: right;
+      padding: 0 22px; font-size: 24px; line-height: 1.95;
+      user-select: none; flex-shrink: 0;
+      border-right: 1px solid #2b2b2b;
+    }
+    .vscode-code { font-size: 24px; line-height: 1.95; padding: 0 36px; flex: 1; white-space: pre; }
+    .tok-kw   { color: #569cd6; }
+    .tok-fn   { color: #dcdcaa; }
+    .tok-str  { color: #ce9178; }
+    .tok-num  { color: #b5cea8; }
+    .tok-type { color: #4ec9b0; }
+    .tok-cmt  { color: #6a9955; }
+    .tok-plain{ color: #d4d4d4; }
+    .squiggle {
+      text-decoration: underline wavy #f44336;
+      text-decoration-thickness: 2.5px;
+      text-underline-offset: 6px;
+    }
+
+    /* VS Code hover tooltip */
+    .ts-hover {
+      background: #252526;
+      border: 1px solid #454545;
+      border-radius: 6px;
+      padding: 20px 26px;
+      max-width: 980px;
+      font: 22px/1.5 -apple-system, system-ui, sans-serif;
+      color: #cccccc;
+      box-shadow: 0 10px 36px rgba(0,0,0,0.65);
+      position: relative;
+    }
+    .ts-hover::before {
+      content: '';
+      position: absolute;
+      top: -10px; left: 120px;
+      border-left: 11px solid transparent;
+      border-right: 11px solid transparent;
+      border-bottom: 11px solid #454545;
+    }
+    .ts-hover .ts-err { color: #f48771; font-weight: 600; }
+    .ts-hover .ts-mono { font-family: ui-monospace, Consolas, monospace; color: #9cdcfe; }
+    .ts-hover .ts-code { color: #6e7681; font-family: ui-monospace, Consolas, monospace; font-size: 19px; }
+
+    /* Generic step heading */
+    .s-pad {
+      display: flex; flex-direction: column;
+      padding: 70px 110px; justify-content: center; height: 100%;
+    }
+    .eyebrow {
+      font-size: 22px; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .big-head {
+      font-size: 68px; font-weight: 900;
+      letter-spacing: -0.025em; line-height: 1.0;
+      margin-bottom: 32px;
+    }
+    .callout {
+      margin-top: 26px; padding: 18px 28px;
+      border-radius: 12px; font-size: 24px; line-height: 1.5;
+      max-width: 1360px;
+    }
+    .callout-red   { background: rgba(244,67,54,0.10); border: 1px solid rgba(244,67,54,0.30); color: #f48771; }
+    .callout-green { background: rgba(76,175,80,0.10); border: 1px solid rgba(76,175,80,0.30); color: #81c784; }
+
+    /* Done */
+    .s-done { align-items: center; justify-content: center; text-align: center; padding: 80px; }
+    .done-icon { font-size: 110px; margin-bottom: 28px; filter: drop-shadow(0 0 36px oklch(72% 0.23 210)); }
+    .done-head { font-size: 88px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.0; margin-bottom: 22px; }
+    .done-sub  { font-size: 32px; color: var(--muted); margin-bottom: 52px; max-width: 1100px; }
+    .next-cards { display: flex; gap: 24px; }
+    .next-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 36px; text-align: left; width: 360px; }
+    .next-card .nc-icon  { font-size: 38px; margin-bottom: 14px; }
+    .next-card .nc-title { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+    .next-card .nc-desc  { font-size: 20px; color: var(--muted); line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Modul 1 · TypeScript · Tip Təhlükəsizliyi</div>
+        <h1 class="headline">Qırmızı<br><span class="grad-text">Dalğalı Xətt</span></h1>
+        <p class="subtitle">Tiplər səhvi siz işə salmadan <strong>əvvəl</strong> tutur — VS Code-da dərhal görürsünüz</p>
+        <div class="pills">
+          <span class="pill">TypeScript</span>
+          <span class="pill">Tip xətası</span>
+          <span class="pill">VS Code</span>
+          <span class="pill">formatPrice</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 The problem: JS — no error until runtime -->
+      <section class="slide s-pad" data-screen-label="02 JavaScript Problem">
+        <div class="circuit-bg"></div>
+        <div class="eyebrow" style="color:#f44336;">PROBLEM — tip yoxdur</div>
+        <h2 class="big-head">JavaScript: Xəta Yalnız İşləmə Zamanı</h2>
+        <div class="code-block" style="max-width:1360px;">
+          <div><span class="tok-cmt">// JavaScript — tip yoxdur, xəta gizlənir</span></div>
+          <div><span class="tok-kw">function</span> <span class="tok-fn">formatPrice</span>(<span class="tok-plain">price</span>) {</div>
+          <div style="margin-left:32px;"><span class="tok-kw">return</span> <span class="tok-str">`$${price.toFixed(2)}`</span>;</div>
+          <div>}</div>
+          <div style="margin-top:12px;"></div>
+          <div><span class="tok-fn">formatPrice</span>(<span class="tok-str">'rəqəm-deyil'</span>);  <span class="tok-cmt">// 💥 işləmə zamanı çöküş</span></div>
+        </div>
+        <div class="callout callout-red">
+          Redaktor heç nə demir. Çöküş yalnız siz kodu <strong>işə salanda</strong> baş verir — bəzən istifadəçinin yanında.
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 The fix: VS Code red squiggle + hover tooltip -->
+      <section class="slide s-pad" data-screen-label="03 Red Squiggle">
+        <div class="circuit-bg"></div>
+        <div class="eyebrow" style="color:var(--accent);">HƏLL — tip annotasiyası</div>
+        <h2 class="big-head" style="margin-bottom:24px;">TypeScript: Xəta Dərhal Redaktorda</h2>
+
+        <div class="vscode">
+          <div class="vscode-bar">
+            <div class="vscode-tab"><span class="tok-type">TS</span> formatPrice.ts <span class="dot">●</span></div>
+          </div>
+          <div class="vscode-body">
+            <div class="vscode-gutter">1<br>2<br>3<br>4<br>5</div>
+            <div class="vscode-code"><span class="tok-kw">function</span> <span class="tok-fn">formatPrice</span>(<span class="tok-plain">price</span>: <span class="tok-type">number</span>): <span class="tok-type">string</span> {
+  <span class="tok-kw">return</span> <span class="tok-str">`$${price.toFixed(2)}`</span>;
+}
+
+<span class="tok-fn">formatPrice</span>(<span class="tok-str squiggle">'rəqəm-deyil'</span>);</div>
+          </div>
+        </div>
+
+        <div class="ts-hover" style="margin-top:18px; margin-left:430px;">
+          <span class="ts-err">⚠ Argument of type <span class="ts-mono">'string'</span> is not assignable to parameter of type <span class="ts-mono">'number'</span>.</span>
+          <span class="ts-code">ts(2345)</span>
+        </div>
+
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Key rule -->
+      <section class="slide s-done" data-screen-label="04 Key Rule">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🟥</div>
+        <h2 class="done-head">Qayda:<br><span class="grad-text">Qırmızı Xətti İşə Salmadan Düzəldin</span></h2>
+        <p class="done-sub">O qırmızı dalğalı xətt — dərsin özüdür. Tiplər səhvi redaktorda tutur, işləmə zamanı yox.</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🔤</div>
+            <div class="nc-title">Annotasiya əlavə edin</div>
+            <div class="nc-desc"><span style="font-family:ui-monospace,Consolas,monospace;">price: number</span> yazın — redaktor sizi qoruyur</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">📐</div>
+            <div class="nc-title">interface ilə davam edin</div>
+            <div class="nc-desc">Test data-nın formasını təsvir edin</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🎯</div>
+            <div class="nc-title">Modul 2-də</div>
+            <div class="nc-desc">Tipli locator-lar və Page Object-lər</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script>
+    (function () {
+      var stage = document.getElementById('deck-stage');
+      var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+      var prev = document.getElementById('deck-prev');
+      var next = document.getElementById('deck-next');
+      var cur = document.getElementById('deck-cur');
+      var total = document.getElementById('deck-total');
+      var STORE = 'deck:idx:' + (location.pathname || '/');
+      var idx = 0;
+
+      function fit() {
+        var sw = window.innerWidth;
+        var sh = window.innerHeight;
+        var pad = 32;
+        var s = Math.min((sw - pad) / 1920, (sh - pad) / 1080);
+        if (!isFinite(s) || s <= 0) s = 1;
+        var tx = (sw - 1920 * s) / 2;
+        var ty = (sh - 1080 * s) / 2;
+        stage.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + s + ')';
+      }
+
+      function pad2(n) { return (n < 10 ? '0' : '') + n; }
+      function paint() {
+        slides.forEach(function (el, i) { el.classList.toggle('active', i === idx); });
+        if (cur) cur.textContent = pad2(idx + 1);
+        if (total) total.textContent = pad2(slides.length);
+        if (prev) prev.toggleAttribute('disabled', idx <= 0);
+        if (next) next.toggleAttribute('disabled', idx >= slides.length - 1);
+      }
+      function go(i) {
+        idx = Math.max(0, Math.min(slides.length - 1, i));
+        paint();
+        try { localStorage.setItem(STORE, String(idx)); } catch (_) {}
+      }
+      function onKey(e) {
+        var t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(idx + 1); }
+        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(idx - 1); }
+        else if (e.key === 'Home') { e.preventDefault(); go(0); }
+        else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+      }
+      window.addEventListener('keydown', onKey, true);
+      document.addEventListener('keydown', onKey, true);
+      if (prev) prev.addEventListener('click', function () { go(idx - 1); });
+      if (next) next.addEventListener('click', function () { go(idx + 1); });
+
+      document.body.setAttribute('tabindex', '-1');
+      document.body.style.outline = 'none';
+      function focusDeck() { try { window.focus(); document.body.focus({ preventScroll: true }); } catch (_) {} }
+      document.addEventListener('mousedown', focusDeck);
+      window.addEventListener('load', focusDeck);
+
+      try {
+        var saved = parseInt(localStorage.getItem(STORE) || '0', 10);
+        if (!isNaN(saved) && saved >= 0 && saved < slides.length) idx = saved;
+      } catch (_) {}
+
+      window.addEventListener('resize', fit);
+      fit();
+      paint();
+      focusDeck();
+    })();
+  </script>
+</body>
+</html>
