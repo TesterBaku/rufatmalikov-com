@@ -15,6 +15,10 @@
 
 	/* Body / UI font */
 	--sl-font: 'Inter Variable', var(--sl-font-system);
+
+	/* Unified corner radius — containers vs inner controls. */
+	--brand-radius: 0.75rem;     /* cards, missions, runner, progress, deck, video */
+	--brand-radius-sm: 0.5rem;   /* buttons, inputs, link-buttons, feedback */
 }
 
 /* ---------- Headings: serif display ---------- */
@@ -82,7 +86,7 @@ h1#_top,
 	background: color-mix(in srgb, var(--sl-color-accent) 90%, #000);
 	border-color: color-mix(in srgb, var(--sl-color-accent) 90%, #000);
 	color: #fff;
-	border-radius: 0.55rem;
+	border-radius: var(--brand-radius-sm);
 	padding: 0.6rem 1.25rem;
 	font-weight: 600;
 	box-shadow: var(--sl-shadow-sm);
@@ -99,7 +103,7 @@ h1#_top,
 /* Secondary CTA: outlined slate that warms to the accent on hover. */
 .sl-link-button.secondary,
 .sl-link-button.minimal {
-	border-radius: 0.55rem;
+	border-radius: var(--brand-radius-sm);
 	padding: 0.6rem 1.1rem;
 	font-weight: 600;
 	color: var(--sl-color-white);
@@ -119,7 +123,7 @@ h1#_top,
 	--sl-card-border: var(--sl-color-accent);
 	background-color: var(--sl-color-bg);
 	border: 1px solid var(--sl-color-gray-5);
-	border-radius: 0.85rem;
+	border-radius: var(--brand-radius);
 	transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
 }
 .card:hover {
