@@ -2,6 +2,17 @@
 # content-hashed (the filename changes whenever the content does), so they are
 # safe to cache for a year. Without this, Cloudflare's short default TTL forces
 # revalidation round-trips for returning visitors.
+
+# Baseline security hardening, applied to every response. These three are safe
+# to enforce site-wide (they don't depend on page content). A Content-Security-
+# Policy is intentionally NOT set here yet: the Pyodide runtime is imported from
+# the jsDelivr CDN and needs wasm-eval, so a CSP must be authored and verified
+# against the live deploy before enforcing - tracked as a follow-up.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
 
