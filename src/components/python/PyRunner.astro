@@ -199,7 +199,6 @@ const t =
 		stopEl: HTMLButtonElement;
 		statusEl: HTMLElement;
 		outputEl: HTMLElement;
-		worker: Worker | null = null;
 		timer: number | null = null;
 		checkCode: string;
 		lastCheck: { passed: boolean; hint: string | null } | null = null;
@@ -246,28 +245,23 @@ const t =
 			this.lastCheck = null;
 			this.errored = false;
 
-			if (!this.worker) {
-				this.worker = new PyWorker();
-				this.worker.onmessage = (e: MessageEvent<Msg>) => this.onMessage(e.data);
-				this.worker.onerror = () => {
-					this.errored = true;
-					this.appendError('Xəta', null, 'Worker xətası baş verdi.');
-					this.kill();
-					this.finish();
-				};
-				this.setStatus(this.strings.loading, 'busy');
-			} else {
-				this.setStatus(this.strings.running, 'busy');
-			}
+			// A cold shared worker (first run on the page) shows "loading" while
+			// Pyodide downloads; a warm one goes straight to "running". The real
+			// status is confirmed on the 'started' message.
+			this.setStatus(PyHost.isWarm() ? this.strings.running : this.strings.loading, 'busy');
+			PyHost.submit(this);
+		}
 
-			this.worker.postMessage({
+		// Called by PyHost when it's this runner's turn on the shared worker. The
+		// kill-timer is armed on the 'started' message (see onMessage), not here,
+		// so the one-time Pyodide download isn't charged against the 5s budget.
+		postRun(worker: Worker) {
+			worker.postMessage({
 				type: 'run',
 				code: this.code(),
 				inputs: this.queuedInputs(),
 				checkCode: this.checkCode,
 			});
-			// Kill-timer is armed on the 'started' message, not here, so the
-			// one-time Pyodide download is never counted against the 5s budget.
 		}
 
 		code() {
@@ -299,13 +293,13 @@ const t =
 					break;
 				case 'done':
 					this.setStatus(this.strings.done, 'ok');
-					this.finish();
+					this.conclude(false);
 					break;
 				case 'error':
 					this.errored = true;
 					this.appendError(m.errorType, m.line, m.message);
 					this.setStatus('', '');
-					this.finish();
+					this.conclude(false);
 					break;
 				// 'ready' is informational; no UI action needed.
 			}
@@ -326,30 +320,34 @@ const t =
 		onTimeout() {
 			this.timer = null;
 			this.errored = true;
-			this.kill(); // terminate so the next Run recreates a fresh worker (recycle)
 			this.append('\n' + this.strings.timeout + '\n', true);
 			this.outputEl.classList.add('has-error');
 			this.setStatus('', '');
-			this.finish();
+			this.conclude(true); // recycle the shared worker to kill the runaway code
 		}
 
 		stop() {
 			this.errored = true;
-			this.kill();
 			this.setStatus(this.strings.stopped, '');
-			this.finish();
+			this.conclude(true); // recycle: terminate the shared worker mid-run
 		}
 
-		kill() {
-			this.disarm();
-			if (this.worker) {
-				this.worker.terminate();
-				this.worker = null;
-			}
+		// The shared worker raised an error mid-run; PyHost routes it to the
+		// active runner.
+		handleWorkerError() {
+			this.errored = true;
+			this.appendError('Xəta', null, 'Worker xətası baş verdi.');
+			this.conclude(true);
 		}
 
-		finish() {
+		// Single terminal path for a run. `recycle` true → the shared worker is
+		// terminated and lazily recreated (timeout / stop / worker-error); false →
+		// it stays warm for the next run (clean done/error). Either way PyHost then
+		// dispatches any queued run.
+		conclude(recycle: boolean) {
 			this.disarm();
+			if (recycle) PyHost.recycleAfter(this);
+			else PyHost.releaseAfter(this);
 			this.runEl.disabled = false;
 			this.stopEl.hidden = true;
 			const detail: PyResult = {
@@ -379,6 +377,79 @@ const t =
 			this.statusEl.dataset.kind = kind;
 		}
 	}
+
+	// One shared Pyodide worker for the whole page. Pyodide is ~10MB, so creating
+	// a worker per <PyRunner> meant a learner who ran several examples on a lesson
+	// page downloaded and instantiated Pyodide several times over. Instead every
+	// runner serializes its runs through a single warm worker. Runs are already
+	// mutually exclusive — each holds the 5s kill-timer — so a queue (not real
+	// concurrency) is all that's needed. The worker stays warm between runs and is
+	// only terminated + recreated on the timeout/stop recycle path. Per-run state
+	// can't leak either: HELPER_PY builds a fresh globals dict for every run.
+	const PyHost = {
+		worker: null as Worker | null,
+		active: null as Runner | null,
+		queue: [] as Runner[],
+
+		isWarm(): boolean {
+			return this.worker !== null;
+		},
+
+		ensureWorker(): Worker {
+			if (this.worker) return this.worker;
+			const w = new PyWorker();
+			// Set once; both handlers read the *current* active runner, so they
+			// keep routing correctly as the warm worker is reused across runners.
+			w.onmessage = (e: MessageEvent<Msg>) => this.active?.onMessage(e.data);
+			w.onerror = () => {
+				if (this.active) this.active.handleWorkerError();
+				else this.recycle();
+			};
+			this.worker = w;
+			return w;
+		},
+
+		// Queue a runner's run and start it if the worker is idle.
+		submit(runner: Runner) {
+			this.queue.push(runner);
+			this.pump();
+		},
+
+		pump() {
+			if (this.active || this.queue.length === 0) return;
+			this.active = this.queue.shift()!;
+			this.active.postRun(this.ensureWorker());
+		},
+
+		// Clean finish (done/error): keep the worker warm, dispatch the next run.
+		releaseAfter(runner: Runner) {
+			if (this.active === runner) {
+				this.active = null;
+				this.pump();
+			} else {
+				this.queue = this.queue.filter((r) => r !== runner);
+			}
+		},
+
+		// Timeout / stop / worker-error: terminate the worker (recycle), then move
+		// on. A runner still only queued (never started) is just dropped.
+		recycleAfter(runner: Runner) {
+			if (this.active === runner) {
+				this.recycle();
+				this.active = null;
+				this.pump();
+			} else {
+				this.queue = this.queue.filter((r) => r !== runner);
+			}
+		},
+
+		recycle() {
+			if (this.worker) {
+				this.worker.terminate();
+				this.worker = null;
+			}
+		},
+	};
 
 	document
 		.querySelectorAll<HTMLElement>('[data-py-runner]')
