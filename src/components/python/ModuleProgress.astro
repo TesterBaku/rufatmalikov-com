@@ -132,6 +132,11 @@ const t =
 		background: var(--sl-color-text-accent, #2563eb);
 		transition: width 0.4s ease;
 	}
+	@media (prefers-reduced-motion: reduce) {
+		.py-modprog-fill {
+			transition: none;
+		}
+	}
 	.py-modprog.is-complete .py-modprog-fill {
 		background: var(--sl-color-green, #16a34a);
 	}
