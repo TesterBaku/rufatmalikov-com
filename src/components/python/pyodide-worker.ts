@@ -65,12 +65,19 @@ def _run_user(code, inputs_json, check_code):
 
     # Tee stdout: keep streaming live to the page (real_out is Pyodide's
     # redirected stdout) while also buffering it for the mission check.
+    # The buffer is bounded: a runaway loop (e.g. while True: print(...)) must
+    # not balloon worker memory during the 5s window before the main-thread
+    # kill-timer fires. 128KB mirrors the JS-side streamed OUTPUT_CAP and is far
+    # more than any real mission check inspects. real_out streaming is unaffected
+    # (it has its own cap on the JS side).
+    _BUF_CAP = 128 * 1024
     buf = io.StringIO()
     real_out = sys.stdout
 
     class _Tee:
         def write(self, s):
-            buf.write(s)
+            if buf.tell() < _BUF_CAP:
+                buf.write(s)
             return real_out.write(s)
         def flush(self):
             return real_out.flush()
