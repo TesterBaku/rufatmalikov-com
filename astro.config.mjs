@@ -44,9 +44,49 @@ export default defineConfig({
 			],
 			sidebar: [
 				{
+					// Explicit module links (not autogenerate) so the 14 flat module files
+					// can be grouped into collapsible difficulty phases. Phases start
+					// collapsed; Starlight auto-expands the one holding the active page.
 					label: 'Course',
 					translations: { az: 'Kurs' },
-					items: [{ autogenerate: { directory: 'course' } }],
+					items: [
+						{ label: 'Overview', translations: { az: 'İcmal' }, link: '/course/' },
+						{ label: '0 — Roadmap & setup', translations: { az: '0 — Kurs xəritəsi və quraşdırma' }, link: '/course/module-0/' },
+						{
+							label: 'Fundamentals',
+							translations: { az: 'Əsaslar' },
+							collapsed: true,
+							items: [
+								{ label: '1 — JS/TS for QA', translations: { az: '1 — QA üçün JS/TS' }, link: '/course/module-1/' },
+								{ label: '2 — Mastering locators', translations: { az: '2 — Lokatorlar ustası' }, link: '/course/module-2/' },
+								{ label: '3 — Actions & interactions', translations: { az: '3 — Əməliyyatlar və interaksiya' }, link: '/course/module-3/' },
+								{ label: '4 — Assertions', translations: { az: '4 — İddialar' }, link: '/course/module-4/' },
+							],
+						},
+						{
+							label: 'Intermediate',
+							translations: { az: 'Orta səviyyə' },
+							collapsed: true,
+							items: [
+								{ label: '5 — Auto-waiting & flaky tests', translations: { az: '5 — Avtomatik gözləmə və flaky testlər' }, link: '/course/module-5/' },
+								{ label: '6 — Test runner & config', translations: { az: '6 — Test icraçısı və konfiqurasiya' }, link: '/course/module-6/' },
+								{ label: '7 — Page Object Model', translations: { az: '7 — Səhifə Obyekt Modeli (POM)' }, link: '/course/module-7/' },
+								{ label: '8 — Fixtures & test data', translations: { az: '8 — Fixtures və test məlumatları' }, link: '/course/module-8/' },
+								{ label: '9 — API testing & networking', translations: { az: '9 — API testi və şəbəkə' }, link: '/course/module-9/' },
+							],
+						},
+						{
+							label: 'Advanced',
+							translations: { az: 'Qabaqcıl' },
+							collapsed: true,
+							items: [
+								{ label: '10 — Auth & storage state', translations: { az: '10 — Auth və saxlama vəziyyəti' }, link: '/course/module-10/' },
+								{ label: '11 — Visual / Mobile / A11y', translations: { az: '11 — Vizual / Mobil / Əlçatımlılıq' }, link: '/course/module-11/' },
+								{ label: '12 — CI, Docker, reports', translations: { az: '12 — CI, Docker, hesabatlar' }, link: '/course/module-12/' },
+								{ label: '13 — Final project review', translations: { az: '13 — Yekun layihə icmalı' }, link: '/course/module-13/' },
+							],
+						},
+					],
 				},
 				{
 					// Explicit per-module groups so the module headings can be localized
