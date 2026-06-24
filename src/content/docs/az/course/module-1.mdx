@@ -130,6 +130,36 @@ const fullSelector = `[data-testid="${selector}"]`;
 
 Template literal-lar (backtick-li string-lər) Playwright-də çox istifadə olunur — konfiqurasiya fayllarında, page object-lərdə və iddia ifadələrində.
 
+:::note[Backtick, tək dırnaq deyil]
+Template literal-lar **backtick** (klaviaturanın yuxarı-sol küncündə, Tab düyməsinin üstündə) ilə yazılmalıdır — tək dırnaqla yox. Onlar oxşar görünür, amma tamam fərqli işləyir:
+
+```javascript
+`Keçildi: ${url}`   // backtick → url-in dəyərini yerləşdirir
+'Keçildi: ${url}'   // tək dırnaq → "Keçildi: ${url}" mətnini olduğu kimi saxlayır
+```
+:::
+
+<details>
+<summary>"Dəyər yerləşdirmək" nə deməkdir?</summary>
+
+"Dəyər yerləşdirmək" — dəyişənin içindəkini birbaşa string-in içinə salmaq deməkdir. Template literal-ın içində `${ ... }` yer tutucudur: JavaScript mötərizələrin arasındakını hesablayır və nəticəni mətnə əlavə edir.
+
+```typescript
+const url = 'http://localhost:3000';
+const message = `Keçildi: ${url}`;
+// indi message belədir: 'Keçildi: http://localhost:3000'
+```
+
+Template literal olmadan hissələri əllə `+` ilə birləşdirməli olardın:
+
+```typescript
+const message = 'Keçildi: ' + url;  // eyni nəticə, çox dəyər olanda oxumaq çətindir
+```
+
+Təkcə dəyişəni yox, istənilən ifadəni də yerləşdirə bilərsən — `` `Cəmi: ${price * qty}` `` da işləyir.
+
+</details>
+
 ### Rəqəmlər
 
 ```typescript
@@ -146,6 +176,22 @@ Tip çevrilmələrinə diqqət edin (aşağıdakı nümunələr xalis JavaScript
 ```
 
 Praktikada açıq çevirmədən istifadə edin: `Number('5')` və ya `parseInt('5', 10)`.
+
+<details>
+<summary>"Açıq çevirmə" nədir?</summary>
+
+JavaScript bəzən tipləri sənin əvəzinə avtomatik çevirir — yuxarıdakı tələ də budur, orada `'5' + 3` səssizcə `'53'` olur. **Açıq çevirmə** o deməkdir ki, çevirməni *sən* qəsdən edirsən, beləliklə nəticə heç vaxt gözlənilməz olmur:
+
+```typescript
+Number('5')        // → 5      (string-dən rəqəmə)
+parseInt('5', 10)  // → 5      (string-dən tam ədədə; 10 onluq say sistemi deməkdir)
+String(5)          // → '5'    (rəqəmdən string-ə)
+Boolean('')        // → false  (boş string-dən boolean-a)
+```
+
+Buna dəyər string kimi gəldikdə, amma sənə əsl rəqəm və ya boolean lazım olduqda müraciət edəcəksən — məsələn, `process.env` dəyişənlərini və ya səhifədən götürülən mətni oxuyanda (hər ikisi bu modulda sonra var).
+
+</details>
 
 ### Boolean
 
@@ -173,12 +219,42 @@ const browsers = ['chromium', 'firefox', 'webkit'];
 const prices = [9.99, 14.99, 29.99];
 
 // Ümumi əməliyyatlar
-browsers.length;              // 3
-browsers[0];                  // 'chromium'
-browsers.push('electron');    // sona əlavə edir
-browsers.filter(b => b !== 'webkit');  // 'webkit' olmadan yeni array qaytarır
-browsers.map(b => b.toUpperCase());    // ['CHROMIUM', 'FIREFOX', 'WEBKIT']
+console.log(browsers.length);   // 3
+console.log(browsers[0]);       // 'chromium'
+
+browsers.push('electron');      // array-i dəyişir: sona əlavə edir
+console.log(browsers);          // ['chromium', 'firefox', 'webkit', 'electron']
+
+// filter və map orijinalı DƏYİŞMİR — YENİ array qaytarır,
+// ona görə nəticəni yeni dəyişənə yaz
+const withoutWebkit = browsers.filter(b => b !== 'webkit');
+console.log(withoutWebkit);     // ['chromium', 'firefox', 'electron']
+
+const upperCased = browsers.map(b => b.toUpperCase());
+console.log(upperCased);        // ['CHROMIUM', 'FIREFOX', 'ELECTRON']
 ```
+
+<details>
+<summary>Bəzən istifadə edəcəyin daha çox array metodu</summary>
+
+Bunlar Playwright testlərində `push`, `filter` və `map` qədər tez-tez rast gəlmir, amma tanımağa dəyər. Hansının orijinal array-i **dəyişdiyinə** diqqət et:
+
+```typescript
+const nums = [3, 1, 2];
+
+console.log(nums.pop());    // SONUNCU elementi silib qaytarır → 2; nums indi [3, 1]
+console.log(nums.shift());  // BİRİNCİ elementi silib qaytarır → 3; nums indi [1]
+nums.unshift(9);            // ƏVVƏLƏ əlavə edir → nums indi [9, 1]
+nums.splice(1, 1);          // 1-ci indeksdən başlayaraq 1 element silir → nums indi [9]
+
+const letters = ['c', 'a', 'b'];
+letters.sort();             // dəyişir → ['a', 'b', 'c']
+letters.reverse();          // dəyişir → ['c', 'b', 'a']
+```
+
+`pop`, `shift`, `unshift`, `splice`, `sort` və `reverse` hamısı **orijinal array-i dəyişir** (`filter`/`map`-dən fərqli olaraq — onlar yeni array qaytarır). Orijinalı qorumaq üçün əvvəlcə spread operatoru ilə kopyala: `const sorted = [...letters].sort();`.
+
+</details>
 
 ### Obyektlər
 
