@@ -111,6 +111,28 @@ Hello!
 Exercise 1 done
 ```
 
+<details>
+<summary>Solution</summary>
+
+```typescript
+const baseURL = 'http://localhost:3000';
+
+const TIMEOUT = 30000;
+const TIMEOUT_EXTENDED = 50000;  // a new variable instead of reassigning TIMEOUT
+
+let user = { email: 'test@test.io', role: 'admin' };
+user = { email: 'admin@test.io', role: 'admin' };  // `let` allows rebinding
+
+if (true) {
+  let message = 'Hello!';
+  console.log(message);  // moved inside the block so it's in scope
+}
+
+console.log('Exercise 1 done');
+```
+
+</details>
+
 ---
 
 ## Strings, numbers, and booleans
@@ -315,21 +337,15 @@ const validCustomer = {
   role: 'customer',
 };
 
-// 1. Build validAdmin from validCustomer with the spread operator,
-//    overriding only email and role.
-// TODO: const validAdmin = { ...validCustomer, email: 'admin@test.io', role: 'admin' };
-
 const products = [
   { name: 'Mouse', price: 9.99, category: 'accessories' },
   { name: 'Keyboard', price: 29.99, category: 'accessories' },
   { name: 'Monitor', price: 199.99, category: 'displays' },
 ];
 
-// 2. Get the names of all 'accessories' products (filter + map).
-// TODO: const accessoryNames = products.filter(p => p.category === 'accessories').map(p => p.name);
-
+// 1. Build validAdmin from validCustomer using spread — override only email and role.
+// 2. accessoryNames — the names of all 'accessories' products (filter + map).
 // 3. Destructure email and role out of validAdmin.
-// TODO: const { email, role } = validAdmin;
 
 console.log('Admin:', validAdmin);
 console.log('Accessories:', accessoryNames);
@@ -342,6 +358,17 @@ Admin: { email: 'admin@test.io', password: 'customer123', role: 'admin' }
 Accessories: [ 'Mouse', 'Keyboard' ]
 Destructured: admin@test.io admin
 ```
+
+<details>
+<summary>Solution</summary>
+
+```typescript
+const validAdmin = { ...validCustomer, email: 'admin@test.io', role: 'admin' };
+const accessoryNames = products.filter(p => p.category === 'accessories').map(p => p.name);
+const { email, role } = validAdmin;
+```
+
+</details>
 
 ---
 
@@ -432,6 +459,27 @@ console.log(filterByCategory(catalog, 'accessories'));  // [ { name: 'Mouse', pr
 ```
 
 Hints: template literals, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()`, plus a type annotation on each parameter. Note #1 returns directly with no `return`; #3 and #4 are multi-line, so they need an explicit `return`.
+
+<details>
+<summary>Solution</summary>
+
+```typescript
+const formatPrice = (price: number): string => `$${price.toFixed(2)}`;
+
+const isEmail = (email: string): boolean => email.includes('@') && email.includes('.');
+
+// Returning an object literal from a single-expression arrow needs parentheses:
+const makeUser = (role: string) => ({ email: `${role}_${Date.now()}@test.io`, role });
+
+const makeProduct = (name: string, price: number) => ({ name, price, category: 'accessories' });
+
+const filterByCategory = (
+  products: { name: string; price: number; category: string }[],
+  category: string,
+) => products.filter(p => p.category === category);
+```
+
+</details>
 
 ---
 
@@ -587,16 +635,16 @@ const fakePage = {
 async function runTest() {
   console.log('Starting test...');
 
-  fakePage.goto('/auth/login');                  // ❌ missing await
+  fakePage.goto('/auth/login');
   console.log('Navigated to login page');
 
-  fakePage.waitForSelector('#email');            // ❌ missing await
-  fakePage.fill('#email', 'customer@test.io');   // ❌ missing await
-  fakePage.fill('#password', 'customer123');     // ❌ missing await
-  fakePage.click('button[type="submit"]');       // ❌ missing await
+  fakePage.waitForSelector('#email');
+  fakePage.fill('#email', 'customer@test.io');
+  fakePage.fill('#password', 'customer123');
+  fakePage.click('button[type="submit"]');
 
   console.log('Login form submitted');
-  fakePage.screenshot();                         // ❌ missing await
+  fakePage.screenshot();
 
   console.log('Test complete!');
 }
@@ -605,6 +653,32 @@ runTest();
 ```
 
 Run the broken version first — notice the output order is wrong. Then add `await` and run again.
+
+<details>
+<summary>Solution</summary>
+
+Add `await` before each of the six `fakePage` calls:
+
+```typescript
+async function runTest() {
+  console.log('Starting test...');
+
+  await fakePage.goto('/auth/login');
+  console.log('Navigated to login page');
+
+  await fakePage.waitForSelector('#email');
+  await fakePage.fill('#email', 'customer@test.io');
+  await fakePage.fill('#password', 'customer123');
+  await fakePage.click('button[type="submit"]');
+
+  console.log('Login form submitted');
+  await fakePage.screenshot();
+
+  console.log('Test complete!');
+}
+```
+
+</details>
 
 ---
 
@@ -764,6 +838,16 @@ Questions:
 
 Write your answers as comments in `exercise-5.ts`.
 
+<details>
+<summary>Solution</summary>
+
+1. **Where:** `tests/pages/LoginPage.ts`, line **18**, column **28** — the `> 18 |` line, with the `^` caret under `this.loginButton`.
+2. **Failed test:** "admin can login to dashboard" (from `login.spec.ts:10:3`).
+3. **What's undefined:** `this.loginButton` — you called `.click()` on it, but it was never assigned, so it's `undefined`.
+4. **Check first:** how `loginButton` is set up in the `LoginPage` class — most likely a missing or misspelled locator assignment in the constructor (or its selector matched nothing).
+
+</details>
+
 ---
 
 ## Environment variables
@@ -854,6 +938,27 @@ console.log(getConfig());
 ```
 
 Bonus: delete `process.env.ADMIN_EMAIL` and handle the error with a try/catch.
+
+<details>
+<summary>Solution</summary>
+
+```typescript
+function getConfig() {
+  const baseUrl = process.env.BASE_URL ?? 'http://localhost:3000';
+
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) throw new Error('ADMIN_EMAIL is required');
+
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) throw new Error('ADMIN_PASSWORD is required');
+
+  const isCI = process.env.CI === 'true';
+
+  return { baseUrl, adminEmail, adminPassword, isCI };
+}
+```
+
+</details>
 
 ---
 

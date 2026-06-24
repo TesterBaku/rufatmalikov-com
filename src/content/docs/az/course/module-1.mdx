@@ -111,6 +111,28 @@ Salam!
 Tapşırıq 1 tamamlandı
 ```
 
+<details>
+<summary>Həll</summary>
+
+```typescript
+const baseURL = 'http://localhost:3000';
+
+const TIMEOUT = 30000;
+const TIMEOUT_EXTENDED = 50000;  // TIMEOUT-u yenidən mənimsətmək əvəzinə yeni dəyişən
+
+let user = { email: 'test@test.io', role: 'admin' };
+user = { email: 'admin@test.io', role: 'admin' };  // `let` yenidən mənimsətməyə icazə verir
+
+if (true) {
+  let message = 'Salam!';
+  console.log(message);  // scope-da olsun deyə blokun içinə köçürüldü
+}
+
+console.log('Tapşırıq 1 tamamlandı');
+```
+
+</details>
+
 ---
 
 ## String, rəqəm və boolean
@@ -315,21 +337,15 @@ const validCustomer = {
   role: 'customer',
 };
 
-// 1. validAdmin-i validCustomer-dən spread operatoru ilə qur,
-//    yalnız email və role-u dəyiş.
-// TODO: const validAdmin = { ...validCustomer, email: 'admin@test.io', role: 'admin' };
-
 const products = [
   { name: 'Siçan', price: 9.99, category: 'aksesuarlar' },
   { name: 'Klaviatura', price: 29.99, category: 'aksesuarlar' },
   { name: 'Monitor', price: 199.99, category: 'displeylər' },
 ];
 
-// 2. Bütün 'aksesuarlar' məhsullarının adlarını al (filter + map).
-// TODO: const accessoryNames = products.filter(p => p.category === 'aksesuarlar').map(p => p.name);
-
+// 1. validAdmin-i validCustomer-dən spread ilə qur — yalnız email və role-u dəyiş.
+// 2. accessoryNames — bütün 'aksesuarlar' məhsullarının adları (filter + map).
 // 3. validAdmin-dən email və role-u destructure et.
-// TODO: const { email, role } = validAdmin;
 
 console.log('Admin:', validAdmin);
 console.log('Aksesuarlar:', accessoryNames);
@@ -342,6 +358,17 @@ Admin: { email: 'admin@test.io', password: 'customer123', role: 'admin' }
 Aksesuarlar: [ 'Siçan', 'Klaviatura' ]
 Destructure: admin@test.io admin
 ```
+
+<details>
+<summary>Həll</summary>
+
+```typescript
+const validAdmin = { ...validCustomer, email: 'admin@test.io', role: 'admin' };
+const accessoryNames = products.filter(p => p.category === 'aksesuarlar').map(p => p.name);
+const { email, role } = validAdmin;
+```
+
+</details>
 
 ---
 
@@ -432,6 +459,27 @@ console.log(filterByCategory(catalog, 'aksesuarlar'));  // [ { name: 'Siçan', p
 ```
 
 İpuclar: template literal, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()`, və hər parametrə tip annotasiyası. Qeyd: #1 `return` olmadan birbaşa qaytarır; #3 və #4 çox sətirlidir, ona görə açıq `return` lazımdır.
+
+<details>
+<summary>Həll</summary>
+
+```typescript
+const formatPrice = (price: number): string => `$${price.toFixed(2)}`;
+
+const isEmail = (email: string): boolean => email.includes('@') && email.includes('.');
+
+// Tək ifadəli arrow-dan obyekt qaytarmaq üçün mötərizə lazımdır:
+const makeUser = (role: string) => ({ email: `${role}_${Date.now()}@test.io`, role });
+
+const makeProduct = (name: string, price: number) => ({ name, price, category: 'aksesuarlar' });
+
+const filterByCategory = (
+  products: { name: string; price: number; category: string }[],
+  category: string,
+) => products.filter(p => p.category === category);
+```
+
+</details>
 
 ---
 
@@ -587,16 +635,16 @@ const fakePage = {
 async function runTest() {
   console.log('Test başlayır...');
 
-  fakePage.goto('/auth/login');                  // ❌ await yoxdur
+  fakePage.goto('/auth/login');
   console.log('Login səhifəsinə keçildi');
 
-  fakePage.waitForSelector('#email');            // ❌ await yoxdur
-  fakePage.fill('#email', 'customer@test.io');   // ❌ await yoxdur
-  fakePage.fill('#password', 'customer123');     // ❌ await yoxdur
-  fakePage.click('button[type="submit"]');       // ❌ await yoxdur
+  fakePage.waitForSelector('#email');
+  fakePage.fill('#email', 'customer@test.io');
+  fakePage.fill('#password', 'customer123');
+  fakePage.click('button[type="submit"]');
 
   console.log('Login formu göndərildi');
-  fakePage.screenshot();                         // ❌ await yoxdur
+  fakePage.screenshot();
 
   console.log('Test tamamlandı!');
 }
@@ -605,6 +653,32 @@ runTest();
 ```
 
 Əvvəlcə xətalı versiyanı işlədin — çıxış sırasının yanlış olduğunu görəcəksiniz. Sonra `await` əlavə edib yenidən işlədin.
+
+<details>
+<summary>Həll</summary>
+
+Altı `fakePage` çağırışının hər birindən əvvəl `await` əlavə et:
+
+```typescript
+async function runTest() {
+  console.log('Test başlayır...');
+
+  await fakePage.goto('/auth/login');
+  console.log('Login səhifəsinə keçildi');
+
+  await fakePage.waitForSelector('#email');
+  await fakePage.fill('#email', 'customer@test.io');
+  await fakePage.fill('#password', 'customer123');
+  await fakePage.click('button[type="submit"]');
+
+  console.log('Login formu göndərildi');
+  await fakePage.screenshot();
+
+  console.log('Test tamamlandı!');
+}
+```
+
+</details>
 
 ---
 
@@ -764,6 +838,16 @@ Suallar:
 
 Cavablarınızı `exercise-5.ts` faylında şərh kimi yazın.
 
+<details>
+<summary>Həll</summary>
+
+1. **Harada:** `tests/pages/LoginPage.ts`, sətir **18**, sütun **28** — `> 18 |` sətri, `^` işarəsi `this.loginButton`-un altındadır.
+2. **Uğursuz test:** "admin can login to dashboard" (`login.spec.ts:10:3`-dən).
+3. **Nə undefined-dir:** `this.loginButton` — sən onun üzərində `.click()` çağırdın, amma o heç vaxt mənimsədilməyib, ona görə `undefined`-dir.
+4. **İlk yoxla:** `loginButton`-un `LoginPage` class-ında necə qurulduğunu — çox güman ki, konstruktorda əksik və ya səhv yazılmış lokator mənimsətməsi (ya da selektoru heç nə tapmayıb).
+
+</details>
+
 ---
 
 ## Mühit dəyişənləri
@@ -854,6 +938,27 @@ console.log(getConfig());
 ```
 
 Bonus: `process.env.ADMIN_EMAIL`-i silin və xətanı try/catch ilə idarə edin.
+
+<details>
+<summary>Həll</summary>
+
+```typescript
+function getConfig() {
+  const baseUrl = process.env.BASE_URL ?? 'http://localhost:3000';
+
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) throw new Error('ADMIN_EMAIL is required');
+
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) throw new Error('ADMIN_PASSWORD is required');
+
+  const isCI = process.env.CI === 'true';
+
+  return { baseUrl, adminEmail, adminPassword, isCI };
+}
+```
+
+</details>
 
 ---
 
