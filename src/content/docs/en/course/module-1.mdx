@@ -266,8 +266,8 @@ const user = {
 };
 
 // Access properties
-user.email;           // 'customer@test.io'
-user['role'];         // 'admin' — bracket notation for dynamic keys
+console.log(user.email);    // 'customer@test.io'
+console.log(user['role']);  // 'admin' — bracket notation for dynamic keys
 ```
 
 ### Destructuring
@@ -277,9 +277,11 @@ Destructuring lets you pull values out of objects and arrays cleanly:
 ```typescript
 const { email, password } = user;
 // same as: const email = user.email; const password = user.password;
+console.log(email, password);   // 'customer@test.io' 'customer123'
 
 const [first, second] = browsers;
 // same as: const first = browsers[0]; const second = browsers[1];
+console.log(first, second);     // 'chromium' 'firefox'
 ```
 
 You'll see this in Playwright constantly — for example, when pulling `test` and `expect` from the framework:
@@ -295,51 +297,50 @@ The spread operator (`...`) copies or merges objects and arrays:
 ```typescript
 const defaultOptions = { headless: true, slowMo: 0 };
 const debugOptions = { ...defaultOptions, headless: false, slowMo: 500 };
-// → { headless: false, slowMo: 500 }
+console.log(debugOptions);  // { headless: false, slowMo: 500 }
 ```
 
 This is used heavily for merging test configs and producing modified test data objects.
 
 ---
 
-### Exercise 2: Build test data objects
+### Exercise 2: Build and use test data
 
-Complete the `testData` object:
+Build a small bundle of test data using objects, arrays, the spread operator, and destructuring — no functions yet (those come next).
 
 ```typescript
-const testData = {
-  validCustomer: {
-    email: 'customer@test.io',
-    password: 'customer123',
-    name: 'Test Customer',
-  },
-
-  validAdmin: {
-    // TODO: add these properties:
-    // email: 'admin@test.io', password: 'admin123', name: 'Test Admin'
-  },
-
-  newProduct() {
-    // TODO: return { name: `Test Product ${Date.now()}`, price: 19.99, category: 'accessories' }
-  },
-
-  shippingDetails() {
-    // TODO: return { name: '...', address: '...', city: '...', zip: '...' } — use your own test values
-  },
+const validCustomer = {
+  email: 'customer@test.io',
+  password: 'customer123',
+  role: 'customer',
 };
 
-console.log('Customer:', testData.validCustomer);
-console.log('Admin:', testData.validAdmin);
-console.log('Product:', testData.newProduct());
-console.log('Shipping:', testData.shippingDetails());
+// 1. Build validAdmin from validCustomer with the spread operator,
+//    overriding only email and role.
+// TODO: const validAdmin = { ...validCustomer, email: 'admin@test.io', role: 'admin' };
+
+const products = [
+  { name: 'Mouse', price: 9.99, category: 'accessories' },
+  { name: 'Keyboard', price: 29.99, category: 'accessories' },
+  { name: 'Monitor', price: 199.99, category: 'displays' },
+];
+
+// 2. Get the names of all 'accessories' products (filter + map).
+// TODO: const accessoryNames = products.filter(p => p.category === 'accessories').map(p => p.name);
+
+// 3. Destructure email and role out of validAdmin.
+// TODO: const { email, role } = validAdmin;
+
+console.log('Admin:', validAdmin);
+console.log('Accessories:', accessoryNames);
+console.log('Destructured:', email, role);
 ```
 
 **Expected output:**
 ```
-Customer: { email: 'customer@test.io', password: 'customer123', name: 'Test Customer' }
-Admin: { email: 'admin@test.io', password: 'admin123', name: 'Test Admin' }
-Product: { name: 'Test Product 1712345678901', price: 19.99, category: 'accessories' }
-Shipping: { name: '...', address: '...', city: '...', zip: '...' }
+Admin: { email: 'admin@test.io', password: 'customer123', role: 'admin' }
+Accessories: [ 'Mouse', 'Keyboard' ]
+Destructured: admin@test.io admin
 ```
 
 ---
@@ -349,12 +350,18 @@ Shipping: { name: '...', address: '...', city: '...', zip: '...' }
 ### Regular functions
 
 ```typescript
+// No parameters — just returns a value
+function getTimestamp(): number {
+  return Date.now();
+}
+
+// With a parameter
 function formatPrice(price: number): string {
   return `$${price.toFixed(2)}`;
 }
 ```
 
-The `: number` annotation on `price` and the `: string` after the parens are TypeScript types — they tell the editor what's allowed in and what comes out. You'll see them everywhere.
+The `: number` annotation on `price` and the `: string` after the parens are TypeScript types — they tell the editor what's allowed in and what comes out. The empty `()` on `getTimestamp` means it takes no arguments. You'll see both everywhere.
 
 ### Arrow functions
 
@@ -398,33 +405,33 @@ const triple = x => { return x * 3 };  // ✅ explicit return
 
 ### Exercise 3: Write helper functions
 
-Make `exercise-3.ts` with these four arrow functions:
+Write these five arrow functions in `exercise-3.ts`:
 
 ```typescript
-// 1. formatPrice(price) — returns string with $ and 2 decimals
-//    formatPrice(19.99) → "$19.99"
-
-// 2. isEmail(email) — returns true if string contains '@' and '.'
-//    isEmail('customer@test.io') → true
-
-// 3. generateUser(role) — returns object with timestamp-based email
-//    generateUser('admin') → { email: 'admin_1712345678901@test.io', role: 'admin' }
-
-// 4. filterByCategory(products, category) — filters array by category
-//    filterByCategory([{name:'Mouse',category:'accessories'},...], 'accessories')
-//    → [{name:'Mouse',category:'accessories'}]
+// 1. formatPrice(price)         — "$19.99" from 19.99   (single expression → implicit return)
+// 2. isEmail(email)             — true if the string contains '@' and '.'
+// 3. makeUser(role)             — { email: `${role}_${Date.now()}@test.io`, role }  (multi-line → explicit return)
+// 4. makeProduct(name, price)   — { name, price, category: 'accessories' }          (two parameters)
+// 5. filterByCategory(products, category) — only the items whose category matches
 ```
 
-Hints: use template literals, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()`. Add basic type annotations to each parameter.
+Then call them so the output matches:
 
-**Expected output:**
+```typescript
+const catalog = [
+  { name: 'Mouse', price: 9.99, category: 'accessories' },
+  { name: 'Monitor', price: 199.99, category: 'displays' },
+];
+
+console.log(formatPrice(19.99));                        // $19.99
+console.log(isEmail('customer@test.io'));               // true
+console.log(isEmail('not-an-email'));                   // false
+console.log(makeUser('admin'));                         // { email: 'admin_1712345678901@test.io', role: 'admin' }
+console.log(makeProduct('Keyboard', 29.99));            // { name: 'Keyboard', price: 29.99, category: 'accessories' }
+console.log(filterByCategory(catalog, 'accessories'));  // [ { name: 'Mouse', price: 9.99, category: 'accessories' } ]
 ```
-$19.99
-true
-false
-{ email: 'admin_1712345678901@test.io', role: 'admin' }
-[ { name: 'Mouse', category: 'accessories' } ]
-```
+
+Hints: template literals, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()`, plus a type annotation on each parameter. Note #1 returns directly with no `return`; #3 and #4 are multi-line, so they need an explicit `return`.
 
 ---
 
@@ -435,17 +442,13 @@ Playwright uses **ES modules** (ESM) — the `import` / `export` syntax. Every `
 ### Importing
 
 ```typescript
-// Import named exports from a module
+// Named imports use { } — the names must match the file's named exports
 import { test, expect } from '@playwright/test';
+import { chromium, firefox } from '@playwright/test';   // import several at once
 
-// Import multiple things
-import { chromium, firefox } from '@playwright/test';
-
-// Import your own file (default export)
-import LoginPage from './pages/LoginPage';
-
-// Import your own file (named export)
-import { LoginPage } from './pages/LoginPage';
+// Importing your OWN LoginPage file — pick ONE, matching how it's exported:
+import LoginPage from './pages/LoginPage';        // if LoginPage.ts uses `export default`
+// import { LoginPage } from './pages/LoginPage'; // if it uses a named `export`
 ```
 
 Note: when you import your own file, you don't add the `.ts` extension in the path.
@@ -453,14 +456,16 @@ Note: when you import your own file, you don't add the `.ts` extension in the pa
 ### Exporting
 
 ```typescript
-// In LoginPage.ts — named export
+// LoginPage.ts — Option A: named export (a file can have several)
 import { Page } from '@playwright/test';
 
 export class LoginPage {
   constructor(public page: Page) {}
 }
+```
 
-// In LoginPage.ts — default export (only one per file)
+```typescript
+// LoginPage.ts — Option B: default export (only one per file)
 import { Page } from '@playwright/test';
 
 class LoginPage {
@@ -468,6 +473,16 @@ class LoginPage {
 }
 export default LoginPage;
 ```
+
+<details>
+<summary>Named vs default export — which import goes with which?</summary>
+
+- **Named export** (`export class LoginPage`, `export const x`) → import it **with braces**: `import { LoginPage }`. A file can have many named exports, and the import name must match the export (rename with `import { LoginPage as Login }` if you need to).
+- **Default export** (`export default LoginPage`) → import it **without braces**: `import LoginPage`. A file can have only **one** default, and you may call it anything on import.
+
+Mnemonic: **braces ⇔ named, no braces ⇔ default.** The Playwright framework gives you named exports (`test`, `expect`); your Page Object files are often default exports.
+
+</details>
 
 If you forget the `export` keyword, the import will resolve to `undefined` and you'll get errors like `TypeError: LoginPage is not a constructor`.
 
