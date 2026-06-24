@@ -266,8 +266,8 @@ const user = {
 };
 
 // Xüsusiyyətlərə giriş
-user.email;           // 'customer@test.io'
-user['role'];         // 'admin' — dinamik açarlar üçün mötərizə notasiyası
+console.log(user.email);    // 'customer@test.io'
+console.log(user['role']);  // 'admin' — dinamik açarlar üçün mötərizə notasiyası
 ```
 
 ### Destructuring
@@ -277,9 +277,11 @@ Destructuring, obyekt və array-lərdən dəyərləri təmiz şəkildə çıxarm
 ```typescript
 const { email, password } = user;
 // eyni məna daşıyır: const email = user.email; const password = user.password;
+console.log(email, password);   // 'customer@test.io' 'customer123'
 
 const [first, second] = browsers;
 // eyni məna daşıyır: const first = browsers[0]; const second = browsers[1];
+console.log(first, second);     // 'chromium' 'firefox'
 ```
 
 Playwright-də bunu daim görəcəksiniz — məsələn, freymvorkdan `test` və `expect`-i çıxararkən:
@@ -295,51 +297,50 @@ Spread operatoru (`...`) obyekt və array-ləri kopyalayır və birləşdirir:
 ```typescript
 const defaultOptions = { headless: true, slowMo: 0 };
 const debugOptions = { ...defaultOptions, headless: false, slowMo: 500 };
-// → { headless: false, slowMo: 500 }
+console.log(debugOptions);  // { headless: false, slowMo: 500 }
 ```
 
 Test konfiqurasiyalarını birləşdirmək və dəyişdirilmiş test data obyektləri qurmaq üçün geniş istifadə olunur.
 
 ---
 
-### Tapşırıq 2: Test data obyektlərini qurun
+### Tapşırıq 2: Test data qur və istifadə et
 
-`testData` obyektini tamamlayın:
+Obyektlər, array-lər, spread operatoru və destructuring istifadə edərək kiçik test data dəsti qur — hələ funksiyalar yoxdur (onlar növbətidir).
 
 ```typescript
-const testData = {
-  validCustomer: {
-    email: 'customer@test.io',
-    password: 'customer123',
-    name: 'Test Müştərisi',
-  },
-
-  validAdmin: {
-    // TODO: bu xüsusiyyətləri əlavə edin:
-    // email: 'admin@test.io', password: 'admin123', name: 'Test Admini'
-  },
-
-  newProduct() {
-    // TODO: { name: `Test Məhsulu ${Date.now()}`, price: 19.99, category: 'aksesuarlar' } qaytarın
-  },
-
-  shippingDetails() {
-    // TODO: { name: '...', address: '...', city: '...', zip: '...' } qaytarın — öz test dəyərlərinizi istifadə edin
-  },
+const validCustomer = {
+  email: 'customer@test.io',
+  password: 'customer123',
+  role: 'customer',
 };
 
-console.log('Müştəri:', testData.validCustomer);
-console.log('Admin:', testData.validAdmin);
-console.log('Məhsul:', testData.newProduct());
-console.log('Göndərmə:', testData.shippingDetails());
+// 1. validAdmin-i validCustomer-dən spread operatoru ilə qur,
+//    yalnız email və role-u dəyiş.
+// TODO: const validAdmin = { ...validCustomer, email: 'admin@test.io', role: 'admin' };
+
+const products = [
+  { name: 'Siçan', price: 9.99, category: 'aksesuarlar' },
+  { name: 'Klaviatura', price: 29.99, category: 'aksesuarlar' },
+  { name: 'Monitor', price: 199.99, category: 'displeylər' },
+];
+
+// 2. Bütün 'aksesuarlar' məhsullarının adlarını al (filter + map).
+// TODO: const accessoryNames = products.filter(p => p.category === 'aksesuarlar').map(p => p.name);
+
+// 3. validAdmin-dən email və role-u destructure et.
+// TODO: const { email, role } = validAdmin;
+
+console.log('Admin:', validAdmin);
+console.log('Aksesuarlar:', accessoryNames);
+console.log('Destructure:', email, role);
 ```
 
 **Gözlənilən nəticə:**
 ```
-Müştəri: { email: 'customer@test.io', password: 'customer123', name: 'Test Müştərisi' }
-Admin: { email: 'admin@test.io', password: 'admin123', name: 'Test Admini' }
-Məhsul: { name: 'Test Məhsulu 1712345678901', price: 19.99, category: 'aksesuarlar' }
-Göndərmə: { name: '...', address: '...', city: '...', zip: '...' }
+Admin: { email: 'admin@test.io', password: 'customer123', role: 'admin' }
+Aksesuarlar: [ 'Siçan', 'Klaviatura' ]
+Destructure: admin@test.io admin
 ```
 
 ---
@@ -349,12 +350,18 @@ Göndərmə: { name: '...', address: '...', city: '...', zip: '...' }
 ### Adi funksiyalar
 
 ```typescript
+// Parametrsiz — sadəcə dəyər qaytarır
+function getTimestamp(): number {
+  return Date.now();
+}
+
+// Parametrli
 function formatPrice(price: number): string {
   return `$${price.toFixed(2)}`;
 }
 ```
 
-`price`-dakı `: number` annotasiyası və mötərizələrdən sonrakı `: string` TypeScript tipləridir — onlar redaktora nəyin daxil ola biləcəyini və nəyin çıxdığını bildirir. Onları hər yerdə görəcəksiniz.
+`price`-dakı `: number` annotasiyası və mötərizələrdən sonrakı `: string` TypeScript tipləridir — onlar redaktora nəyin daxil ola biləcəyini və nəyin çıxdığını bildirir. `getTimestamp`-dakı boş `()` heç bir arqument qəbul etmədiyini bildirir. Hər ikisini hər yerdə görəcəksiniz.
 
 ### Arrow funksiyalar
 
@@ -398,34 +405,33 @@ const triple = x => { return x * 3 };  // ✅ açıq return
 
 ### Tapşırıq 3: Köməkçi funksiyalar yazın
 
-Bu dörd arrow funksiyanı ehtiva edən `exercise-3.ts` hazırlayın:
+Bu beş arrow funksiyanı `exercise-3.ts`-də yaz:
 
 ```typescript
-// 1. formatPrice(price) — $ və 2 onluq rəqəm ilə string qaytarır
-//    formatPrice(19.99) → "$19.99"
-
-// 2. isEmail(email) — string '@' və '.' ehtiva edirsə true qaytarır
-//    isEmail('customer@test.io') → true
-//    isEmail('e-poçt-deyil') → false
-
-// 3. generateUser(role) — timestamp-li email ilə obyekt qaytarır
-//    generateUser('admin') → { email: 'admin_1712345678901@test.io', role: 'admin' }
-
-// 4. filterByCategory(products, category) — array-i kateqoriyaya görə süzür
-//    filterByCategory([{name:'Siçan',category:'aksesuarlar'},...], 'aksesuarlar')
-//    → [{name:'Siçan',category:'aksesuarlar'}]
+// 1. formatPrice(price)         — 19.99-dan "$19.99"   (tək ifadə → gizli return)
+// 2. isEmail(email)             — string '@' və '.' ehtiva edirsə true
+// 3. makeUser(role)             — { email: `${role}_${Date.now()}@test.io`, role }  (çox sətirli → açıq return)
+// 4. makeProduct(name, price)   — { name, price, category: 'aksesuarlar' }          (iki parametr)
+// 5. filterByCategory(products, category) — yalnız kateqoriyası uyğun gələn elementlər
 ```
 
-İpuclar: template literal, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()` istifadə edin. Hər parametrə əsas tip annotasiyası əlavə edin.
+Sonra onları çağır ki, nəticə uyğun gəlsin:
 
-**Gözlənilən nəticə:**
+```typescript
+const catalog = [
+  { name: 'Siçan', price: 9.99, category: 'aksesuarlar' },
+  { name: 'Monitor', price: 199.99, category: 'displeylər' },
+];
+
+console.log(formatPrice(19.99));                        // $19.99
+console.log(isEmail('customer@test.io'));               // true
+console.log(isEmail('e-poçt-deyil'));                   // false
+console.log(makeUser('admin'));                         // { email: 'admin_1712345678901@test.io', role: 'admin' }
+console.log(makeProduct('Klaviatura', 29.99));          // { name: 'Klaviatura', price: 29.99, category: 'aksesuarlar' }
+console.log(filterByCategory(catalog, 'aksesuarlar'));  // [ { name: 'Siçan', price: 9.99, category: 'aksesuarlar' } ]
 ```
-$19.99
-true
-false
-{ email: 'admin_1712345678901@test.io', role: 'admin' }
-[ { name: 'Siçan', category: 'aksesuarlar' } ]
-```
+
+İpuclar: template literal, `.toFixed(2)`, `.includes()`, `Date.now()`, `.filter()`, və hər parametrə tip annotasiyası. Qeyd: #1 `return` olmadan birbaşa qaytarır; #3 və #4 çox sətirlidir, ona görə açıq `return` lazımdır.
 
 ---
 
@@ -436,17 +442,13 @@ Playwright **ES modulları** (ESM) istifadə edir — `import` / `export` sintak
 ### Import etmək
 
 ```typescript
-// Moduldan adlandırılmış export-ları import et
+// Adlandırılmış import-lar { } istifadə edir — adlar faylın adlandırılmış export-ları ilə uyğun gəlməlidir
 import { test, expect } from '@playwright/test';
+import { chromium, firefox } from '@playwright/test';   // bir neçəsini birdən import et
 
-// Bir neçə şeyi import edin
-import { chromium, firefox } from '@playwright/test';
-
-// Öz faylınızı import edin (default export)
-import LoginPage from './pages/LoginPage';
-
-// Öz faylınızı import edin (adlandırılmış export)
-import { LoginPage } from './pages/LoginPage';
+// ÖZ LoginPage faylınızı import etmək — necə export olunduğuna görə BİRİNİ seç:
+import LoginPage from './pages/LoginPage';        // LoginPage.ts `export default` istifadə edirsə
+// import { LoginPage } from './pages/LoginPage'; // adlandırılmış `export` istifadə edirsə
 ```
 
 Qeyd: öz faylınızı import edəndə yola `.ts` uzantısı əlavə etmirsiniz.
@@ -454,14 +456,16 @@ Qeyd: öz faylınızı import edəndə yola `.ts` uzantısı əlavə etmirsiniz.
 ### Export etmək
 
 ```typescript
-// LoginPage.ts — adlandırılmış export
+// LoginPage.ts — Variant A: adlandırılmış export (bir faylda bir neçə ola bilər)
 import { Page } from '@playwright/test';
 
 export class LoginPage {
   constructor(public page: Page) {}
 }
+```
 
-// LoginPage.ts — default export (fayl başına yalnız bir dənə)
+```typescript
+// LoginPage.ts — Variant B: default export (fayl başına yalnız bir dənə)
 import { Page } from '@playwright/test';
 
 class LoginPage {
@@ -469,6 +473,16 @@ class LoginPage {
 }
 export default LoginPage;
 ```
+
+<details>
+<summary>Adlandırılmış vs default export — hansı import hansına uyğundur?</summary>
+
+- **Adlandırılmış export** (`export class LoginPage`, `export const x`) → onu **mötərizə ilə** import et: `import { LoginPage }`. Bir faylda çoxlu adlandırılmış export ola bilər və import adı export ilə uyğun gəlməlidir (lazım olsa `import { LoginPage as Login }` ilə adını dəyiş).
+- **Default export** (`export default LoginPage`) → onu **mötərizəsiz** import et: `import LoginPage`. Bir faylda yalnız **bir** default ola bilər və import edərkən onu istədiyin kimi adlandıra bilərsən.
+
+Yadda saxla: **mötərizə ⇔ adlandırılmış, mötərizəsiz ⇔ default.** Playwright freymvorku sənə adlandırılmış export-lar verir (`test`, `expect`); Page Object fayllarınız çox vaxt default export olur.
+
+</details>
 
 `export` açar sözünü unutsanız, import `undefined` qaytaracaq və `TypeError: LoginPage is not a constructor` kimi xətalar görəcəksiniz.
 
