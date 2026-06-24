@@ -130,6 +130,36 @@ const fullSelector = `[data-testid="${selector}"]`;
 
 Template literals (the backtick strings) are used constantly in Playwright — in config files, page objects, and assertions.
 
+:::note[Backticks, not single quotes]
+Template literals must be wrapped in **backticks** (the key at the top-left of most keyboards, above Tab) — not single quotes. They look similar but behave very differently:
+
+```javascript
+`Navigated to ${url}`   // backticks → inserts the value of url
+'Navigated to ${url}'   // single quotes → stays as the literal text "Navigated to ${url}"
+```
+:::
+
+<details>
+<summary>What does "embedding a value" mean?</summary>
+
+"Embedding a value" means dropping the contents of a variable straight into a string. Inside a template literal, `${ ... }` is a placeholder: JavaScript evaluates whatever is between the braces and inserts the result into the text.
+
+```typescript
+const url = 'http://localhost:3000';
+const message = `Navigated to ${url}`;
+// message is now: 'Navigated to http://localhost:3000'
+```
+
+Without template literals you'd have to join the pieces by hand with `+`:
+
+```typescript
+const message = 'Navigated to ' + url;  // same result, harder to read with many values
+```
+
+You can embed any expression, not just a variable — `` `Total: ${price * qty}` `` works too.
+
+</details>
+
 ### Numbers
 
 ```typescript
@@ -146,6 +176,22 @@ Watch out for type coercion (the examples below show plain JavaScript behaviour 
 ```
 
 In practice, use explicit conversion: `Number('5')` or `parseInt('5', 10)`.
+
+<details>
+<summary>What is "explicit conversion"?</summary>
+
+JavaScript sometimes converts types for you automatically — that's the trap above, where `'5' + 3` silently becomes `'53'`. **Explicit conversion** means *you* do the conversion on purpose, so the result is never a surprise:
+
+```typescript
+Number('5')        // → 5      (string to number)
+parseInt('5', 10)  // → 5      (string to whole number; the 10 means base-10)
+String(5)          // → '5'    (number to string)
+Boolean('')        // → false  (empty string to boolean)
+```
+
+You'll reach for this whenever a value arrives as a string but you need a real number or boolean — for example reading `process.env` variables or text pulled from the page (both covered later in this module).
+
+</details>
 
 ### Booleans
 
@@ -173,12 +219,42 @@ const browsers = ['chromium', 'firefox', 'webkit'];
 const prices = [9.99, 14.99, 29.99];
 
 // Common operations
-browsers.length;              // 3
-browsers[0];                  // 'chromium'
-browsers.push('electron');    // adds to end
-browsers.filter(b => b !== 'webkit');  // returns new array without 'webkit'
-browsers.map(b => b.toUpperCase());    // returns ['CHROMIUM', 'FIREFOX', 'WEBKIT']
+console.log(browsers.length);   // 3
+console.log(browsers[0]);       // 'chromium'
+
+browsers.push('electron');      // mutates the array: adds to the end
+console.log(browsers);          // ['chromium', 'firefox', 'webkit', 'electron']
+
+// filter and map do NOT change the original — they return a NEW array,
+// so capture the result in a new variable
+const withoutWebkit = browsers.filter(b => b !== 'webkit');
+console.log(withoutWebkit);     // ['chromium', 'firefox', 'electron']
+
+const upperCased = browsers.map(b => b.toUpperCase());
+console.log(upperCased);        // ['CHROMIUM', 'FIREFOX', 'ELECTRON']
 ```
+
+<details>
+<summary>More array methods you'll occasionally use</summary>
+
+These come up less often in Playwright tests than `push`, `filter`, and `map`, but they're worth recognising. Watch which ones **mutate** the original array:
+
+```typescript
+const nums = [3, 1, 2];
+
+console.log(nums.pop());    // removes & returns the LAST item → 2; nums is now [3, 1]
+console.log(nums.shift());  // removes & returns the FIRST item → 3; nums is now [1]
+nums.unshift(9);            // adds to the FRONT → nums is now [9, 1]
+nums.splice(1, 1);          // removes 1 item starting at index 1 → nums is now [9]
+
+const letters = ['c', 'a', 'b'];
+letters.sort();             // mutates → ['a', 'b', 'c']
+letters.reverse();          // mutates → ['c', 'b', 'a']
+```
+
+`pop`, `shift`, `unshift`, `splice`, `sort`, and `reverse` all **change the original array** (unlike `filter`/`map`, which return a new one). To keep the original intact, copy it first with the spread operator: `const sorted = [...letters].sort();`.
+
+</details>
 
 ### Objects
 
