@@ -10,6 +10,21 @@ A bad locator makes your tests flaky. A good locator makes them robust — resil
 
 <Video title="Module 2: Locators Mastery" />
 
+<details>
+<summary>New to locators? Start here</summary>
+
+If you've never used a browser-automation tool, here's the whole idea in a minute:
+
+- A **locator** is how you point Playwright at an element on the page — think of it as an address for "the Log In button" or "the email field."
+- It's **lazy**: creating a locator doesn't grab the element yet. Playwright re-finds it (and waits for it to be ready) every time you act on it — that's what makes locators resilient to timing.
+- **Every action starts with a locator**: `page.getByRole('button', { name: 'Log In' }).click()` means *locate the button, then click it*.
+- A locator can match **one element or many**. When you act, Playwright insists it match exactly one — that's **strict mode** (covered later in this module).
+- There are several **ways to locate** an element — by role, label, text, test-id, or raw CSS. Choosing the best one is exactly what the rest of this module teaches.
+
+Don't worry about memorizing these — they'll click as you work through the examples below.
+
+</details>
+
 ---
 
 ## Why locator strategy matters

@@ -10,6 +10,21 @@ Pis lokator testlərinizi qeyri-sabit edər. Yaxşı lokator isə onları möhk�
 
 <Video title="Modul 2: Lokatorların mənimsənilməsi" />
 
+<details>
+<summary>Lokatorlarla yeni tanışsan? Buradan başla</summary>
+
+Brauzer avtomatlaşdırma alətindən heç vaxt istifadə etməmisənsə, bütün ideya bir dəqiqədə:
+
+- **Lokator** — Playwright-ı səhifədəki elementə yönəltmə üsuludur; onu "Login düyməsi" və ya "email sahəsi" üçün ünvan kimi düşün.
+- O **tənbəldir**: lokator yaratmaq elementi dərhal tutmur. Playwright hər əməliyyatda onu yenidən tapır (və hazır olmasını gözləyir) — lokatorları vaxt problemlərinə qarşı dayanıqlı edən budur.
+- **Hər əməliyyat lokatorla başlayır**: `page.getByRole('button', { name: 'Log In' }).click()` — *düyməni tap, sonra klik et* deməkdir.
+- Lokator **bir və ya bir neçə** elementə uyğun gələ bilər. Əməliyyat edəndə Playwright onun dəqiq bir elementə uyğun gəlməsini tələb edir — bu **strict rejimdir** (bu modulda sonra izah olunur).
+- Elementi **tapmağın bir neçə yolu** var — rol, label, mətn, test-id və ya xalis CSS ilə. Ən yaxşısını seçmək məhz bu modulun öyrətdiyidir.
+
+Bunları əzbərləmək lazım deyil — aşağıdakı nümunələrlə işlədikcə aydınlaşacaq.
+
+</details>
+
 ---
 
 ## Lokator strategiyası niyə vacibdir
