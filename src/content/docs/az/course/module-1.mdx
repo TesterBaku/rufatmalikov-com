@@ -182,6 +182,20 @@ Təkcə dəyişəni yox, istənilən ifadəni də yerləşdirə bilərsən — `
 
 </details>
 
+**İstifadə edəcəyin string metodları.** Səhifə mətni qarışıq olur — çox vaxt artıq boşluq və ya fərqli registrlə gəlir, ona görə string-ləri təmizləmək və yoxlamaq gündəlik QA işidir:
+
+```typescript
+const path = 'http://localhost:3000/login';
+
+console.log(path.includes('/login'));   // → true   (bu mətni ehtiva edir?)
+console.log(path.startsWith('http'));   // → true
+console.log(path.endsWith('.com'));     // → false
+console.log('  Submit  '.trim());       // → 'Submit'   (ətrafdakı boşluqları silir)
+console.log('LOGIN'.toLowerCase());     // → 'login'    (müqayisədən əvvəl registri normallaşdır)
+```
+
+Həmçinin `.replace()` (məs. `Number()`-dən əvvəl `$` və vergülləri sil) və `.split()` (ayrılmış mətni array-ə böl) istifadə edəcəksən.
+
 ### Rəqəmlər
 
 ```typescript
@@ -220,6 +234,13 @@ Buna dəyər string kimi gəldikdə, amma sənə əsl rəqəm və ya boolean laz
 ```typescript
 const isLoggedIn = true;
 const hasErrors = false;
+```
+
+Boolean-ları `&&` (VƏ) və `||` (VƏ YA) ilə birləşdirirsən — `if` ifadələrində və iddialarda daim istifadə olunur (`!` birini tərsinə çevirir):
+
+```typescript
+console.log(isLoggedIn && !hasErrors);  // → true  (hər iki tərəf true olmalıdır)
+console.log(isLoggedIn || hasErrors);   // → true  (ən azı bir tərəf true-dur)
 ```
 
 ```javascript
@@ -432,9 +453,14 @@ const triple = x => { return x * 3 };  // ✅ açıq return
 
 ### Tapşırıq 3: Köməkçi funksiyalar yazın
 
-Bu beş arrow funksiyanı `exercise-3.ts`-də yaz:
+Bu beş arrow funksiyanı `exercise-3.ts`-də yaz. 5-ci tapşırıqda bu kataloqu istifadə edəcəksən:
 
 ```typescript
+const catalog = [
+  { name: 'Siçan', price: 9.99, category: 'aksesuarlar' },
+  { name: 'Monitor', price: 199.99, category: 'displeylər' },
+];
+
 // 1. formatPrice(price)         — 19.99-dan "$19.99"   (tək ifadə → gizli return)
 // 2. isEmail(email)             — string '@' və '.' ehtiva edirsə true
 // 3. makeUser(role)             — { email: `${role}_${Date.now()}@test.io`, role }  (çox sətirli → açıq return)
@@ -445,11 +471,6 @@ Bu beş arrow funksiyanı `exercise-3.ts`-də yaz:
 Sonra onları çağır ki, nəticə uyğun gəlsin:
 
 ```typescript
-const catalog = [
-  { name: 'Siçan', price: 9.99, category: 'aksesuarlar' },
-  { name: 'Monitor', price: 199.99, category: 'displeylər' },
-];
-
 console.log(formatPrice(19.99));                        // $19.99
 console.log(isEmail('customer@test.io'));               // true
 console.log(isEmail('e-poçt-deyil'));                   // false
