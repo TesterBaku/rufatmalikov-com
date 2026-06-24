@@ -182,6 +182,20 @@ You can embed any expression, not just a variable — `` `Total: ${price * qty}`
 
 </details>
 
+**String methods you'll reach for.** Page text is messy — it often arrives with stray whitespace or inconsistent casing, so cleaning and checking strings is a daily QA task:
+
+```typescript
+const path = 'http://localhost:3000/login';
+
+console.log(path.includes('/login'));   // → true   (does it contain this text?)
+console.log(path.startsWith('http'));   // → true
+console.log(path.endsWith('.com'));     // → false
+console.log('  Submit  '.trim());       // → 'Submit'   (strip surrounding whitespace)
+console.log('LOGIN'.toLowerCase());     // → 'login'    (normalize case before comparing)
+```
+
+You'll also reach for `.replace()` (e.g. strip `$` and commas before `Number()`) and `.split()` (break delimited text into an array).
+
 ### Numbers
 
 ```typescript
@@ -220,6 +234,13 @@ You'll reach for this whenever a value arrives as a string but you need a real n
 ```typescript
 const isLoggedIn = true;
 const hasErrors = false;
+```
+
+You combine booleans with `&&` (AND) and `||` (OR) — used constantly in `if` statements and assertions (`!` flips one):
+
+```typescript
+console.log(isLoggedIn && !hasErrors);  // → true  (both sides must be true)
+console.log(isLoggedIn || hasErrors);   // → true  (at least one side is true)
 ```
 
 ```javascript
@@ -432,9 +453,14 @@ const triple = x => { return x * 3 };  // ✅ explicit return
 
 ### Exercise 3: Write helper functions
 
-Write these five arrow functions in `exercise-3.ts`:
+Write these five arrow functions in `exercise-3.ts`. You'll use this catalog in task 5:
 
 ```typescript
+const catalog = [
+  { name: 'Mouse', price: 9.99, category: 'accessories' },
+  { name: 'Monitor', price: 199.99, category: 'displays' },
+];
+
 // 1. formatPrice(price)         — "$19.99" from 19.99   (single expression → implicit return)
 // 2. isEmail(email)             — true if the string contains '@' and '.'
 // 3. makeUser(role)             — { email: `${role}_${Date.now()}@test.io`, role }  (multi-line → explicit return)
@@ -445,11 +471,6 @@ Write these five arrow functions in `exercise-3.ts`:
 Then call them so the output matches:
 
 ```typescript
-const catalog = [
-  { name: 'Mouse', price: 9.99, category: 'accessories' },
-  { name: 'Monitor', price: 199.99, category: 'displays' },
-];
-
 console.log(formatPrice(19.99));                        // $19.99
 console.log(isEmail('customer@test.io'));               // true
 console.log(isEmail('not-an-email'));                   // false
