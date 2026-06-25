@@ -116,6 +116,8 @@ page.getByRole('button', { name: 'Add to Cart' })
 page.getByRole('button')
 ```
 
+<Practice missions={['first-click','role-with-name','exact-match']} locale="en" />
+
 ---
 
 ## `getByText` — matching visible text
@@ -137,6 +139,8 @@ page.getByText(/login/i)
 
 **When NOT to use it:** form fields (use `getByLabel`), buttons (use `getByRole`).
 
+<Practice missions={['find-by-text']} locale="en" />
+
 ---
 
 ## `getByLabel` — the best choice for form fields
@@ -156,6 +160,8 @@ page.getByLabel('Shipping Name').fill('Jane Smith')
 
 This is the right choice for login forms, checkout forms, and admin product forms — wherever the HTML has proper `<label>` associations.
 
+<Practice missions={['get-by-label']} locale="en" />
+
 ---
 
 ## `getByPlaceholder` — when there is no label
@@ -171,6 +177,8 @@ page.getByPlaceholder('Enter your email address')
 ```
 
 Use this only when there is genuinely no label. If a label exists, `getByLabel` is more robust (labels are less likely to change than placeholder text).
+
+<Practice missions={['get-by-placeholder']} locale="en" />
 
 ---
 
@@ -189,6 +197,8 @@ page.getByTestId('product-card')
 **When to add `data-testid`:** when an element has no accessible name, no stable text, and no unique ID. Common examples: generic `<div>` containers, SVG icons, complex widget boundaries.
 
 **Don't** add `data-testid` to every element. Prefer role-based locators first.
+
+<Practice missions={['test-id']} locale="en" />
 
 ---
 
@@ -270,6 +280,8 @@ const firstCartQuantity = page.locator('.cart-table .table-row')
 
 **Performance tip:** Playwright evaluates locators lazily. Defining a long chain has zero cost — the chain resolves only when you perform an action on it.
 
+<Practice missions={['chained-locators']} locale="en" />
+
 ---
 
 ## `filter({ hasText })` and `filter({ has })`
@@ -311,6 +323,8 @@ const pendingRows = page.locator('tr.table-row')
 
 **Gotcha:** `hasText` matches text in descendants too. If your search text appears in multiple places within the element, you may get unexpected matches. Be specific enough to narrow to one element.
 
+<Practice missions={['filter-sale-card','filter-has-locator']} locale="en" />
+
 ---
 
 ## `.first()`, `.last()`, `.nth()`
@@ -337,7 +351,7 @@ await rows.filter({ hasText: 'Wireless Mouse' })
   .click();
 ```
 
-<Practice missions={['first-click','get-by-label','get-by-placeholder','find-by-text','test-id','chained-locators','filter-sale-card','filter-has-locator','nth-first-last','dynamic-ids','table-row-by-text','shadow-dom']} locale="en" />
+<Practice missions={['nth-first-last','nth-vs-first']} locale="en" />
 
 ---
 
@@ -423,7 +437,7 @@ page.getByRole('article').filter({ hasText: 'Wireless Mouse' })
 page.getByTestId('product-card').filter({ hasText: 'Wireless Mouse' })
 ```
 
-<Practice missions={['role-with-name','exact-match','strict-mode-disambiguation','nth-vs-first','iterate-multiple','disambiguation-cookbook']} locale="en" />
+<Practice missions={['strict-mode-disambiguation','disambiguation-cookbook','iterate-multiple','dynamic-ids']} locale="en" />
 
 ---
 
@@ -461,6 +475,8 @@ await janeSelect.selectOption('shipped');
 await janeUpdateBtn.click();
 ```
 
+<Practice missions={['table-row-by-text']} locale="en" />
+
 ---
 
 ## Shadow DOM basics
@@ -478,6 +494,8 @@ page.locator('pierce/button')
 ```
 
 For closed shadow roots (rare in practice), you will need to work with the component's documented API or `data-testid` attributes placed on the shadow host.
+
+<Practice missions={['shadow-dom']} locale="en" />
 
 ---
 
