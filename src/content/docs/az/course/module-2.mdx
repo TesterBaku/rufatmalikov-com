@@ -219,6 +219,28 @@ page.locator('.product-card')
 
 ---
 
+## Lokatoru səhifəni yoxlayaraq tap
+
+Lokatoru nadir hallarda təxmin edirsən — onu səhifədən oxuyursan. Üç alət əsas işi görür:
+
+**1. Brauzer DevTools.** Elementə sağ klik → **Inspect** (Yoxla). Elements panelində onun teqini, `role`/`aria` atributlarını, label-ını və `data-testid`-ini oxuya bilərsən — məhz `getByRole`, `getByLabel` və `getByTestId`-in əsaslandığı şeyləri.
+
+**2. `npx playwright codegen` — qoy lokatoru Playwright yazsın.** İşlət:
+
+```bash
+npx playwright codegen https://senin-app.test
+```
+
+Brauzer açılır; sən klik etdikcə və yazdıqca Playwright uyğun lokatorları (`getByRole`/`getByLabel`-a üstünlük verərək) kopyalaya biləcəyin pəncərəyə yazır. Yaxşı lokatorları öyrənməyin ən sürətli yoludur — hər element üçün tövsiyə olunanı *görürsən*.
+
+**3. `page.pause()` + Playwright Inspector.** Testə `await page.pause();` əlavə et və işlət; Inspector **Pick locator** (Lokator seç) düyməsi ilə açılır. İstənilən elementin üzərinə gəl və Playwright-in təklif etdiyi lokatoru göstərsin — testin ortasında çətin elementi debug etmək üçün əladır.
+
+:::tip
+Öyrənərkən **codegen**-dən başla — o, "hansı lokator?" sualını "Playwright-in birini seçməsinə bax"-a çevirir və yuxarıda öyrəndiyin prioriteti izləyir.
+:::
+
+---
+
 ## Zəncirvari lokatorlar
 
 Zəncirlər DOM ağacını dəqiqliklə keçməyə imkan verir. Geniş başlayın — konteyner tapın — sonra uşaq elementlərə enin.
