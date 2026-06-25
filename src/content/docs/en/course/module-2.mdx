@@ -219,6 +219,28 @@ page.locator('.product-card')
 
 ---
 
+## Find a locator by inspecting the page
+
+You rarely guess a locator — you read it off the page. Three tools do the heavy lifting:
+
+**1. Browser DevTools.** Right-click the element → **Inspect**. In the Elements panel you can read its tag, its `role`/`aria` attributes, its label, and any `data-testid` — exactly the things `getByRole`, `getByLabel`, and `getByTestId` rely on.
+
+**2. `npx playwright codegen` — let Playwright write the locator for you.** Run:
+
+```bash
+npx playwright codegen https://your-app.test
+```
+
+A browser opens; as you click and type, Playwright writes the matching locators (preferring `getByRole`/`getByLabel`) into a window you can copy from. It's the fastest way to learn good locators — you *see* the recommended one for every element.
+
+**3. `page.pause()` + the Playwright Inspector.** Drop `await page.pause();` into a test and run it; the Inspector opens with a **Pick locator** button. Hover any element and it shows the locator Playwright suggests — great for debugging a tricky element mid-test.
+
+:::tip
+Start with **codegen** while you're learning — it turns "which locator?" into "watch Playwright choose one," and it follows exactly the priority you learned above.
+:::
+
+---
+
 ## Chained locators
 
 Chaining lets you navigate the DOM tree with precision. Start broad — find the container — then drill into child elements.
