@@ -116,6 +116,8 @@ page.getByRole('button', { name: 'Add to Cart' })
 page.getByRole('button')
 ```
 
+<Practice missions={['first-click','role-with-name','exact-match']} />
+
 ---
 
 ## `getByText` — görünən mətnə uyğunlaşma
@@ -137,6 +139,8 @@ page.getByText(/login/i)
 
 **`getByText` nə vaxt istifadə edilməz:** form sahələri üçün (`getByLabel` istifadə edin), düymələr üçün (`getByRole` istifadə edin).
 
+<Practice missions={['find-by-text']} />
+
 ---
 
 ## `getByLabel` — form sahələri üçün ən yaxşı seçim
@@ -156,6 +160,8 @@ page.getByLabel('Shipping Name').fill('Jane Smith')
 
 Bu, login formları, ödəniş formları və admin məhsul formları üçün düzgün seçimdir — HTML-in düzgün `<label>` əlaqəsinə sahib olduğu hər yerdə.
 
+<Practice missions={['get-by-label']} />
+
 ---
 
 ## `getByPlaceholder` — label olmadıqda
@@ -171,6 +177,8 @@ page.getByPlaceholder('Enter your email address')
 ```
 
 Bunu yalnız həqiqətən label olmadıqda istifadə edin. Əgər label varsa, `getByLabel` daha möhkəmdir (labellər placeholder mətndən daha az dəyişir).
+
+<Practice missions={['get-by-placeholder']} />
 
 ---
 
@@ -189,6 +197,8 @@ page.getByTestId('product-card')
 **`data-testid` nə vaxt əlavə edilir:** elementin əlçatan adı, sabit mətni və unikal ID-si olmadıqda. Ümumi nümunələr: ümumi `<div>` konteynerləri, SVG ikonalar, mürəkkəb vidjet sərhədləri.
 
 Hər elementə `data-testid` əlavə etməyin. Rol əsaslı lokatorları ilk üstün tutun.
+
+<Practice missions={['test-id']} />
 
 ---
 
@@ -270,6 +280,8 @@ const firstCartQuantity = page.locator('.cart-table .table-row')
 
 **Performans ipucu:** Playwright lokatorları tənbəlliklə qiymətləndirir. Uzun bir zəncir müəyyən etməyin heç bir xərci yoxdur — zəncir yalnız üzərində əməliyyat həyata keçirdiyinizdə həll olunur.
 
+<Practice missions={['chained-locators']} />
+
 ---
 
 ## `filter({ hasText })` və `filter({ has })`
@@ -311,6 +323,8 @@ const pendingRows = page.locator('tr.table-row')
 
 **Tuz:** `hasText` nəsllərdəki mətni də uyğunlaşdırır. Axtarış mətniniz elementin bir neçə yerində görünürsə, gözlənilməz uyğunluqlar ala bilərsiniz. Bir elementə daraltmaq üçün kifayət qədər spesifik olun.
 
+<Practice missions={['filter-sale-card','filter-has-locator']} />
+
 ---
 
 ## `.first()`, `.last()`, `.nth()`
@@ -337,7 +351,7 @@ await rows.filter({ hasText: 'Wireless Mouse' })
   .click();
 ```
 
-<Practice missions={['first-click','get-by-label','get-by-placeholder','find-by-text','test-id','chained-locators','filter-sale-card','filter-has-locator','nth-first-last','dynamic-ids','table-row-by-text','shadow-dom']} />
+<Practice missions={['nth-first-last','nth-vs-first']} />
 
 ---
 
@@ -423,7 +437,7 @@ page.getByRole('article').filter({ hasText: 'Wireless Mouse' })
 page.getByTestId('product-card').filter({ hasText: 'Wireless Mouse' })
 ```
 
-<Practice missions={['role-with-name','exact-match','strict-mode-disambiguation','nth-vs-first','iterate-multiple','disambiguation-cookbook']} />
+<Practice missions={['strict-mode-disambiguation','disambiguation-cookbook','iterate-multiple','dynamic-ids']} />
 
 ---
 
@@ -461,6 +475,8 @@ await janeSelect.selectOption('shipped');
 await janeUpdateBtn.click();
 ```
 
+<Practice missions={['table-row-by-text']} />
+
 ---
 
 ## Shadow DOM əsasları
@@ -478,6 +494,8 @@ page.locator('pierce/button')
 ```
 
 Qapalı shadow root-lar üçün (praktikada nadir hallarda) komponentin sənədləşdirilmiş API-si ilə ya da shadow ev sahibinə yerləşdirilmiş `data-testid` atributları ilə işləməli olacaqsınız.
+
+<Practice missions={['shadow-dom']} />
 
 ---
 
