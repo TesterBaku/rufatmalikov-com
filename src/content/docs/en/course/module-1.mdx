@@ -57,6 +57,8 @@ if (true) {
 console.log(message);  // ❌ ReferenceError: message is not defined
 ```
 
+Think of a `let` inside `{ }` like a note you can only read while you're in that room — step outside the braces and it's gone.
+
 You will fix exactly this in Exercise 1.
 
 ---
@@ -287,6 +289,8 @@ console.log(withoutWebkit);     // ['chromium', 'firefox', 'electron']
 const upperCased = browsers.map(b => b.toUpperCase());
 console.log(upperCased);        // ['CHROMIUM', 'FIREFOX', 'ELECTRON']
 ```
+
+Think of it like a document: `push`/`sort`/`splice` edit the original in place, while `filter`/`map` photocopy it and hand you the copy — the original stays untouched.
 
 <details>
 <summary>More array methods you'll occasionally use</summary>
@@ -621,6 +625,22 @@ page.fill('#email', 'user@test.io');   // page might not have loaded yet!
 expect(page).toHaveURL('/dashboard');  // runs before login happens!
 ```
 
+You can watch the order flip for yourself — this runs on plain Node, no browser:
+
+```typescript
+const log = (label: string) =>
+  new Promise<void>(r => setTimeout(() => { console.log(label); r(); }, 50));
+
+async function demo() {
+  log('first');             // ❌ not awaited
+  console.log('second');    // runs before "first" finishes!
+  await log('third');       // ✅ awaited
+  console.log('fourth');    // waits for "third"
+}
+demo();
+// Prints: second, first, third, fourth  ←  "second" beats "first" because "first" wasn't awaited
+```
+
 ### The `async` keyword
 
 Any function that uses `await` must be declared with `async`:
@@ -697,7 +717,7 @@ async function runTest() {
 runTest();
 ```
 
-Run the broken version first — notice the output order is wrong. Then add `await` and run again.
+Before running it, **predict the output order** and jot it down. Then run the broken version — notice the order is wrong — add `await`, and run again to compare.
 
 <details>
 <summary>Solution</summary>
