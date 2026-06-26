@@ -133,6 +133,8 @@ console.log('Exercise 1 done');
 
 </details>
 
+**Remember:** `const` by default, `let` only when you must reassign, never `var`.
+
 ---
 
 ## Strings, numbers, and booleans
@@ -257,6 +259,8 @@ const isCI = !!process.env.CI;             // !! — turn any value into a real 
 ```
 
 In Playwright, booleans appear in assertions (`expect(isVisible).toBe(true)`) and configuration (`headless: true`).
+
+**Remember:** template literals embed values with `${ }`; combine conditions with `&&`/`||`; clean messy page text with `.trim()` / `.toLowerCase()` / `.includes()`.
 
 ---
 
@@ -398,6 +402,8 @@ const { email, role } = validAdmin;
 
 </details>
 
+**Remember:** `filter`/`map` return a **new** array; `push`/`sort`/`splice` **mutate** the original. Pull values out with destructuring, copy/merge with spread `...`.
+
 ---
 
 ## Functions and arrow functions
@@ -516,6 +522,8 @@ const filterByCategory = (
 
 </details>
 
+**Remember:** a single-expression arrow returns implicitly; multi-line needs `{ }` and `return`; return an object with `=> ({ ... })`.
+
 ---
 
 ## Imports and exports (ESM)
@@ -572,6 +580,8 @@ If you forget the `export` keyword, the import will resolve to `undefined` and y
 ### You may still see CommonJS
 
 Older Node.js and Playwright examples use **CommonJS** syntax — `const { test } = require('@playwright/test')` and `module.exports = LoginPage`. Both styles work in Node.js, but the official Playwright generator and this course use ESM `import` / `export` throughout. If you see `require()` in a tutorial or older repo, treat it as the same idea with different syntax.
+
+**Remember:** braces = **named**, no braces = **default**; one default per file.
 
 ---
 
@@ -715,6 +725,8 @@ async function runTest() {
 
 </details>
 
+**Remember:** `await` every Playwright action — a missing `await` is the #1 cause of flaky tests.
+
 ---
 
 ## TypeScript basics
@@ -802,6 +814,8 @@ class LoginPage {
 
 You won't need this often — the course uses `.ts` files — but you'll see it in older codebases.
 
+**Remember:** types catch bugs in the editor *before* you run; interfaces describe an object's shape.
+
 ---
 
 ## Reading errors and stack traces
@@ -882,6 +896,8 @@ Write your answers as comments in `exercise-5.ts`.
 4. **Check first:** how `loginButton` is set up in the `LoginPage` class — most likely a missing or misspelled locator assignment in the constructor (or its selector matched nothing).
 
 </details>
+
+**Remember:** read a trace top-to-bottom — error type → the `>` code frame → the stack into **your** files (ignore `node_modules`).
 
 ---
 
@@ -994,6 +1010,8 @@ function getConfig() {
 ```
 
 </details>
+
+**Remember:** never hardcode secrets; read them from `process.env` (with a `??` default) and keep `.env` gitignored.
 
 ---
 
