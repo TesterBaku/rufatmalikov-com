@@ -118,6 +118,8 @@ page.getByRole('button')
 
 <Practice missions={['first-click','role-with-name','exact-match']} locale="en" />
 
+**Remember:** getByRole is the default — match an element by what it *is* (its role) plus its accessible name.
+
 ---
 
 ## `getByText` — matching visible text
@@ -141,6 +143,8 @@ page.getByText(/login/i)
 
 <Practice missions={['find-by-text']} locale="en" />
 
+**Remember:** use getByText for links and standalone text, sparingly; add `{ exact: true }` to avoid partial matches.
+
 ---
 
 ## `getByLabel` — the best choice for form fields
@@ -162,6 +166,8 @@ This is the right choice for login forms, checkout forms, and admin product form
 
 <Practice missions={['get-by-label']} locale="en" />
 
+**Remember:** a form field with a visible label → reach for getByLabel first.
+
 ---
 
 ## `getByPlaceholder` — when there is no label
@@ -179,6 +185,8 @@ page.getByPlaceholder('Enter your email address')
 Use this only when there is genuinely no label. If a label exists, `getByLabel` is more robust (labels are less likely to change than placeholder text).
 
 <Practice missions={['get-by-placeholder']} locale="en" />
+
+**Remember:** use getByPlaceholder only when there's genuinely no label.
 
 ---
 
@@ -199,6 +207,8 @@ page.getByTestId('product-card')
 **Don't** add `data-testid` to every element. Prefer role-based locators first.
 
 <Practice missions={['test-id']} locale="en" />
+
+**Remember:** getByTestId is the most stable, but add `data-testid` only when role/label/text can't identify the element.
 
 ---
 
@@ -226,6 +236,8 @@ page.locator('.product-card')
 ```
 
 **Prefer IDs over classes.** CSS classes change when designers refactor styling. IDs rarely change because they're also used for `<label for="...">` associations and JavaScript hooks.
+
+**Remember:** CSS is a fallback — prefer IDs over classes (classes change when styling is refactored).
 
 ---
 
@@ -282,6 +294,8 @@ const firstCartQuantity = page.locator('.cart-table .table-row')
 
 <Practice missions={['chained-locators']} locale="en" />
 
+**Remember:** chain broad → narrow (container → child) to pin down one element.
+
 ---
 
 ## `filter({ hasText })` and `filter({ has })`
@@ -325,6 +339,8 @@ const pendingRows = page.locator('tr.table-row')
 
 <Practice missions={['filter-sale-card','filter-has-locator']} locale="en" />
 
+**Remember:** narrow a matched set with `filter({ hasText })` or `filter({ has })` before acting.
+
 ---
 
 ## `.first()`, `.last()`, `.nth()`
@@ -352,6 +368,8 @@ await rows.filter({ hasText: 'Wireless Mouse' })
 ```
 
 <Practice missions={['nth-first-last','nth-vs-first']} locale="en" />
+
+**Remember:** prefer a more specific locator over `.nth()` — index-based picks break when order changes.
 
 ---
 
@@ -439,6 +457,8 @@ page.getByTestId('product-card').filter({ hasText: 'Wireless Mouse' })
 
 <Practice missions={['strict-mode-disambiguation','disambiguation-cookbook','iterate-multiple','dynamic-ids']} locale="en" />
 
+**Remember:** if a locator matches more than one element, Playwright refuses to act — narrow it rather than defaulting to `.first()`.
+
 ---
 
 ## Table rows — putting it all together
@@ -496,6 +516,8 @@ page.locator('pierce/button')
 For closed shadow roots (rare in practice), you will need to work with the component's documented API or `data-testid` attributes placed on the shadow host.
 
 <Practice missions={['shadow-dom']} locale="en" />
+
+**Remember:** Playwright's getBy* locators pierce shadow DOM automatically — no special syntax needed.
 
 ---
 
