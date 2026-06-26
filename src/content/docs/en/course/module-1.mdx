@@ -243,6 +243,13 @@ console.log(isLoggedIn && !hasErrors);  // → true  (both sides must be true)
 console.log(isLoggedIn || hasErrors);   // → true  (at least one side is true)
 ```
 
+Two more operators you'll meet in config and env files:
+
+```typescript
+const port = process.env.PORT ?? '3000';   // ?? — use the right side only when the left is null/undefined
+const isCI = !!process.env.CI;             // !! — turn any value into a real true/false (! flips, !! flips twice)
+```
+
 ```javascript
 // Always use === (strict equality), never ==
 '5' === 5   // → false (different types)
@@ -447,6 +454,13 @@ Single-expression arrow functions return their value implicitly — no `return` 
 const double = x => x * 2;      // implicit return — returns x * 2
 const triple = x => { x * 3 };  // ❌ no return — returns undefined
 const triple = x => { return x * 3 };  // ✅ explicit return
+```
+
+Returning an **object** from a single-expression arrow is the classic version of this trap — the `{` looks like a function body, so you must wrap the object in parentheses:
+
+```typescript
+const makeUser = role => { email: role };    // ❌ `{ }` is read as a body — returns undefined
+const makeUser = role => ({ email: role });  // ✅ parentheses → returns the object
 ```
 
 ---
