@@ -37,6 +37,8 @@ Bu kurs boyu real, işlənən bir avtomatlaşdırma layihəsi quracağıq. Hər 
 - **Modul 7–10:** Miqyas — POM, fixtures, API, auth
 - **Modul 11–13:** Peşəkar səviyyə — vizual test, CI, yekun layihə
 
+POM, fixtures və ya CI kimi terminlər yenidirsə narahat olma — hər birinə çatanda ona ayrıca modul ayrılır.
+
 ---
 
 ## Manual QA-dan avtomatlaşdırmaya keçid (düşüncə tərzi)
@@ -48,7 +50,7 @@ Manual QA-da siz hər addımı özünüz əllə icra edirsiniz: "Bu düyməyə b
 Keçid zamanı yadda saxlayın:
 - Kod yazmaq öyrənilir — siz artıq test düşüncə tərzinə sahibsiniz
 - Kod xətaları normaldır — hər kəsin kodu ilk dəfə işləmir
-- Playwright API-si oxunaqlıdır — `page.click('Login')` nə edəcəyini açıq göstərir
+- Playwright API-si oxunaqlıdır — `page.getByText('Login').click()` nə edəcəyini açıq göstərir
 
 **Yadda saxla:** avtomatik test sənin manual addımlarının kod şəklidir — bir dəfə yaz, yüzlərlə dəfə işlət.
 
@@ -56,7 +58,11 @@ Keçid zamanı yadda saxlayın:
 
 ## Node, VS Code və Git-in quraşdırılması
 
-Bu üç aləti quraşdıracağıq. Hər addım modulun videosunda da göstərilir — addımın yanındakı vaxt nişanına klikləyərək birbaşa həmin hissəyə keçə bilərsiniz.
+Bu üç aləti quraşdıracağıq. Hər addımın slayd təlimatı aşağıda verilib (video təlimatları tezliklə əlavə olunacaq).
+
+:::note[Terminalla yeni tanışsan?]
+Bəzi addımlar əmrləri **terminalda** işlətməyi tələb edir — əmr yazıb Enter basdığın mətn pəncərəsi. Açmaq üçün: **Windows** — "PowerShell" axtar; **macOS** — `Cmd+Space` basıb "Terminal" yaz; **Linux** — terminal proqramın.
+:::
 
 <Steps>
 
@@ -109,11 +115,11 @@ cd playwright-kurs
 npm init playwright@latest
 ```
 
-Quraşdırma zamanı bu suallar çıxacaq:
+Bu interaktiv quraşdırmadır — hər sual üçün ox düymələri ilə seç və ya dəyəri yazıb Enter bas:
 
 - **TypeScript or JavaScript?** — `TypeScript` seçin (kurs boyu TypeScript istifadə edirik)
 - **tests folder name?** — `tests` daxil edin (standart)
-- **GitHub Actions workflow?** — hələlik `false`
+- **GitHub Actions workflow?** — hələlik `false` (CI avtomatlaşdırması — sonrakı modulda)
 - **Install Playwright browsers?** — `true` (mütləq lazımdır)
 
 Brauzerlərin yüklənməsi bir neçə dəqiqə çəkə bilər — bu normaldır.
@@ -122,13 +128,7 @@ Brauzerlərin yüklənməsi bir neçə dəqiqə çəkə bilər — bu normaldır
 
 ## İlk Playwright layihəsinin yaradılması
 
-Quraşdırma tamamlandıqdan sonra layihə strukturuna baxaq:
-
-```bash
-ls
-```
-
-Aşağıdakı faylları görmüş olacaqsınız:
+Quraşdırma tamamlandıqdan sonra layihə qovluğunu VS Code-da aç (**File → Open Folder**) və soldakı Explorer-ə bax. Bu strukturu görəcəksən:
 
 ```
 playwright-kurs/
@@ -181,6 +181,8 @@ Playwright-in hazır nümunə testini işlədin:
 ```bash
 npx playwright test
 ```
+
+(`package.json`-da `test` skripti təyin etdiyimiz üçün `npm test` eyni şeyi işlədir — biz kurs boyu açıq `npx playwright test` formasından istifadə edəcəyik.)
 
 Konsolda belə bir çıxış görməlisiniz:
 

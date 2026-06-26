@@ -37,6 +37,8 @@ Over the course of these modules, we'll build a real, working automation project
 - **Modules 7–10:** Scale — POM, fixtures, API, auth
 - **Modules 11–13:** Professional level — visual testing, CI, final project
 
+Don't worry if terms like POM, fixtures, or CI are new — each gets a full module when we reach it.
+
 ---
 
 ## Shifting from manual QA to automation (a mindset change)
@@ -49,7 +51,7 @@ Keep in mind as you make the shift:
 
 - Writing code is a skill you learn — you already have the testing mindset
 - Code errors are normal — nobody's code works the first time
-- The Playwright API is readable — `page.click('Login')` makes it obvious what it does
+- The Playwright API is readable — `page.getByText('Login').click()` makes it obvious what it does
 
 **Remember:** an automated test is your manual steps written as code — write it once, run it hundreds of times.
 
@@ -57,7 +59,11 @@ Keep in mind as you make the shift:
 
 ## Installing Node, VS Code, and Git
 
-We'll install these three tools. Each step is also shown in the module video — click the timestamp next to the step to jump directly to that part.
+We'll install these three tools. Each step's slide guide is linked below (video walkthroughs coming soon).
+
+:::note[New to the terminal?]
+A few steps ask you to run commands in a **terminal** — a text window where you type a command and press Enter. To open one: **Windows** — search "PowerShell"; **macOS** — press `Cmd+Space` and type "Terminal"; **Linux** — your terminal app.
+:::
 
 <Steps>
 
@@ -110,11 +116,11 @@ cd playwright-course
 npm init playwright@latest
 ```
 
-During installation you'll be asked a few questions:
+This is an interactive setup — use the arrow keys or type the value, then press Enter for each question:
 
 - **TypeScript or JavaScript?** — choose `TypeScript` (we use TypeScript throughout the course)
 - **tests folder name?** — enter `tests` (the default)
-- **GitHub Actions workflow?** — `false` for now
+- **GitHub Actions workflow?** — `false` for now (CI automation — covered in a later module)
 - **Install Playwright browsers?** — `true` (required)
 
 Downloading the browsers may take a few minutes — that's normal.
@@ -123,13 +129,7 @@ Downloading the browsers may take a few minutes — that's normal.
 
 ## Creating your first Playwright project
 
-Once installation is complete, take a look at the project structure:
-
-```bash
-ls
-```
-
-You should see the following files:
+Once installation is complete, open the project folder in VS Code (**File → Open Folder**) and look at the Explorer on the left. You should see this structure:
 
 ```
 playwright-course/
@@ -180,6 +180,8 @@ Run Playwright's built-in example test:
 ```bash
 npx playwright test
 ```
+
+(We defined a `test` script in `package.json`, so `npm test` runs the same thing — we'll use the explicit `npx playwright test` throughout the course.)
 
 In the console you should see output like this:
 
