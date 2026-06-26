@@ -24,6 +24,8 @@ Niyə Playwright seçilir?
 - **Güclüdür** — API testi, şəbəkə müdaxiləsi, auth vəziyyəti, mobil emulasiya — hamısı daxildir
 - **Azərbaycan dilində resurslar var** — BrauzerLab məhz bunun üçün yaradılıb
 
+**Yadda saxla:** Playwright Chromium, Firefox və WebKit-i idarə edir, ona görə bir test bütün əsas brauzerləri əhatə edir — avtomatik gözləmə ilə (`sleep()` yoxdur).
+
 ---
 
 ## Kurs boyu nə quracağıq
@@ -47,6 +49,8 @@ Keçid zamanı yadda saxlayın:
 - Kod yazmaq öyrənilir — siz artıq test düşüncə tərzinə sahibsiniz
 - Kod xətaları normaldır — hər kəsin kodu ilk dəfə işləmir
 - Playwright API-si oxunaqlıdır — `page.click('Login')` nə edəcəyini açıq göstərir
+
+**Yadda saxla:** avtomatik test sənin manual addımlarının kod şəklidir — bir dəfə yaz, yüzlərlə dəfə işlət.
 
 ---
 
@@ -166,6 +170,8 @@ Playwright-in əsas konfiqurasiya faylıdır. Buradan:
 
 kimi parametrləri tənzimləyirsiniz.
 
+**Yadda saxla:** `package.json` = skriptlər və asılılıqlar, `tests/` = `.spec.ts` fayllarınız, `playwright.config.ts` = parametrlər (brauzerlər, `baseURL`, retries).
+
 ---
 
 ## İlk testin işə salınması
@@ -185,6 +191,8 @@ Running 6 tests using 6 workers
 
 Uğurla keçdi! Playwright üç brauzerdə (`chromium`, `firefox`, `webkit`) iki test ssenarisini işlətdi.
 
+**Yadda saxla:** `npx playwright test` hər şeyi işlədir — nümunə **6 nəticə** verdi, çünki 2 test × 3 brauzer = 6 işləmə.
+
 ---
 
 ## HTML hesabatının açılması
@@ -201,4 +209,17 @@ Bu əmr brauzeri açır və hər testin:
 - Skrinşotlar və izlərini (uğursuzluq zamanı)
 
 göstərir. CI mühitlərində bu hesabat artifakt kimi saxlanılır.
+
+---
+
+## Əsas nəticələr
+
+- **Playwright** — çoxbrauzerli avtomatlaşdırma freymvorkudur; bir test Chromium, Firefox və WebKit-də işləyir, avtomatik gözləmə ilə.
+- Üç alət quraşdırdın: **Node.js** (JavaScript işlədir), **VS Code** (redaktorun) və **Git** (versiya nəzarəti).
+- Layihədə üç fayl vacibdir: **`package.json`** (skriptlər və asılılıqlar), **`tests/`** qovluğu (`.spec.ts` fayllarınız) və **`playwright.config.ts`** (parametrlər — brauzerlər, `baseURL`, retries).
+- Testləri **`npx playwright test`** ilə işlət; nəticələri **`npx playwright show-report`** ilə gör.
+
+**Yoxlama siyahısı — indi sənin əlində olmalıdır:** Node, VS Code və Git quraşdırılıb; `npm init playwright@latest` ilə `playwright-kurs` layihəsi yaradılıb; nümunə test keçir və aça biləcəyin HTML hesabat var.
+
+Modul 1-də hər test faylında istifadə edəcəyin JavaScript və TypeScript-i öyrənirik.
 

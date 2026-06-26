@@ -24,6 +24,8 @@ Why choose Playwright?
 - **Powerful** — API testing, network interception, auth state, mobile emulation — all built in
 - **Beginner-friendly** — the API reads like plain English
 
+**Remember:** Playwright drives Chromium, Firefox, and WebKit, so one test covers all major browsers — with auto-waiting built in (no `sleep()`).
+
 ---
 
 ## What we'll build throughout the course
@@ -48,6 +50,8 @@ Keep in mind as you make the shift:
 - Writing code is a skill you learn — you already have the testing mindset
 - Code errors are normal — nobody's code works the first time
 - The Playwright API is readable — `page.click('Login')` makes it obvious what it does
+
+**Remember:** an automated test is your manual steps written as code — write it once, run it hundreds of times.
 
 ---
 
@@ -165,6 +169,8 @@ This is Playwright's main configuration file. From here you control:
 - Whether tests run in parallel
 - Whether failing tests should be retried
 
+**Remember:** `package.json` = scripts & dependencies, `tests/` = your `.spec.ts` files, `playwright.config.ts` = settings (browsers, `baseURL`, retries).
+
 ---
 
 ## Running your first test
@@ -184,6 +190,8 @@ Running 6 tests using 6 workers
 
 Success! Playwright ran two test scenarios across three browsers (`chromium`, `firefox`, `webkit`).
 
+**Remember:** `npx playwright test` runs everything — the example produced **6 results** because 2 tests × 3 browsers = 6 runs.
+
 ---
 
 ## Opening the HTML report
@@ -200,3 +208,16 @@ This command opens the browser and shows, for each test:
 - Screenshots and traces (on failure)
 
 In CI environments this report is saved as an artifact.
+
+---
+
+## Key takeaways
+
+- **Playwright** is a cross-browser automation framework — one test runs on Chromium, Firefox, and WebKit, with auto-waiting built in.
+- You installed three tools: **Node.js** (runs JavaScript), **VS Code** (your editor), and **Git** (version control).
+- Three files matter in a project: **`package.json`** (scripts & dependencies), the **`tests/`** folder (your `.spec.ts` files), and **`playwright.config.ts`** (settings — browsers, `baseURL`, retries).
+- Run tests with **`npx playwright test`**; view results with **`npx playwright show-report`**.
+
+**Checklist — you should now have:** Node, VS Code, and Git installed; a `playwright-course` project created with `npm init playwright@latest`; and the example test passing with an HTML report you can open.
+
+In Module 1, we cover the JavaScript and TypeScript you'll use in every test file.
