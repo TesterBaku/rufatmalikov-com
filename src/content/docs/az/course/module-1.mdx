@@ -243,6 +243,13 @@ console.log(isLoggedIn && !hasErrors);  // → true  (hər iki tərəf true olma
 console.log(isLoggedIn || hasErrors);   // → true  (ən azı bir tərəf true-dur)
 ```
 
+Konfiqurasiya və env fayllarında rast gələcəyin daha iki operator:
+
+```typescript
+const port = process.env.PORT ?? '3000';   // ?? — sağ tərəfi yalnız sol null/undefined olduqda işlədir
+const isCI = !!process.env.CI;             // !! — istənilən dəyəri əsl true/false-a çevirir (! tərsinə çevirir, !! iki dəfə)
+```
+
 ```javascript
 // Həmişə === (ciddi bərabərlik), heç vaxt ==
 '5' === 5   // → false (fərqli tiplər)
@@ -447,6 +454,13 @@ Tək ifadəli arrow funksiyalar dəyəri gizli qaytarır — `return` açar söz
 const double = x => x * 2;      // gizli return — x * 2 qaytarır
 const triple = x => { x * 3 };  // ❌ return yoxdur — undefined qaytarır
 const triple = x => { return x * 3 };  // ✅ açıq return
+```
+
+Tək ifadəli arrow-dan **obyekt** qaytarmaq bu tələnin klassik formasıdır — `{` funksiya gövdəsi kimi görünür, ona görə obyekti mötərizəyə almalısan:
+
+```typescript
+const makeUser = role => { email: role };    // ❌ `{ }` gövdə kimi oxunur — undefined qaytarır
+const makeUser = role => ({ email: role });  // ✅ mötərizə → obyekti qaytarır
 ```
 
 ---
