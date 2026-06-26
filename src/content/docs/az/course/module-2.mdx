@@ -70,7 +70,7 @@ page.getByTestId('submit-btn').click();
 
 ## `getByRole` — tövsiyə olunan standart
 
-`getByRole` elementləri köməkçi texnologiyanın (ekran oxuyucuların) gördüyü kimi uyğunlaşdırır. Elementin gizli ARIA rolundan və əlçatan adından istifadə edir.
+`getByRole` elementləri köməkçi texnologiyanın (ekran oxuyucuların) gördüyü kimi uyğunlaşdırır. Elementin gizli ARIA rolundan və əlçatan adından istifadə edir. Sadə dillə: **rol** elementin nə *olduğudur* (düymə, link, başlıq), **əlçatan ad** isə ekran oxuyucusunun onun üçün səsləndirdiyi insan-oxunaqlı etiketdir — adətən onun görünən mətni.
 
 ```javascript
 // <button>Log In</button>-ə uyğundur
@@ -100,7 +100,7 @@ page.getByRole('combobox', { name: 'Category' })
 
 ### Rol + əlçatan ad
 
-`name` seçimi `getByRole`-u dəqiq edən şeydir. Onsuz `getByRole('button')` səhifədəki **hər** düyməyə uyğun gəlir — bu zəmanətli bir strict mode pozuntusudur.
+`name` seçimi `getByRole`-u dəqiq edən şeydir. Onsuz `getByRole('button')` səhifədəki **hər** düyməyə uyğun gəlir — bu zəmanətli bir strict mode pozuntusudur (Playwright lokator birdən çox elementə uyğun gələndə əməliyyatdan imtina edir; tam izah aşağıda).
 
 Əlçatan ad bunlardan gəlir:
 - Düymə / keçid **mətn məzmunu**: `<button>Log In</button>` → ad `'Log In'`-dir
@@ -280,6 +280,10 @@ const productName = secondRow.locator('td').nth(1);
 // Son sıradakı Edit düyməsini kliklayın
 await rows.last().locator('a:has-text("Edit")').click();
 ```
+
+:::note[`:has-text()` nədir?]
+`:has-text("…")` — Playwright-in CSS genişlənməsidir, elementi içindəki mətnə görə uyğunlaşdırır — zəncirdə əlverişlidir. Mümkün olduqda `getByRole` / `filter` üstün tut; tez mətn əsaslı daralma üçün `:has-text()`-ə müraciət et.
+:::
 
 Səbət nümunəsi — iki səviyyəli zəncir:
 
@@ -513,6 +517,8 @@ page.locator('my-component >> button')
 page.locator('pierce/button')
 ```
 
+`>>` — Playwright-in keçici kombinatorudur; ev sahibi (`my-component`) ilə içindəki element arasındakı shadow-DOM sərhədini keçir.
+
 Qapalı shadow root-lar üçün (praktikada nadir hallarda) komponentin sənədləşdirilmiş API-si ilə ya da shadow ev sahibinə yerləşdirilmiş `data-testid` atributları ilə işləməli olacaqsınız.
 
 <Practice missions={['shadow-dom']} />
@@ -646,5 +652,17 @@ Yazacağınız hər testə apardığınız üç qayda:
 1. **Əvvəlcə `getByRole`-u üstün tutun** — "Log In labeli olan düyməni tap" demək "bu CSS siniflərinə malik şeyi tap"-dan daha yaxşıdır
 2. **Formlar üçün `getByLabel`, sabitlik üçün `getByTestId`** — formlarda əlçatanlıq üçün labellər var; onlardan istifadə edin
 3. **Dəqiqlik üçün zəncirləyin + filtrləyin** — bir nəhəng seçici yazmayın; kiçik oxunaqlı lokatorları zəncirlə və gördüyünüz məzmunla filtrləyin
+
+**Lokator yaddaş vərəqi — hansına müraciət etməliyəm?**
+
+| Vəziyyət | İstifadə et |
+|---|---|
+| Düymə, link, başlıq, checkbox… | `getByRole(role, { name })` |
+| Görünən label-ı olan form sahəsi | `getByLabel` |
+| Label-ı olmayan, yalnız placeholder-li sahə | `getByPlaceholder` |
+| Link və ya müstəqil mətn | `getByText` |
+| Əlçatan adı, mətni və ya sabit id-si olmayan | `getByTestId` |
+| Yalnız struktur / id ilə | CSS (`page.locator('#id')`) |
+| Çox uyğunluqdan biri | zəncir + `filter`, son çarə kimi `.first()`/`.nth()` |
 
 Modul 3 fixture-ları və auth vəziyyətini əhatə edir — əvvəlcədən autentikasiya edilmiş brauzer kontekstlərindən istifadə edərək login formasını tamamilə atlayacaqsınız.

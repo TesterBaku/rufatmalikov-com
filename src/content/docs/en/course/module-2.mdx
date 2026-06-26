@@ -70,7 +70,7 @@ page.getByTestId('submit-btn').click();
 
 ## `getByRole` — the recommended default
 
-`getByRole` matches elements the way assistive technology (screen readers) sees them. It uses the element's implicit ARIA role and its accessible name.
+`getByRole` matches elements the way assistive technology (screen readers) sees them. It uses the element's implicit ARIA role and its accessible name. In plain terms: a **role** is what an element *is* (button, link, heading), and its **accessible name** is the human-readable label a screen reader announces for it — usually its visible text.
 
 ```javascript
 // Matches <button>Log In</button>
@@ -100,7 +100,7 @@ Common role mappings:
 
 ### Role + accessible name
 
-The `name` option is what makes `getByRole` precise. Without it, `getByRole('button')` matches **every** button on the page — guaranteed strict mode violation.
+The `name` option is what makes `getByRole` precise. Without it, `getByRole('button')` matches **every** button on the page — a guaranteed strict mode violation (Playwright refuses to act when a locator matches more than one element; full explanation below).
 
 The accessible name comes from:
 - Button / link **text content**: `<button>Log In</button>` → name is `'Log In'`
@@ -280,6 +280,10 @@ const productName = secondRow.locator('td').nth(1);
 // Click the Edit button in the last row
 await rows.last().locator('a:has-text("Edit")').click();
 ```
+
+:::note[What is `:has-text()`?]
+`:has-text("…")` is Playwright's CSS extension for matching an element by the text inside it — handy inside a chain. Prefer `getByRole` / `filter` when you can; reach for `:has-text()` for quick text-based narrowing.
+:::
 
 Cart example — two levels of chaining:
 
@@ -513,6 +517,8 @@ page.locator('my-component >> button')
 page.locator('pierce/button')
 ```
 
+The `>>` is Playwright's piercing combinator — it crosses the shadow-DOM boundary between the host (`my-component`) and the element inside it.
+
 For closed shadow roots (rare in practice), you will need to work with the component's documented API or `data-testid` attributes placed on the shadow host.
 
 <Practice missions={['shadow-dom']} locale="en" />
@@ -646,5 +652,17 @@ Three rules to carry into every test you write:
 1. **Prefer `getByRole` first** — "find the button labeled Log In" beats "find the thing with these CSS classes"
 2. **`getByLabel` for forms, `getByTestId` for stability** — forms have labels for accessibility; use them
 3. **Chain + filter for precision** — do not write one massive selector; chain small readable locators and filter by content you can see
+
+**Locator cheat-sheet — which one do I reach for?**
+
+| Situation | Use |
+|---|---|
+| Button, link, heading, checkbox… | `getByRole(role, { name })` |
+| Form field with a visible label | `getByLabel` |
+| Field with no label, only a placeholder | `getByPlaceholder` |
+| A link or standalone text | `getByText` |
+| No accessible name, text, or stable id | `getByTestId` |
+| Structural / by id only | CSS (`page.locator('#id')`) |
+| One of many matches | chain + `filter`, then `.first()`/`.nth()` as a last resort |
 
 Module 3 covers fixtures and auth state — you'll skip the login form entirely using pre-authenticated browser contexts.
