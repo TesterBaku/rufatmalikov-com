@@ -57,6 +57,8 @@ if (true) {
 console.log(message);  // ❌ ReferenceError: message is not defined
 ```
 
+`{ }` içindəki `let`-i yalnız o otaqda oxuya biləcəyin qeyd kimi düşün — mötərizədən kənara çıxdın, getdi.
+
 Tapşırıq 1-də məhz bu xətanı düzəldəcəksiniz.
 
 ---
@@ -287,6 +289,8 @@ console.log(withoutWebkit);     // ['chromium', 'firefox', 'electron']
 const upperCased = browsers.map(b => b.toUpperCase());
 console.log(upperCased);        // ['CHROMIUM', 'FIREFOX', 'ELECTRON']
 ```
+
+Bunu sənəd kimi düşün: `push`/`sort`/`splice` orijinalı yerində dəyişir, `filter`/`map` isə onu fotosurət çıxarıb sənə nüsxəni verir — orijinal toxunulmaz qalır.
 
 <details>
 <summary>Bəzən istifadə edəcəyin daha çox array metodu</summary>
@@ -621,6 +625,22 @@ page.fill('#email', 'user@test.io');   // səhifə hələ yüklənməyib ola bil
 expect(page).toHaveURL('/dashboard');  // login olmadan işləyir!
 ```
 
+Sıranın necə dəyişdiyini özün görə bilərsən — bu xalis Node-da, brauzersiz işləyir:
+
+```typescript
+const log = (label: string) =>
+  new Promise<void>(r => setTimeout(() => { console.log(label); r(); }, 50));
+
+async function demo() {
+  log('first');             // ❌ await edilmir
+  console.log('second');    // "first" bitmədən işləyir!
+  await log('third');       // ✅ await edilir
+  console.log('fourth');    // "third"-ü gözləyir
+}
+demo();
+// Çap edir: second, first, third, fourth  ←  "second" "first"-i qabaqlayır, çünki "first" await edilmədi
+```
+
 ### `async` açar sözü
 
 `await` istifadə edən hər funksiya `async` ilə elan edilməlidir:
@@ -697,7 +717,7 @@ async function runTest() {
 runTest();
 ```
 
-Əvvəlcə xətalı versiyanı işlədin — çıxış sırasının yanlış olduğunu görəcəksiniz. Sonra `await` əlavə edib yenidən işlədin.
+İşlətməzdən əvvəl çıxış sırasını **proqnozlaşdır** və qeyd et. Sonra xətalı versiyanı işlət — sıranın yanlış olduğunu gör — `await` əlavə et və müqayisə üçün yenidən işlət.
 
 <details>
 <summary>Həll</summary>
