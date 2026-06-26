@@ -133,6 +133,8 @@ console.log('Tapşırıq 1 tamamlandı');
 
 </details>
 
+**Yadda saxla:** standart olaraq `const`, yenidən mənimsətmək lazımdırsa `let`, heç vaxt `var`.
+
 ---
 
 ## String, rəqəm və boolean
@@ -257,6 +259,8 @@ const isCI = !!process.env.CI;             // !! — istənilən dəyəri əsl t
 ```
 
 Playwright-də boolean-lar iddia ifadələrində (`expect(isVisible).toBe(true)`) və konfiqurasiyada (`headless: true`) görünür.
+
+**Yadda saxla:** template literal `${ }` ilə dəyər yerləşdirir; şərtləri `&&`/`||` ilə birləşdir; qarışıq mətni `.trim()` / `.toLowerCase()` / `.includes()` ilə təmizlə.
 
 ---
 
@@ -398,6 +402,8 @@ const { email, role } = validAdmin;
 
 </details>
 
+**Yadda saxla:** `filter`/`map` **yeni** array qaytarır; `push`/`sort`/`splice` orijinalı **dəyişir**. Dəyərləri destructuring ilə çıxar, spread `...` ilə kopyala/birləşdir.
+
 ---
 
 ## Funksiyalar və arrow funksiyalar
@@ -516,6 +522,8 @@ const filterByCategory = (
 
 </details>
 
+**Yadda saxla:** tək ifadəli arrow gizli qaytarır; çox sətirli `{ }` və `return` tələb edir; obyekti `=> ({ ... })` ilə qaytar.
+
 ---
 
 ## Import və export (ESM)
@@ -572,6 +580,8 @@ Yadda saxla: **mötərizə ⇔ adlandırılmış, mötərizəsiz ⇔ default.** 
 ### CommonJS-i hələ də görə bilərsiniz
 
 Köhnə Node.js və Playwright nümunələri **CommonJS** sintaksisindən istifadə edir — `const { test } = require('@playwright/test')` və `module.exports = LoginPage`. Hər iki üsul Node.js-də işləyir, amma rəsmi Playwright generatoru və bu kurs hər yerdə ESM `import` / `export` istifadə edir. Bir təlimatda ya köhnə repo-da `require()` görsəniz, eyni ideya, fərqli sintaksis kimi qəbul edin.
+
+**Yadda saxla:** mötərizə = **adlandırılmış**, mötərizəsiz = **default**; fayl başına bir default.
 
 ---
 
@@ -715,6 +725,8 @@ async function runTest() {
 
 </details>
 
+**Yadda saxla:** hər Playwright əməliyyatından əvvəl `await` — əksik `await` flaky testlərin #1 səbəbidir.
+
 ---
 
 ## TypeScript əsasları
@@ -802,6 +814,8 @@ class LoginPage {
 
 Tez-tez ehtiyacınız olmayacaq — kurs `.ts` faylları istifadə edir — amma köhnə kod bazalarında görəcəksiniz.
 
+**Yadda saxla:** tiplər xətaları işə salmazdan *əvvəl* redaktorda tutur; interfeyslər obyektin formasını təsvir edir.
+
 ---
 
 ## Xətaları və stack trace-ləri oxumaq
@@ -882,6 +896,8 @@ Cavablarınızı `exercise-5.ts` faylında şərh kimi yazın.
 4. **İlk yoxla:** `loginButton`-un `LoginPage` class-ında necə qurulduğunu — çox güman ki, konstruktorda əksik və ya səhv yazılmış lokator mənimsətməsi (ya da selektoru heç nə tapmayıb).
 
 </details>
+
+**Yadda saxla:** trace-i yuxarıdan aşağı oxu — xəta tipi → `>` kod çərçivəsi → **öz** fayllarına işarə edən stack (`node_modules`-u nəzərə alma).
 
 ---
 
@@ -994,6 +1010,8 @@ function getConfig() {
 ```
 
 </details>
+
+**Yadda saxla:** heç vaxt sirləri kodda saxlama; onları `process.env`-dən (`??` standartı ilə) oxu və `.env`-i gitignore-da saxla.
 
 ---
 
