@@ -118,6 +118,8 @@ page.getByRole('button')
 
 <Practice missions={['first-click','role-with-name','exact-match']} />
 
+**Yadda saxla:** getByRole standartdır — elementi nə *olduğuna* (roluna) və əlçatan adına görə tap.
+
 ---
 
 ## `getByText` — görünən mətnə uyğunlaşma
@@ -141,6 +143,8 @@ page.getByText(/login/i)
 
 <Practice missions={['find-by-text']} />
 
+**Yadda saxla:** getByText-i linklər və müstəqil mətn üçün, az-az istifadə et; qismən uyğunluqdan qaçmaq üçün `{ exact: true }` əlavə et.
+
 ---
 
 ## `getByLabel` — form sahələri üçün ən yaxşı seçim
@@ -162,6 +166,8 @@ Bu, login formları, ödəniş formları və admin məhsul formları üçün dü
 
 <Practice missions={['get-by-label']} />
 
+**Yadda saxla:** görünən label-ı olan form sahəsi → əvvəlcə getByLabel.
+
 ---
 
 ## `getByPlaceholder` — label olmadıqda
@@ -179,6 +185,8 @@ page.getByPlaceholder('Enter your email address')
 Bunu yalnız həqiqətən label olmadıqda istifadə edin. Əgər label varsa, `getByLabel` daha möhkəmdir (labellər placeholder mətndən daha az dəyişir).
 
 <Practice missions={['get-by-placeholder']} />
+
+**Yadda saxla:** getByPlaceholder-i yalnız həqiqətən label olmadıqda istifadə et.
 
 ---
 
@@ -199,6 +207,8 @@ page.getByTestId('product-card')
 Hər elementə `data-testid` əlavə etməyin. Rol əsaslı lokatorları ilk üstün tutun.
 
 <Practice missions={['test-id']} />
+
+**Yadda saxla:** getByTestId ən sabitidir, amma `data-testid`-i yalnız rol/label/mətn elementi tapa bilmədikdə əlavə et.
 
 ---
 
@@ -226,6 +236,8 @@ page.locator('.product-card')
 ```
 
 **ID-ləri siniflərdən üstün tutun.** CSS sinifləri dizaynerlər stilistikanı yenidən struktur etdikdə dəyişir. ID-lər nadirən dəyişir, çünki onlar həmçinin `<label for="...">` əlaqələri və JavaScript hookları üçün də istifadə olunur.
+
+**Yadda saxla:** CSS son çıxış yoludur — siniflərdən çox ID-lərə üstünlük ver (stil dəyişəndə siniflər dəyişir).
 
 ---
 
@@ -282,6 +294,8 @@ const firstCartQuantity = page.locator('.cart-table .table-row')
 
 <Practice missions={['chained-locators']} />
 
+**Yadda saxla:** geniş → dar zəncirlə (konteyner → uşaq) bir elementi dəqiqləşdir.
+
 ---
 
 ## `filter({ hasText })` və `filter({ has })`
@@ -325,6 +339,8 @@ const pendingRows = page.locator('tr.table-row')
 
 <Practice missions={['filter-sale-card','filter-has-locator']} />
 
+**Yadda saxla:** uyğun dəsti əməliyyatdan əvvəl `filter({ hasText })` və ya `filter({ has })` ilə daralt.
+
 ---
 
 ## `.first()`, `.last()`, `.nth()`
@@ -352,6 +368,8 @@ await rows.filter({ hasText: 'Wireless Mouse' })
 ```
 
 <Practice missions={['nth-first-last','nth-vs-first']} />
+
+**Yadda saxla:** `.nth()`-dən çox daha dəqiq lokatora üstünlük ver — indeks əsaslı seçim sıra dəyişəndə pozulur.
 
 ---
 
@@ -439,6 +457,8 @@ page.getByTestId('product-card').filter({ hasText: 'Wireless Mouse' })
 
 <Practice missions={['strict-mode-disambiguation','disambiguation-cookbook','iterate-multiple','dynamic-ids']} />
 
+**Yadda saxla:** lokator birdən çox elementə uyğun gəlirsə, Playwright əməliyyatdan imtina edir — `.first()`-ə keçmək əvəzinə onu daralt.
+
 ---
 
 ## Cədvəl sıraları — hamısını bir araya gətirmək
@@ -496,6 +516,8 @@ page.locator('pierce/button')
 Qapalı shadow root-lar üçün (praktikada nadir hallarda) komponentin sənədləşdirilmiş API-si ilə ya da shadow ev sahibinə yerləşdirilmiş `data-testid` atributları ilə işləməli olacaqsınız.
 
 <Practice missions={['shadow-dom']} />
+
+**Yadda saxla:** Playwright-in getBy* lokatorları shadow DOM-u avtomatik keçir — xüsusi sintaksis lazım deyil.
 
 ---
 
