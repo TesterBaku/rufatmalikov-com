@@ -58,7 +58,7 @@ await page.locator('#hidden-trigger').click({ force: true });
 
 ---
 
-## `fill()` vs `type()`
+## `fill()` vs `pressSequentially()`
 
 Bu, həm ümumi müsahibə sualı, həm də gündəlik dizayn qərarıdır.
 
@@ -80,28 +80,32 @@ await page.getByLabel('Shipping City').fill('Portland');
 await page.getByLabel('Shipping Zip Code').fill('97201');
 ```
 
-### `type()`
+### `pressSequentially()`
 
 - Hər simvol üçün `keydown`, `keypress`, `keyup` işə salaraq simvol-simvol yazır
 - Sahəni əvvəlcə **təmizləmir** — mövcud mətnin sonuna əlavə edir
 - Daha yavaşdır — yalnız `fill()` düzgün davranışı işə salmadıqda istifadə edin
 
+:::note[`type()` köhnə addır]
+Köhnə kodda və təlimatlarda `locator.type()` görəcəksən — eyni şeydir, amma **köhnəlmişdir (deprecated)**. Yeni testlərdə `pressSequentially()` istifadə et.
+:::
+
 ```javascript
-// type() — real klaviatura zərbələrini simulyasiya edir, simvol-simvol
-await page.locator('#email').type('customer@test.io', { delay: 30 });
+// pressSequentially() — real klaviatura zərbələrini simulyasiya edir, simvol-simvol
+await page.locator('#email').pressSequentially('customer@test.io', { delay: 30 });
 
 // Ümumi istifadə halı: autocomplete / debounce edilmiş sahələr
-await page.locator('#search').type('Wire', { delay: 50 });
+await page.locator('#search').pressSequentially('Wire', { delay: 50 });
 // Hər klaviatura zərbəsi autocomplete komponentinin dinlediyi hadisələri işə salır
 ```
 
-**`type()` nə vaxt lazımdır:** React-Select, typeahead komponentlər, zəngin mətn redaktorları və ya yekun dəyər əvəzinə hər bir ayrı klaviatura zərbəsinə reaksiya verən istənilən daxiletmə.
+**`pressSequentially()` nə vaxt lazımdır:** React-Select, typeahead komponentlər, zəngin mətn redaktorları və ya yekun dəyər əvəzinə hər bir ayrı klaviatura zərbəsinə reaksiya verən istənilən daxiletmə.
 
-**Tuz:** Sahədə artıq mətn varsa, `type()` ona əlavə edir. `fill()` isə həmişə əvvəlcə təmizləyir.
+**Tuz:** Sahədə artıq mətn varsa, `pressSequentially()` ona əlavə edir. `fill()` isə həmişə əvvəlcə təmizləyir.
 
 ```javascript
-// Sahə "old value" ilə başlayır — type() əlavə edir:
-await page.locator('#name').type(' new suffix'); // nəticə: "old value new suffix"
+// Sahə "old value" ilə başlayır — pressSequentially() əlavə edir:
+await page.locator('#name').pressSequentially(' new suffix'); // nəticə: "old value new suffix"
 
 // fill() əvvəlki dəyəri nəzərə almır:
 await page.locator('#name').fill('fresh value'); // nəticə: "fresh value"
@@ -595,7 +599,7 @@ Bu tapşırıqlar `http://localhost:3000`-də yerli olaraq işləyən TestMarket
 
 ---
 
-### Tapşırıq 1: Login forması — `fill()` vs `type()`
+### Tapşırıq 1: Login forması — `fill()` vs `pressSequentially()`
 
 `tests/starter/tests/actions/login-actions.spec.js` yaradın:
 
@@ -612,10 +616,10 @@ test.describe('Login form actions', () => {
     await expect(page.locator('.alert.alert-success')).toBeVisible();
   });
 
-  test('type() — simvol-simvol', async ({ page }) => {
+  test('pressSequentially() — simvol-simvol', async ({ page }) => {
     await page.goto('/auth/login');
-    await page.locator('#email').type('customer@test.io', { delay: 30 });
-    await page.locator('#password').type('customer123', { delay: 30 });
+    await page.locator('#email').pressSequentially('customer@test.io', { delay: 30 });
+    await page.locator('#password').pressSequentially('customer123', { delay: 30 });
     await page.locator('button[type="submit"]').click();
     await expect(page.locator('.alert.alert-success')).toBeVisible();
   });
@@ -631,9 +635,9 @@ test.describe('Login form actions', () => {
 ```
 
 **Tapşırıqlar:**
-- `npx playwright test --headed` ilə işlədin və yazma sürətini müşahidə edin: `fill()` anlıqdır, `type()` simvol-simvol yazır
+- `npx playwright test --headed` ilə işlədin və yazma sürətini müşahidə edin: `fill()` anlıqdır, `pressSequentially()` simvol-simvol yazır
 - `{ delay: 30 }` şərhə alın və yenidən işlədin — nə dəyişir?
-- Əvvəlcədən doldurulmuş sahədə əvvəlcə təmizləmədən `type()` istifadə edərək əlavə etmə davranışını görün
+- Əvvəlcədən doldurulmuş sahədə əvvəlcə təmizləmədən `pressSequentially()` istifadə edərək əlavə etmə davranışını görün
 
 ---
 
@@ -828,7 +832,7 @@ test('Buffer-dən yükləyin — diskdə fayl lazım deyil', async ({ page }) =>
 
 ## Özünü yoxlama sualları
 
-1. `fill()` ilə `type()` arasındakı fundamental fərq nədir?
+1. `fill()` ilə `pressSequentially()` arasındakı fundamental fərq nədir?
 2. `selectOption()` istifadə etmək ilə click → gözlə → click şablonu arasında nə vaxt seçim edərdiniz?
 3. `setInputFiles()` OS fayl dialoqundan nə ilə fərqlənir?
 4. `page.on('dialog', handler)` dialoqu işə salan düyməni click etmədən **əvvəl** qeydiyyatdan keçirilməlidir?
@@ -843,7 +847,7 @@ test('Buffer-dən yükləyin — diskdə fayl lazım deyil', async ({ page }) =>
 
 Hər testə apardığınız dörd qayda:
 
-1. **Formlar üçün `fill()`, xüsusi hallar üçün `type()`** — `fill()` daha sürətlidir, həmişə əvvəlcə təmizləyir və daxiletmələrin 95%-i üçün düzgün hadisələri işə salır
+1. **Formlar üçün `fill()`, xüsusi hallar üçün `pressSequentially()`** — `fill()` daha sürətlidir, həmişə əvvəlcə təmizləyir və daxiletmələrin 95%-i üçün düzgün hadisələri işə salır
 2. **Native `<select>` = `selectOption()`, custom dropdown = click → gözlə → click** — qərar vermədən əvvəl həmişə DOM-u yoxlayın
 3. **`setInputFiles()` OS fayl dialoqlarını tamamilə əvəz edir** — fayl path-ləri, massivlər və Buffer obyektləri ilə işləyir
 4. **Dialoqlar tetikleyicilərdən əvvəl dinləyici tələb edir; iframelər `frameLocator()` istifadə edir** — dialoq handler-ini onu açan əməliyyatdan əvvəl qeydiyyatdan keçirin
