@@ -771,14 +771,14 @@ test('combine search + filter + sort', async ({ page }) => {
 
 ---
 
-### Exercise 4: Date input & keyboard shortcuts
+### Exercise 4: Keyboard shortcuts — select, copy, delete
 
-Create `tests/starter/tests/actions/date-input-actions.spec.js`:
+Create `tests/starter/tests/actions/keyboard-actions.spec.js`:
 
 ```javascript
-test('fill date format into a text input', async ({ page }) => {
+test('select all and delete with keyboard', async ({ page }) => {
   await page.goto('/auth/register');
-  await page.locator('#name').fill('Order-2025-06-15');
+  await page.locator('#name').fill('Some text to clear');
   await page.locator('#name').click();
   await page.keyboard.press('Control+A');
   await page.keyboard.press('Delete');
@@ -870,6 +870,131 @@ test('upload from Buffer — no file on disk', async ({ page }) => {
 - Observe that `setInputFiles()` never opens an OS file dialog
 - Try uploading a non-existent file path — what error does Playwright throw?
 - Try the multi-file variant: pass an array of two paths
+
+---
+
+### Exercise 6: Browser dialogs — `page.on('dialog')`
+
+Create `tests/starter/tests/actions/dialog-actions.spec.js`. The page is injected with a button that fires native `confirm()` / `prompt()` dialogs, so the exercise runs against any page:
+
+```javascript
+const { test, expect } = require('@playwright/test');
+
+test.describe('Dialog handling', () => {
+
+  test('accept a confirm dialog', async ({ page }) => {
+    await page.goto('/products');
+
+    // Inject a "Delete" button that records whether the user confirmed
+    await page.evaluate(() => {
+      const btn = document.createElement('button');
+      btn.id = 'confirm-btn';
+      btn.textContent = 'Delete';
+      btn.addEventListener('click', () => {
+        const ok = confirm('Are you sure you want to delete this item?');
+        btn.dataset.result = ok ? 'accepted' : 'dismissed';
+      });
+      document.body.appendChild(btn);
+    });
+
+    // Register the handler BEFORE the click that triggers the dialog
+    page.on('dialog', async (dialog) => {
+      expect(dialog.type()).toBe('confirm');
+      expect(dialog.message()).toContain('Are you sure');
+      await dialog.accept();
+    });
+
+    await page.locator('#confirm-btn').click();
+    await expect(page.locator('#confirm-btn')).toHaveAttribute('data-result', 'accepted');
+  });
+
+  test('dismiss a confirm dialog', async ({ page }) => {
+    await page.goto('/products');
+    await page.evaluate(() => {
+      const btn = document.createElement('button');
+      btn.id = 'confirm-btn';
+      btn.addEventListener('click', () => {
+        const ok = confirm('Delete this item?');
+        btn.dataset.result = ok ? 'accepted' : 'dismissed';
+      });
+      document.body.appendChild(btn);
+    });
+
+    page.on('dialog', (dialog) => dialog.dismiss());
+
+    await page.locator('#confirm-btn').click();
+    await expect(page.locator('#confirm-btn')).toHaveAttribute('data-result', 'dismissed');
+  });
+
+  test('respond to a prompt dialog with text', async ({ page }) => {
+    await page.goto('/products');
+    await page.evaluate(() => {
+      const out = document.createElement('p');
+      out.id = 'prompt-output';
+      document.body.appendChild(out);
+      const btn = document.createElement('button');
+      btn.id = 'prompt-btn';
+      btn.addEventListener('click', () => {
+        out.textContent = prompt('Enter a coupon code:') || '';
+      });
+      document.body.appendChild(btn);
+    });
+
+    page.on('dialog', (dialog) => dialog.accept('SAVE10'));
+
+    await page.locator('#prompt-btn').click();
+    await expect(page.locator('#prompt-output')).toHaveText('SAVE10');
+  });
+});
+```
+
+**Tasks:**
+- Move the `page.on('dialog', …)` line to *after* the click — the dialog auto-dismisses and the assertion fails. This is the #1 dialog mistake.
+- Add `console.log(dialog.type())` inside the handler to see `confirm` vs `prompt` vs `alert`.
+
+---
+
+### Exercise 7: Iframes — `frameLocator()`
+
+Create `tests/starter/tests/actions/iframe-actions.spec.js`. A `beforeEach` injects an iframe (a stand-in for a real payment iframe) so you can practice `frameLocator()` against any page:
+
+```javascript
+const { test, expect } = require('@playwright/test');
+
+test.describe('Iframe interactions', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/products');
+    await page.evaluate(() => {
+      const iframe = document.createElement('iframe');
+      iframe.id = 'payment-iframe';
+      iframe.srcdoc =
+        '<label>Card number <input id="card" /></label>' +
+        '<label>CVV <input id="cvv" /></label>' +
+        '<button id="pay">Pay Now</button>';
+      document.body.appendChild(iframe);
+    });
+  });
+
+  test('fill fields inside the iframe', async ({ page }) => {
+    const frame = page.frameLocator('#payment-iframe');
+    await frame.locator('#card').fill('4111 1111 1111 1111');
+    await frame.locator('#cvv').fill('123');
+    await expect(frame.locator('#card')).toHaveValue('4111 1111 1111 1111');
+    await frame.getByRole('button', { name: 'Pay Now' }).click();
+  });
+
+  test('page-level selectors cannot see inside the frame', async ({ page }) => {
+    // #card lives inside the iframe — a page locator finds nothing
+    await expect(page.locator('#card')).toHaveCount(0);
+    // …but the same selector via frameLocator finds it
+    await expect(page.frameLocator('#payment-iframe').locator('#card')).toHaveCount(1);
+  });
+});
+```
+
+**Tasks:**
+- Query `#card` from `page` directly (no `frameLocator`) and watch it time out — iframe content is invisible to page-level locators.
+- Try calling `.goto()` on the result of `frameLocator()` — note that a `FrameLocator` has no navigation methods.
 
 ---
 

@@ -771,14 +771,14 @@ test('axtarış + filtr + sıralama kombinasiyası', async ({ page }) => {
 
 ---
 
-### Tapşırıq 4: Tarix daxiletməsi və klaviatura qısayolları
+### Tapşırıq 4: Klaviatura qısayolları — seç, kopyala, sil
 
-`tests/starter/tests/actions/date-input-actions.spec.js` yaradın:
+`tests/starter/tests/actions/keyboard-actions.spec.js` yaradın:
 
 ```javascript
-test('mətn daxiletməsinə tarix formatı doldurun', async ({ page }) => {
+test('klaviatura ilə hamısını seç və sil', async ({ page }) => {
   await page.goto('/auth/register');
-  await page.locator('#name').fill('Order-2025-06-15');
+  await page.locator('#name').fill('Some text to clear');
   await page.locator('#name').click();
   await page.keyboard.press('Control+A');
   await page.keyboard.press('Delete');
@@ -870,6 +870,131 @@ test('Buffer-dən yükləyin — diskdə fayl lazım deyil', async ({ page }) =>
 - `setInputFiles()`-ın heç vaxt OS fayl dialoqu açmadığını müşahidə edin
 - Mövcud olmayan fayl path-i yükləməyə cəhd edin — Playwright hansı xəta atır?
 - İki path-lik bir massiv verin: çoxlu fayl yükləmə variantını sınayın
+
+---
+
+### Tapşırıq 6: Brauzer dialoqları — `page.on('dialog')`
+
+`tests/starter/tests/actions/dialog-actions.spec.js` yaradın. Səhifəyə native `confirm()` / `prompt()` dialoqlarını tetikləyən düymə inject olunur, ona görə tapşırıq istənilən səhifədə işləyir:
+
+```javascript
+const { test, expect } = require('@playwright/test');
+
+test.describe('Dialoq idarəetməsi', () => {
+
+  test('confirm dialoqunu qəbul et', async ({ page }) => {
+    await page.goto('/products');
+
+    // İstifadəçinin təsdiqləyib-təsdiqləmədiyini qeyd edən "Delete" düyməsi inject edin
+    await page.evaluate(() => {
+      const btn = document.createElement('button');
+      btn.id = 'confirm-btn';
+      btn.textContent = 'Delete';
+      btn.addEventListener('click', () => {
+        const ok = confirm('Are you sure you want to delete this item?');
+        btn.dataset.result = ok ? 'accepted' : 'dismissed';
+      });
+      document.body.appendChild(btn);
+    });
+
+    // Handler-i dialoqu tetikləyən klikdən ƏVVƏL qeydiyyatdan keçirin
+    page.on('dialog', async (dialog) => {
+      expect(dialog.type()).toBe('confirm');
+      expect(dialog.message()).toContain('Are you sure');
+      await dialog.accept();
+    });
+
+    await page.locator('#confirm-btn').click();
+    await expect(page.locator('#confirm-btn')).toHaveAttribute('data-result', 'accepted');
+  });
+
+  test('confirm dialoqunu rədd et', async ({ page }) => {
+    await page.goto('/products');
+    await page.evaluate(() => {
+      const btn = document.createElement('button');
+      btn.id = 'confirm-btn';
+      btn.addEventListener('click', () => {
+        const ok = confirm('Delete this item?');
+        btn.dataset.result = ok ? 'accepted' : 'dismissed';
+      });
+      document.body.appendChild(btn);
+    });
+
+    page.on('dialog', (dialog) => dialog.dismiss());
+
+    await page.locator('#confirm-btn').click();
+    await expect(page.locator('#confirm-btn')).toHaveAttribute('data-result', 'dismissed');
+  });
+
+  test('prompt dialoquna mətnlə cavab ver', async ({ page }) => {
+    await page.goto('/products');
+    await page.evaluate(() => {
+      const out = document.createElement('p');
+      out.id = 'prompt-output';
+      document.body.appendChild(out);
+      const btn = document.createElement('button');
+      btn.id = 'prompt-btn';
+      btn.addEventListener('click', () => {
+        out.textContent = prompt('Enter a coupon code:') || '';
+      });
+      document.body.appendChild(btn);
+    });
+
+    page.on('dialog', (dialog) => dialog.accept('SAVE10'));
+
+    await page.locator('#prompt-btn').click();
+    await expect(page.locator('#prompt-output')).toHaveText('SAVE10');
+  });
+});
+```
+
+**Tapşırıqlar:**
+- `page.on('dialog', …)` sətrini klikdən *sonraya* keçirin — dialoq avtomatik rədd olunur və assertion uğursuz olur. Bu, dialoqda 1 nömrəli səhvdir.
+- Handler içinə `console.log(dialog.type())` əlavə edin ki, `confirm` vs `prompt` vs `alert` görəsiniz.
+
+---
+
+### Tapşırıq 7: Iframelər — `frameLocator()`
+
+`tests/starter/tests/actions/iframe-actions.spec.js` yaradın. `beforeEach` bir iframe inject edir (real ödəniş iframe-inin əvəzedicisi), beləcə `frameLocator()`-i istənilən səhifədə məşq edə bilərsiniz:
+
+```javascript
+const { test, expect } = require('@playwright/test');
+
+test.describe('Iframe qarşılıqlı təsirləri', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/products');
+    await page.evaluate(() => {
+      const iframe = document.createElement('iframe');
+      iframe.id = 'payment-iframe';
+      iframe.srcdoc =
+        '<label>Card number <input id="card" /></label>' +
+        '<label>CVV <input id="cvv" /></label>' +
+        '<button id="pay">Pay Now</button>';
+      document.body.appendChild(iframe);
+    });
+  });
+
+  test('iframe içindəki sahələri doldur', async ({ page }) => {
+    const frame = page.frameLocator('#payment-iframe');
+    await frame.locator('#card').fill('4111 1111 1111 1111');
+    await frame.locator('#cvv').fill('123');
+    await expect(frame.locator('#card')).toHaveValue('4111 1111 1111 1111');
+    await frame.getByRole('button', { name: 'Pay Now' }).click();
+  });
+
+  test('səhifə səviyyəli lokatorlar frame-in içini görə bilmir', async ({ page }) => {
+    // #card iframe içindədir — page lokatoru heç nə tapmır
+    await expect(page.locator('#card')).toHaveCount(0);
+    // …amma frameLocator vasitəsilə eyni selektor onu tapır
+    await expect(page.frameLocator('#payment-iframe').locator('#card')).toHaveCount(1);
+  });
+});
+```
+
+**Tapşırıqlar:**
+- `#card`-ı birbaşa `page`-dən (frameLocator olmadan) sorğulayın və timeout-a düşməsinə baxın — iframe məzmunu page səviyyəli lokatorlara görünmür.
+- `frameLocator()`-in nəticəsində `.goto()` çağırmağa cəhd edin — `FrameLocator`-in naviqasiya metodları olmadığını qeyd edin.
 
 ---
 
