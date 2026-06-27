@@ -56,6 +56,8 @@ await page.locator('#hidden-trigger').click({ force: true });
 
 **Playwright-in avtomatik gözləməsi** o deməkdir ki: real testlərin 95%-ində sadə `.click()` kifayətdir. Parametrləri kənar hallar üçün saxlayın.
 
+**Yadda saxla:** sadə `.click()` avtomatik gözləyir (görünən, aktiv, sabit); `{ force: true }` / `{ button: 'right' }`-ə yalnız kənar hallarda müraciət et.
+
 ---
 
 ## `fill()` vs `pressSequentially()`
@@ -110,6 +112,8 @@ await page.locator('#name').pressSequentially(' new suffix'); // nəticə: "old 
 // fill() əvvəlki dəyəri nəzərə almır:
 await page.locator('#name').fill('fresh value'); // nəticə: "fresh value"
 ```
+
+**Yadda saxla:** sahələrin ~95%-i üçün `fill()` (təmizləyir + bir hadisə); `pressSequentially()` yalnız hər klaviş vuruşu işə düşməlidirsə.
 
 ---
 
@@ -167,6 +171,8 @@ await page.keyboard.up('Shift');
 
 **Əlçatanlıq ipucu:** `Tab` naviqasiyası klaviatura əlçatanlığını yoxlamaq üçün güclü bir vasitədir. Tab sırasının məntiqi olduğunu yoxlamaq üçün formdan mouse-a toxunmadan keçin.
 
+**Yadda saxla:** `.press('Enter')` lokatora bağlıdır, `page.keyboard.press(...)` qlobaldır; klaviş adları böyük hərflə (`Control`, `ctrl` yox).
+
 ---
 
 ## Checkboxlar və radio düymələri
@@ -209,6 +215,8 @@ await expect(page.getByLabel('Remember me')).toBeChecked();
 // Checkboxun işarəsiz olduğunu doğrulayın
 await expect(page.getByLabel('Newsletter')).not.toBeChecked();
 ```
+
+**Yadda saxla:** `.click()` əvəzinə `.check()`/`.uncheck()` üstün tut (özünü yoxlayır); `.setChecked(bool)` konkret vəziyyəti məcbur edir.
 
 ---
 
@@ -258,6 +266,8 @@ await expect(page.locator('#sort')).toHaveValue('price_desc');
 
 **Ümumi səhv:** `value` atributu `'electronics'` (kiçik hərflə) olan zaman `selectOption('Electronics')` böyük E ilə istifadə etmək. Dəyərlər hərfə həssasdır.
 
+**Yadda saxla:** `selectOption()` yalnız real `<select>` elementləri üçündür; görünən mətnə yox, `value`-ya uyğunlaşdır (hərf həssas).
+
 ---
 
 ## Custom dropdown-lar
@@ -295,6 +305,8 @@ await option.waitFor({ state: 'visible' });
 await option.click();
 ```
 
+**Yadda saxla:** klik → `waitFor({ state: 'visible' })` → seçimə klik — heç vaxt sabit `waitForTimeout`.
+
 ---
 
 ## Hover və tooltip-lər
@@ -330,6 +342,8 @@ await page.locator('#info-icon').hover();
 await page.locator('.tooltip').waitFor({ state: 'visible' });
 await expect(page.locator('.tooltip')).toContainText('Additional info');
 ```
+
+**Yadda saxla:** `.hover()`, sonra açılan elementin görünən olduğunu `waitFor`/assert et, yalnız bundan sonra ona toxun.
 
 ---
 
@@ -374,6 +388,8 @@ while (!(await page.locator('.calendar-header').textContent()).includes(target))
 }
 await page.locator('.calendar-day:has-text("15")').click();
 ```
+
+**Yadda saxla:** native `<input type="date">` → `fill('YYYY-MM-DD')`; custom widget-lər → təqvim UI-dən klik-klik keç.
 
 ---
 
@@ -422,6 +438,8 @@ await page.locator('#drag-item').dragTo(page.locator('#drop-zone'), {
 ```
 
 **`dragTo()` uğursuz olduqda:** Brauzer konsolunu xətalara görə yoxlayın. DnD kitabxanası sintetik hadisələr istifadə edirsə, Metod 2-yə keçin.
+
+**Yadda saxla:** əvvəl `dragTo()` cəhd et; custom drag-and-drop kitabxanaları üçün əl ilə `mouse.down`/`move`/`up` ardıcıllığına keç.
 
 ---
 
@@ -474,6 +492,8 @@ const files = await page.locator('input[type="file"]').evaluate(el =>
 );
 expect(files).toContain('test-upload.txt');
 ```
+
+**Yadda saxla:** `setInputFiles()` OS dialoqunu əvəz edir — yol, massiv və ya `{ name, mimeType, buffer }` ötür.
 
 ---
 
@@ -541,6 +561,8 @@ class AdminProductsPage {
 }
 ```
 
+**Yadda saxla:** dialoqu tetikləyən klikdən **əvvəl** `page.on('dialog', …)` qeydiyyatdan keçir.
+
 ---
 
 ## Iframelər
@@ -586,6 +608,27 @@ await frame.evaluate(() => document.title);
 ```
 
 **Cross-origin iframelər:** Playwright bunları şəffaf şəkildə idarə edir. `frameLocator()` iframe-in origin-indən asılı olmayaraq işləyir.
+
+**Yadda saxla:** iframe içindəki elementlər üçün `frameLocator()` istifadə et; onun bütün lokator metodları var, amma `goto()`/`evaluate()` yoxdur (onlar üçün `page.frame()`).
+
+---
+
+## Əməliyyat yaddaş vərəqi
+
+| İstəyirəm ki… | İstifadə et |
+|---|---|
+| Klik / cüt / sağ / force | `.click()` · `.dblclick()` · `.click({ button: 'right' })` · `.click({ force: true })` |
+| Sahəni təmizlə + doldur | `.fill(value)` |
+| Klaviş-klaviş yaz (autocomplete) | `.pressSequentially(value)` |
+| Klaviş / kombinasiya bas | `.press('Enter')` · `page.keyboard.press('Control+A')` |
+| Checkbox işarələ / sil / təyin et | `.check()` · `.uncheck()` · `.setChecked(bool)` |
+| Native `<select>` | `.selectOption(value / label / index)` |
+| Custom dropdown | klik → `waitFor({ state: 'visible' })` → seçimə klik |
+| Hover | `.hover()` |
+| Drag & drop | `.dragTo(target)` (ehtiyat: əl ilə `mouse.*`) |
+| Fayl yüklə | `.setInputFiles(path / massiv / { name, buffer })` |
+| Brauzer dialoqu | tetikdən **əvvəl** `page.on('dialog', …)` |
+| Iframe içində | `page.frameLocator(sel)` |
 
 ---
 

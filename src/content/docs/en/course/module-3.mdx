@@ -56,6 +56,8 @@ await page.locator('#hidden-trigger').click({ force: true });
 
 **Playwright's auto-wait** means: in 95% of real tests, a plain `.click()` is all you need. Save the options for edge cases.
 
+**Remember:** a plain `.click()` auto-waits (visible, enabled, stable); reach for `{ force: true }` / `{ button: 'right' }` only in edge cases.
+
 ---
 
 ## `fill()` vs `pressSequentially()`
@@ -110,6 +112,8 @@ await page.locator('#name').pressSequentially(' new suffix'); // result: "old va
 // fill() ignores whatever was there before:
 await page.locator('#name').fill('fresh value'); // result: "fresh value"
 ```
+
+**Remember:** `fill()` for ~95% of fields (clears + one event); `pressSequentially()` only when each keystroke must fire.
 
 ---
 
@@ -167,6 +171,8 @@ await page.keyboard.up('Shift');
 
 **Accessibility tip:** `Tab` navigation is a powerful tool for testing keyboard accessibility. Navigate through a form without touching the mouse to verify the tab order is logical.
 
+**Remember:** `.press('Enter')` is locator-scoped, `page.keyboard.press(...)` is global; key names are capitalized (`Control`, not `ctrl`).
+
 ---
 
 ## Checkboxes & radio buttons
@@ -209,6 +215,8 @@ await expect(page.getByLabel('Remember me')).toBeChecked();
 // Assert a checkbox is NOT checked
 await expect(page.getByLabel('Newsletter')).not.toBeChecked();
 ```
+
+**Remember:** prefer `.check()`/`.uncheck()` (self-validating) over `.click()`; `.setChecked(bool)` forces a specific state.
 
 ---
 
@@ -258,6 +266,8 @@ await expect(page.locator('#sort')).toHaveValue('price_desc');
 
 **Common mistake:** `selectOption('Electronics')` with a capital E when the value attribute is `'electronics'` (lowercase). Values are case-sensitive.
 
+**Remember:** `selectOption()` is only for real `<select>` elements; match the `value` (case-sensitive), not the visible label.
+
 ---
 
 ## Custom dropdowns
@@ -295,6 +305,8 @@ await option.waitFor({ state: 'visible' });
 await option.click();
 ```
 
+**Remember:** click → `waitFor({ state: 'visible' })` → click the option — never a fixed `waitForTimeout`.
+
 ---
 
 ## Hover & tooltips
@@ -330,6 +342,8 @@ await page.locator('#info-icon').hover();
 await page.locator('.tooltip').waitFor({ state: 'visible' });
 await expect(page.locator('.tooltip')).toContainText('Additional info');
 ```
+
+**Remember:** `.hover()`, then `waitFor`/assert the revealed element is visible before acting on it.
 
 ---
 
@@ -374,6 +388,8 @@ while (!(await page.locator('.calendar-header').textContent()).includes(target))
 }
 await page.locator('.calendar-day:has-text("15")').click();
 ```
+
+**Remember:** native `<input type="date">` → `fill('YYYY-MM-DD')`; custom widgets → click through the calendar UI.
 
 ---
 
@@ -422,6 +438,8 @@ await page.locator('#drag-item').dragTo(page.locator('#drop-zone'), {
 ```
 
 **When `dragTo()` fails:** Check the browser console for errors. If the DnD library uses synthetic events, switch to Method 2.
+
+**Remember:** try `dragTo()` first; fall back to the manual `mouse.down`/`move`/`up` sequence for custom drag-and-drop libraries.
 
 ---
 
@@ -474,6 +492,8 @@ const files = await page.locator('input[type="file"]').evaluate(el =>
 );
 expect(files).toContain('test-upload.txt');
 ```
+
+**Remember:** `setInputFiles()` replaces the OS dialog — pass a path, an array, or `{ name, mimeType, buffer }`.
 
 ---
 
@@ -541,6 +561,8 @@ class AdminProductsPage {
 }
 ```
 
+**Remember:** register `page.on('dialog', …)` **before** the click that triggers the dialog.
+
 ---
 
 ## Iframes
@@ -586,6 +608,27 @@ await frame.evaluate(() => document.title);
 ```
 
 **Cross-origin iframes:** Playwright handles these transparently. `frameLocator()` works regardless of the iframe's origin.
+
+**Remember:** use `frameLocator()` for elements inside an iframe; it has all the locator methods but not `goto()`/`evaluate()` (use `page.frame()` for those).
+
+---
+
+## Action cheat-sheet
+
+| I want to… | Use |
+|---|---|
+| Click / double / right / force | `.click()` · `.dblclick()` · `.click({ button: 'right' })` · `.click({ force: true })` |
+| Clear + set a field | `.fill(value)` |
+| Type key by key (autocomplete) | `.pressSequentially(value)` |
+| Press a key / combo | `.press('Enter')` · `page.keyboard.press('Control+A')` |
+| Check / uncheck / set a box | `.check()` · `.uncheck()` · `.setChecked(bool)` |
+| Native `<select>` | `.selectOption(value / label / index)` |
+| Custom dropdown | click → `waitFor({ state: 'visible' })` → click option |
+| Hover | `.hover()` |
+| Drag & drop | `.dragTo(target)` (fallback: manual `mouse.*`) |
+| Upload a file | `.setInputFiles(path / array / { name, buffer })` |
+| Browser dialog | `page.on('dialog', …)` **before** the trigger |
+| Inside an iframe | `page.frameLocator(sel)` |
 
 ---
 
