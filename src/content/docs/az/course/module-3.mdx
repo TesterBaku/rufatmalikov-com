@@ -226,7 +226,7 @@ await page.locator('#sort').selectOption({ index: 2 });
 await page.locator('#tags').selectOption(['javascript', 'testing', 'playwright']);
 ```
 
-**Capstone tətbiqi nümunəsi — məhsulları filtrləyin:**
+**TestMarket nümunəsi — məhsulları filtrləyin:**
 
 ```javascript
 await page.goto('/products');
@@ -240,6 +240,10 @@ await page.locator('#sort').selectOption('price_desc');
 // Filtrləri tətbiq edin
 await page.locator('button:has-text("Apply Filters")').click();
 ```
+
+:::note[`:has-text()` nədir?]
+`:has-text("…")` — Playwright-in CSS genişlənməsidir, elementi içindəki mətnə görə uyğunlaşdırır. `getByRole('button', { name: 'Apply Filters' })` adətən daha təmizdir; `:has-text()` əlverişli ehtiyat variantdır.
+:::
 
 **Hazırkı seçimi doğrulayın:**
 
@@ -276,13 +280,15 @@ await expect(page.locator('.dropdown-menu')).toBeHidden();
 
 **Custom dropdown-ları debug etmək:**
 
-- Menyu animasiya ilə açılır? Tetikleyici click-dən sonra `await page.waitForTimeout(300)` əlavə edin
-- Seçenek viewport xaricindədir? Click-dən əvvəl scroll edin
-- Click etmədən əvvəl menyu bağlanır? Seçenekdə `{ force: true }` istifadə edin
+- Menyu animasiya ilə açılır? Onu düzgün gözlə: `await page.locator('.dropdown-menu').waitFor({ state: 'visible' })` — heç vaxt sabit `waitForTimeout` yox (yavaş və qeyri-sabitdir).
+- Seçim viewport xaricindədir? Click-dən əvvəl scroll edin.
+- Click etmədən əvvəl menyu bağlanır? Adətən vaxt problemidir — əvvəlcə seçimin görünməsini gözlə; `{ force: true }` Playwright-in təhlükəsizlik yoxlamalarını keçən son çarədir.
 
 ```javascript
-// Click-away davranışı müdaxilə etdikdə seçeneyi force click edin
-await page.locator('.dropdown-option:has-text("Option Name")').click({ force: true });
+// Seçimi gözlə, sonra click et — animasiyaya qarşı dayanıqlı
+const option = page.locator('.dropdown-option:has-text("Option Name")');
+await option.waitFor({ state: 'visible' });
+await option.click();
 ```
 
 ---
@@ -633,42 +639,51 @@ test.describe('Login form actions', () => {
 
 ### Tapşırıq 2: Checkout forması — doldur və göndər
 
-`tests/starter/tests/actions/checkout-actions.spec.js` yaradın. `beforeEach` daxil olur, səbətə məhsul əlavə edir və `/checkout`-a keçir.
+`tests/starter/tests/actions/checkout-actions.spec.js` yaradın. `beforeEach` daxil olur, səbətə məhsul əlavə edir və checkout səhifəsini açır:
 
 ```javascript
-test('bütün çatdırılma sahələrini doldurun və sifariş verin', async ({ page }) => {
-  const checkoutPage = new CheckoutPage(page);
-  await checkoutPage.fillShippingDetails({
-    name: 'Jane Doe',
-    address: '123 Main Street',
-    city: 'Portland',
-    zip: '97201',
+const { test, expect } = require('@playwright/test');
+
+test.describe('Checkout əməliyyatları', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('customer@test.io');
+    await page.locator('#password').fill('customer123');
+    await page.locator('#login-btn').click();
+
+    await page.goto('/products');
+    await page.locator('[data-testid="add-to-cart"]').first().click();
+    await page.goto('/checkout');
   });
-  await checkoutPage.placeOrder();
-  await expect(page).toHaveURL(/\/orders\/\d+/);
-  await expect(page.locator('h1')).toContainText('Order');
-});
 
-test('sahələri Tab-la keçin və type() ilə dəyər daxil edin', async ({ page }) => {
-  await page.locator('#shipping_name').type('John Smith', { delay: 20 });
-  await page.locator('#shipping_name').press('Tab');
-  await page.locator('#shipping_address').type('456 Oak Ave', { delay: 20 });
-  await page.locator('#shipping_address').press('Tab');
-  await page.locator('#shipping_city').type('Seattle', { delay: 20 });
-  await page.locator('#shipping_city').press('Tab');
-  await page.locator('#shipping_zip').type('98101', { delay: 20 });
-  await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/orders\/\d+/);
-});
+  test('bütün çatdırılma sahələrini doldurun və sifariş verin', async ({ page }) => {
+    await page.locator('#shipping_name').fill('Jane Doe');
+    await page.locator('#shipping_address').fill('123 Main Street');
+    await page.locator('#shipping_city').fill('Portland');
+    await page.locator('#shipping_zip').fill('97201');
+    await page.locator('#place-order').click();
+    await expect(page).toHaveURL(/\/orders\/\d+/);
+    await expect(page.locator('h1')).toContainText('Order');
+  });
 
-test('boş formu göndərin — HTML5 validasiyası bloklayır', async ({ page }) => {
-  const checkoutPage = new CheckoutPage(page);
-  await checkoutPage.submitEmptyForm();
-  await expect(page).toHaveURL('/checkout');
+  test('sahələri Tab-la keçin, hər dəyəri yazın', async ({ page }) => {
+    await page.locator('#shipping_name').pressSequentially('John Smith', { delay: 20 });
+    await page.locator('#shipping_name').press('Tab');
+    await page.locator('#shipping_address').pressSequentially('456 Oak Ave', { delay: 20 });
+    await page.locator('#shipping_address').press('Tab');
+    await page.locator('#shipping_city').pressSequentially('Seattle', { delay: 20 });
+    await page.locator('#shipping_city').press('Tab');
+    await page.locator('#shipping_zip').pressSequentially('98101', { delay: 20 });
+    await page.locator('#place-order').click();
+    await expect(page).toHaveURL(/\/orders\/\d+/);
+  });
+
+  test('boş formu göndərin — HTML5 validasiyası bloklayır', async ({ page }) => {
+    await page.locator('#place-order').click();
+    await expect(page).toHaveURL('/checkout');   // tələb olunan sahələr göndərməni bloklayır
+  });
 });
 ```
-
-**İstinad:** `tests/final/pages/CheckoutPage.js`
 
 ---
 
@@ -763,7 +778,7 @@ test('path vasitəsilə fayl yükləyin', async ({ page }) => {
   const testFile = path.join(tmpDir, 'test-upload.txt');
   fs.writeFileSync(testFile, 'Playwright-dən salam!');
 
-  // Fayl daxiletməsini inject edin (capstone register səhifəsindəki yoxdur)
+  // Fayl daxiletməsini inject edin (TestMarket register səhifəsindəki yoxdur)
   await page.evaluate(() => {
     const input = document.createElement('input');
     input.type = 'file';
