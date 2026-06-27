@@ -267,6 +267,18 @@ Brauzer açılır; sən klik etdikcə və yazdıqca Playwright uyğun lokatorlar
 
 Zəncirlər DOM ağacını dəqiqliklə keçməyə imkan verir. Geniş başlayın — konteyner tapın — sonra uşaq elementlərə enin.
 
+Ən sadə zəncir iki addımdır — **konteyner → uşaq**:
+
+```javascript
+// 1. Məhsul kartını tap (konteyner)
+const card = page.locator('.product-card').first();
+
+// 2. Həmin kartın içindəki düyməni tap (uşaq)
+await card.getByRole('button', { name: 'Add to Cart' }).click();
+```
+
+Hər addım axtarışı əvvəlki nəticənin *içinə* daraldır. Buradan başlayaraq qur — admin məhsullar cədvəlində daha dolğun nümunə:
+
 ```javascript
 // Admin məhsullar cədvəlini tapın, sonra bütün sıraları tapın
 const rows = page.locator('table tbody tr.table-row');
