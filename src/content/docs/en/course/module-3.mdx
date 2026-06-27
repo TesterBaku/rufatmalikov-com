@@ -226,7 +226,7 @@ await page.locator('#sort').selectOption({ index: 2 });
 await page.locator('#tags').selectOption(['javascript', 'testing', 'playwright']);
 ```
 
-**Capstone app example — filter products:**
+**TestMarket example — filter products:**
 
 ```javascript
 await page.goto('/products');
@@ -240,6 +240,10 @@ await page.locator('#sort').selectOption('price_desc');
 // Apply the filters
 await page.locator('button:has-text("Apply Filters")').click();
 ```
+
+:::note[What is `:has-text()`?]
+`:has-text("…")` is Playwright's CSS extension for matching an element by the text inside it. `getByRole('button', { name: 'Apply Filters' })` is usually cleaner; `:has-text()` is a handy fallback.
+:::
 
 **Assert the current selection:**
 
@@ -276,13 +280,15 @@ await expect(page.locator('.dropdown-menu')).toBeHidden();
 
 **Debugging custom dropdowns:**
 
-- Menu animating? Add `await page.waitForTimeout(300)` after the trigger click
-- Option outside the viewport? Scroll before clicking
-- Menu closing before you can click? Try `{ force: true }` on the option click
+- Menu animating in? Wait for it properly with `await page.locator('.dropdown-menu').waitFor({ state: 'visible' })` — never a fixed `waitForTimeout`, which is slow and flaky.
+- Option outside the viewport? Scroll before clicking.
+- Menu closing before you can click? Usually a timing issue — wait for the option to be visible first; `{ force: true }` is a last resort that bypasses Playwright's safety checks.
 
 ```javascript
-// Force click the option when click-away behavior interferes
-await page.locator('.dropdown-option:has-text("Option Name")').click({ force: true });
+// Wait for the option, then click — robust against animation
+const option = page.locator('.dropdown-option:has-text("Option Name")');
+await option.waitFor({ state: 'visible' });
+await option.click();
 ```
 
 ---
@@ -633,42 +639,51 @@ test.describe('Login form actions', () => {
 
 ### Exercise 2: Checkout form — fill & submit
 
-Create `tests/starter/tests/actions/checkout-actions.spec.js`. The `beforeEach` logs in, adds a product to the cart, and navigates to `/checkout`.
+Create `tests/starter/tests/actions/checkout-actions.spec.js`. A `beforeEach` logs in, adds a product to the cart, then opens the checkout page:
 
 ```javascript
-test('fill all shipping fields and place order', async ({ page }) => {
-  const checkoutPage = new CheckoutPage(page);
-  await checkoutPage.fillShippingDetails({
-    name: 'Jane Doe',
-    address: '123 Main Street',
-    city: 'Portland',
-    zip: '97201',
+const { test, expect } = require('@playwright/test');
+
+test.describe('Checkout actions', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('customer@test.io');
+    await page.locator('#password').fill('customer123');
+    await page.locator('#login-btn').click();
+
+    await page.goto('/products');
+    await page.locator('[data-testid="add-to-cart"]').first().click();
+    await page.goto('/checkout');
   });
-  await checkoutPage.placeOrder();
-  await expect(page).toHaveURL(/\/orders\/\d+/);
-  await expect(page.locator('h1')).toContainText('Order');
-});
 
-test('Tab through fields and type values', async ({ page }) => {
-  await page.locator('#shipping_name').type('John Smith', { delay: 20 });
-  await page.locator('#shipping_name').press('Tab');
-  await page.locator('#shipping_address').type('456 Oak Ave', { delay: 20 });
-  await page.locator('#shipping_address').press('Tab');
-  await page.locator('#shipping_city').type('Seattle', { delay: 20 });
-  await page.locator('#shipping_city').press('Tab');
-  await page.locator('#shipping_zip').type('98101', { delay: 20 });
-  await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/orders\/\d+/);
-});
+  test('fill all shipping fields and place order', async ({ page }) => {
+    await page.locator('#shipping_name').fill('Jane Doe');
+    await page.locator('#shipping_address').fill('123 Main Street');
+    await page.locator('#shipping_city').fill('Portland');
+    await page.locator('#shipping_zip').fill('97201');
+    await page.locator('#place-order').click();
+    await expect(page).toHaveURL(/\/orders\/\d+/);
+    await expect(page.locator('h1')).toContainText('Order');
+  });
 
-test('submit empty form — HTML5 validation blocks', async ({ page }) => {
-  const checkoutPage = new CheckoutPage(page);
-  await checkoutPage.submitEmptyForm();
-  await expect(page).toHaveURL('/checkout');
+  test('Tab through the fields, typing each value', async ({ page }) => {
+    await page.locator('#shipping_name').pressSequentially('John Smith', { delay: 20 });
+    await page.locator('#shipping_name').press('Tab');
+    await page.locator('#shipping_address').pressSequentially('456 Oak Ave', { delay: 20 });
+    await page.locator('#shipping_address').press('Tab');
+    await page.locator('#shipping_city').pressSequentially('Seattle', { delay: 20 });
+    await page.locator('#shipping_city').press('Tab');
+    await page.locator('#shipping_zip').pressSequentially('98101', { delay: 20 });
+    await page.locator('#place-order').click();
+    await expect(page).toHaveURL(/\/orders\/\d+/);
+  });
+
+  test('submit empty form — HTML5 validation blocks', async ({ page }) => {
+    await page.locator('#place-order').click();
+    await expect(page).toHaveURL('/checkout');   // required fields block submission
+  });
 });
 ```
-
-**Reference:** `tests/final/pages/CheckoutPage.js`
 
 ---
 
@@ -763,7 +778,7 @@ test('upload a file via path', async ({ page }) => {
   const testFile = path.join(tmpDir, 'test-upload.txt');
   fs.writeFileSync(testFile, 'Hello from Playwright!');
 
-  // Inject a file input (the capstone register page has none)
+  // Inject a file input (the TestMarket register page has none)
   await page.evaluate(() => {
     const input = document.createElement('input');
     input.type = 'file';
