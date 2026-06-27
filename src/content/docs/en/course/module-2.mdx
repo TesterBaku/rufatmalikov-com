@@ -267,6 +267,18 @@ Start with **codegen** while you're learning — it turns "which locator?" into 
 
 Chaining lets you navigate the DOM tree with precision. Start broad — find the container — then drill into child elements.
 
+The simplest chain is two steps — **container → child**:
+
+```javascript
+// 1. Find the product card (the container)
+const card = page.locator('.product-card').first();
+
+// 2. Find the button inside that card (the child)
+await card.getByRole('button', { name: 'Add to Cart' }).click();
+```
+
+Each step narrows the search to *inside* the previous result. Build up from there — here's a fuller example on the admin products table:
+
 ```javascript
 // Find the admin products table, then all rows
 const rows = page.locator('table tbody tr.table-row');
