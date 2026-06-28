@@ -258,22 +258,25 @@ await expect(page.locator('button[type="submit"]')).toBeEnabled();
 await expect(page.locator('button[type="submit"]')).toBeDisabled();
 ```
 
-**Real forma validasiya şablonu:**
+**Şablon — yalnız forma düzgün olduqda aktivləşən düymə:**
+
+Bəzi tətbiqlər bütün məcburi sahələr doldurulana qədər göndər düyməsini deaktiv saxlayır. Bu assertion-lar avtomatik yenidən cəhd etdiyi üçün keçidi manual gözləmə olmadan iddia edə bilərsiniz:
 
 ```javascript
-// Düymə deaktiv başlayır
-await page.goto('/checkout');
-await expect(page.locator('#place-order-btn')).toBeDisabled();
+// Forma düzgün olana qədər düyməsini deaktiv saxlayan signup formasında
+await expect(page.locator('#signup-btn')).toBeDisabled();
 
-// Məcburi sahələri doldurun
-await page.locator('#shipping_name').fill('Jane Doe');
-await page.locator('#shipping_address').fill('123 Main St');
-await page.locator('#shipping_city').fill('Portland');
-await page.locator('#shipping_zip').fill('97201');
+await page.getByLabel('Email').fill('new@user.io');
+await page.getByLabel('Password').fill('secret123');
+await page.getByLabel('Confirm Password').fill('secret123');
 
-// Playwright düymə aktiv hala gələnə qədər yenidən cəhd edir
-await expect(page.locator('#place-order-btn')).toBeEnabled();
+// Playwright düymə aktivə keçənə qədər yenidən cəhd edir
+await expect(page.locator('#signup-btn')).toBeEnabled();
 ```
+
+:::note[TestMarket fərqli validasiya edir]
+Hər tətbiq düyməni deaktiv etmir. TestMarket-in ödənişi **Place Order**-ı həmişə kliklənə bilən saxlayır və boş göndərməni bloklamaq üçün HTML5 `required` istifadə edir — orada `toBeDisabled` deyil, bloklanmış naviqasiyanı (`toHaveURL(/\/checkout/)`) iddia edərsiniz, Tapşırıq 2-də olduğu kimi. `toBeDisabled`/`toBeEnabled`-ə yalnız tətbiq həqiqətən vəziyyəti dəyişdirdikdə müraciət edin.
+:::
 
 **`toBeEnabled` vs `not.toBeDisabled`:** Ekvivalentdirlər. Test ssenarinizdə daha natural oxunanı seçin.
 
@@ -353,18 +356,14 @@ await expect.soft(page.locator('.widget-products')).toBeVisible();
 
 ```javascript
 test('admin panel smoke testi', async ({ page }) => {
+  // (admin kimi daxil olunub)
   await page.goto('/admin');
 
-  // Bütün stat kartlarını yoxlayın — bütün çatışmayanları bir anda bildirin
-  await expect.soft(page.locator('[data-testid="stat-orders"]')).toBeVisible();
-  await expect.soft(page.locator('[data-testid="stat-revenue"]')).toBeVisible();
-  await expect.soft(page.locator('[data-testid="stat-users"]')).toBeVisible();
-  await expect.soft(page.locator('[data-testid="stat-products"]')).toBeVisible();
-
-  // Naviqasiya keçidlərini yoxlayın
-  await expect.soft(page.getByRole('link', { name: 'Products' })).toBeVisible();
-  await expect.soft(page.getByRole('link', { name: 'Orders' })).toBeVisible();
-  await expect.soft(page.getByRole('link', { name: 'Users' })).toBeVisible();
+  // Hər stat kartını yoxlayın — bütün çatışmayanları bir anda bildirin
+  await expect.soft(page.getByRole('heading', { name: 'Total Products' })).toBeVisible();
+  await expect.soft(page.getByRole('heading', { name: 'Total Users' })).toBeVisible();
+  await expect.soft(page.getByRole('heading', { name: 'Total Orders' })).toBeVisible();
+  await expect.soft(page.getByRole('heading', { name: 'Recent Orders' })).toBeVisible();
 
   // İsteğe bağlı: soft uğursuzluqların toplanmadığını iddia edin
   expect(test.info().errors).toHaveLength(0);
