@@ -250,11 +250,11 @@ await page.locator('#category').selectOption('electronics');
 await page.locator('#sort').selectOption('price_desc');
 
 // Apply the filters
-await page.locator('button:has-text("Apply Filters")').click();
+await page.getByRole('button', { name: 'Apply Filters' }).click();
 ```
 
-:::note[What is `:has-text()`?]
-`:has-text("…")` is Playwright's CSS extension for matching an element by the text inside it. `getByRole('button', { name: 'Apply Filters' })` is usually cleaner; `:has-text()` is a handy fallback.
+:::tip[TestMarket ships test IDs]
+This app adds `data-testid` attributes for testing — e.g. `category-filter`, `sort-select`, `apply-filters`, `add-to-cart`. When a role or label is ambiguous (several "Submit" buttons, repeated labels), `page.getByTestId('apply-filters')` is the most robust locator of all. Reach for whichever reads clearest: role and label for human-meaningful elements, an `id` or class for stable hooks, a test ID when you need an unambiguous handle.
 :::
 
 **Assert the current selection:**
@@ -291,6 +291,10 @@ await page.locator('.dropdown-option:has-text("Option Name")').click();
 // Step 4 (optional): verify the menu is now closed
 await expect(page.locator('.dropdown-menu')).toBeHidden();
 ```
+
+:::note[What is `:has-text()`?]
+`:has-text("…")` is Playwright's CSS extension for matching an element by the text inside it — handy for custom widgets like this dropdown, whose options carry no `data-testid` or ARIA role. When an element *does* have a role or testid, prefer `getByRole()` / `getByTestId()`.
+:::
 
 **Debugging custom dropdowns:**
 
@@ -655,7 +659,7 @@ test.describe('Login form actions', () => {
     await page.goto('/auth/login');
     await page.locator('#email').fill('customer@test.io');
     await page.locator('#password').fill('customer123');
-    await page.locator('button[type="submit"]').click();
+    await page.getByRole('button', { name: 'Log In' }).click();
     await expect(page.locator('.alert.alert-success')).toBeVisible();
   });
 
@@ -663,7 +667,7 @@ test.describe('Login form actions', () => {
     await page.goto('/auth/login');
     await page.locator('#email').pressSequentially('customer@test.io', { delay: 30 });
     await page.locator('#password').pressSequentially('customer123', { delay: 30 });
-    await page.locator('button[type="submit"]').click();
+    await page.getByRole('button', { name: 'Log In' }).click();
     await expect(page.locator('.alert.alert-success')).toBeVisible();
   });
 
@@ -742,14 +746,14 @@ Create `tests/starter/tests/actions/product-filter-actions.spec.js`:
 test('filter by category using selectOption', async ({ page }) => {
   await page.goto('/products');
   await page.locator('#category').selectOption('electronics');
-  await page.locator('button:has-text("Apply Filters")').click();
+  await page.getByRole('button', { name: 'Apply Filters' }).click();
   expect(await page.locator('.product-card').count()).toBeGreaterThan(0);
 });
 
 test('select by visible label', async ({ page }) => {
   await page.goto('/products');
   await page.locator('#category').selectOption({ label: 'Electronics' });
-  await page.locator('button:has-text("Apply Filters")').click();
+  await page.getByRole('button', { name: 'Apply Filters' }).click();
   expect(await page.locator('.product-card').count()).toBeGreaterThan(0);
 });
 
@@ -758,7 +762,7 @@ test('combine search + filter + sort', async ({ page }) => {
   await page.locator('#search').fill('Wireless');
   await page.locator('#category').selectOption('electronics');
   await page.locator('#sort').selectOption('price_asc');
-  await page.locator('button:has-text("Apply Filters")').click();
+  await page.getByRole('button', { name: 'Apply Filters' }).click();
   await expect(page.locator('.product-card, p:has-text("No products found")'))
     .toBeVisible();
 });
