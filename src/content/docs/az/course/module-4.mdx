@@ -624,6 +624,46 @@ test('etibarlı axtarış testi', async ({ page }) => {
 
 ---
 
+### Tapşırıq 5: Soft assertion-lar — bütün vidgetləri bir anda yoxlayın
+
+`tests/starter/mod4/soft-assertions.spec.js` yaradın. Bu tamamilə öz-özünə yetərlidir — `page.evaluate` ilə mock panel inject edir, ona görə istənilən səhifədə işləyir.
+
+```javascript
+import { test, expect } from '@playwright/test';
+
+test('soft assertion-larla panel smoke yoxlaması', async ({ page }) => {
+  await page.goto('/products');
+
+  // Dörd stat vidgeti olan mock panel inject edin
+  await page.evaluate(() => {
+    const panel = document.createElement('div');
+    panel.id = 'dashboard';
+    panel.innerHTML = `
+      <div data-testid="widget-revenue">Revenue: $12,400</div>
+      <div data-testid="widget-orders">Orders: 87</div>
+      <div data-testid="widget-users">Users: 1,203</div>
+      <div data-testid="widget-products">Products: 56</div>`;
+    document.body.appendChild(panel);
+  });
+
+  // Soft assertion-lar: əvvəlki biri uğursuz olsa belə hər vidget yoxlanılır,
+  // və bütün uğursuzluqlar testin sonunda birlikdə bildirilir.
+  await expect.soft(page.getByTestId('widget-revenue')).toBeVisible();
+  await expect.soft(page.getByTestId('widget-orders')).toBeVisible();
+  await expect.soft(page.getByTestId('widget-users')).toBeVisible();
+  await expect.soft(page.getByTestId('widget-products')).toBeVisible();
+
+  // İsteğe bağlı qapı: hər hansı soft assertion uğursuz olubsa testi uğursuz et
+  expect(test.info().errors).toHaveLength(0);
+});
+```
+
+**Tapşırıqlar:**
+- İnject edilmiş HTML-dən `widget-users` sətrini silin (assertion-ını saxlayın) və yenidən işlədin — test yenə hər dörd vidgeti yoxlayır, sonra bir uğursuzluğu *sonda* bildirir, ona toxunub dayanmır.
+- Hər dörd `expect.soft`-u sadə `expect`-ə dəyişin, vidget hələ də çatışmırkən — indi test ilk uğursuzluqda dayanır və qalanını heç vaxt yoxlamır. Bu fərq soft assertion-ların bütün məğzidir.
+
+---
+
 ## Özünü yoxlama sualları
 
 1. Nə üçün `expect(locator).toBeVisible()` avtomatik yenidən cəhd edir, amma `expect(await locator.isVisible()).toBe(true)` etmir?
