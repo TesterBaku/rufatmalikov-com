@@ -54,6 +54,10 @@ Bypasses Playwright's actionability checks. Use sparingly — only when you know
 await page.locator('#hidden-trigger').click({ force: true });
 ```
 
+:::caution[`force: true` can hide real bugs]
+Skipping the actionability checks means a genuinely broken UI — an element behind a modal, disabled, or off-screen — won't fail your test; it silently passes a click a real user could never make. Use it only once you've confirmed the block is a Playwright quirk, not an actual defect.
+:::
+
 **Playwright's auto-wait** means: in 95% of real tests, a plain `.click()` is all you need. Save the options for edge cases.
 
 **Remember:** a plain `.click()` auto-waits (visible, enabled, stable); reach for `{ force: true }` / `{ button: 'right' }` only in edge cases.
@@ -385,9 +389,13 @@ await expect(page.locator('#start-date')).toHaveValue('2025-06-15');
 **For navigating multiple months programmatically:**
 
 ```javascript
-// Navigate forward until we reach the target month/year heading
+// Navigate forward until we reach the target month/year heading.
+// Cap the loop so a wrong target can never spin forever, and
+// null-guard textContent() (it can return null).
 const target = 'June 2025';
-while (!(await page.locator('.calendar-header').textContent()).includes(target)) {
+for (let i = 0; i < 24; i++) {
+  const heading = await page.locator('.calendar-header').textContent();
+  if (heading?.includes(target)) break;
   await page.locator('button[aria-label="Next month"]').click();
 }
 await page.locator('.calendar-day:has-text("15")').click();
@@ -475,12 +483,16 @@ await page.locator('input[type="file"]').setInputFiles([]);
 **Portable paths** — use `path.join` so tests work on any OS:
 
 ```javascript
-const path = require('path');
+import path from 'node:path';
 
 await page.locator('input[type="file"]').setInputFiles(
-  path.join(__dirname, '..', 'fixtures', 'test-upload.txt')
+  path.join(import.meta.dirname, '..', 'fixtures', 'test-upload.txt')
 );
 ```
+
+:::note[The Node.js bits]
+`path.join(...)` builds an OS-correct path (Windows `\` vs macOS/Linux `/`). `import.meta.dirname` is the folder of the current test file — the ESM replacement for the old CommonJS `__dirname`. `Buffer.from(...)` makes in-memory file bytes, so you can upload without a file on disk (`Buffer` is a Node global — no import needed).
+:::
 
 **Hidden file input:** If the `<input type="file">` is styled with `display: none` or `opacity: 0`, use `{ force: true }`:
 
@@ -651,7 +663,7 @@ These exercises use TestMarket Lab running locally at `http://localhost:3000`.
 Create `tests/starter/tests/actions/login-actions.spec.js`:
 
 ```javascript
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test.describe('Login form actions', () => {
 
@@ -693,7 +705,7 @@ test.describe('Login form actions', () => {
 Create `tests/starter/tests/actions/checkout-actions.spec.js`. A `beforeEach` logs in, adds a product to the cart, then opens the checkout page:
 
 ```javascript
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test.describe('Checkout actions', () => {
   test.beforeEach(async ({ page }) => {
@@ -817,14 +829,14 @@ test('backspace deletes characters', async ({ page }) => {
 Create `tests/starter/tests/actions/file-upload-actions.spec.js`:
 
 ```javascript
-const { test, expect } = require('@playwright/test');
-const path = require('path');
-const fs = require('fs');
+import { test, expect } from '@playwright/test';
+import path from 'node:path';
+import fs from 'node:fs';
 
 test('upload a file via path', async ({ page }) => {
   await page.goto('/auth/register');
 
-  const tmpDir = path.join(__dirname, '..', '..', 'tmp');
+  const tmpDir = path.join(import.meta.dirname, '..', '..', 'tmp');
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
   const testFile = path.join(tmpDir, 'test-upload.txt');
   fs.writeFileSync(testFile, 'Hello from Playwright!');
@@ -882,7 +894,7 @@ test('upload from Buffer — no file on disk', async ({ page }) => {
 Create `tests/starter/tests/actions/dialog-actions.spec.js`. The page is injected with a button that fires native `confirm()` / `prompt()` dialogs, so the exercise runs against any page:
 
 ```javascript
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test.describe('Dialog handling', () => {
 
@@ -963,7 +975,7 @@ test.describe('Dialog handling', () => {
 Create `tests/starter/tests/actions/iframe-actions.spec.js`. A `beforeEach` injects an iframe (a stand-in for a real payment iframe) so you can practice `frameLocator()` against any page:
 
 ```javascript
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test.describe('Iframe interactions', () => {
   test.beforeEach(async ({ page }) => {
