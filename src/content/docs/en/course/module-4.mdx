@@ -624,6 +624,46 @@ test('reliable search test', async ({ page }) => {
 
 ---
 
+### Exercise 5: Soft assertions — check every widget at once
+
+Create `tests/starter/mod4/soft-assertions.spec.js`. This one is fully self-contained — it injects a mock dashboard with `page.evaluate`, so it runs against any page.
+
+```javascript
+import { test, expect } from '@playwright/test';
+
+test('a dashboard smoke check with soft assertions', async ({ page }) => {
+  await page.goto('/products');
+
+  // Inject a mock dashboard with four stat widgets
+  await page.evaluate(() => {
+    const panel = document.createElement('div');
+    panel.id = 'dashboard';
+    panel.innerHTML = `
+      <div data-testid="widget-revenue">Revenue: $12,400</div>
+      <div data-testid="widget-orders">Orders: 87</div>
+      <div data-testid="widget-users">Users: 1,203</div>
+      <div data-testid="widget-products">Products: 56</div>`;
+    document.body.appendChild(panel);
+  });
+
+  // Soft assertions: every widget is checked even if an earlier one fails,
+  // and all failures are reported together at the end of the test.
+  await expect.soft(page.getByTestId('widget-revenue')).toBeVisible();
+  await expect.soft(page.getByTestId('widget-orders')).toBeVisible();
+  await expect.soft(page.getByTestId('widget-users')).toBeVisible();
+  await expect.soft(page.getByTestId('widget-products')).toBeVisible();
+
+  // Optional gate: fail the test if any soft assertion failed
+  expect(test.info().errors).toHaveLength(0);
+});
+```
+
+**Tasks:**
+- Delete the `widget-users` line from the injected HTML (leave its assertion) and rerun — the test still checks all four widgets, then reports the one failure at the *end* instead of stopping at it.
+- Change all four `expect.soft` to plain `expect`, with a widget still missing — now the test stops at the first failure and never checks the rest. That contrast is the whole point of soft assertions.
+
+---
+
 ## Self-check questions
 
 1. Why does `expect(locator).toBeVisible()` retry automatically, but `expect(await locator.isVisible()).toBe(true)` does not?
