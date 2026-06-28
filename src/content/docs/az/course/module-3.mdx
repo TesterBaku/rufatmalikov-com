@@ -54,6 +54,10 @@ Playwright-in actionability yoxlamalarını atlayır. Ehtiyatla istifadə edin �
 await page.locator('#hidden-trigger').click({ force: true });
 ```
 
+:::caution[`force: true` real baq-ları gizlədə bilər]
+Actionability yoxlamalarını atlamaq o deməkdir ki, həqiqətən sınıq bir UI — modal arxasında, deaktiv və ya ekrandan kənar element — testini uğursuz etməyəcək; real istifadəçinin heç vaxt edə bilməyəcəyi kliki səssizcə keçirir. Onu yalnız blokun real qüsur deyil, Playwright xırdalığı olduğunu təsdiqlədikdən sonra istifadə et.
+:::
+
 **Playwright-in avtomatik gözləməsi** o deməkdir ki: real testlərin 95%-ində sadə `.click()` kifayətdir. Parametrləri kənar hallar üçün saxlayın.
 
 **Yadda saxla:** sadə `.click()` avtomatik gözləyir (görünən, aktiv, sabit); `{ force: true }` / `{ button: 'right' }`-ə yalnız kənar hallarda müraciət et.
@@ -385,9 +389,13 @@ await expect(page.locator('#start-date')).toHaveValue('2025-06-15');
 **Bir neçə ay proqramatik şəkildə keçmək üçün:**
 
 ```javascript
-// Hədəf ay/il başlığına çatana qədər irəli keçin
+// Hədəf ay/il başlığına çatana qədər irəli keçin.
+// Səhv hədəf heç vaxt sonsuz dövr etməsin deyə dövrü məhdudlaşdır,
+// və textContent()-i null-dan qoru (null qaytara bilər).
 const target = 'June 2025';
-while (!(await page.locator('.calendar-header').textContent()).includes(target)) {
+for (let i = 0; i < 24; i++) {
+  const heading = await page.locator('.calendar-header').textContent();
+  if (heading?.includes(target)) break;
   await page.locator('button[aria-label="Next month"]').click();
 }
 await page.locator('.calendar-day:has-text("15")').click();
@@ -475,12 +483,16 @@ await page.locator('input[type="file"]').setInputFiles([]);
 **Portativ path-lər** — istənilən əməliyyat sistemdə işləməsi üçün `path.join` istifadə edin:
 
 ```javascript
-const path = require('path');
+import path from 'node:path';
 
 await page.locator('input[type="file"]').setInputFiles(
-  path.join(__dirname, '..', 'fixtures', 'test-upload.txt')
+  path.join(import.meta.dirname, '..', 'fixtures', 'test-upload.txt')
 );
 ```
+
+:::note[Node.js detalları]
+`path.join(...)` əməliyyat sisteminə uyğun path qurur (Windows `\` vs macOS/Linux `/`). `import.meta.dirname` cari test faylının qovluğudur — köhnə CommonJS `__dirname`-in ESM əvəzedicisi. `Buffer.from(...)` yaddaşda fayl baytları yaradır, beləcə diskdə fayl olmadan yükləyə bilərsən (`Buffer` Node qlobalıdır — import lazım deyil).
+:::
 
 **Gizli fayl daxiletməsi:** `<input type="file">` `display: none` ya da `opacity: 0` ilə stilləndirilibsə, `{ force: true }` istifadə edin:
 
@@ -651,7 +663,7 @@ Bu tapşırıqlar `http://localhost:3000`-də yerli olaraq işləyən TestMarket
 `tests/starter/tests/actions/login-actions.spec.js` yaradın:
 
 ```javascript
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test.describe('Login form actions', () => {
 
@@ -693,7 +705,7 @@ test.describe('Login form actions', () => {
 `tests/starter/tests/actions/checkout-actions.spec.js` yaradın. `beforeEach` daxil olur, səbətə məhsul əlavə edir və checkout səhifəsini açır:
 
 ```javascript
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test.describe('Checkout əməliyyatları', () => {
   test.beforeEach(async ({ page }) => {
@@ -817,14 +829,14 @@ test('Backspace simvolları silir', async ({ page }) => {
 `tests/starter/tests/actions/file-upload-actions.spec.js` yaradın:
 
 ```javascript
-const { test, expect } = require('@playwright/test');
-const path = require('path');
-const fs = require('fs');
+import { test, expect } from '@playwright/test';
+import path from 'node:path';
+import fs from 'node:fs';
 
 test('path vasitəsilə fayl yükləyin', async ({ page }) => {
   await page.goto('/auth/register');
 
-  const tmpDir = path.join(__dirname, '..', '..', 'tmp');
+  const tmpDir = path.join(import.meta.dirname, '..', '..', 'tmp');
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
   const testFile = path.join(tmpDir, 'test-upload.txt');
   fs.writeFileSync(testFile, 'Playwright-dən salam!');
@@ -882,7 +894,7 @@ test('Buffer-dən yükləyin — diskdə fayl lazım deyil', async ({ page }) =>
 `tests/starter/tests/actions/dialog-actions.spec.js` yaradın. Səhifəyə native `confirm()` / `prompt()` dialoqlarını tetikləyən düymə inject olunur, ona görə tapşırıq istənilən səhifədə işləyir:
 
 ```javascript
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test.describe('Dialoq idarəetməsi', () => {
 
@@ -963,7 +975,7 @@ test.describe('Dialoq idarəetməsi', () => {
 `tests/starter/tests/actions/iframe-actions.spec.js` yaradın. `beforeEach` bir iframe inject edir (real ödəniş iframe-inin əvəzedicisi), beləcə `frameLocator()`-i istənilən səhifədə məşq edə bilərsiniz:
 
 ```javascript
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test.describe('Iframe qarşılıqlı təsirləri', () => {
   test.beforeEach(async ({ page }) => {
