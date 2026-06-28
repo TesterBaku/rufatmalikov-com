@@ -36,6 +36,8 @@ expect(visible).toBe(true);
 | `expect(locator).toHaveText('...')` | Yes | Always |
 | `expect(await locator.textContent()).toBe('...')` | No | Never |
 
+**Remember:** pass a `Locator` into `expect()` — it polls and retries; an already-awaited boolean is checked once and can't retry.
+
 ---
 
 ## `toBeVisible`
@@ -68,6 +70,8 @@ await expect(page.locator('[data-testid="lazy-component"]')).toBeAttached();
 // Use toBeVisible when the user must be able to see it
 await expect(page.locator('.notification')).toBeVisible();
 ```
+
+**Remember:** `toBeVisible` = in the DOM *and* on screen; `toBeAttached` = in the DOM even when hidden.
 
 ---
 
@@ -119,6 +123,8 @@ await expect(page).toHaveURL(/\/orders\/\d+/);
 
 **Rule of thumb:** reach for `toContainText` when the exact text includes anything dynamic (IDs, timestamps, usernames). Use `toHaveText` when you own the string entirely.
 
+**Remember:** `toHaveText` = exact (whitespace-normalized), `toContainText` = substring — default to `toContainText` for anything dynamic.
+
 ---
 
 ## `toHaveValue`
@@ -150,6 +156,8 @@ await expect(page.locator('#category')).toHaveValue('electronics');
 ```
 
 **Note:** `toHaveValue` reads the DOM `value` property, not the visible text. For `<select>`, it returns the option's `value` attribute, not its label text.
+
+**Remember:** `toHaveValue` reads a field's DOM `value`; for `<select>` that's the option's `value`, not its label.
 
 ---
 
@@ -190,6 +198,8 @@ await expect(page.locator('#password')).toHaveAttribute('type', 'password');
 await page.locator('#show-password').click();
 await expect(page.locator('#password')).toHaveAttribute('type', 'text');
 ```
+
+**Remember:** `toHaveAttribute(name, value)` checks one attribute — pass a regex for partial matches.
 
 ---
 
@@ -232,6 +242,8 @@ const count = await page.locator('.search-result').count();
 expect(count).toBeGreaterThan(0);
 ```
 
+**Remember:** `toHaveCount(n)` retries until the match count is exactly `n`; `toHaveCount(0)` is the clean way to assert "all gone".
+
 ---
 
 ## `toBeEnabled` and `toBeDisabled`
@@ -270,6 +282,8 @@ await expect(page.locator('#place-order-btn')).toBeEnabled();
 await expect(page.locator('#submit')).toBeEnabled();
 await expect(page.locator('#submit')).not.toBeDisabled();
 ```
+
+**Remember:** `toBeEnabled`/`toBeDisabled` auto-retry, so they wait for a control to flip state; `toBeEnabled` ≡ `not.toBeDisabled`.
 
 ---
 
@@ -311,6 +325,8 @@ test('non-admin is redirected away from admin', async ({ page }) => {
   await expect(page.locator('.alert.alert-error')).toBeVisible();
 });
 ```
+
+**Remember:** `.not` retries too — it waits until the condition becomes false (a spinner disappearing, a field clearing).
 
 ---
 
@@ -357,6 +373,8 @@ test('admin dashboard smoke test', async ({ page }) => {
 
 **Caution:** Soft assertions are powerful but easy to misuse. If a test has 15 soft assertions and 10 fail, the report becomes noisy. Use them deliberately for smoke checks, not as a way to avoid thinking about test structure.
 
+**Remember:** `expect.soft(...)` records the failure and keeps going — for smoke checks, not critical-path flow.
+
 ---
 
 ## Custom `expect` timeouts
@@ -397,6 +415,27 @@ export default defineConfig({
 
 **When NOT to use custom timeouts:** as a band-aid for a slow or flaky app. If you're adding `timeout: 30_000` everywhere, the right fix is to profile the app, not the test.
 
+**Remember:** override with `{ timeout }` per assertion or globally via `expect.timeout` — for genuinely slow operations, not to mask a flaky app.
+
+---
+
+## Assertion cheat-sheet
+
+| I want to assert… | Use |
+|---|---|
+| Element is visible / hidden | `toBeVisible()` · `not.toBeVisible()` |
+| Element is in the DOM (maybe hidden) | `toBeAttached()` |
+| Exact text | `toHaveText('…')` |
+| Substring of the text | `toContainText('…')` |
+| Form-field value | `toHaveValue('…')` |
+| An attribute's value | `toHaveAttribute('name', '…')` |
+| How many elements match | `toHaveCount(n)` (incl. `0`) |
+| Control is interactive | `toBeEnabled()` · `toBeDisabled()` |
+| Checkbox / radio state | `toBeChecked()` *(see Module 3)* |
+| Current page URL | `toHaveURL('…' or /regex/)` |
+| Collect every failure on a page | `expect.soft(…)` |
+| Wait longer for a slow element | `…({ timeout: 10_000 })` |
+
 ---
 
 <Practice missions={['text-vs-contain','have-value','have-attribute','assertions-count','enabled-disabled','negative-assertions']} locale="en" />
@@ -411,92 +450,133 @@ These exercises use TestMarket Lab running locally at `http://localhost:3000`.
 
 ### Exercise 1: Assert cart state
 
-Create `tests/starter/mod4/cart-assertions.spec.js`. Assert every cart state using web-first assertions.
+Create `tests/starter/mod4/cart-assertions.spec.js`. A `beforeEach` logs in; each test then asserts a cart state with web-first assertions.
 
 ```javascript
-const { test, expect } = require('@playwright/test');
-const CartPage = require('../../pages/CartPage');
+import { test, expect } from '@playwright/test';
 
-test.describe('Cart Assertions', () => {
-
-  test('cart with items shows non-zero total', async ({ page }) => {
-    const cart = new CartPage(page);
-    await cart.goto();
-
-    await expect(cart.totalAmount).toBeVisible();
-    await expect(cart.cartRows).not.toHaveCount(0);
-    await expect(cart.checkoutButton).toBeEnabled();
+test.describe('Cart assertions', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('customer@test.io');
+    await page.locator('#password').fill('customer123');
+    await page.getByTestId('login-submit').click();
+    await expect(page.locator('.alert.alert-success')).toBeVisible();
   });
 
-  test('empty cart shows empty state', async ({ page }) => {
-    const cart = new CartPage(page);
-    await cart.goto();
+  test('cart with items shows rows, a total, and a checkout link', async ({ page }) => {
+    await page.goto('/products');
+    await page.getByTestId('add-to-cart').first().click();
+    await page.goto('/cart');
 
-    await expect(cart.emptyCartMessage).toBeVisible();
-    await expect(cart.cartRows).toHaveCount(0);
-    await expect(cart.totalAmount).not.toBeVisible();
+    await expect(page.locator('.cart-table .table-row')).not.toHaveCount(0);
+    await expect(page.locator('.total-row h3')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Proceed to Checkout' })).toBeVisible();
   });
 
+  test('empty cart shows the empty-state message', async ({ page }) => {
+    // A fresh browser context starts with an empty (session-scoped) cart
+    await page.goto('/cart');
+
+    await expect(page.getByText('Your cart is empty')).toBeVisible();
+    await expect(page.locator('.cart-table .table-row')).toHaveCount(0);
+    await expect(page.locator('.total-row h3')).not.toBeVisible();
+  });
 });
 ```
 
-**Reference selectors:**
-- `cartRows` — `.cart-table .table-row`
-- `totalAmount` — `.total-row h3`
-- `emptyCartMessage` — `getByText('Your cart is empty')`
-- `checkoutButton` — `a:has-text("Proceed to Checkout")`
+**Tasks:**
+- In the first test, change `not.toHaveCount(0)` to `toHaveCount(5)` and watch the assertion retry for the full timeout before failing.
+- Delete the `add-to-cart` line — now `not.toHaveCount(0)` fails because the cart is empty.
 
 ---
 
 ### Exercise 2: Checkout confirmation assertions
 
-After placing an order, assert the confirmation URL and page content.
+Create `tests/starter/mod4/checkout-assertions.spec.js`. The `beforeEach` logs in, adds a product, and opens checkout.
 
 ```javascript
-test('order confirmation shows correct URL', async ({ customerPage }) => {
-  // ... (beforeEach adds item to cart and navigates to checkout)
-  await checkoutPage.fillShippingDetails(TestData.shippingDetails());
-  await checkoutPage.placeOrder();
+import { test, expect } from '@playwright/test';
 
-  // Assert dynamic order URL with regex
-  await expect(customerPage).toHaveURL(/\/orders\/\d+/);
+test.describe('Checkout assertions', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('customer@test.io');
+    await page.locator('#password').fill('customer123');
+    await page.getByTestId('login-submit').click();
 
-  // Assert heading contains the word "Order"
-  await expect(customerPage.locator('h1')).toContainText('Order');
+    await page.goto('/products');
+    await page.getByTestId('add-to-cart').first().click();
+    await page.goto('/checkout');
+  });
 
-  // Assert success flash is visible
-  await expect(customerPage.locator('.alert.alert-success')).toBeVisible();
-});
+  test('placing an order lands on the confirmation page', async ({ page }) => {
+    await page.locator('#shipping_name').fill('Jane Doe');
+    await page.locator('#shipping_address').fill('123 Main Street');
+    await page.locator('#shipping_city').fill('Portland');
+    await page.locator('#shipping_zip').fill('97201');
+    await page.getByTestId('place-order').click();
 
-test('empty form stays on checkout page', async ({ customerPage }) => {
-  await checkoutPage.submitEmptyForm();
+    // Dynamic order URL — match with a regex
+    await expect(page).toHaveURL(/\/orders\/\d+/);
+    // The heading reads "Order Confirmation" — substring match
+    await expect(page.locator('h1')).toContainText('Order');
+    await expect(page.locator('.alert.alert-success')).toBeVisible();
+  });
 
-  await expect(customerPage).toHaveURL('/checkout');
-  await expect(customerPage.locator('.alert.alert-error')).toBeVisible();
+  test('empty form is blocked by HTML5 validation', async ({ page }) => {
+    // Required fields stop the submit client-side — the page never navigates
+    await page.getByTestId('place-order').click();
+    await expect(page).toHaveURL(/\/checkout/);
+  });
 });
 ```
+
+**Tasks:**
+- Swap `toContainText('Order')` for `toHaveText('Order')` — the exact match fails (the real text is "Order Confirmation"); switch it back.
+- In the empty-form test, fill only `#shipping_name`, then submit — the next missing required field still blocks navigation.
 
 ---
 
-### Exercise 3: Admin table assertions
+### Exercise 3: Admin assertions — table + access control
+
+Create `tests/starter/mod4/admin-assertions.spec.js`. One test logs in as the admin; the other proves a customer is locked out.
 
 ```javascript
-test('products page shows table rows', async ({ adminPage }) => {
-  const productsPage = new AdminProductsPage(adminPage);
-  await productsPage.goto();
+import { test, expect } from '@playwright/test';
 
-  await expect(productsPage.productRows).not.toHaveCount(0);
-  await expect(productsPage.newProductBtn).toBeVisible();
-  await expect(adminPage.locator('.alert.alert-success')).not.toBeVisible();
-});
+test.describe('Admin assertions', () => {
 
-test('non-admin cannot access admin area', async ({ customerPage }) => {
-  await customerPage.goto('/admin');
+  test('admin products page shows rows and a New Product button', async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('admin@test.io');
+    await page.locator('#password').fill('admin123');
+    await page.getByTestId('login-submit').click();
 
-  await expect(customerPage).not.toHaveURL(/\/admin/);
-  await expect(customerPage.locator('.alert.alert-error')).toBeVisible();
+    await page.goto('/admin/products');
+    await expect(page.locator('.table-row')).not.toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'New Product' })).toBeVisible();
+  });
+
+  test('a customer is redirected away from /admin with an error', async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('customer@test.io');
+    await page.locator('#password').fill('customer123');
+    await page.getByTestId('login-submit').click();
+
+    await page.goto('/admin');
+
+    // Redirected off /admin (the app sends non-admins to the home page)...
+    await expect(page).not.toHaveURL(/\/admin/);
+    // ...and the access-denied flash renders on that destination page
+    await expect(page.locator('.alert.alert-error')).toContainText('Access denied');
+  });
 });
 ```
+
+**Tasks:**
+- In the second test, swap the customer credentials for the admin ones — the redirect assertion now fails because the admin actually reaches `/admin`.
+- Add `await expect(page.locator('.alert.alert-error')).not.toBeVisible();` to the first test to confirm no error shows on a valid admin load.
 
 ---
 
@@ -505,18 +585,20 @@ test('non-admin cannot access admin area', async ({ customerPage }) => {
 Refactor this flaky test — replace every `waitForTimeout` with the correct web-first assertion:
 
 ```javascript
-// BEFORE (flaky)
+// BEFORE (flaky — fixed sleeps everywhere)
+import { test, expect } from '@playwright/test';
+
 test('flaky search test', async ({ page }) => {
   await page.goto('/products');
   await page.waitForTimeout(2000);
-  await page.fill('#search', 'widget');
+  await page.fill('#search', 'Wireless');
   await page.waitForTimeout(1000);
-  await page.click('#search-btn');
+  await page.click('#apply-filters');
   await page.waitForTimeout(3000);
   const count = await page.locator('.product-card').count();
   expect(count).toBeGreaterThan(0);
   await page.waitForTimeout(1000);
-  expect(page.url()).toContain('?q=widget');
+  expect(page.url()).toContain('search=Wireless');
 });
 ```
 
@@ -525,7 +607,21 @@ test('flaky search test', async ({ page }) => {
 | `waitForTimeout(2000)` | Remove — `fill()` already auto-waits |
 | `waitForTimeout(1000)` | Remove — `click()` already auto-waits |
 | `waitForTimeout(3000)` + manual count | `expect(locator).not.toHaveCount(0)` |
-| `waitForTimeout(1000)` + `page.url()` | `expect(page).toHaveURL(/\?q=widget/)` |
+| `waitForTimeout(1000)` + `page.url()` | `expect(page).toHaveURL(/[?&]search=Wireless/)` |
+
+```javascript
+// AFTER (web-first — no fixed sleeps)
+import { test, expect } from '@playwright/test';
+
+test('reliable search test', async ({ page }) => {
+  await page.goto('/products');
+  await page.locator('#search').fill('Wireless');
+  await page.locator('#apply-filters').click();
+
+  await expect(page.locator('.product-card')).not.toHaveCount(0);
+  await expect(page).toHaveURL(/[?&]search=Wireless/);
+});
+```
 
 ---
 
