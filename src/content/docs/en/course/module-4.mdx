@@ -258,22 +258,25 @@ await expect(page.locator('button[type="submit"]')).toBeEnabled();
 await expect(page.locator('button[type="submit"]')).toBeDisabled();
 ```
 
-**Realistic form validation pattern:**
+**Pattern — a button that enables only when the form is valid:**
+
+Some apps keep the submit button disabled until every required field is filled. Because these assertions auto-retry, you can assert the transition without a manual wait:
 
 ```javascript
-// Button starts disabled
-await page.goto('/checkout');
-await expect(page.locator('#place-order-btn')).toBeDisabled();
+// On a signup form that disables its button until the form is valid
+await expect(page.locator('#signup-btn')).toBeDisabled();
 
-// Fill required fields
-await page.locator('#shipping_name').fill('Jane Doe');
-await page.locator('#shipping_address').fill('123 Main St');
-await page.locator('#shipping_city').fill('Portland');
-await page.locator('#shipping_zip').fill('97201');
+await page.getByLabel('Email').fill('new@user.io');
+await page.getByLabel('Password').fill('secret123');
+await page.getByLabel('Confirm Password').fill('secret123');
 
-// Playwright retries until the button becomes enabled
-await expect(page.locator('#place-order-btn')).toBeEnabled();
+// Playwright retries until the button flips to enabled
+await expect(page.locator('#signup-btn')).toBeEnabled();
 ```
+
+:::note[TestMarket validates differently]
+Not every app disables the button. TestMarket's checkout leaves **Place Order** always clickable and uses HTML5 `required` to block an empty submit — there you'd assert the blocked navigation (`toHaveURL(/\/checkout/)`), as Exercise 2 does. Reach for `toBeDisabled`/`toBeEnabled` only when the app actually toggles the state.
+:::
 
 **`toBeEnabled` vs `not.toBeDisabled`:** They are equivalent. Choose whichever reads more naturally for your test scenario.
 
@@ -353,18 +356,14 @@ await expect.soft(page.locator('.widget-products')).toBeVisible();
 
 ```javascript
 test('admin dashboard smoke test', async ({ page }) => {
+  // (logged in as the admin)
   await page.goto('/admin');
 
-  // Check all stat cards — report all missing ones at once
-  await expect.soft(page.locator('[data-testid="stat-orders"]')).toBeVisible();
-  await expect.soft(page.locator('[data-testid="stat-revenue"]')).toBeVisible();
-  await expect.soft(page.locator('[data-testid="stat-users"]')).toBeVisible();
-  await expect.soft(page.locator('[data-testid="stat-products"]')).toBeVisible();
-
-  // Check navigation links
-  await expect.soft(page.getByRole('link', { name: 'Products' })).toBeVisible();
-  await expect.soft(page.getByRole('link', { name: 'Orders' })).toBeVisible();
-  await expect.soft(page.getByRole('link', { name: 'Users' })).toBeVisible();
+  // Check every stat card — report all missing ones at once
+  await expect.soft(page.getByRole('heading', { name: 'Total Products' })).toBeVisible();
+  await expect.soft(page.getByRole('heading', { name: 'Total Users' })).toBeVisible();
+  await expect.soft(page.getByRole('heading', { name: 'Total Orders' })).toBeVisible();
+  await expect.soft(page.getByRole('heading', { name: 'Recent Orders' })).toBeVisible();
 
   // Optional: assert no soft failures accumulated
   expect(test.info().errors).toHaveLength(0);
