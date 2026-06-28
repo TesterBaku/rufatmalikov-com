@@ -47,8 +47,8 @@ export default defineConfig({
 					// Explicit module links (not autogenerate) so the 14 flat module files
 					// can be grouped into collapsible difficulty phases. Phases start
 					// collapsed; Starlight auto-expands the one holding the active page.
-					label: 'Course',
-					translations: { az: 'Kurs' },
+					label: 'Playwright Course',
+					translations: { az: 'Playwright Kursu' },
 					items: [
 						{ label: 'Overview', translations: { az: 'İcmal' }, link: '/course/' },
 						{ label: '0 — Roadmap & setup', translations: { az: '0 — Kurs xəritəsi və quraşdırma' }, link: '/course/module-0/' },
@@ -95,8 +95,8 @@ export default defineConfig({
 					// otherwise render empty; the route middleware (src/starlightRouteData.ts)
 					// prunes empty groups + the AZ-only glossary link so the EN sidebar shows
 					// only the Overview stub.
-					label: 'Python',
-					translations: { az: 'Python Dərsləri' },
+					label: 'Python Course',
+					translations: { az: 'Python Kursu' },
 					items: [
 						{ label: 'Overview', translations: { az: 'Giriş' }, link: '/python/' },
 						{
