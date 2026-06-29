@@ -38,6 +38,8 @@ The core problems with raw tests at scale:
 
 The Page Object Model solves all four.
 
+**Remember:** duplicated selectors are the enemy — one DOM change shouldn't break many files. POM gives each selector exactly one home.
+
 ---
 
 ## The first page object
@@ -89,6 +91,8 @@ test('customer can log in', async ({ page }) => {
 
 The test now says **what** it does, not **how**. `loginPage.login(email, pass)` reads like a sentence.
 
+**Remember:** a page object is a class that owns one page's locators and exposes action methods, so the test reads *what* it does, not *how*.
+
 ---
 
 ## Locators inside page objects
@@ -121,6 +125,8 @@ export class ProductsPage {
 2. Use `readonly` so nothing outside the class can accidentally reassign them.
 3. Prefer stable selectors: `data-testid`, ARIA roles, and IDs over CSS classes that designers change frequently.
 4. Do not create locators inside methods (`page.locator(...)` inside `async someMethod()`). That defeats the purpose.
+
+**Remember:** define locators as `readonly` properties in the constructor — one source of truth per selector, never `page.locator(...)` buried inside a method.
 
 ---
 
@@ -164,6 +170,8 @@ test('search returns matching products', async ({ page }) => {
   expect(names.some(n => n.toLowerCase().includes('mouse'))).toBe(true);
 });
 ```
+
+**Remember:** action methods encapsulate user steps and call the constructor's locators; return a value only when the next step needs it.
 
 ---
 
@@ -212,6 +220,8 @@ test('successful login shows flash message', async ({ page }) => {
 - Tests that fail in the POM produce confusing error messages because the failure appears inside the page object, not inside the test.
 
 The rule: **Page objects perform actions. Tests make assertions.**
+
+**Remember:** page objects perform actions, tests make assertions — never put `expect()` inside a POM.
 
 ---
 
@@ -269,6 +279,8 @@ await checkoutPage.fillShippingDetails({
   zip: '1000',
 });
 ```
+
+**Remember:** pass inputs as parameters (an object when there are many fields) so one method serves every test, instead of hardcoding values.
 
 ---
 
@@ -346,6 +358,8 @@ test('successful login shows flash message', async ({ page }) => {
 });
 ```
 
+**Remember:** lift selectors shared across pages (nav, flash, spinner) into a `BasePage` that every page class extends via `super(page)`.
+
 ---
 
 ## A navigation page
@@ -391,6 +405,8 @@ export class NavPage extends BasePage {
   }
 }
 ```
+
+**Remember:** a `NavPage` wraps the top nav once, so any test can jump to cart/products/logout without repeating link selectors.
 
 ---
 
@@ -460,6 +476,8 @@ test('full checkout flow', async ({ page }) => {
 });
 ```
 
+**Remember:** a `PageManager` builds every page object in one place — `const pm = new PageManager(page)` keeps multi-page tests clean.
+
 ---
 
 ## Test data with faker
@@ -496,6 +514,8 @@ test('checkout with random shipping details', async ({ page }) => {
 
 This ensures tests never inadvertently depend on specific string values and catches edge cases (names with apostrophes, long zip codes, unicode characters in addresses) that fixed strings would miss.
 
+**Remember:** generate variable test data with `@faker-js/faker` so tests don't silently couple to fixed strings — and you catch edge cases for free.
+
 ---
 
 ## Avoiding over-engineering
@@ -513,6 +533,8 @@ POM is a means to an end, not a goal in itself. Common over-engineering traps:
 **Stop before one class per sub-component.** If your `ProductsPage` is growing to 20 methods, split it by feature into `ProductSearchPage` and `ProductDetailPage` — but only when the size actually causes confusion.
 
 A good rule of thumb: if a test reads like a clear sentence without you having to open the page object to understand it, the abstraction level is right.
+
+**Remember:** POM is a means, not a goal — stop abstracting once the test reads like a clear sentence; don't class-ify every tiny component or hide waits inside methods.
 
 ---
 
@@ -566,7 +588,7 @@ Write a test that searches for `'Mouse'` and checks the results contain at least
 
 Create `tests/pages/CartPage.ts`:
 
-- Locators: `cartItems`, `removeButtons`, `checkoutButton`, `emptyCartMessage`.
+- Locators (the cart page has no per-item testids — use these): `cartItems` → `.cart-table .table-row`, `removeButtons` → `.btn-danger`, `checkoutButton` → `a[href="/checkout"]`, `emptyCartMessage` → `page.getByText('Your cart is empty')` (there is **no** `.cart-empty` class).
 - `goto()` → navigates to `/cart`.
 - `getItemCount()` → returns the number of items in the cart.
 - `removeFirstItem()` → clicks the first remove button.

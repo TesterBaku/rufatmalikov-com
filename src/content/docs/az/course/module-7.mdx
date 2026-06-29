@@ -38,6 +38,8 @@ Geniş miqyaslı xam testlərlə əsas problemlər:
 
 Page Object Model hamısını həll edir.
 
+**Yadda saxla:** təkrarlanan selektorlar düşməndir — bir DOM dəyişikliyi çoxlu faylı sındırmamalıdır. POM hər selektora tək bir ev verir.
+
 ---
 
 ## İlk page object
@@ -87,7 +89,9 @@ test('müştəri daxil ola bilər', async ({ page }) => {
 });
 ```
 
-Test indi **nə** etdiyini deyir, **necə** yox. `loginPage.login(email, parol)` bir cümə kimi oxunur.
+Test indi **nə** etdiyini deyir, **necə** yox. `loginPage.login(email, parol)` bir cümlə kimi oxunur.
+
+**Yadda saxla:** page object bir səhifənin lokatorlarına sahib olan və əməliyyat metodları açıqlayan sinifdir, beləcə test *necə* deyil, *nə* etdiyini oxuyur.
 
 ---
 
@@ -121,6 +125,8 @@ export class ProductsPage {
 2. Sinifin xaricindəki heç bir şeyin təsadüfən onları yenidən təyin edə bilməməsi üçün `readonly` istifadə edin.
 3. Sabit selektorlara üstünlük verin: dizaynçıların tez-tez dəyişdirdiyi CSS sinifləri əvəzinə `data-testid`, ARIA rolları və ID-lər.
 4. Metodların içindəki lokatorlar yaratmayın (`async someMethod()` içindəki `page.locator(...)`). Bu məqsədi pozur.
+
+**Yadda saxla:** lokatorları konstruktorda `readonly` xassələr kimi təyin edin — hər selektor üçün tək həqiqət mənbəyi, heç vaxt metod içində `page.locator(...)` yox.
 
 ---
 
@@ -158,12 +164,14 @@ Test daha sonra təbii oxunur:
 test('axtarış uyğun məhsulları qaytarır', async ({ page }) => {
   const productsPage = new ProductsPage(page);
   await productsPage.goto();
-  await productsPage.searchFor('Siçan');
+  await productsPage.searchFor('Mouse');
 
   const adlar = await productsPage.getDisplayedProductNames();
-  expect(adlar.some(ad => ad.toLowerCase().includes('siçan'))).toBe(true);
+  expect(adlar.some(ad => ad.toLowerCase().includes('mouse'))).toBe(true);
 });
 ```
+
+**Yadda saxla:** əməliyyat metodları istifadəçi addımlarını əhatə edir və konstruktorun lokatorlarını çağırır; yalnız növbəti addıma lazım olduqda dəyər qaytarın.
 
 ---
 
@@ -212,6 +220,8 @@ test('uğurlu giriş flash mesajı göstərir', async ({ page }) => {
 - POM-da uğursuz olan testlər çaşdırıcı xəta mesajları verir, çünki uğursuzluq page object içindəki kodda görünür, testdə deyil.
 
 Qayda: **Page object-lər əməliyyat edir. Testlər assertion edir.**
+
+**Yadda saxla:** page object-lər əməliyyat edir, testlər assertion edir — heç vaxt POM içinə `expect()` qoymayın.
 
 ---
 
@@ -269,6 +279,8 @@ await checkoutPage.fillShippingDetails({
   zip: '1000',
 });
 ```
+
+**Yadda saxla:** girişləri parametr kimi ötürün (çox sahə olduqda obyekt) ki, bir metod hər testə xidmət etsin, dəyərləri sərt kodlamaq əvəzinə.
 
 ---
 
@@ -346,6 +358,8 @@ test('uğurlu giriş flash mesajı göstərir', async ({ page }) => {
 });
 ```
 
+**Yadda saxla:** səhifələr arasında paylaşılan selektorları (nav, flash, spinner) hər page sinifinin `super(page)` ilə uzatdığı `BasePage`-ə köçürün.
+
 ---
 
 ## Naviqasiya səhifəsi
@@ -391,6 +405,8 @@ export class NavPage extends BasePage {
   }
 }
 ```
+
+**Yadda saxla:** `NavPage` üst naviqasiyanı bir dəfə sarır, beləcə hər test link selektorlarını təkrarlamadan cart/products/logout-a keçə bilər.
 
 ---
 
@@ -445,7 +461,7 @@ test('tam ödəniş axışı', async ({ page }) => {
   await pm.loginPage.login('customer@test.io', 'customer123');
 
   await pm.productsPage.goto();
-  await pm.productsPage.searchFor('Noutbuk');
+  await pm.productsPage.searchFor('Laptop');
 
   await pm.navPage.goToCart();
   await pm.checkoutPage.fillShippingDetails({
@@ -459,6 +475,8 @@ test('tam ödəniş axışı', async ({ page }) => {
   await expect(page).toHaveURL(/\/orders\/\d+/);
 });
 ```
+
+**Yadda saxla:** `PageManager` hər page object-i bir yerdə qurur — `const pm = new PageManager(page)` çox-səhifəli testləri təmiz saxlayır.
 
 ---
 
@@ -496,6 +514,8 @@ test('təsadüfi çatdırılma məlumatları ilə ödəniş', async ({ page }) =
 
 Bu testlerin heç vaxt xüsusi string dəyərlərinə təsadüfən güvənməməsini təmin edir və sabit stringlərin qaçıracağı kənar halları (apostroflu adlar, uzun poçt kodları, ünvanlardakı unicode simvollar) tutur.
 
+**Yadda saxla:** dəyişkən test datasını `@faker-js/faker` ilə yaradın ki, testlər sabit stringlərə gizlicə bağlanmasın — və əlavə zəhmət olmadan kənar halları tutasınız.
+
 ---
 
 ## Həddən artıq mühəndislikdən qaçmaq
@@ -512,7 +532,9 @@ POM özlüyündə bir məqsəd deyil, bir vasitədir. Ümumi həddən artıq mü
 
 **Hər alt-komponent üçün bir sinif yaratmadan əvvəl dayanın.** `ProductsPage`-iniz 20 metoda çatırsa, onu xüsusiyyətə görə `ProductSearchPage` və `ProductDetailPage`-ə bölün — amma yalnız həcm faktiki olaraq çaşqınlıq yaratdıqda.
 
-Yaxşı bir qaydə: bir testi page object-i açmadan başa düşmədən bir cümə kimi oxuya bilsəniz, abstraksiya səviyyəsi doğrudur.
+Yaxşı bir qaydə: bir testi page object-i açmadan başa düşmədən bir cümlə kimi oxuya bilsəniz, abstraksiya səviyyəsi doğrudur.
+
+**Yadda saxla:** POM məqsəd deyil, vasitədir — test aydın cümlə kimi oxunduğu anda abstraksiyanı dayandırın; hər kiçik komponenti sinifləşdirməyin və metodlar içində gözləmələr gizlətməyin.
 
 ---
 
@@ -558,7 +580,7 @@ Bu tapşırıqlar yerli TestMarket tətbiqini istifadə edir. Modul 2-yə əməl
 - `filterByCategory(category)` → kateqoriyanı seçir və tətbiq edir.
 - `getDisplayedProductNames()` → məhsul kartı başlıqlarının `Promise<string[]>` siyahısını qaytarır.
 
-`'Siçan'` axtaran və nəticələrin adında ən az bir `'siçan'` (hərfə həssas olmayan) olan element olduğunu yoxlayan bir test yazın.
+`'Mouse'` axtaran və nəticələrin adında ən az bir `'mouse'` (hərfə həssas olmayan) olan element olduğunu yoxlayan bir test yazın. (Axtarış sətri ingiliscə qalmalıdır — tətbiqin məhsul adları ingiliscədir, məsələn "Wireless Mouse".)
 
 ---
 
@@ -566,7 +588,7 @@ Bu tapşırıqlar yerli TestMarket tətbiqini istifadə edir. Modul 2-yə əməl
 
 `tests/pages/CartPage.ts` yaradın:
 
-- Lokatorlar: `cartItems`, `removeButtons`, `checkoutButton`, `emptyCartMessage`.
+- Lokatorlar (səbət səhifəsində per-element testid yoxdur — bunları istifadə edin): `cartItems` → `.cart-table .table-row`, `removeButtons` → `.btn-danger`, `checkoutButton` → `a[href="/checkout"]`, `emptyCartMessage` → `page.getByText('Your cart is empty')` (`.cart-empty` sinfi **yoxdur**).
 - `goto()` → `/cart`-a keçir.
 - `getItemCount()` → səbətdəki elementlərin sayını qaytarır.
 - `removeFirstItem()` → ilk sil düyməsini tıklayır.
@@ -646,4 +668,4 @@ Son `pages/` qovluğunuzu bu modulda təsvir olunan struktura görə yoxlayın �
 4. **Paylaşılan vəziyyət üçün `BasePage`.** Nav bağlantıları, flash mesajları və spinnerlər hər səhifədə görünür — onları bir dəfə müəyyən edin.
 5. **Təmiz test faylları üçün `PageManager`.** Bütün page object-ləri bir sətirdə qurun; bir neçə səhifəyə ehtiyac duyan istənilən testə manager-i ötürün.
 6. **Hər şeyi parametrli edin.** Kodlaşdırılmış stringlər test data fayllarına ya da `faker` çağırışlarına aiddir, page object metodlarına deyil.
-7. **Oxunana qədər dayanın.** Bir test artıq bir cümə kimi oxunursa, doğru abstraksiya səviyyəsinə sahipsiniz.
+7. **Oxunana qədər dayanın.** Bir test artıq bir cümlə kimi oxunursa, doğru abstraksiya səviyyəsinə sahipsiniz.
