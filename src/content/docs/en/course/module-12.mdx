@@ -83,6 +83,8 @@ jobs:
 
 `npm ci` reads the lockfile exactly and fails if the lockfile is out of sync with `package.json`. It is faster and stricter than `npm install`, which is why it is the standard in CI. If `npm ci` fails with a lockfile error, run `npm install` locally and commit the updated `package-lock.json`.
 
+**Remember:** a CI workflow checks out the commit, installs deps with `npm ci` and browsers with `--with-deps`, starts the app, runs the suite, and uploads the report with `if: always()` so you keep it even on failure.
+
 ---
 
 ## CI-aware configuration
@@ -115,6 +117,8 @@ export default defineConfig({
 - `reuseExistingServer: !process.env.CI` — locally, if your app is already running, Playwright reuses that server. In CI, no server is running, so Playwright must start one. The `!` operator flips the value: `CI=true` → `false` (always start fresh); `CI=undefined` → `true` (reuse existing if running).
 
 > **Two ways to get the app running, pick one.** Either start the app yourself in a workflow step (the "Clone and start the app" step above) **or** let the `webServer` block start it for you. If you use `webServer` with `cwd: '../testmarket-lab'`, the app must already be cloned and its dependencies installed — so you still need a step that clones it and runs `npm install` (just drop the `npm start &` / `wait-on` lines, since Playwright now handles starting and waiting). Do not do both, or two servers will fight over port 3000. The examples that follow assume the app is reachable at `http://localhost:3000`, however you chose to start it.
+
+**Remember:** gate behaviour on `process.env.CI` — `forbidOnly`, a retry, a single worker — and let `webServer` start/await the app (`reuseExistingServer: !process.env.CI`); start the app once, never twice.
 
 ---
 
@@ -195,6 +199,8 @@ This creates four parallel jobs. Shard 1 runs the first quarter of the test suit
 
 The pieces line up end-to-end: shard jobs produce `blob-report/` with `--reporter=blob` and upload them as `blob-report-1` … `blob-report-4`; the merge job downloads everything matching `blob-report-*` (`merge-multiple: true` flattens them into one folder), runs `playwright merge-reports --reporter html` to rebuild a single HTML report, and uploads it. `if: always()` on the merge job means you still get a report even when a shard had failures — which is exactly when you need it.
 
+**Remember:** split a big suite with `--shard=i/N` writing `--reporter=blob`, then a `merge-reports` job stitches the blobs into one HTML report — keep `if: always()` so failures still produce it.
+
 ---
 
 ## The HTML reporter and other built-in reporters
@@ -252,6 +258,8 @@ reporter: [
 
 All three reporters run in parallel. The list output appears in the CI log, the HTML report is uploaded as an artifact, and the JUnit XML is consumed by the platform's test-results panel.
 
+**Remember:** `list` for live CI logs, `html` for the browsable report, `json`/`junit` for machines — and the `reporter` array lets you run several at once.
+
 ---
 
 ## Publishing reports as CI artifacts
@@ -271,6 +279,8 @@ The upload step in the workflow saves the `playwright-report/` directory as a do
 To view the report: open your GitHub repository → **Actions** tab → click the workflow run → scroll to **Artifacts** → download `playwright-report.zip` → unzip → open `index.html`.
 
 **Tip:** If the HTML report references trace files via relative paths, the entire directory must be unzipped before opening `index.html`. Do not open it from inside the zip.
+
+**Remember:** upload `playwright-report/` with `if: always()` and a `retention-days`; unzip the whole folder before opening `index.html` so its trace links resolve.
 
 ---
 
@@ -302,6 +312,8 @@ npx playwright show-trace path/to/trace.zip
 ```
 
 The HTML report includes an embedded "Open Trace" link for any test that has a trace — clicking it launches the trace viewer directly in the browser.
+
+**Remember:** capture diagnostics only when needed — `trace: 'on-first-retry'`, `screenshot: 'only-on-failure'`, `video: 'retain-on-failure'`; `'on'` for everything balloons to gigabytes.
 
 ---
 
@@ -416,6 +428,8 @@ COPY . .
 RUN npm ci
 ```
 
+**Remember:** the official `mcr.microsoft.com/playwright:<version>-noble` image ships browsers + system deps (no `--with-deps`); pin it to your `@playwright/test` version, reach the host app via `host.docker.internal` or a Compose `app` service, and copy the lockfile before the source so the `npm ci` layer caches.
+
 ---
 
 ## Docker vs local development
@@ -429,6 +443,8 @@ RUN npm ci
 | Suitable for | Day-to-day development | Pre-merge verification, CI |
 
 The recommended workflow: develop and debug locally with `--headed`, then verify in Docker before pushing to ensure the CI environment will agree.
+
+**Remember:** iterate locally (fast, headed) and verify in Docker before pushing — the identical-to-CI environment is what kills "works on my machine".
 
 ---
 
@@ -460,6 +476,8 @@ jobs:
 
 **WebKit on Linux.** WebKit on the official Playwright Docker image is fully supported. When running natively on `ubuntu-latest` without Docker, ensure you run `npx playwright install --with-deps webkit` (or all browsers) to get the necessary system libraries (`libwoff1`, `libgstreamer`, etc.).
 
+**Remember:** a `matrix` of `[chromium, firefox, webkit]` with `--project=${{ matrix.browser }}` runs every browser in parallel; `fail-fast: false` keeps the others going when one fails.
+
 ---
 
 ## Reading CI results
@@ -482,6 +500,8 @@ When a workflow run finishes, the GitHub Actions UI shows a green checkmark (all
 | `npm ci` fails | Lockfile out of sync | Run `npm install` locally and commit |
 | Tests flaky only in CI | Timing differences | Add `trace: 'on-first-retry'`; check for hardcoded waits |
 | Artifact not uploaded | Missing `if: always()` | Add `if: always()` to the upload step |
+
+**Remember:** to diagnose a red run, open the failing step (the error is near the bottom of the log), download the `playwright-report` artifact, and step through the failing test's trace.
 
 ---
 
