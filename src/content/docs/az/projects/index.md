@@ -118,7 +118,7 @@ Orange County, Kaliforniyada yerləşən Universal Appliances Repair adlı məi�
 - **Çoxsəhifəli marketinq saytı** — ana səhifə, xidmətlər, haqqında, əlaqə, FAQ, rəylər və bloq (əl ilə qurulmuş HTML + Tailwind CSS, freymvork yoxdur, build addımı yoxdur)
 - **Avtomatlaşdırılmış testlər** — daxili keçid yoxlayıcısı və hər birləşmədən əvvəl keçməli olan Puppeteer vizual skrinşot testləri
 - **PR ilə qorunan iş axını** — Husky pre-push hook-ları; `master`-a birbaşa commit yoxdur
-- **Avtomatlaşdırılmış SEO məzmunu** — Claude Code pipeline-ı lokal SEO məqalələri araşdırır, yazır və yayımlayır (40+ dərc olunub); üstəlik rüblük SEO auditi düzəliş PR-i açır
+- **Avtomatlaşdırılmış SEO məzmunu** — Claude Code agenti tam dövrü işlədir (araşdırma → JSON-LD schema ilə yazı → avtomatik keçid + vizual testlər → PR → review → merge → deploy), beləcə işə salanda yeni lokal SEO məqalələri cədvəl üzrə avtomatik dərc oluna bilir; indiyədək 40+ canlı məqalə, üstəlik dövri SEO auditi öz düzəliş PR-ini açır
 
 HTML + Tailwind CSS ilə qurulub.
 

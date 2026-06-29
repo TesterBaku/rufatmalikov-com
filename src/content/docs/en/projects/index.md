@@ -114,7 +114,7 @@ A static marketing website I built for Universal Appliances Repair, an appliance
 - **Multi-page marketing site** — home, services, about, contact, FAQ, testimonials, and a blog (hand-built HTML + Tailwind CSS, no framework, no build step)
 - **Automated tests** — an internal link checker and Puppeteer visual screenshot tests that must pass before any merge
 - **PR-gated workflow** — Husky pre-push hooks; no direct commits to `master`
-- **Automated SEO content** — a Claude Code pipeline researches, writes, and publishes local-SEO articles (40+ published), plus a quarterly SEO audit that opens a fix-up PR
+- **Automated SEO content** — a Claude Code agent runs the full lifecycle (research → write with JSON-LD schema → automated link + visual tests → PR → review → merge → deploy), so new local-SEO articles can be published automatically on a schedule whenever I switch it on; 40+ articles live so far, plus a periodic SEO audit that opens its own fix-up PR
 
 Built with HTML + Tailwind CSS.
 
