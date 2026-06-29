@@ -26,6 +26,8 @@ Məqsəd kursun hər texnikasını tətbiq edərək real bir e-ticarət tətbiqi
 
 Nəticə sadəcə keçən test dəsti deyil. Bu, avtomatlaşdırmanı peşəkar səviyyədə dizayn edə, strukturlaşdıra və saxlaya bildiyinizin nümayişidir.
 
+**Yadda saxla:** capstone sübut edir ki, siz real bir framework dizayn edib saxlaya bilirsiniz — POM + fixtures + API toxumlama + auth `storageState` + çoxbrauzerli CI — sadəcə testləri keçirmək yox.
+
 ---
 
 ## Tövsiyə olunan arxitektura
@@ -64,6 +66,8 @@ capstone-tests/
 
 Hər qovluğun tək bir məsuliyyəti var. Testlər öz məlumatlarını qurmur və ya autentifikasiyanı idarə etmir — fixtures bunu edir. Səhifə obyektləri iddialar saxlamır — testlər edir. Bu ayrılıq uğursuzluqları diaqnostika etməyi asanlaşdırır və yeni funksiyaları əlavə etməyi sadələşdirir.
 
+**Yadda saxla:** hər qovluğa bir məsuliyyət — fixtures quraşdırma və auth-u, səhifə obyektləri locator-ları, testlər iddiaları daşıyır; məhz bu ayrılıq uğursuzluqları asan diaqnostika edilən edir.
+
 ---
 
 ## Test planı və əhatə mülahizəsi
@@ -95,6 +99,8 @@ Bu layihə üçün praktik bölüşdürmə:
 
 Cəmi 40–50 test hədəfləyin. Kəmiyyətdən keyfiyyət önəmlidir.
 
+**Yadda saxla:** riskə görə prioritetləşdirin — əvvəlcə kritik səfərləri (giriş, ödəniş, axtarış) avtomatlaşdırın, UI və API-ni hər birinin ən yaxşı test etdiyinə görə bölün və kəmiyyət yox, ~40–50 keyfiyyətli test hədəfləyin.
+
 ---
 
 ## Repozitoriyanın strukturlaşdırılması
@@ -120,6 +126,7 @@ export default defineConfig({
   },
   webServer: {
     command: 'npm start',
+    cwd: '../testmarket-lab',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
   },
@@ -152,7 +159,7 @@ class BasePage {
   }
 
   async waitForFlashMessage(type = 'success') {
-    return this.page.locator(`.flash.${type}`).waitFor();
+    return this.page.locator(`.flash-${type}`).waitFor();
   }
 }
 
@@ -183,6 +190,8 @@ exports.test = base.extend({
   },
 });
 ```
+
+**Yadda saxla:** əvvəlcə daşıyıcı faylları qurun — `playwright.config.js` (webServer + CI-a uyğun parametrlər + setup layihəsi), `BasePage` və auth fixture — istənilən funksiya testindən əvvəl.
 
 ---
 
@@ -248,6 +257,8 @@ Kritik səhifələr üçün (ana səhifə, məhsul detalı səhifəsi) ən azı 
 
 `.github/workflows/playwright-tests.yml` əlavə edin. GitHub-a push edin. İlk işlətməni izləyin. Mühit problemlərini düzəldin. HTML hesabatının artefakt kimi yükləndiyini təsdiqləyin.
 
+**Yadda saxla:** işlək dilimlərlə qurun — bootstrap → BasePage → auth setup → ApiHelper → UI testləri → admin → vizual → CI — hər addımda dəsti yaşıl saxlayaraq.
+
 ---
 
 ## Tamamlanma tərifi — öz-özünü qiymətləndirmə siyahısı
@@ -282,6 +293,8 @@ Yekun layihəni tamamlanmış saymadan əvvəl hər elementi yoxlayın:
 - [ ] Layihənin rəqəmlərini qeyd etmədən deyə bilərsiniz: səhifə sinifləri, testlər, brauezrlər, CI addımları
 - [ ] 30 saniəlik layihə təqdimatını yüksək səslə məşq etmisiniz
 
+**Yadda saxla:** "tamamlandı" struktur + əhatə + CI + sazlama bacarığı + müsahibəyə hazır izahdır — capstone-u bitmiş saymadan əvvəl hər xananı işarələyin.
+
 ---
 
 ## Layihə depoları
@@ -309,7 +322,7 @@ Bu tapşırıqları `capstone-tests` layihə qovluğunuzda icra edin.
 
 ### Tapşırıq 1 — Yeni səhifə obyekti əlavə edin: ProfilePage (20 dəq)
 
-Tətbiqin `/profile` ünvanında profil səhifəsi var. Bunun üçün bir səhifə obyekti əlavə edin.
+Tətbiqin `/auth/profile` ünvanında redaktə edilə bilən ad/email forması olan profil səhifəsi var. Bunun üçün bir səhifə obyekti əlavə edin.
 
 `pages/ProfilePage.js` yaradın:
 
@@ -326,7 +339,7 @@ class ProfilePage extends BasePage {
   }
 
   async goto() {
-    await this.navigate('/profile');
+    await this.navigate('/auth/profile');
   }
 
   async updateName(newName) {
@@ -363,6 +376,8 @@ async createOrder(customerEmail, items) {
   return { status: response.status(), body: await response.json() };
 }
 ```
+
+`items` `{ product_id, quantity }` obyektlərindən ibarət massivdir — əvvəlcə `GET /api/products`-dan real bir `product_id` götürün. Endpoint qiymətləri products cədvəlindən həll edir və sifariş cəmini hesablayır.
 
 Sonra `tests/api/orders-api.spec.js`-də üç test yazın:
 

@@ -26,6 +26,8 @@ The goal is to build a complete, professional test automation framework for a re
 
 The result is not just a passing test suite. It is a demonstration that you can design, structure, and maintain automation at a professional level.
 
+**Remember:** the capstone proves you can design and maintain a real framework — POM + fixtures + API seeding + auth `storageState` + multi-browser CI — not just make tests pass.
+
 ---
 
 ## Recommended architecture
@@ -64,6 +66,8 @@ capstone-tests/
 
 Every directory has a single responsibility. Tests do not set up their own data or handle authentication — fixtures do that. Page objects do not contain assertions — tests do. This separation makes failures easy to diagnose and new features easy to add.
 
+**Remember:** one responsibility per directory — fixtures own setup and auth, page objects own locators, tests own assertions; that separation is what makes failures easy to diagnose.
+
 ---
 
 ## Test-plan and coverage thinking
@@ -95,6 +99,8 @@ A practical split for this project:
 
 Aim for 40–50 tests total. Quality over quantity.
 
+**Remember:** prioritise by risk — automate critical journeys (login, checkout, search) first, split UI vs API by what each tests best, and aim for ~40–50 quality tests, not quantity.
+
 ---
 
 ## Structuring the repository
@@ -120,6 +126,7 @@ export default defineConfig({
   },
   webServer: {
     command: 'npm start',
+    cwd: '../testmarket-lab',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
   },
@@ -152,7 +159,7 @@ class BasePage {
   }
 
   async waitForFlashMessage(type = 'success') {
-    return this.page.locator(`.flash.${type}`).waitFor();
+    return this.page.locator(`.flash-${type}`).waitFor();
   }
 }
 
@@ -183,6 +190,8 @@ exports.test = base.extend({
   },
 });
 ```
+
+**Remember:** set up the load-bearing files first — `playwright.config.js` (webServer + CI-aware settings + setup project), `BasePage`, and the auth fixture — before writing any feature tests.
 
 ---
 
@@ -248,6 +257,8 @@ Add at least two visual snapshot tests for critical pages (home page, product de
 
 Add `.github/workflows/playwright-tests.yml`. Push to GitHub. Watch the first run. Fix any environment issues. Confirm the HTML report is uploaded as an artifact.
 
+**Remember:** build in runnable slices — bootstrap → BasePage → auth setup → ApiHelper → UI tests → admin → visual → CI — keeping the suite green at every step.
+
 ---
 
 ## Definition of done — self-assessment checklist
@@ -282,6 +293,8 @@ Before calling the capstone complete, verify each item:
 - [ ] You can say your project numbers without notes: page classes, tests, browsers, CI steps
 - [ ] You have rehearsed a 30-second project pitch out loud
 
+**Remember:** "done" is structure + coverage + CI + debugging fluency + an interview-ready walkthrough — tick every box before you call the capstone finished.
+
 ---
 
 ## Project repositories
@@ -309,7 +322,7 @@ Work through these exercises in your `capstone-tests` project directory.
 
 ### Exercise 1 — Add a new page object: ProfilePage (20 min)
 
-The app has a profile page at `/profile`. Add a page object for it.
+The app has a profile page at `/auth/profile` with an editable name/email form. Add a page object for it.
 
 Create `pages/ProfilePage.js`:
 
@@ -326,7 +339,7 @@ class ProfilePage extends BasePage {
   }
 
   async goto() {
-    await this.navigate('/profile');
+    await this.navigate('/auth/profile');
   }
 
   async updateName(newName) {
@@ -363,6 +376,8 @@ async createOrder(customerEmail, items) {
   return { status: response.status(), body: await response.json() };
 }
 ```
+
+`items` is an array of `{ product_id, quantity }` — grab a real `product_id` from `GET /api/products` first. The endpoint resolves prices from the products table and computes the order total.
 
 Then write three tests in `tests/api/orders-api.spec.js`:
 
