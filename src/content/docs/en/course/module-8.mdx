@@ -40,6 +40,8 @@ test('add product via API, verify in UI', async ({ page, request }) => {
 });
 ```
 
+**Remember:** five fixtures ship free — `page`/`context`/`request` are test-scoped (recreated per test), `browser`/`playwright` are worker-scoped (reused across a worker's tests).
+
 ---
 
 ## Custom fixtures with `base.extend`
@@ -88,13 +90,16 @@ A test that imports from this file never writes login code:
 ```typescript
 import { test, expect } from '../fixtures/auth.fixture';
 
-test('authenticated user sees dashboard', async ({ customerPage }) => {
-  await customerPage.goto('/dashboard');
-  await expect(customerPage.locator('h1')).toContainText('My Dashboard');
+test('authenticated user reaches their profile — no login code', async ({ customerPage }) => {
+  await customerPage.goto('/auth/profile');
+  // /auth/profile is requireAuth-gated — landing here (not the login page) proves the fixture is authenticated
+  await expect(customerPage.locator('h1')).toContainText('Hello');
 });
 ```
 
 The first run takes ~2 seconds (browser launch + form fill). Every subsequent run loads from the cached `auth/customer.json` in ~200 ms.
+
+**Remember:** a fixture is `async ({ deps }, use) => { …setup; await use(value); …teardown }`. The classic win: cache auth with `storageState` once, then reload it in ~200 ms on every later run.
 
 ---
 
@@ -143,6 +148,8 @@ test('add to cart and verify count', async ({ loginPage, productsPage, cartPage 
 });
 ```
 
+**Remember:** declare page objects as fixtures so Playwright injects them — tests become a clean list of actions with zero `new SomePage(page)` construction.
+
 ---
 
 ## Test-scoped vs worker-scoped fixtures
@@ -180,6 +187,8 @@ export const test = base.extend<{}, { sharedApiClient: ApiClient }>({
 
 - Anything that carries state between tests: browser contexts, authenticated pages, database records.
 - When in doubt, keep it test-scoped. Worker scope can cause subtle cross-test pollution.
+
+**Remember:** keep fixtures test-scoped by default; reach for `{ scope: 'worker' }` only for expensive, stateless, read-only resources — shared state across tests invites pollution.
 
 ---
 
@@ -247,6 +256,8 @@ test('new user can register', async ({ page, newUser }) => {
 
 Calling `newUser()` twice in the same test produces two different users — no collision.
 
+**Remember:** centralise data in a faker factory fixture so every run uses fresh values and a test never couples to a hardcoded string.
+
 ---
 
 ## `.env` usage for secrets and environment config
@@ -294,6 +305,8 @@ customerPage: async ({ browser }, use) => {
 ```
 
 For CI, set the same variables as pipeline secrets (GitHub Actions `env:` block, GitLab CI variables, etc.). The test code is identical in every environment.
+
+**Remember:** never hardcode credentials or URLs — load `.env` with `dotenv.config()` and read `process.env`, so the same test code runs in CI with secret variables.
 
 ---
 
@@ -368,6 +381,8 @@ test('full workflow', async ({ customerPage, newProduct, apiHelper }) => {
   await expect(customerPage.locator('table')).toContainText(product.name);
 });
 ```
+
+**Remember:** setup goes before `await use()`, teardown after; reset the DB inside a fixture (not `beforeEach`) so it runs even when a test fails, and compose fixture files with `mergeTests`.
 
 ---
 
