@@ -22,7 +22,7 @@ The checks are:
 |-------|--------------|
 | **Attached** | The element exists in the DOM |
 | **Visible** | The element is not hidden (`display:none`, `visibility:hidden`, `opacity:0`, zero size) |
-| **Stable** | The element has not moved for at least two animation frames (500 ms) |
+| **Stable** | The element keeps the same bounding box across two consecutive animation frames (it has stopped moving/animating) |
 | **Receives events** | No other element is covering the target (no overlay, modal, or tooltip blocking it) |
 | **Enabled** | The element is not `disabled` |
 
@@ -45,6 +45,8 @@ await page.getByRole('button', { name: 'Place Order' }).click();
 - If the element is currently animating (sliding in, fading in), `click()` waits for it to settle.
 
 This is why most explicit waits are unnecessary with Playwright.
+
+**Remember:** every action waits for attached + visible + stable + receives-events + enabled before it fires — you rarely need an explicit wait before one.
 
 ---
 
@@ -81,6 +83,8 @@ await page.waitForTimeout(5000); // REMOVE THIS BEFORE COMMITTING
 // The comment is your reminder. Actually remove it.
 ```
 
+**Remember:** a fixed sleep checks nothing and ties your test to hardware speed — replace it with a wait on the actual condition.
+
 ---
 
 ## `expect` auto-retrying — a reminder
@@ -97,6 +101,8 @@ await expect(page.locator('.status')).toHaveText('Ready');
 ```
 
 If you find yourself writing a `waitForTimeout` before checking text, a count, a URL, or a visibility state — replace the check with its web-first equivalent. The sleep disappears automatically.
+
+**Remember:** most `waitForTimeout`s exist because of a non-retrying assertion — swap in a web-first `expect(locator)` and the sleep disappears.
 
 ---
 
@@ -143,6 +149,8 @@ async placeOrder() {
   await this.page.waitForURL(/\/orders\/\d+/);
 }
 ```
+
+**Remember:** trigger first, then wait; prefer `toHaveURL` in tests, `waitForURL` in helpers and page objects.
 
 ---
 
@@ -195,6 +203,8 @@ expect(body.products).toHaveLength(10);
 - After submitting a form — wait for the POST response before asserting the confirmation message
 - When testing network error handling — wait for a 4xx or 5xx response
 
+**Remember:** register the listener **before** the action with `Promise.all`, or the response can fire before you're listening.
+
 ---
 
 ## `waitForLoadState`
@@ -220,6 +230,8 @@ await page.waitForLoadState('networkidle');
 ```
 
 **Important:** `page.goto()` already waits for `'load'` by default, so calling `waitForLoadState('load')` after `goto()` is almost always redundant.
+
+**Remember:** `goto()` already waits for `load` — reach for a state only when you specifically need `domcontentloaded` or (rarely) `networkidle`.
 
 ---
 
@@ -252,6 +264,8 @@ await expect(page.locator('.product-card')).toHaveCount(10);
 - Loading a simple static page with no background requests
 - Tests on legacy apps with no SPA routing
 - As a last resort when no better signal exists — and even then, add a comment explaining why
+
+**Remember:** wait for the specific response you care about, not for all network to go quiet — on an SPA `networkidle` may never come.
 
 ---
 
@@ -337,6 +351,8 @@ await page.locator('.submit-btn').click();
 | Passes when you add a `console.log` | Race condition exposed by extra microtask tick | Add proper awaiting or `Promise.all` |
 | Always fails on the same step | Real bug, not flakiness | Fix the app or fix the assertion logic |
 
+**Remember:** flakiness has a root cause — walk the checklist (sleeps, non-retrying asserts, sync URL checks, missing `Promise.all`, `{ force: true }`) instead of adding a sleep.
+
 ---
 
 ## Custom action timeouts
@@ -359,6 +375,21 @@ export default defineConfig({
 
 **Reduce the timeout when you know something should be fast.** If a button click should trigger navigation within 2 seconds but you have a 30-second timeout, a real regression may go undetected for 30 seconds before the test fails.
 
+**Remember:** lower the timeout where things should be fast, so a real regression fails quickly instead of hanging for 30 s.
+
+---
+
+## Smart-wait cheat-sheet
+
+| I need to wait for… | Use |
+|---|---|
+| An element / text / count condition | a web-first `expect(locator)…` (your default) |
+| A navigation or redirect | `expect(page).toHaveURL(…)` (test) · `page.waitForURL(…)` (helper) |
+| A specific network response | `Promise.all([page.waitForResponse(…), action])` |
+| The DOM parsed (not images) | `page.waitForLoadState('domcontentloaded')` |
+| All network to go quiet (last resort) | `page.waitForLoadState('networkidle')` |
+| A fixed delay | ❌ never `waitForTimeout` — debugging only |
+
 ---
 
 <Practice missions={['custom-timeout','wait-for-selector','auto-waiting','wait-for-url','wait-for-response','click-actionability','fix-flaky-test','wait-for-load-state']} locale="en" />
@@ -376,75 +407,135 @@ These exercises use TestMarket Lab running locally at `http://localhost:3000`.
 Refactor this test — remove every `waitForTimeout` and replace it with the correct web-first alternative:
 
 ```javascript
-// BEFORE (flaky)
+// BEFORE (flaky — fixed sleeps everywhere)
+import { test, expect } from '@playwright/test';
+
 test('search products', async ({ page }) => {
   await page.goto('/products');
   await page.waitForTimeout(1500);
 
-  await page.fill('#search', 'widget');
+  await page.fill('#search', 'Wireless');
   await page.waitForTimeout(800);
 
-  await page.click('#search-btn');
+  await page.click('#apply-filters');
   await page.waitForTimeout(3000);
 
   const count = await page.locator('.product-card').count();
   expect(count).toBeGreaterThan(0);
 
   await page.waitForTimeout(500);
-  expect(page.url()).toContain('?q=widget');
+  expect(page.url()).toContain('search=Wireless');
 });
 ```
 
 | Replace | With |
 |---------|------|
-| `waitForTimeout(1500)` | Remove — `fill()` already auto-waits for element |
+| `waitForTimeout(1500)` | Remove — `fill()` already auto-waits for the element |
 | `waitForTimeout(800)` | Remove — `click()` already auto-waits |
-| `waitForTimeout(3000)` + `count()` | `expect(locator).toHaveCount(greaterThan(0))` |
-| `waitForTimeout(500)` + `page.url()` | `expect(page).toHaveURL(/\?q=widget/)` |
+| `waitForTimeout(3000)` + `count()` | `expect(locator).not.toHaveCount(0)` |
+| `waitForTimeout(500)` + `page.url()` | `expect(page).toHaveURL(/[?&]search=Wireless/)` |
+
+```javascript
+// AFTER (web-first — no fixed sleeps)
+import { test, expect } from '@playwright/test';
+
+test('search products', async ({ page }) => {
+  await page.goto('/products');
+  await page.locator('#search').fill('Wireless');
+  await page.locator('#apply-filters').click();
+
+  await expect(page.locator('.product-card')).not.toHaveCount(0);
+  await expect(page).toHaveURL(/[?&]search=Wireless/);
+});
+```
 
 ---
 
 ### Exercise 2: Fix a flaky navigation test
 
-The following test flakes because URL is checked synchronously. Rewrite it.
+The original flakes for two reasons: it checks the URL **synchronously** (no retry) after a fixed sleep, and its setup is incomplete — `/checkout` needs a logged-in user with an item in the cart, so a bare `goto('/checkout')` just bounces to the login page.
 
 ```javascript
-// BEFORE
-test('checkout redirects to order page', async ({ page }) => {
-  await page.goto('/checkout');
-  await fillCheckoutForm(page);
-  await page.click('#place-order');
-  await page.waitForTimeout(2000);
-  expect(page.url()).toMatch(/\/orders\/\d+/);
+// BEFORE (flaky — and never reaches checkout)
+await page.goto('/checkout');
+await fillCheckoutForm(page);
+await page.click('#place-order');
+await page.waitForTimeout(2000);
+expect(page.url()).toMatch(/\/orders\/\d+/);   // synchronous — no retry
+```
+
+Here's a self-contained, web-first rewrite:
+
+```javascript
+// AFTER
+import { test, expect } from '@playwright/test';
+
+test.describe('Checkout redirect', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('customer@test.io');
+    await page.locator('#password').fill('customer123');
+    await page.getByTestId('login-submit').click();
+
+    await page.goto('/products');
+    await page.getByTestId('add-to-cart').first().click();
+    await page.goto('/checkout');
+  });
+
+  test('placing an order redirects to the order page', async ({ page }) => {
+    await page.locator('#shipping_name').fill('Jane Doe');
+    await page.locator('#shipping_address').fill('123 Main Street');
+    await page.locator('#shipping_city').fill('Portland');
+    await page.locator('#shipping_zip').fill('97201');
+
+    // The click auto-waits; toHaveURL retries until the redirect lands
+    await page.getByTestId('place-order').click();
+    await expect(page).toHaveURL(/\/orders\/\d+/);
+  });
 });
 ```
 
-Replace the sleep and synchronous URL check with `waitForURL` or `toHaveURL`.
+**Tasks:**
+- Swap `toHaveURL` back for `expect(page.url()).toMatch(/\/orders\/\d+/)` and run it a few times — the synchronous check is exactly what flaked.
+- In a page-object helper you'd write `await page.waitForURL(/\/orders\/\d+/)` instead — both wait; the assertion form just doubles as the check.
 
 ---
 
-### Exercise 3: Wait for a network response
+### Exercise 3: Auto-waiting and `waitForResponse`
 
-Write a test that:
-1. Navigates to `/products`
-2. Clicks a "Load More" button
-3. Waits for the `/api/products` response using `Promise.all`
-4. Asserts that more product cards appeared
+TestMarket Lab can deliberately slow its products page down with a `?delay=NNNN` query param (milliseconds) — a perfect way to see auto-waiting work without a single sleep. Then capture the response with the `Promise.all` pattern.
 
 ```javascript
-test('load more adds products', async ({ page }) => {
-  await page.goto('/products');
-  const initial = await page.locator('.product-card').count();
+import { test, expect } from '@playwright/test';
 
-  const [response] = await Promise.all([
-    page.waitForResponse('**/api/products**'),
-    page.click('.load-more-btn'),
-  ]);
+test.describe('Waiting for the real app', () => {
 
-  expect(response.ok()).toBeTruthy();
-  await expect(page.locator('.product-card')).toHaveCount(initial + 10);
+  test('a web-first assertion waits out a slow page — no sleep needed', async ({ page }) => {
+    // ?delay=2000 makes the server hold the response for 2s
+    await page.goto('/products?delay=2000');
+
+    // No waitForTimeout: the assertion simply waits until the cards render
+    await expect(page.locator('.product-card')).not.toHaveCount(0);
+  });
+
+  test('capture the response with Promise.all', async ({ page }) => {
+    // Listener registered BEFORE the navigation that triggers it
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes('/products') && resp.request().method() === 'GET'
+      ),
+      page.goto('/products?search=Wireless'),
+    ]);
+
+    expect(response.ok()).toBeTruthy();
+    await expect(page.locator('.product-card')).not.toHaveCount(0);
+  });
 });
 ```
+
+**Tasks:**
+- Bump the first test to `?delay=4000` — it still passes with no `waitForTimeout`; Playwright just waits longer.
+- Move the `waitForResponse` to *after* the `goto` (out of `Promise.all`) — on a fast response the listener can miss it and the test hangs. That's why you register it first.
 
 ---
 
