@@ -41,6 +41,8 @@ tests/
 
 Platforma şəkilçisi (`linux`, `darwin`, `win32`) avtomatik əlavə edilir, çünki render OS-lər arasında fərqlənir. Hədəf CI platformanız üçün bazis fayllarını commit edin.
 
+**Yadda saxla:** ilk işlətmə bazis xəttini *yazır* (status "yazıldı", keçdi/uğursuz deyil); sonrakı hər işlətmə piksel-piksel müqayisə aparır və uğursuzluqda `-diff.png` / `-actual.png` buraxır. Bazis xətləri platforma şəkilçisi ilə `<spec>-snapshots/` qovluğunda yaşayır — CI OS-nizə uyğun olanı commit edin.
+
 ---
 
 ## Snapshot bazis xətlərini idarə etmək
@@ -81,6 +83,8 @@ await expect(page).toHaveScreenshot('checkout.png', {
 
 Maskalanan bölgələr fərqdə bərk düzbucaqlı ilə əvəzlənir, ona görə onların məzmunu nəzərə alınmır, amma ətraf düzün hələ də müqayisə edilir.
 
+**Yadda saxla:** bazis xətlərini `-u` ilə yalnız fərqi HTML reporter-da gözdən keçirdikdən sonra yeniləyin; vizual testləri tək bir CI OS-a sabitləyin (Linux/macOS/Windows bazis xətlərini heç vaxt qarışdırmayın) və dəyişkən bölgələri (vaxt damğaları, avatarlar) `mask` edin ki, yanlış uğursuzluqlara səbəb olmasınlar.
+
 ---
 
 ## `maxDiffPixels` və `threshold`
@@ -114,6 +118,8 @@ await expect(page).toHaveScreenshot('homepage.png', { threshold: 0.02 }); // 2 %
 
 Kiçik, sabit ölçülü komponentlər üçün `maxDiffPixels` istifadə edin. Ümumi piksel sayı viewport və ya məzmunla dəyişən tam səhifələr üçün `threshold` istifadə edin.
 
+**Yadda saxla:** `maxDiffPixels` fərqlənən piksellərin *mütləq* sayını məhdudlaşdırır — kiçik, sabit ölçülü komponentlər üçün ən yaxşısıdır; `threshold` isə ümumi sayın 0–1 *nisbətidir* — piksel sayı dəyişən tam səhifələr üçün ən yaxşısıdır.
+
 ---
 
 ## Tam səhifə vs element ekran görüntüləri
@@ -144,6 +150,8 @@ Qatlanma nöqtəsinin altındakı məzmun daxil olmaqla tam səhifə düzünü k
 
 Ekran görüntüsü almadan əvvəl həmişə elementin və ya səhifənin render bitməsini gözləyin. Boş və ya qismən render edilmiş bir səhifənin ekran görüntüsünü almaq, vaxtlama bir az fərqləndikdə sonrakı hər işlətmədə uğursuz olacaq bir bazis xətti yaradır.
 
+**Yadda saxla:** element görüntüsü tək komponenti təcrid edir, varsayılan viewport-u çəkir, `fullPage: true` isə bütün sürüşdürülə bilən sənədi tutur — hansını seçsəniz də, bazis xətti render ortasında tutulmasın deyə əvvəlcə məzmunun oturuşmasını gözləyin.
+
 ---
 
 ## `devices[...]` vasitəsilə mobil emulyasiya
@@ -170,6 +178,8 @@ test('iPhone 13-də ana səhifə yüklənir', async ({ page }) => {
 ```
 
 Mobil emulyasiya vizual bir hiylə deyil. `...devices['iPhone 13']` tətbiq etmək brauze rin faktiki davranışını dəyişdirir: siçan hadisələri əvəzinə toxunma hadisələri atəşlənir, meta viewport teqi nəzərə alınır və `pointer: coarse`-u hədəf alan CSS media sorğuları aktivləşir.
+
+**Yadda saxla:** `...devices['iPhone 13']`-i yaymaq sadəcə ölçü dəyişikliyi deyil — viewport, DPR, user-agent, `hasTouch` və `isMobile`-i təyin edir, beləcə klik əvəzinə toxunma hadisələri atəşlənir və `pointer: coarse` media sorğuları aktivləşir.
 
 ---
 
@@ -201,19 +211,29 @@ export default defineConfig({
 
 İndi `npx playwright test` işlətmək hər testi üç dəfə icra edir — hər cihaz üçün bir dəfə. Responsiv düzün reqressiyası dərhal üzə çıxır: masaüstü layihəsi keçir, mobil layihə uğursuz olur, hansı breakpoint-in pozulduğunu dəqiq bilirsiniz.
 
-Tək bir spec daxilindəki hədəfli responsiv yoxlamalar üçün `describe` səviyyəsindəki `test.use()` istifadə edin:
+Tək bir spec daxilindəki hədəfli responsiv yoxlamalar üçün `describe` səviyyəsindəki `test.use()` istifadə edin. Telefon viewport-unda TestMarket naviqasiya panelini hamburger toggle-ın arxasında gizlədir — siz menyunu açana qədər linklər gizli qalır:
 
 ```ts
-test.describe('mobil düzün', () => {
+test.describe('mobil naviqasiya', () => {
   test.use({ ...devices['iPhone 13'] });
 
-  test('naviqasiya mobilə hamburger menyuya sıxışır', async ({ page }) => {
+  test('naviqasiya mobildə hamburger menyuya sıxılır', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('[aria-label="Open navigation"]')).toBeVisible();
-    await expect(page.locator('nav ul')).not.toBeVisible();
+
+    // Toggle düyməsi yalnız dar enlərdə görünür
+    const toggle = page.getByRole('button', { name: 'Open navigation' });
+    await expect(toggle).toBeVisible();
+
+    // Linklər menyunu açana qədər gizlidir
+    await expect(page.getByTestId('nav-products')).not.toBeVisible();
+
+    await toggle.click();
+    await expect(page.getByTestId('nav-products')).toBeVisible();
   });
 });
 ```
+
+Eyni paketi `Desktop Chrome` altında işlədin və təkidlər tərsinə çevrilir: hamburger gizlənir, linklər klik olmadan görünür. Həmin ziddiyyət — eyni test, layihəyə görə əks nəticə — məhz responsiv düzün reqressiyasının necə göründüyüdür.
 
 ### Populyar daxili cihaz tərifləri
 
@@ -226,6 +246,8 @@ test.describe('mobil düzün', () => {
 | `Pixel 7` | 412×915 | 3 |
 | `iPad Pro 11` | 834×1194 | 2 |
 | `Galaxy S21` | 360×800 | 3 |
+
+**Yadda saxla:** bütün paketi hər cihazda işlətmək üçün cihazları ayrıca `projects` kimi əlavə edin, ya da bir hədəfli mobil spec üçün `describe` səviyyəsində `test.use()` istifadə edin — responsiv reqressiya o zaman masaüstü keçərkən mobil layihənin uğursuz olması kimi üzə çıxır.
 
 ---
 
@@ -276,6 +298,8 @@ const context = await browser.newContext({
 });
 ```
 
+**Yadda saxla:** bu `newContext` seçimləri real-istifadəçi şərtlərini simulyasiya edir — `geolocation` koordinatlarını `geolocation` icazəsi ilə cütləyin, i18n üçün `locale`/`timezoneId` təyin edin və icazələri qabaqcadan verin ki, heç bir sual səhifəni bloklamasın. Hamısı cihaz profili ilə birləşir.
+
 ---
 
 ## `@axe-core/playwright` ilə əlçatımlılıq testi
@@ -312,7 +336,7 @@ Auditi bütün səhifə əvəzinə bir komponentlə məhdudlaşdırmaq üçün:
 
 ```ts
 const results = await new AxeBuilder({ page })
-  .include('.checkout-form')
+  .include('form')
   .analyze();
 
 expect(results.violations).toEqual([]);
@@ -337,6 +361,8 @@ const results = await new AxeBuilder({ page })
 ```
 
 İstisnalardan ehtiyatla istifadə edin və hər birinin niyə mövcud olduğunu sənədləşdirin. Yoxlanılmamış istisna siyahısı auditin mənasız olana qədər böyüyür.
+
+**Yadda saxla:** `new AxeBuilder({ page }).analyze()` axe-core-u səhifə daxilində işlədir və `violations` qaytarır; onun `[]`-a bərabər olması sıfır problem deməkdir. Skanı `.include()` ilə daraldın və `.exclude()` / `.disableRules()`-ə yalnız nadir hallarda və sənədləşdirilmiş səbəblə müraciət edin.
 
 ---
 
@@ -374,10 +400,12 @@ function formatViolations(violations: import('@axe-core/playwright').Result[]) {
 
 test('ödəniş forması əlçatımlıdır', async ({ page }) => {
   await page.goto('/checkout');
-  const results = await new AxeBuilder({ page }).include('.checkout-form').analyze();
+  const results = await new AxeBuilder({ page }).include('form').analyze();
   expect(results.violations, formatViolations(results.violations)).toEqual([]);
 });
 ```
+
+**Yadda saxla:** hər pozuntu `id`, `impact` və uğursuz olan `nodes`-u daşıyır — `impact`-a görə triaj edin (kritik → minor) və `formatViolations` köməkçisini təkid mesajı kimi ötürün ki, uğursuzluq xam obyektlər yox, aydın oxunsun.
 
 ---
 
@@ -434,7 +462,7 @@ Cihaz emulyasiyası yalnız Chromium ilə işləyir. Firefox-da xəta görsəniz
 1. `customer@test.io` kimi daxil olun və `/checkout`-a keçin
 2. Hər çatdırılma sahəsini `getByLabel()` istifadə edərək doldurun — `'Shipping Name'`, `'Shipping Address'`, `'Shipping City'`, `'Shipping Zip Code'`
 3. `getByRole('button', { name: 'Place Order' })` istifadə edərək göndərin
-4. URL-in `/orders/` ilə uyğun gəldiyini iddia edin
+4. URL-in sifariş səhifəsi ilə — `/\/orders\/\d+/` (məs., `/orders/1042`) — uyğun gəldiyini iddia edin
 5. **Bonus:** Boş formanı göndərən və URL-in `/checkout`-da qaldığını iddia edən ikinci bir test yazın (HTML5 tələb olunan yoxlaması göndərməni önləyir)
 
 ### Tapşırıq 5 — Axe-core əlçatımlılıq skanı
