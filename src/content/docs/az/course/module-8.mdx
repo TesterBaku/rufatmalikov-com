@@ -40,6 +40,8 @@ test('API vasitəsilə məhsul əlavə et, UI-da yoxla', async ({ page, request 
 });
 ```
 
+**Yadda saxla:** beş fixture pulsuz gəlir — `page`/`context`/`request` test-scoped-dur (hər test üçün yenidən yaradılır), `browser`/`playwright` worker-scoped-dur (worker-ın testləri arasında yenidən istifadə edilir).
+
 ---
 
 ## `base.extend` ilə fərdi fixture-lar
@@ -88,13 +90,16 @@ Bu fayldan idxal edən test heç vaxt login kodu yazmır:
 ```typescript
 import { test, expect } from '../fixtures/auth.fixture';
 
-test('autentifikasiya edilmiş istifadəçi dashboard-u görür', async ({ customerPage }) => {
-  await customerPage.goto('/dashboard');
-  await expect(customerPage.locator('h1')).toContainText('Mənim Dashboard-um');
+test('autentifikasiya edilmiş istifadəçi profilinə çatır — login kodu yoxdur', async ({ customerPage }) => {
+  await customerPage.goto('/auth/profile');
+  // /auth/profile requireAuth ilə qorunur — login səhifəsinə deyil, ora çatmaq fixture-ın autentifikasiya edildiyini sübut edir
+  await expect(customerPage.locator('h1')).toContainText('Hello');
 });
 ```
 
 İlk işləmə ~2 saniyə çəkir (brauzer başlatma + forma doldurma). Sonrakı hər işləmə keşlənmiş `auth/customer.json`-dan ~200 ms-də yüklənir.
+
+**Yadda saxla:** fixture `async ({ deps }, use) => { …setup; await use(dəyər); …teardown }` formasındadır. Klassik üstünlük: auth-u bir dəfə `storageState` ilə keşləyin, sonra hər işləmədə ~200 ms-də yenidən yükləyin.
 
 ---
 
@@ -143,6 +148,8 @@ test('səbətə əlavə et və sayı yoxla', async ({ loginPage, productsPage, c
 });
 ```
 
+**Yadda saxla:** page object-ləri fixture kimi elan edin ki, Playwright onları inject etsin — testlər heç bir `new SomePage(page)` konstruksiyası olmadan əməliyyatların təmiz siyahısına çevrilir.
+
 ---
 
 ## Test-scoped vs worker-scoped fixture-lar
@@ -180,6 +187,8 @@ export const test = base.extend<{}, { sharedApiClient: ApiClient }>({
 
 - Testlər arasında vəziyyət daşıyan hər şey: brauzer kontekstləri, autentifikasiya edilmiş səhifələr, verilənlər bazası qeydləri.
 - Şübhə olduqda test-scoped saxlayın. Worker scope incə testlərarası çirklənməyə səbəb ola bilər.
+
+**Yadda saxla:** fixture-ları defolt olaraq test-scoped saxlayın; `{ scope: 'worker' }`-ə yalnız bahalı, vəziyyətsiz, yalnız-oxunan resurslar üçün müraciət edin — testlər arasında paylaşılan vəziyyət çirklənməyə dəvətdir.
 
 ---
 
@@ -247,6 +256,8 @@ test('yeni istifadəçi qeydiyyatdan keçə bilər', async ({ page, newUser }) =
 
 Eyni testdə `newUser()` iki dəfə çağırmaq iki fərqli istifadəçi yaradır — toqquşma olmur.
 
+**Yadda saxla:** datanı faker factory fixture-ında mərkəzləşdirin ki, hər işlədilmə təzə dəyərlər istifadə etsin və test heç vaxt sabit kodlanmış stringə bağlanmasın.
+
 ---
 
 ## Sirlər və mühit konfiqurasiyası üçün `.env` istifadəsi
@@ -294,6 +305,8 @@ customerPage: async ({ browser }, use) => {
 ```
 
 CI üçün eyni dəyişənləri pipeline sirləri kimi qoyun (GitHub Actions `env:` bloku, GitLab CI dəyişənləri və s.). Test kodu hər mühitdə eynidir.
+
+**Yadda saxla:** kimlik məlumatlarını ya da URL-ləri heç vaxt sabit kodlamayın — `.env`-i `dotenv.config()` ilə yükləyin və `process.env`-dən oxuyun, beləcə eyni test kodu CI-də sirr dəyişənləri ilə işləyir.
 
 ---
 
@@ -368,6 +381,8 @@ test('tam iş axışı', async ({ customerPage, newProduct, apiHelper }) => {
   await expect(customerPage.locator('table')).toContainText(product.name);
 });
 ```
+
+**Yadda saxla:** setup `await use()`-dən əvvəl, teardown sonra gəlir; verilənlər bazasını `beforeEach`-də yox, fixture içində sıfırlayın ki, test uğursuz olsa belə işləsin, və fixture fayllarını `mergeTests` ilə birləşdirin.
 
 ---
 
