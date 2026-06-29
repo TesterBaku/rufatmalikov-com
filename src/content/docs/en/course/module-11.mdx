@@ -41,6 +41,8 @@ tests/
 
 The platform suffix (`linux`, `darwin`, `win32`) is appended automatically because rendering differs across OSes. Commit the baseline files for your target CI platform.
 
+**Remember:** the first run *writes* the baseline (status "written", not pass/fail); every later run diffs pixel-by-pixel and drops `-diff.png` / `-actual.png` on failure. Baselines live in a `<spec>-snapshots/` folder with a platform suffix — commit the one matching your CI OS.
+
 ---
 
 ## Managing snapshot baselines
@@ -81,6 +83,8 @@ await expect(page).toHaveScreenshot('checkout.png', {
 
 Masked regions are replaced with a solid rectangle in the diff, so their content is ignored while the surrounding layout is still compared.
 
+**Remember:** update baselines with `-u` only after eyeballing the diff in the HTML report; pin visual tests to a single CI OS (never mix Linux/macOS/Windows baselines), and `mask` volatile regions (timestamps, avatars) so they don't trigger false failures.
+
 ---
 
 ## `maxDiffPixels` and `threshold`
@@ -114,6 +118,8 @@ await expect(page).toHaveScreenshot('homepage.png', { threshold: 0.02 }); // 2 %
 
 Use `maxDiffPixels` for small, fixed-size components. Use `threshold` for full pages where the total pixel count changes with viewport or content.
 
+**Remember:** `maxDiffPixels` caps the *absolute* number of differing pixels — best for small, fixed-size components; `threshold` is a 0–1 *ratio* of the total — best for full pages whose pixel count varies.
+
 ---
 
 ## Full-page vs element screenshots
@@ -144,6 +150,8 @@ Use this when you need to lock down the complete page layout, including content 
 
 Always wait for the element or page to finish loading before taking the screenshot. Taking a screenshot of an empty or partially rendered page produces a baseline that will fail on every subsequent run when timing differs slightly.
 
+**Remember:** an element shot isolates one component, the default captures the viewport, and `fullPage: true` grabs the whole scrollable document — and whichever you pick, wait for content to settle first so the baseline isn't captured mid-render.
+
 ---
 
 ## Mobile emulation via `devices[...]`
@@ -170,6 +178,8 @@ test('home page loads on iPhone 13', async ({ page }) => {
 ```
 
 Mobile emulation is not a visual trick. Applying `...devices['iPhone 13']` changes the browser's actual behavior: touch events fire instead of mouse events, the meta viewport tag is respected, and CSS media queries that target `pointer: coarse` activate.
+
+**Remember:** spreading `...devices['iPhone 13']` is more than a resize — it sets the viewport, DPR, user-agent, `hasTouch`, and `isMobile`, so touch events fire instead of clicks and `pointer: coarse` media queries activate.
 
 ---
 
@@ -201,19 +211,29 @@ export default defineConfig({
 
 Now running `npx playwright test` executes every test three times — once per device. A responsive layout regression surfaces immediately: the desktop project passes, the mobile project fails, you know exactly which breakpoint broke.
 
-For targeted responsive checks within a single spec, use `test.use()` at the describe level:
+For targeted responsive checks within a single spec, use `test.use()` at the describe level. On a phone viewport TestMarket collapses its navbar behind a hamburger toggle — the links stay hidden until you open the menu:
 
 ```ts
-test.describe('mobile layout', () => {
+test.describe('mobile navigation', () => {
   test.use({ ...devices['iPhone 13'] });
 
-  test('nav collapses to hamburger on mobile', async ({ page }) => {
+  test('navbar collapses to a hamburger on mobile', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('[aria-label="Open navigation"]')).toBeVisible();
-    await expect(page.locator('nav ul')).not.toBeVisible();
+
+    // The toggle button only appears at narrow widths
+    const toggle = page.getByRole('button', { name: 'Open navigation' });
+    await expect(toggle).toBeVisible();
+
+    // Nav links are hidden until you open the menu
+    await expect(page.getByTestId('nav-products')).not.toBeVisible();
+
+    await toggle.click();
+    await expect(page.getByTestId('nav-products')).toBeVisible();
   });
 });
 ```
+
+Run the same suite under `Desktop Chrome` and the assertions flip: the hamburger is hidden and the links are visible without a click. That contrast — same test, opposite result per project — is exactly what a responsive layout regression looks like.
 
 ### Popular built-in device definitions
 
@@ -226,6 +246,8 @@ test.describe('mobile layout', () => {
 | `Pixel 7` | 412×915 | 3 |
 | `iPad Pro 11` | 834×1194 | 2 |
 | `Galaxy S21` | 360×800 | 3 |
+
+**Remember:** add devices as separate `projects` to run the whole suite on each, or use `test.use()` at the describe level for one targeted mobile spec — a responsive regression then surfaces as the mobile project failing while desktop passes.
 
 ---
 
@@ -276,6 +298,8 @@ const context = await browser.newContext({
 });
 ```
 
+**Remember:** these `newContext` options simulate real-user conditions — pair `geolocation` coordinates with the `geolocation` permission, set `locale`/`timezoneId` for i18n, and grant permissions up front so no prompt blocks the page. They all compose with a device profile.
+
 ---
 
 ## Accessibility testing with `@axe-core/playwright`
@@ -312,7 +336,7 @@ To scope the audit to a component rather than the whole page:
 
 ```ts
 const results = await new AxeBuilder({ page })
-  .include('.checkout-form')
+  .include('form')
   .analyze();
 
 expect(results.violations).toEqual([]);
@@ -337,6 +361,8 @@ const results = await new AxeBuilder({ page })
 ```
 
 Use exclusions sparingly and document why each one exists. An unchecked exclusion list grows until the audit is meaningless.
+
+**Remember:** `new AxeBuilder({ page }).analyze()` runs axe-core inside the page and returns `violations`; asserting it equals `[]` means zero issues. Narrow the scan with `.include()`, and reach for `.exclude()` / `.disableRules()` only sparingly and with a documented reason.
 
 ---
 
@@ -374,10 +400,12 @@ function formatViolations(violations: import('@axe-core/playwright').Result[]) {
 
 test('checkout form is accessible', async ({ page }) => {
   await page.goto('/checkout');
-  const results = await new AxeBuilder({ page }).include('.checkout-form').analyze();
+  const results = await new AxeBuilder({ page }).include('form').analyze();
   expect(results.violations, formatViolations(results.violations)).toEqual([]);
 });
 ```
+
+**Remember:** every violation carries `id`, `impact`, and the failing `nodes` — triage by `impact` (critical → minor), and pass a `formatViolations` helper as the assertion message so a failure reads clearly instead of dumping raw objects.
 
 ---
 
@@ -434,7 +462,7 @@ Create `tests/starter/tests/visual/a11y-checkout.spec.js`:
 1. Log in as `customer@test.io` and navigate to `/checkout`
 2. Fill every shipping field using `getByLabel()` — `'Shipping Name'`, `'Shipping Address'`, `'Shipping City'`, `'Shipping Zip Code'`
 3. Submit using `getByRole('button', { name: 'Place Order' })`
-4. Assert the URL matches `/orders/`
+4. Assert the URL matches the order page — `/\/orders\/\d+/` (e.g. `/orders/1042`)
 5. **Bonus:** write a second test that submits the empty form and asserts the URL stays at `/checkout` (HTML5 required validation prevents submission)
 
 ### Exercise 5 — Axe-core accessibility scan
