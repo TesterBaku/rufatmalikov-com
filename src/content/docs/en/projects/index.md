@@ -85,7 +85,7 @@ It's tuned to the specific layout of those UNEC course PDFs — a study tool for
 
 Built with Python.
 
-[Watch the how-to video →](https://youtu.be/qLmmXnKrZoI) · [View the code →](https://github.com/TesterBaku/quiz_formatter_with_chatgpt)
+[Watch the how-to video →](https://youtu.be/qLmmXnKrZoI) · [View the code →](https://github.com/TesterBaku/unec-quiz-formatter)
 
 ## Grade 5 Math — interactive lessons & quizzes
 

@@ -89,7 +89,7 @@ Alət həmin UNEC PDF-lərinin konkret formatına uyğunlaşdırılıb — unive
 
 Python ilə qurulub.
 
-[Necə istifadə olunduğunu izlə →](https://youtu.be/qLmmXnKrZoI) · [Koda bax →](https://github.com/TesterBaku/quiz_formatter_with_chatgpt)
+[Necə istifadə olunduğunu izlə →](https://youtu.be/qLmmXnKrZoI) · [Koda bax →](https://github.com/TesterBaku/unec-quiz-formatter)
 
 ## 5-ci sinif riyaziyyatı — interaktiv dərslər və testlər
 
