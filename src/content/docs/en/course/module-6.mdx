@@ -39,6 +39,8 @@ await expect(page.locator('h1')).toHaveText('Welcome');
 
 Always prefer the locator form of `expect` for DOM assertions.
 
+**Remember:** `test(name, fn)` registers one case with a fresh `page`; `expect(locator)` auto-retries (default 5 s) while `expect(value)` fires once. Prefer the locator form for the DOM.
+
 ---
 
 ## `test.describe`
@@ -62,6 +64,8 @@ test.describe('Shopping Cart', () => {
 
 Describe blocks can be nested. Each block can have its own hooks. The full test name in output is `Shopping Cart > shows empty cart message`.
 
+**Remember:** `test.describe()` groups tests, scopes hooks, and names output (`Group > test`) — purely organisational, but it makes failures readable.
+
 ---
 
 ## `beforeEach` and `afterEach`
@@ -81,8 +85,9 @@ test.describe('Products Page', () => {
 
   test('search filters results', async ({ page }) => {
     // also already at /products
-    await page.fill('#search', 'laptop');
-    await expect(page.locator('.product-card')).toHaveCount(3);
+    await page.fill('#search', 'Wireless');
+    await page.click('#apply-filters');
+    await expect(page.locator('.product-card')).not.toHaveCount(0);
   });
 
   test.afterEach(async ({ page }, testInfo) => {
@@ -101,10 +106,10 @@ test.describe('Admin Panel', () => {
   test.beforeAll(async ({ browser }) => {
     // create a logged-in storage state once
     const page = await browser.newPage();
-    await page.goto('/login');
-    await page.fill('#email', 'admin@example.com');
-    await page.fill('#password', 'secret');
-    await page.click('#submit');
+    await page.goto('/auth/login');
+    await page.fill('#email', 'admin@test.io');
+    await page.fill('#password', 'admin123');
+    await page.click('#login-btn');
     await page.context().storageState({ path: 'admin-state.json' });
     await page.close();
   });
@@ -113,6 +118,8 @@ test.describe('Admin Panel', () => {
   test('can delete a user', async ({ page }) => { /* ... */ });
 });
 ```
+
+**Remember:** `beforeEach`/`afterEach` run around every test in scope; `beforeAll`/`afterAll` run once per block. Use them for setup you'd otherwise copy into each test.
 
 ---
 
@@ -153,6 +160,8 @@ npx playwright test --grep "@smoke|@regression"   # either tag
 npx playwright test --grep-invert "@slow"          # exclude slow tests
 ```
 
+**Remember:** a tag is just `@text` in the test name — no API. Select with `--grep "@smoke"`, exclude with `--grep-invert "@slow"`.
+
 ---
 
 ## CLI: run by file, project, and grep
@@ -190,6 +199,8 @@ npx playwright test --workers 1   # run serially (easier to debug)
 npx playwright test --retries 2
 ```
 
+**Remember:** compose a run from file path + `--grep` + `--project` + `--workers` to execute exactly the subset you want.
+
 ---
 
 ## UI mode
@@ -207,6 +218,8 @@ npx playwright test --ui
 ```
 
 UI mode is ideal for development — you get the feedback loop of a test runner without leaving the browser. It is not for CI.
+
+**Remember:** `--ui` is the interactive dev dashboard — browse, run, and watch tests live. Great for writing tests, not for CI.
 
 ---
 
@@ -240,6 +253,8 @@ test('debug this step', async ({ page }) => {
   await page.click('#submit');
 });
 ```
+
+**Remember:** `--debug` opens the Inspector to step through actions; drop `await page.pause()` to break at one exact line.
 
 ---
 
@@ -277,6 +292,8 @@ npx playwright show-trace test-results/my-test/trace.zip
 
 The timeline scrubber is the most powerful feature — drag it to the exact moment a test failed and see a pixel-perfect screenshot of the page at that point.
 
+**Remember:** a trace records every action with before/after DOM snapshots, network, and console. Set `trace: 'on-first-retry'`, then scrub the timeline to the moment it broke.
+
 ---
 
 ## Screenshots and videos
@@ -303,6 +320,8 @@ test('capture current state', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/dashboard.png', fullPage: true });
 });
 ```
+
+**Remember:** set `screenshot`/`video` to `*-on-failure` to capture artifacts only when a test fails — they land in `test-results/`.
 
 ---
 
@@ -334,6 +353,8 @@ reporter: [
 ```
 
 Add `playwright-report/` to `.gitignore` — it is generated output, not source code. In CI, upload it as a build artifact and download it when you need to investigate failures.
+
+**Remember:** `npx playwright show-report` opens the interactive summary (status, traces, video). It's generated output — gitignore `playwright-report/`.
 
 ---
 
@@ -388,6 +409,8 @@ export default defineConfig({
 });
 ```
 
+**Remember:** `playwright.config.ts` is the single source of truth — `testDir`, `timeout`, `retries`, `workers`, `reporter`, `use`, and `projects` all live here.
+
 ---
 
 ## `baseURL`
@@ -407,6 +430,8 @@ await expect(page).toHaveURL('/cart'); // also relative
 ```
 
 Change the base URL once in the config for all tests — no search-and-replace needed when you deploy to a staging environment.
+
+**Remember:** set `baseURL` once and write relative paths everywhere (`page.goto('/products')`); switching environments becomes a one-line change.
 
 ---
 
@@ -437,6 +462,8 @@ npx playwright test --project chromium
 npx playwright test --project firefox
 npx playwright test --project "Mobile Chrome"
 ```
+
+**Remember:** each project is a named browser config; `npx playwright test` runs every project, `--project chromium` runs just one.
 
 ---
 
@@ -475,6 +502,8 @@ use: {
   hasTouch: true,
 }
 ```
+
+**Remember:** spread a device descriptor (`...devices['iPhone 14']`) into a project's `use` and every test in it runs with that viewport, user agent, and touch.
 
 ---
 
@@ -523,6 +552,8 @@ test('slow integration test', async ({ page }) => {
   // ...
 });
 ```
+
+**Remember:** `retries` re-runs failures, `workers` sets parallelism, and the timeout hierarchy is test (30 s) > action/navigation (30 s) > `expect` (5 s).
 
 ---
 
@@ -576,9 +607,9 @@ test('products page loads @smoke', async ({ page }) => {
   await expect(page.locator('.product-card').first()).toBeVisible();
 });
 
-test('checkout page loads @regression', async ({ page }) => {
+test('checkout redirects to login when logged out @regression', async ({ page }) => {
   await page.goto('/checkout');
-  await expect(page).toHaveURL('/checkout');
+  await expect(page).toHaveURL(/\/auth\/login/);
 });
 ```
 
@@ -671,7 +702,7 @@ npx playwright show-report
 ```
 
 4. In the trace viewer:
-   - Drag the **timeline scrubber** to a `locator.goto` action and inspect the DOM snapshot
+   - Drag the **timeline scrubber** to a `page.goto` action and inspect the DOM snapshot
    - Click the **Network** tab — which requests did the page make?
    - Click the **Console** tab — any errors or warnings?
 

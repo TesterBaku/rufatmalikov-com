@@ -39,6 +39,8 @@ await expect(page.locator('h1')).toHaveText('Xoş gəldiniz');
 
 DOM assertion-ları üçün həmişə `expect`-in lokator formasını üstün tutun.
 
+**Yadda saxla:** `test(ad, fn)` təzə `page` ilə bir test qeyd edir; `expect(lokator)` avtomatik yenidən cəhd edir (defolt 5 s), `expect(dəyər)` isə bir dəfə işləyir. DOM üçün lokator formasını seçin.
+
 ---
 
 ## `test.describe`
@@ -62,6 +64,8 @@ test.describe('Alış-veriş Səbəti', () => {
 
 Describe blokları iç-içə ola bilər. Hər blokun öz hook-ları ola bilər. Çıxışdakı tam test adı `Alış-veriş Səbəti > boş səbət mesajını göstərir` şəklindədir.
 
+**Yadda saxla:** `test.describe()` testləri qruplaşdırır, hook-ları əhatələyir və çıxışı adlandırır (`Qrup > test`) — sırf təşkilatidir, amma uğursuzluqları oxunaqlı edir.
+
 ---
 
 ## `beforeEach` və `afterEach`
@@ -81,8 +85,9 @@ test.describe('Məhsullar Səhifəsi', () => {
 
   test('axtarış nəticələri filtrləyir', async ({ page }) => {
     // /products-da da
-    await page.fill('#search', 'noutbuk');
-    await expect(page.locator('.product-card')).toHaveCount(3);
+    await page.fill('#search', 'Wireless');
+    await page.click('#apply-filters');
+    await expect(page.locator('.product-card')).not.toHaveCount(0);
   });
 
   test.afterEach(async ({ page }, testInfo) => {
@@ -101,10 +106,10 @@ test.describe('Admin Paneli', () => {
   test.beforeAll(async ({ browser }) => {
     // bir dəfə login olmuş storage state yaradın
     const page = await browser.newPage();
-    await page.goto('/login');
-    await page.fill('#email', 'admin@example.com');
-    await page.fill('#password', 'gizli');
-    await page.click('#submit');
+    await page.goto('/auth/login');
+    await page.fill('#email', 'admin@test.io');
+    await page.fill('#password', 'admin123');
+    await page.click('#login-btn');
     await page.context().storageState({ path: 'admin-state.json' });
     await page.close();
   });
@@ -113,6 +118,8 @@ test.describe('Admin Paneli', () => {
   test('istifadəçi silə bilər', async ({ page }) => { /* ... */ });
 });
 ```
+
+**Yadda saxla:** `beforeEach`/`afterEach` əhatədəki hər testin ətrafında işləyir; `beforeAll`/`afterAll` blok başına bir dəfə. Hər testə kopyalayacağınız setup üçün istifadə edin.
 
 ---
 
@@ -153,6 +160,8 @@ npx playwright test --grep "@smoke|@regression"   # hər iki teq
 npx playwright test --grep-invert "@slow"          # yavaş testləri xaric et
 ```
 
+**Yadda saxla:** teq sadəcə test adındakı `@mətn`-dir — API yoxdur. `--grep "@smoke"` ilə seçin, `--grep-invert "@slow"` ilə xaric edin.
+
 ---
 
 ## CLI: fayl, layihə və grep ilə işlətmək
@@ -190,6 +199,8 @@ npx playwright test --workers 1   # ardıcıl işlət (debug üçün daha asand�
 npx playwright test --retries 2
 ```
 
+**Yadda saxla:** işlətməni fayl yolu + `--grep` + `--project` + `--workers`-dən qurun ki, dəqiq istədiyiniz alt küməni icra edəsiniz.
+
 ---
 
 ## UI rejimi
@@ -207,6 +218,8 @@ npx playwright test --ui
 ```
 
 UI rejimi inkişaf üçün idealdır — brauzerdan çıxmadan test runner-inin əks əlaqə döngüsünü əldə edirsiniz. CI üçün deyil.
+
+**Yadda saxla:** `--ui` interaktiv inkişaf panelidir — testlərə göz atın, işlədin və canlı izləyin. Test yazmaq üçün əla, CI üçün deyil.
 
 ---
 
@@ -240,6 +253,8 @@ test('bu addımı debug et', async ({ page }) => {
   await page.click('#submit');
 });
 ```
+
+**Yadda saxla:** `--debug` Inspector-u açır və əməliyyatları addım-addım keçir; dəqiq bir sətirdə dayanmaq üçün `await page.pause()` əlavə edin.
 
 ---
 
@@ -277,6 +292,8 @@ npx playwright show-trace test-results/menim-testim/trace.zip
 
 Timeline scrubber ən güclü xüsusiyyətdir — testin uğursuz olduğu dəqiq ana sürükləyin və o anda səhifənin piksel-mükəmməl ekran görüntüsünü görün.
 
+**Yadda saxla:** trace hər əməliyyatı əvvəl/sonra DOM snapshot-u, şəbəkə və konsolla qeyd edir. `trace: 'on-first-retry'` təyin edin və timeline-ı sındığı ana sürükləyin.
+
 ---
 
 ## Ekran görüntüləri və videolar
@@ -303,6 +320,8 @@ test('cari vəziyyəti əldə et', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/dashboard.png', fullPage: true });
 });
 ```
+
+**Yadda saxla:** `screenshot`/`video`-nu `*-on-failure`-a təyin etsəniz, artefaktlar yalnız test uğursuz olduqda çəkilir — `test-results/`-a düşürlər.
 
 ---
 
@@ -334,6 +353,8 @@ reporter: [
 ```
 
 `playwright-report/`-u `.gitignore`-a əlavə edin — o, yaradılan çıxışdır, mənbə kodu deyil. CI-də build artefaktı kimi yükləyin və uğursuzluqları araşdırmanız lazım olduqda endirin.
+
+**Yadda saxla:** `npx playwright show-report` interaktiv xülasəni açır (status, trace, video). Yaradılan çıxışdır — `playwright-report/`-u gitignore edin.
 
 ---
 
@@ -388,6 +409,8 @@ export default defineConfig({
 });
 ```
 
+**Yadda saxla:** `playwright.config.ts` vahid həqiqət mənbəyidir — `testDir`, `timeout`, `retries`, `workers`, `reporter`, `use` və `projects` hamısı oradadır.
+
 ---
 
 ## `baseURL`
@@ -407,6 +430,8 @@ await expect(page).toHaveURL('/cart'); // nisbi də olur
 ```
 
 Staging mühitinə deploy etdiyinizdə axtarıb-dəyişdirmə lazım deyil — konfiqurasiyada bir dəfə əsas URL-i dəyişin.
+
+**Yadda saxla:** `baseURL`-i bir dəfə təyin edin və hər yerdə nisbi yol yazın (`page.goto('/products')`); mühit dəyişmək bir sətirlik dəyişiklik olur.
 
 ---
 
@@ -437,6 +462,8 @@ npx playwright test --project chromium
 npx playwright test --project firefox
 npx playwright test --project "Mobile Chrome"
 ```
+
+**Yadda saxla:** hər layihə adlandırılmış brauzer konfiqurasiyasıdır; `npx playwright test` hər layihəni, `--project chromium` yalnız birini işlədir.
 
 ---
 
@@ -475,6 +502,8 @@ use: {
   hasTouch: true,
 }
 ```
+
+**Yadda saxla:** cihaz deskriptorunu (`...devices['iPhone 14']`) layihənin `use`-una yayın — içindəki hər test həmin viewport, user agent və toxunma ilə işləyir.
 
 ---
 
@@ -523,6 +552,8 @@ test('yavaş inteqrasiya testi', async ({ page }) => {
   // ...
 });
 ```
+
+**Yadda saxla:** `retries` uğursuzluqları yenidən işlədir, `workers` paralelliyi təyin edir və vaxt aşımı iyerarxiyası test (30 s) > əməliyyat/naviqasiya (30 s) > `expect` (5 s)-dir.
 
 ---
 
@@ -576,9 +607,9 @@ test('məhsullar səhifəsi yüklənir @smoke', async ({ page }) => {
   await expect(page.locator('.product-card').first()).toBeVisible();
 });
 
-test('ödəniş səhifəsi yüklənir @regression', async ({ page }) => {
+test('ödəniş daxil olmadıqda login-ə yönləndirir @regression', async ({ page }) => {
   await page.goto('/checkout');
-  await expect(page).toHaveURL('/checkout');
+  await expect(page).toHaveURL(/\/auth\/login/);
 });
 ```
 
@@ -671,7 +702,7 @@ npx playwright show-report
 ```
 
 4. Trace viewer-da:
-   - **Timeline scrubber**-i bir `locator.goto` əməliyyatına sürükləyin və DOM snapshot-una baxın
+   - **Timeline scrubber**-i bir `page.goto` əməliyyatına sürükləyin və DOM snapshot-una baxın
    - **Network** tab-ını açın — səhifə hansı sorğuları etdi?
    - **Console** tab-ını açın — hər hansı xəta ya da xəbərdarlıq varmı?
 
