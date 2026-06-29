@@ -11,7 +11,7 @@ A free, browser-based Playwright course, available in English and Azerbaijani. Y
 
 **What's inside:**
 
-- **50 hands-on missions** across 7 progressive modules
+- **100 hands-on missions** across 7 progressive modules
 - **Locators** — roles, text, labels, test-ids, filters, and positional selectors (including Shadow DOM and dynamic IDs)
 - **Actions & auto-waiting** — clicks, typing, forms, drag-and-drop, plus reliable waits without flaky `sleep`
 - **Assertions & strict mode** — auto-waiting `expect` and clean handling of ambiguous locators
@@ -24,11 +24,11 @@ Available in English and Azerbaijani.
 
 ## Exam Helper — exam prep for students in Azerbaijan
 
-A free, browser-based study app for students in Azerbaijan. Pick a subject, read short lessons, then practise with tiered quizzes that grade instantly and explain every mistake — no install, runs in the browser. One bank-aware app serves 24 subject banks (grades 5–11 + abituriyent) from the same code, and every math answer is verified by an automatic answer-checker.
+A free, browser-based study app for students in Azerbaijan. Pick a subject, read short lessons, then practise with tiered quizzes that grade instantly and explain every mistake — no install, runs in the browser. One bank-aware app serves 40 subject banks (grades 5–11, abituriyent, and a Russian-language section) from the same code, and every math answer is verified by an automatic answer-checker.
 
 **What's inside:**
 
-- **24 subject banks** — grades 5–11 and abituriyent, across maths, sciences, languages and literature
+- **40 subject banks** — grades 5–11, abituriyent, and a Russian section, across maths, sciences, languages and literature
 - **Grade 5 Mathematics** — 57 topics / 8 chapters, **1,710 questions**, in Russian
 - **Grade 9 buraxılış maths** — 38 topics / 11 chapters, **1,140 questions**, plus a full DİM-format practice exam
 - **Tiered quizzes** — easy / medium / hard / mixed, with per-mistake feedback
