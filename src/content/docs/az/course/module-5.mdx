@@ -150,6 +150,10 @@ async placeOrder() {
 }
 ```
 
+:::note
+Buradakı `checkoutPage` bir **page object**-dir — Modul 7-də quracağın kiçik köməkçi sinif. O, yalnız hər gözləmə formasının *harada* yerləşdiyini müqayisə etmək üçün göstərilib; hələ yazmağına ehtiyac yoxdur.
+:::
+
 **Yadda saxla:** əvvəl tetiklə, sonra gözlə; testlərdə `toHaveURL`, köməkçilərdə və page object-lərdə `waitForURL` üstün tut.
 
 ---
@@ -258,6 +262,8 @@ const [response] = await Promise.all([
 ]);
 await expect(page.locator('.product-card')).toHaveCount(10);
 ```
+
+**Playwright-in öz sənədləri `networkidle`-ı tövsiyə edilməyən kimi qeyd edir** — məhz bu səbəblərdən. Köhnə nümunələrdə və ya təlimatlarda görsən, onu ən yaxşı təcrübə deyil, kod iyi kimi qəbul et.
 
 **`networkidle`-ın qəbul edilə bilən olduğu zaman:**
 

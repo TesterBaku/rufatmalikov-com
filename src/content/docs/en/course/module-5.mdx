@@ -150,6 +150,10 @@ async placeOrder() {
 }
 ```
 
+:::note
+`checkoutPage` here is a **page object** — a small helper class you'll build in Module 7. It's shown now only to contrast *where* each wait form belongs; you don't need to write one yet.
+:::
+
 **Remember:** trigger first, then wait; prefer `toHaveURL` in tests, `waitForURL` in helpers and page objects.
 
 ---
@@ -258,6 +262,8 @@ const [response] = await Promise.all([
 ]);
 await expect(page.locator('.product-card')).toHaveCount(10);
 ```
+
+**Playwright's own docs now mark `networkidle` as discouraged** — for exactly these reasons. If you see it in older examples or tutorials, treat it as a code smell, not a best practice.
 
 **When `networkidle` is acceptable:**
 
