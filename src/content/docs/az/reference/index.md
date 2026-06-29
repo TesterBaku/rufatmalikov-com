@@ -16,14 +16,20 @@ Kursun istinad etdiyi, amma sıfırdan izah etməyə dayanmadığı anlayışlar
 - **[Müntəzəm ifadələr](/az/reference/regex/)** — literallar, lövbərlər, simvol sinifləri, kvantifikatorlar, qruplar və bayraqlar, kursun real `toHaveURL(/…/)` şablonlarına əsaslanır.
 - **[Git və GitHub əsasları](/az/reference/git-github/)** — repozitoriyalar, staging sahəsi, commit-lər, branch-lar, remote-lar, pull request-lər və `.gitignore`, kursun artıq işlətdiyi əmrlərlə.
 - **[DOM və HTML əsasları](/az/reference/dom-html/)** — teqlər, atributlar, element ağacı, id vs class və `getByRole` ilə əlçatımlılıq testinin arxasındakı semantik elementlər və rollar.
+- **[Cookie-lər və sessiyalar](/az/reference/cookies-sessions/)** — brauzer necə sistemə daxil qalır, `HttpOnly` nə deməkdir və `storageState` ilə necə əlaqəlidir.
+- **[Əlçatımlılıq, ARIA və WCAG](/az/reference/accessibility/)** — POUR prinsipləri, ARIA atributları və axe-core-un tutduğu pozuntular.
+- **[Komanda sətri və npm](/az/reference/command-line-npm/)** — terminal, Node, `package.json`, `npm install` və `npx` — kursun işlətdiyi əmrlər.
 
 ## Bu harada yerləşir
 
 Hər səhifə ən çox istinad etdiyi modulu dəstəkləyir:
 
-- **API-lər / HTTP / status kodları** → **[Modul 9 — API testi və şəbəkə](/az/course/module-9/)**.
-- **CSS seçiciləri** və **DOM və HTML** → **[Modul 2 — Lokatorlar](/az/course/module-2/)** (və **[Modul 11](/az/course/module-11/)**-də əlçatımlılıq).
+- **Komanda sətri və npm** → **[Modul 0 — quraşdırma](/az/course/module-0/)**.
+- **CSS seçiciləri** və **DOM və HTML** → **[Modul 2 — Lokatorlar](/az/course/module-2/)**.
 - **Müntəzəm ifadələr** → assertion modulları (**[Modul 4](/az/course/module-4/)** və ətrafı).
+- **API-lər / HTTP / status kodları** → **[Modul 9 — API testi və şəbəkə](/az/course/module-9/)**.
+- **Cookie-lər və sessiyalar** → **[Modul 10 — Autentifikasiya](/az/course/module-10/)**.
+- **Əlçatımlılıq, ARIA və WCAG** → **[Modul 11 — əlçatımlılıq testi](/az/course/module-11/)**.
 - **Git və GitHub** → **[Modul 12 — CI](/az/course/module-12/)**.
 
 Düzgün əsaslandırmaq istədiyiniz bir termin ortaya çıxanda bunları oxuyun — heç bir əvvəlcədən backend və ya front-end biliyi tələb olunmur.

@@ -310,6 +310,10 @@ const context = await browser.newContext({
 
 `axe-core` is the most widely used open-source accessibility engine. The `@axe-core/playwright` package wraps it for Playwright, letting you scan any page for WCAG violations with a single call.
 
+:::tip[New to WCAG, ARIA, or what axe actually checks?]
+The **[Accessibility, ARIA & WCAG reference](/en/reference/accessibility/)** covers the POUR principles, the ARIA attributes, the axe rule ids you'll see in `violations` (`color-contrast`, `image-alt`, `label`…), and why automation only catches ~30–40% of issues.
+:::
+
 ### Installation
 
 ```bash
