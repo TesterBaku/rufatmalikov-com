@@ -8,6 +8,10 @@ import Practice from '../../../../components/course/Practice.astro';
 
 A bad locator makes your tests flaky. A good locator makes them robust — resilient to style changes, refactors, and data refreshes. Locators are a design decision, not an afterthought.
 
+:::tip[Shaky on CSS selectors?]
+The **[CSS selectors reference](/en/reference/css-selectors/)** is a plain-language primer on `.class`, `#id`, `[attr=val]`, combinators, and the engines Playwright adds on top — handy whenever a raw `page.locator('…')` string here looks cryptic.
+:::
+
 <Video title="Module 2: Locators Mastery" />
 
 <details>
@@ -477,6 +481,30 @@ page.getByTestId('product-card').filter({ hasText: 'Wireless Mouse' })
 
 ---
 
+## Shadow DOM basics
+
+Some component libraries use Shadow DOM — a separate DOM tree that is encapsulated inside a host element. Standard CSS selectors cannot pierce Shadow DOM boundaries.
+
+Playwright handles this automatically for most cases via its `pierce` selector engine:
+
+```javascript
+// Playwright automatically pierces open shadow roots
+page.locator('my-component >> button')
+
+// Or use the pierce selector explicitly
+page.locator('pierce/button')
+```
+
+The `>>` is Playwright's piercing combinator — it crosses the shadow-DOM boundary between the host (`my-component`) and the element inside it.
+
+For closed shadow roots (rare in practice), you will need to work with the component's documented API or `data-testid` attributes placed on the shadow host.
+
+<Practice missions={['shadow-dom']} locale="en" />
+
+**Remember:** Playwright's getBy* locators pierce shadow DOM automatically — no special syntax needed.
+
+---
+
 ## Table rows — putting it all together
 
 Tables are the most complex locator challenge in most apps. They combine chained locators, filter, and role-based locators in one pattern.
@@ -513,29 +541,7 @@ await janeUpdateBtn.click();
 
 <Practice missions={['table-row-by-text']} locale="en" />
 
----
-
-## Shadow DOM basics
-
-Some component libraries use Shadow DOM — a separate DOM tree that is encapsulated inside a host element. Standard CSS selectors cannot pierce Shadow DOM boundaries.
-
-Playwright handles this automatically for most cases via its `pierce` selector engine:
-
-```javascript
-// Playwright automatically pierces open shadow roots
-page.locator('my-component >> button')
-
-// Or use the pierce selector explicitly
-page.locator('pierce/button')
-```
-
-The `>>` is Playwright's piercing combinator — it crosses the shadow-DOM boundary between the host (`my-component`) and the element inside it.
-
-For closed shadow roots (rare in practice), you will need to work with the component's documented API or `data-testid` attributes placed on the shadow host.
-
-<Practice missions={['shadow-dom']} locale="en" />
-
-**Remember:** Playwright's getBy* locators pierce shadow DOM automatically — no special syntax needed.
+**Remember:** tables pull every locator skill together — find the row by its text with `filter({ hasText })`, then chain into the cell, badge, or form control you need.
 
 ---
 
@@ -574,6 +580,20 @@ For each HTML element below, write the best Playwright locator:
 | `<input placeholder="Search products...">` | |
 | `<div class="alert alert-success">Login successful!</div>` | |
 
+<details>
+<summary>Solution</summary>
+
+```javascript
+page.getByLabel('Email');                              // label + input association
+page.getByRole('button', { name: 'Log In' });          // role + accessible name
+page.getByRole('link', { name: 'Register' });          // links are a role too
+page.getByPlaceholder('Search products...');           // no label, only a placeholder
+page.getByText('Login successful!');                   // standalone flash text
+// (CSS fallback also works for the flash: page.locator('.alert.alert-success'))
+```
+
+</details>
+
 ---
 
 ### Exercise 2: Rewrite fragile locators
@@ -594,6 +614,27 @@ page.locator('#product_abc123')
 page.locator('table tbody tr:first-child td:nth-child(2)')
 ```
 
+<details>
+<summary>Solution</summary>
+
+```javascript
+// 1. Role + accessible name instead of CSS classes
+page.getByRole('button', { name: 'Log In' });
+
+// 2. The field's label instead of a brittle DOM path
+page.getByLabel('Email');
+
+// 3. Stable content instead of a dynamic id
+page.locator('.product-card').filter({ hasText: 'Wireless Mouse' });
+
+// 4. Find the row by content, then the cell — not by position
+page.locator('tr.table-row')
+  .filter({ hasText: 'Wireless Mouse' })
+  .locator('td').nth(1);   // nth(1) = the second <td> (0-indexed)
+```
+
+</details>
+
 ---
 
 ### Exercise 3: Form field locators
@@ -601,6 +642,27 @@ page.locator('table tbody tr:first-child td:nth-child(2)')
 Write `getByLabel` locators for the TestMarket checkout form fields: Shipping Name, Shipping Address, Shipping City, Shipping Zip Code, and the Place Order button.
 
 Write `getByLabel` locators for the admin product form: Name, Price, Category, Stock, and the Create/Update Product button.
+
+<details>
+<summary>Solution</summary>
+
+```javascript
+// Checkout form (/checkout)
+page.getByLabel('Shipping Name');
+page.getByLabel('Shipping Address');
+page.getByLabel('Shipping City');
+page.getByLabel('Shipping Zip Code');
+page.getByRole('button', { name: 'Place Order' });
+
+// Admin product form (/admin/products/new and /admin/products/:id/edit)
+page.getByLabel('Name');
+page.getByLabel('Price');
+page.getByLabel('Category');
+page.getByLabel('Stock');
+page.getByRole('button', { name: 'Create Product' });   // 'Update Product' when editing
+```
+
+</details>
 
 ---
 
@@ -614,6 +676,28 @@ Using `views/admin/products.ejs`:
 4. Click the Edit button in the last row
 5. Click the Delete button in the second row
 
+<details>
+<summary>Solution</summary>
+
+```javascript
+// 1. All rows
+const rows = page.locator('tr.table-row');
+
+// 2. Third row (0-indexed)
+const thirdRow = rows.nth(2);
+
+// 3. Product name is the second cell of the first row
+const firstName = rows.first().locator('td').nth(1);
+
+// 4. Edit is a <a> link in this app
+await rows.last().getByRole('link', { name: 'Edit' }).click();
+
+// 5. Delete is a <button> (inside a small form)
+await rows.nth(1).getByRole('button', { name: 'Delete' }).click();
+```
+
+</details>
+
 ---
 
 ### Exercise 5: `filter` practice
@@ -623,6 +707,29 @@ Using the admin dashboard stat cards:
 1. Find the card containing "Total Products" and read its `<p>` count
 2. Find the card containing "Total Users" and read its `<p>` count
 3. Click "Add to Cart" for the product named "Gaming Keyboard" on the shop page
+
+<details>
+<summary>Solution</summary>
+
+```javascript
+// 1. The "Total Products" card's count
+const products = await page.locator('.card')
+  .filter({ hasText: 'Total Products' })
+  .locator('p').textContent();
+
+// 2. The "Total Users" card's count
+const users = await page.locator('.card')
+  .filter({ hasText: 'Total Users' })
+  .locator('p').textContent();
+
+// 3. Add the right product to the cart (shop /products page)
+await page.locator('.product-card')
+  .filter({ hasText: 'Gaming Keyboard' })
+  .getByRole('button', { name: 'Add to Cart' })
+  .click();
+```
+
+</details>
 
 ---
 
@@ -634,6 +741,28 @@ Write a test sequence that:
 3. Asserts the status badge says "pending"
 4. Changes the status to "shipped" via the `<select>` and Update button
 5. Asserts the flash message confirms the update
+
+<details>
+<summary>Solution</summary>
+
+```javascript
+await page.goto('http://localhost:3000/admin/orders');
+
+// Find the row by the customer's name
+const janeRow = page.locator('tr.table-row').filter({ hasText: 'Jane Smith' });
+
+// The status badge reads "pending"
+await expect(janeRow.locator('.badge')).toHaveText('pending');
+
+// Change status via the row's <select> + Update button
+await janeRow.locator('select[name="status"]').selectOption('shipped');
+await janeRow.getByRole('button', { name: 'Update' }).click();
+
+// The success flash confirms it
+await expect(page.locator('.alert.alert-success')).toBeVisible();
+```
+
+</details>
 
 ---
 
@@ -649,11 +778,48 @@ await page.locator('select').selectOption('electronics');   // 2 selects
 await page.locator('button:has-text("Remove")').click();    // 2+ Remove buttons
 ```
 
+<details>
+<summary>Solution</summary>
+
+```javascript
+// One specific button / link by role + accessible name
+await page.getByRole('button', { name: 'Log In' }).click();
+await page.getByRole('link', { name: 'Register' }).click();
+
+// The category <select> has no <label> in this app — use its test id
+await page.getByTestId('category-filter').selectOption('electronics');
+
+// Scope "Remove" to the cart row you actually mean
+await page.locator('.cart-table .table-row')
+  .filter({ hasText: 'Wireless Mouse' })
+  .getByRole('button', { name: 'Remove' })
+  .click();
+```
+
+</details>
+
 ---
 
 ### Exercise 8: `getByTestId` migration
 
 Given that `data-testid="product-card"` has been added to product card elements, migrate the existing class-based locator `page.locator('.product-card')` to use `getByTestId`. Then do the same for `table-row` and `cart-row`.
+
+<details>
+<summary>Solution</summary>
+
+```javascript
+// product-card already carries a real data-testid on the /products page
+page.getByTestId('product-card');
+
+// table-row and cart-row don't have a data-testid yet — you'd add one in the
+// app first (e.g. data-testid="table-row"), then locate it the same way:
+page.getByTestId('table-row');
+page.getByTestId('cart-row');
+```
+
+The lesson: `getByTestId` is only available once the attribute exists in the markup. `product-card` has one; the row examples show what you'd write *after* adding it.
+
+</details>
 
 ---
 

@@ -8,6 +8,10 @@ import Practice from '../../../../components/course/Practice.astro';
 
 Pis lokator testlərinizi qeyri-sabit edər. Yaxşı lokator isə onları möhkəm saxlayır — stil dəyişikliklərinə, yenidən strukturlaşdırmaya və məlumat yeniləmələrinə dözümlü olur. Lokatorlar sonradan düşünüləcək bir şey deyil — dizayn qərarıdır.
 
+:::tip[CSS seçicilərində özünə əmin deyilsən?]
+**[CSS seçiciləri istinadı](/az/reference/css-selectors/)** `.class`, `#id`, `[attr=val]`, kombinatorlar və Playwright-in əlavə etdiyi mühərriklər haqqında sadə dildə primerdir — buradakı xalis `page.locator('…')` sətri qəliz görünəndə əlverişlidir.
+:::
+
 <Video title="Modul 2: Lokatorların mənimsənilməsi" />
 
 <details>
@@ -477,6 +481,30 @@ page.getByTestId('product-card').filter({ hasText: 'Wireless Mouse' })
 
 ---
 
+## Shadow DOM əsasları
+
+Bəzi komponent kitabxanaları Shadow DOM — ev sahibi elementin içinə kapsullanmış ayrı bir DOM ağacı — istifadə edir. Standart CSS seçiciləri Shadow DOM sərhədlərini keçə bilmir.
+
+Playwright bunu əksər hallar üçün `pierce` seçici mühərriki vasitəsilə avtomatik idarə edir:
+
+```javascript
+// Playwright açıq shadow root-ları avtomatik keçir
+page.locator('my-component >> button')
+
+// Ya da pierce seçicisini açıq istifadə edin
+page.locator('pierce/button')
+```
+
+`>>` — Playwright-in keçici kombinatorudur; ev sahibi (`my-component`) ilə içindəki element arasındakı shadow-DOM sərhədini keçir.
+
+Qapalı shadow root-lar üçün (praktikada nadir hallarda) komponentin sənədləşdirilmiş API-si ilə ya da shadow ev sahibinə yerləşdirilmiş `data-testid` atributları ilə işləməli olacaqsınız.
+
+<Practice missions={['shadow-dom']} />
+
+**Yadda saxla:** Playwright-in getBy* lokatorları shadow DOM-u avtomatik keçir — xüsusi sintaksis lazım deyil.
+
+---
+
 ## Cədvəl sıraları — hamısını bir araya gətirmək
 
 Cədvəllər əksər tətbiqlərdə ən mürəkkəb lokator çətinliyidir. Zəncirvari lokatorları, filter-i və rol əsaslı lokatorları bir arada birləşdirirlər.
@@ -513,29 +541,7 @@ await janeUpdateBtn.click();
 
 <Practice missions={['table-row-by-text']} />
 
----
-
-## Shadow DOM əsasları
-
-Bəzi komponent kitabxanaları Shadow DOM — ev sahibi elementin içinə kapsullanmış ayrı bir DOM ağacı — istifadə edir. Standart CSS seçiciləri Shadow DOM sərhədlərini keçə bilmir.
-
-Playwright bunu əksər hallar üçün `pierce` seçici mühərriki vasitəsilə avtomatik idarə edir:
-
-```javascript
-// Playwright açıq shadow root-ları avtomatik keçir
-page.locator('my-component >> button')
-
-// Ya da pierce seçicisini açıq istifadə edin
-page.locator('pierce/button')
-```
-
-`>>` — Playwright-in keçici kombinatorudur; ev sahibi (`my-component`) ilə içindəki element arasındakı shadow-DOM sərhədini keçir.
-
-Qapalı shadow root-lar üçün (praktikada nadir hallarda) komponentin sənədləşdirilmiş API-si ilə ya da shadow ev sahibinə yerləşdirilmiş `data-testid` atributları ilə işləməli olacaqsınız.
-
-<Practice missions={['shadow-dom']} />
-
-**Yadda saxla:** Playwright-in getBy* lokatorları shadow DOM-u avtomatik keçir — xüsusi sintaksis lazım deyil.
+**Yadda saxla:** cədvəllər bütün lokator bacarıqlarını bir araya gətirir — sıranı mətninə görə `filter({ hasText })` ilə tap, sonra ehtiyacın olan xanaya, badge-ə ya da form elementinə zəncirlə.
 
 ---
 
@@ -574,6 +580,20 @@ Aşağıdakı HTML elementlərinin hər biri üçün ən yaxşı Playwright loka
 | `<input placeholder="Search products...">` | |
 | `<div class="alert alert-success">Login successful!</div>` | |
 
+<details>
+<summary>Həll</summary>
+
+```javascript
+page.getByLabel('Email');                              // label + input əlaqəsi
+page.getByRole('button', { name: 'Log In' });          // rol + əlçatan ad
+page.getByRole('link', { name: 'Register' });          // linklər də bir roldur
+page.getByPlaceholder('Search products...');           // label yox, yalnız placeholder
+page.getByText('Login successful!');                   // müstəqil flash mətni
+// (Flash üçün CSS də işləyir: page.locator('.alert.alert-success'))
+```
+
+</details>
+
 ---
 
 ### Tapşırıq 2: Zərif lokatorları yenidən yazın
@@ -594,6 +614,27 @@ page.locator('#product_abc123')
 page.locator('table tbody tr:first-child td:nth-child(2)')
 ```
 
+<details>
+<summary>Həll</summary>
+
+```javascript
+// 1. CSS sinifləri əvəzinə rol + əlçatan ad
+page.getByRole('button', { name: 'Log In' });
+
+// 2. Kövrək DOM yolu əvəzinə sahənin label-ı
+page.getByLabel('Email');
+
+// 3. Dinamik id əvəzinə sabit məzmun
+page.locator('.product-card').filter({ hasText: 'Wireless Mouse' });
+
+// 4. Mövqe əvəzinə sıranı məzmuna görə tap, sonra xananı
+page.locator('tr.table-row')
+  .filter({ hasText: 'Wireless Mouse' })
+  .locator('td').nth(1);   // nth(1) = ikinci <td> (0-dan başlayır)
+```
+
+</details>
+
 ---
 
 ### Tapşırıq 3: Form sahəsi lokatorları
@@ -601,6 +642,27 @@ page.locator('table tbody tr:first-child td:nth-child(2)')
 TestMarket ödəniş forması sahələri üçün `getByLabel` lokatorları yazın: Shipping Name, Shipping Address, Shipping City, Shipping Zip Code və Place Order düyməsi.
 
 Admin məhsul forması üçün `getByLabel` lokatorları yazın: Name, Price, Category, Stock və Create/Update Product düyməsi.
+
+<details>
+<summary>Həll</summary>
+
+```javascript
+// Ödəniş forması (/checkout)
+page.getByLabel('Shipping Name');
+page.getByLabel('Shipping Address');
+page.getByLabel('Shipping City');
+page.getByLabel('Shipping Zip Code');
+page.getByRole('button', { name: 'Place Order' });
+
+// Admin məhsul forması (/admin/products/new və /admin/products/:id/edit)
+page.getByLabel('Name');
+page.getByLabel('Price');
+page.getByLabel('Category');
+page.getByLabel('Stock');
+page.getByRole('button', { name: 'Create Product' });   // redaktədə 'Update Product'
+```
+
+</details>
 
 ---
 
@@ -614,6 +676,28 @@ Admin məhsul forması üçün `getByLabel` lokatorları yazın: Name, Price, Ca
 4. Son sıradakı Edit düyməsini kliklayın
 5. İkinci sıradakı Delete düyməsini kliklayın
 
+<details>
+<summary>Həll</summary>
+
+```javascript
+// 1. Bütün sıralar
+const rows = page.locator('tr.table-row');
+
+// 2. Üçüncü sıra (0-dan başlayır)
+const thirdRow = rows.nth(2);
+
+// 3. Məhsul adı birinci sıranın ikinci xanasıdır
+const firstName = rows.first().locator('td').nth(1);
+
+// 4. Bu tətbiqdə Edit bir <a> linkdir
+await rows.last().getByRole('link', { name: 'Edit' }).click();
+
+// 5. Delete isə bir <button>-dur (kiçik formanın içində)
+await rows.nth(1).getByRole('button', { name: 'Delete' }).click();
+```
+
+</details>
+
 ---
 
 ### Tapşırıq 5: `filter` məşqi
@@ -623,6 +707,29 @@ Admin dashboard stat kartlarından istifadə edərək:
 1. "Total Products" ehtiva edən kartı tapın və `<p>` sayını oxuyun
 2. "Total Users" ehtiva edən kartı tapın və `<p>` sayını oxuyun
 3. Mağaza səhifəsindəki "Gaming Keyboard" adlı məhsul üçün "Add to Cart" düyməsini kliklayın
+
+<details>
+<summary>Həll</summary>
+
+```javascript
+// 1. "Total Products" kartının sayı
+const products = await page.locator('.card')
+  .filter({ hasText: 'Total Products' })
+  .locator('p').textContent();
+
+// 2. "Total Users" kartının sayı
+const users = await page.locator('.card')
+  .filter({ hasText: 'Total Users' })
+  .locator('p').textContent();
+
+// 3. Düzgün məhsulu səbətə əlavə et (mağaza /products səhifəsi)
+await page.locator('.product-card')
+  .filter({ hasText: 'Gaming Keyboard' })
+  .getByRole('button', { name: 'Add to Cart' })
+  .click();
+```
+
+</details>
 
 ---
 
@@ -634,6 +741,28 @@ Aşağıdakıları yerinə yetirən bir test ardıcıllığı yazın:
 3. Status badge-ının "pending" dediğini iddia edin
 4. `<select>` və Update düyməsi vasitəsilə statusu "shipped"-ə dəyişin
 5. Flash mesajının yeniləməni təsdiqlədiğini iddia edin
+
+<details>
+<summary>Həll</summary>
+
+```javascript
+await page.goto('http://localhost:3000/admin/orders');
+
+// Sıranı müştərinin adına görə tap
+const janeRow = page.locator('tr.table-row').filter({ hasText: 'Jane Smith' });
+
+// Status badge-i "pending" oxuyur
+await expect(janeRow.locator('.badge')).toHaveText('pending');
+
+// Statusu sıranın <select>-i + Update düyməsi ilə dəyiş
+await janeRow.locator('select[name="status"]').selectOption('shipped');
+await janeRow.getByRole('button', { name: 'Update' }).click();
+
+// Uğur flash-ı təsdiqləyir
+await expect(page.locator('.alert.alert-success')).toBeVisible();
+```
+
+</details>
 
 ---
 
@@ -649,11 +778,48 @@ await page.locator('select').selectOption('electronics');   // 2 select
 await page.locator('button:has-text("Remove")').click();    // 2+ Remove düymə
 ```
 
+<details>
+<summary>Həll</summary>
+
+```javascript
+// Bir spesifik düymə / link rol + əlçatan adla
+await page.getByRole('button', { name: 'Log In' }).click();
+await page.getByRole('link', { name: 'Register' }).click();
+
+// Bu tətbiqdə category <select>-in <label>-i yoxdur — test id-sini istifadə et
+await page.getByTestId('category-filter').selectOption('electronics');
+
+// "Remove"-u nəzərdə tutduğun səbət sırasına məhdudlaşdır
+await page.locator('.cart-table .table-row')
+  .filter({ hasText: 'Wireless Mouse' })
+  .getByRole('button', { name: 'Remove' })
+  .click();
+```
+
+</details>
+
 ---
 
 ### Tapşırıq 8: `getByTestId` miqrasiyası
 
 Məhsul kartı elementlərinə `data-testid="product-card"` əlavə edildiyi nəzərə alınaraq, mövcud sinif əsaslı lokator `page.locator('.product-card')`-ı `getByTestId` istifadə etmək üçün miqrasiya edin. Sonra eyni şeyi `table-row` və `cart-row` üçün edin.
+
+<details>
+<summary>Həll</summary>
+
+```javascript
+// product-card /products səhifəsində artıq real data-testid daşıyır
+page.getByTestId('product-card');
+
+// table-row və cart-row-da hələ data-testid yoxdur — əvvəlcə tətbiqdə əlavə
+// edərsən (məs. data-testid="table-row"), sonra eyni şəkildə taparsan:
+page.getByTestId('table-row');
+page.getByTestId('cart-row');
+```
+
+Dərs: `getByTestId` yalnız atribut markup-da mövcud olduqda işləyir. `product-card`-da var; sıra nümunələri onu *əlavə etdikdən sonra* nə yazacağını göstərir.
+
+</details>
 
 ---
 
