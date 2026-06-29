@@ -8,6 +8,10 @@ import Practice from '../../../../components/course/Practice.astro';
 
 You've learned to interact with the page. Now let's talk about the other half of every test: verifying that the app actually did what you asked. This module covers the full Playwright `expect()` API — and explains why writing assertions the right way eliminates entire categories of flaky tests.
 
+:::tip[The `/…/` patterns keep coming up]
+Many assertions here use a **regular expression** like `toHaveURL(/\/orders\/\d+/)`. If `/\d+/`, `^`, `$`, or the `i` flag look unfamiliar, the **[regular expressions reference](/en/reference/regex/)** breaks them down piece by piece, grounded in the exact patterns this course uses.
+:::
+
 <Video title="Module 4: Assertions" />
 
 ---
