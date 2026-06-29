@@ -83,6 +83,8 @@ jobs:
 
 `npm ci` lockfile-ı tam olaraq oxuyur və `package.json` ilə uyğunsuzluq olduqda uğursuz olur. CI-da standart olaraq istifadə edilməsinin səbəbi `npm install`-dan daha sürətli və ciddi olmasıdır. `npm ci` lockfile xətası ilə uğursuz olarsa, lokalda `npm install` işlədib yenilənmiş `package-lock.json`-u commit edin.
 
+**Yadda saxla:** CI workflow commit-i checkout edir, asılılıqları `npm ci`, brauzerləri `--with-deps` ilə quraşdırır, tətbiqi başladır, dəsti işlədir və hesabatı `if: always()` ilə yükləyir ki, uğursuzluqda belə onu saxlayasınız.
+
 ---
 
 ## CI-a uyğun konfiqurasiya
@@ -115,6 +117,8 @@ export default defineConfig({
 - `reuseExistingServer: !process.env.CI` — lokalda tətbiqiniz artıq işləyirsə, Playwright həmin serverı yenidən istifadə edir. CI-da heç bir server işləmir, ona görə Playwright birini başlatmalıdır. `!` operatoru dəyəri əks çevirir: `CI=true` → `false` (həmişə təzədən başlat); `CI=undefined` → `true` (işləyən varsa yenidən istifadə et).
 
 > **Tətbiqi işə salmağın iki yolu var, birini seçin.** Ya tətbiqi özünüz bir workflow addımında başladırsınız (yuxarıdakı "Tətbiqi klonla və başlat" addımı), **ya da** `webServer` blokunun onu sizin əvəzinizə başlatmasına icazə verirsiniz. `cwd: '../testmarket-lab'` ilə `webServer` istifadə etsəniz, tətbiq artıq klonlanmış və asılılıqları quraşdırılmış olmalıdır — yəni yenə də onu klonlayan və `npm install` işlədən bir addıma ehtiyacınız var (sadəcə `npm start &` / `wait-on` sətirlərini silin, çünki başlatma və gözləməni indi Playwright idarə edir). Hər ikisini etməyin, əks halda iki server 3000 portu üstündə dalaşacaq. Aşağıdakı nümunələr, tətbiqi necə başlatmağınızdan asılı olmayaraq, onun `http://localhost:3000`-də əlçatan olduğunu fərz edir.
+
+**Yadda saxla:** davranışı `process.env.CI`-a görə tənzimləyin — `forbidOnly`, bir yenidən sınaq, tək worker — və `webServer`-in tətbiqi başladıb gözləməsinə icazə verin (`reuseExistingServer: !process.env.CI`); tətbiqi bir dəfə başladın, iki dəfə yox.
 
 ---
 
@@ -195,6 +199,8 @@ Bu, dörd paralel iş yaradır. Shard 1 test dəstinin ilk dörddə birini, shar
 
 Hissələr başdan-başa bir-birinə uyğun gəlir: shard işləri `--reporter=blob` ilə `blob-report/` hazırlayır və onları `blob-report-1` … `blob-report-4` kimi yükləyir; birləşdirmə işi `blob-report-*` ilə uyğun gələn hər şeyi endirir (`merge-multiple: true` onları tək qovluğa düzür), `playwright merge-reports --reporter html` işlədib vahid HTML hesabatını yenidən qurur və yükləyir. Birləşdirmə işindəki `if: always()` o deməkdir ki, bir shard-da uğursuzluq olsa belə yenə hesabat alırsınız — məhz buna ehtiyacınız olan an.
 
+**Yadda saxla:** böyük dəsti `--shard=i/N` ilə `--reporter=blob` yazaraq bölün, sonra `merge-reports` işi blob-ları tək HTML hesabatına tikir — `if: always()` saxlayın ki, uğursuzluqlar da onu yaratsın.
+
 ---
 
 ## HTML reporter və digər daxili reporterlər
@@ -252,6 +258,8 @@ reporter: [
 
 Üç reporter paralel işləyir. List çıxışı CI logunda görünür, HTML hesabatı artefakt kimi yüklənir, JUnit XML isə platformanın test-nəticələri paneli tərəfindən istehlak edilir.
 
+**Yadda saxla:** canlı CI logları üçün `list`, gəzilə bilən hesabat üçün `html`, maşınlar üçün `json`/`junit` — `reporter` massivi bir neçəsini eyni anda işlətməyə imkan verir.
+
 ---
 
 ## CI artefaktları kimi hesabat yayımlamaq
@@ -271,6 +279,8 @@ Workflow-dakı yükləmə addımı `playwright-report/` qovluğunu yüklənə bi
 Hesabatı görmək üçün: GitHub repozitoriyasını açın → **Actions** bölməsi → workflow işlətməsini vurun → **Artifacts** bölməsinə daxil olun → `playwright-report.zip`-i endirin → açın → `index.html`-i açın.
 
 **İpucu:** HTML hesabatı nisbi yollar vasitəsilə trace fayllarına istinad edirsə, `index.html`-i açmadan əvvəl bütün qovluq açılmalıdır. Zip-in içindən açmayın.
+
+**Yadda saxla:** `playwright-report/`-u `if: always()` və `retention-days` ilə yükləyin; trace linkləri işləsin deyə `index.html`-i açmadan əvvəl bütün qovluğu açın.
 
 ---
 
@@ -302,6 +312,8 @@ npx playwright show-trace path/to/trace.zip
 ```
 
 HTML hesabatı, trace-i olan hər test üçün quraşdırılmış "Open Trace" linki ehtiva edir — üzərinə klikləmək trace viewer-ı birbaşa brauzerdə işə salır.
+
+**Yadda saxla:** diaqnostikanı yalnız lazım olanda çəkin — `trace: 'on-first-retry'`, `screenshot: 'only-on-failure'`, `video: 'retain-on-failure'`; hər şey üçün `'on'` gigabaytlara şişir.
 
 ---
 
@@ -416,6 +428,8 @@ COPY . .
 RUN npm ci
 ```
 
+**Yadda saxla:** rəsmi `mcr.microsoft.com/playwright:<versiya>-noble` obrazı brauzerlər + sistem asılılıqları ilə gəlir (`--with-deps` lazım deyil); onu `@playwright/test` versiyanıza sabitləyin, host tətbiqinə `host.docker.internal` və ya Compose `app` servisi ilə çatın və `npm ci` layeri keşlənsin deyə lockfile-ı mənbədən əvvəl kopyalayın.
+
 ---
 
 ## Docker vs lokal inkişaf
@@ -429,6 +443,8 @@ RUN npm ci
 | Uyğun | Gündəlik inkişaf | Birləşmə öncəsi yoxlama, CI |
 
 Tövsiyə olunan workflow: `--headed` ilə lokalda inkişaf edin və sazlayın, sonra push etmədən əvvəl CI mühitinin razılaşacağından əmin olmaq üçün Docker-da yoxlayın.
+
+**Yadda saxla:** lokalda iterasiya edin (sürətli, headed) və push etmədən əvvəl Docker-da yoxlayın — CI ilə eyni mühit "mənim maşınımda işləyir"-i aradan qaldırır.
 
 ---
 
@@ -460,6 +476,8 @@ jobs:
 
 **Linux-da WebKit.** Rəsmi Playwright Docker obrazında WebKit tam dəstəklənir. Docker olmadan `ubuntu-latest`-də yerli olaraq işlədərkən, lazımi sistem kitabxanalarını (`libwoff1`, `libgstreamer` və s.) almaq üçün `npx playwright install --with-deps webkit` (və ya bütün brauzerləri) işlətdiyinizə əmin olun.
 
+**Yadda saxla:** `[chromium, firefox, webkit]` matrix-i `--project=${{ matrix.browser }}` ilə hər brauzeri paralel işlədir; `fail-fast: false` biri uğursuz olanda digərlərini davam etdirir.
+
 ---
 
 ## CI nəticələrini oxumaq
@@ -482,6 +500,8 @@ Workflow işlətməsi bitdikdə, GitHub Actions UI hər commit yanında və pull
 | `npm ci` uğursuz olur | Lockfile sinxronizasiyası pozulub | Lokalda `npm install` işlədin və commit edin |
 | Yalnız CI-da qeyri-sabit testlər | Vaxtlama fərqləri | `trace: 'on-first-retry'` əlavə edin; hardcoded gözləmələri yoxlayın |
 | Artefakt yüklənmədi | `if: always()` yoxdur | Yükləmə addımına `if: always()` əlavə edin |
+
+**Yadda saxla:** qırmızı işlətməni diaqnostika etmək üçün uğursuz addımı açın (xəta logun altındadır), `playwright-report` artefaktını endirin və uğursuz testin trace-indən keçin.
 
 ---
 
