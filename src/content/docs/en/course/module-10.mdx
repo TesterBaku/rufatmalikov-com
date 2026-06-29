@@ -1,6 +1,6 @@
 ---
 title: "Module 10: Authentication & Storage State"
-description: "Stop logging in before every test. Learn what storageState is and when it works, then master the fixture-login pattern that handles HTTP-only session apps — setup projects, multiple roles, and API login."
+description: "Stop logging in before every test. Learn what storageState is, log in once and reuse that state across your whole suite — it works for HTTP-only session apps too — and know when an authenticated fixture is the better tool."
 ---
 
 import Video from '../../../../components/course/Video.astro';
@@ -8,7 +8,7 @@ import Practice from '../../../../components/course/Practice.astro';
 
 Welcome to Module 10. You've built POMs, fixtures, API tests, and CI pipelines. Now we tackle the single biggest performance bottleneck in a real test suite: **logging in before every test**.
 
-By the end of this module you'll log in **once**, reuse that authenticated state across your entire suite, and understand exactly which reuse technique fits which kind of app — including the one our practice app actually needs.
+By the end of this module you'll log in **once**, reuse that authenticated state across your entire suite, and understand exactly which reuse technique fits which situation — for both token-based apps and the HTTP-only session app we practise on.
 
 <Video title="Module 10: Authentication & Storage State" />
 
@@ -22,7 +22,9 @@ Most test suites start with a `beforeEach` that navigates to the login page, fil
 
 **The flakiness problem.** Every login attempt crosses the network, fills form fields, waits for redirects, and depends on the server responding within a tight timeout. Each of those steps can fail independently. A flaky login is not a test bug — it looks like one, though, and every debug session traces back to the same place.
 
-Playwright gives us two ways to avoid repeating login: **`storageState`** (serialise the authenticated state to disk and replay it) and **an authenticated fixture** (log in once inside a reusable browser context and hand the logged-in page to every test). This module teaches both, and — crucially — when each one works.
+Playwright gives us two ways to avoid repeating login: **`storageState`** (serialise the authenticated state to disk and replay it) and **an authenticated fixture** (log in once inside a reusable browser context and hand the logged-in page to every test). This module teaches both, and — crucially — when each one fits.
+
+**Remember:** logging in per test is the biggest, flakiest tax on a suite's runtime — log in once and reuse the result; `storageState` and an authenticated fixture are the two ways to do it.
 
 ---
 
@@ -31,7 +33,7 @@ Playwright gives us two ways to avoid repeating login: **`storageState`** (seria
 When a user logs in through a browser, the server sends back proof of identity — typically one or more of these:
 
 - A **session cookie** set via the `Set-Cookie` response header
-- A **JWT token** stored in `localStorage` or a non-HTTP-only cookie
+- A **JWT token** stored in `localStorage` or a cookie
 - A combination of both
 
 Playwright's `storageState` serialises that proof into a single JSON file with two top-level keys:
@@ -40,10 +42,11 @@ Playwright's `storageState` serialises that proof into a single JSON file with t
 {
   "cookies": [
     {
-      "name": "session",
-      "value": "abc123...",
+      "name": "connect.sid",
+      "value": "s%3Aabc123...",
       "domain": "localhost",
-      "path": "/"
+      "path": "/",
+      "httpOnly": true
     }
   ],
   "origins": [
@@ -75,32 +78,29 @@ const context = await browser.newContext({
 
 Before any page loads in that context, Playwright pre-populates cookies and localStorage from the file. The app sees an already-authenticated browser.
 
-**When `storageState` is the perfect tool.** It shines when authentication lives somewhere it can capture:
-
-- A **JWT (or any token) in `localStorage`** — captured via the `origins` key
-- A **non-HTTP-only cookie** — one that JavaScript can read through `document.cookie`
-
-Most token-based SPAs fall into this category, and for them the classic "log in once, save `storageState`, reuse it everywhere" pattern is exactly right.
+**Remember:** `storageState` is a `BrowserContext` snapshot of `cookies` + `localStorage` — save it after login, point a new context (or a project) at the file, and the app loads already authenticated.
 
 ---
 
-## The catch: HTTP-only session cookies
+## storageState and HTTP-only session cookies
 
-`storageState` can only save what the page can read: cookies exposed to `document.cookie` plus `localStorage`/`sessionStorage`. It **cannot** capture a cookie marked `HttpOnly`, because the browser deliberately hides those from JavaScript.
+A common myth is that `storageState` can't handle session-cookie apps because the cookie is `HttpOnly`. **That is false** — and it's worth understanding why, because TestMarket Lab is exactly such an app.
 
-This matters for our practice app. **TestMarket Lab authenticates with a server-side session.** It uses `express-session`, whose cookie (`connect.sid`) is **HTTP-only** by default. There is no JWT, and the login response carries no token — `POST /api/auth/login` returns only `{ id, email, name, role }`.
+The confusion comes from `document.cookie`: JavaScript in the page genuinely *cannot* read an `HttpOnly` cookie. But `storageState` doesn't use `document.cookie`. It reads the browser's own cookie jar through the DevTools protocol, so it captures **every** cookie in the context — `HttpOnly`, `Secure`, all of them.
 
-The consequence is direct: if you log in and then call `page.context().storageState({ path })`, the resulting file **will not contain the session cookie**. Reload that state in a fresh context and the app treats you as logged out. The "save `storageState` once" recipe simply does not carry the session for an app like this.
+**TestMarket Lab authenticates with a server-side session.** It uses `express-session`, whose cookie (`connect.sid`) is `HttpOnly`. Log in through the UI, save `storageState`, and the file **does** contain `connect.sid`; load it into a fresh context and the app treats you as logged in. The classic "log in once, save `storageState`, reuse it everywhere" recipe works here just like it does for token apps.
 
-> The fix is **not** to make the cookie non-HTTP-only — that would weaken the app's security to suit the tests. The fix is to use a pattern that keeps the live, HTTP-only cookie inside a real browser context: an **authenticated fixture**.
+> Verify it yourself: after a UI login, run `console.log(await page.context().storageState())` and you'll see `connect.sid` in the `cookies` array with `"httpOnly": true`.
 
-So for the rest of this module: learn `storageState` as the right tool for token/localStorage auth (you *will* meet those apps), but use the **fixture-login** approach for every TestMarket Lab exercise.
+**There is a real caveat, just a different one.** A session cookie is only a *key* into server-side session storage. The saved file goes **stale** if that session ends — the server restarts, the session expires, or the user logs out. A saved `storageState` from yesterday's run can authenticate to nothing today. The fix is to **generate the state fresh at the start of each run** (a setup project does this for you), not to avoid `storageState`.
+
+**Remember:** `storageState` captures `HttpOnly` cookies too (it reads the cookie jar, not `document.cookie`), so it works for TestMarket Lab's `connect.sid` — the real limit is staleness: regenerate the file each run because it's only a key to a server-side session.
 
 ---
 
-## The authenticated-fixture pattern (what our app needs)
+## The authenticated-fixture pattern (a live-context alternative)
 
-The idea is simple: perform the login **once** inside a `BrowserContext`, then hand that already-authenticated context (and its page) to each test through a fixture. The HTTP-only session cookie lives inside that context the whole time — we never try to serialise it, so the `HttpOnly` flag is irrelevant.
+`storageState` replays a *saved* session. Sometimes you'd rather hold a **live** one: log in **once** inside a `BrowserContext`, then hand that already-authenticated context (and its page) to each test through a fixture. Because the context is alive for the whole test, there's no saved file to go stale — handy for role-switching and local iteration.
 
 ```ts
 // fixtures/auth.fixture.ts
@@ -206,16 +206,18 @@ export const test = base.extend<TestAuthFixtures, WorkerAuthFixtures>({
 });
 ```
 
-Tests written against `customerPage` look identical to before — they just no longer pay a login per test. The session cookie stays alive inside the shared worker context for the whole worker's lifetime.
+Tests written against `customerPage` look identical to before — they just no longer pay a login per test. The session stays alive inside the shared worker context for the whole worker's lifetime.
+
+**Remember:** an authenticated fixture holds a *live* logged-in context instead of a saved file — reach for it when you want guaranteed-fresh state or easy role-switching; scope it `worker` to log in once per worker rather than once per test.
 
 ---
 
-## A note on `globalSetup` and setup projects
+## `globalSetup` and setup projects
 
-You will see two other ways to "log in once" in Playwright docs and other suites: a `globalSetup` function, and a dedicated **setup project** that other projects declare via `dependencies`. Both run a login step once and then point `use.storageState` at the saved file:
+For most suites the cleanest "log in once" is a dedicated **setup project** that other projects declare via `dependencies`: it logs in through the UI once, saves `storageState`, and every dependent project loads that file. For TestMarket Lab this is the recommended approach — the saved file carries the real `connect.sid` session.
 
 ```ts
-// playwright.config.ts (storageState-based — works for TOKEN/localStorage apps)
+// playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
@@ -240,26 +242,30 @@ setup('authenticate as customer', async ({ page }) => {
   await page.fill('#password', 'customer123');
   await page.click('#login-btn');
   await expect(page.locator('.alert-success')).toBeVisible();
+  // Saves connect.sid into the file — works because the UI login set the session cookie.
   await page.context().storageState({ path: 'auth/customer.json' });
 });
 ```
 
-The setup-project advantages are real and worth knowing:
+The setup-project advantages are real:
 
 - The setup test appears in the HTML reporter — you can see traces and screenshots if it fails
 - The dependency graph is explicit: `chromium` runs only after `setup` passes
 - Multiple projects can depend on the same setup project
+- It runs **once per run**, so it also re-creates a fresh session each run — exactly the antidote to the staleness caveat
 
-**But remember the caveat.** This whole approach relies on `storageState` carrying the auth. For **TestMarket Lab's HTTP-only session, the saved `auth/customer.json` will not contain the session cookie**, so dependent tests would start logged out. Reach for the setup-project pattern when your app stores auth in a token/localStorage or a non-HTTP-only cookie; reach for the authenticated fixture above when it uses an HTTP-only session — as our practice app does.
+(`globalSetup` — a single function in the config — is the older way to do the same thing. A setup project is usually preferable because it's visible in the reporter and integrates with the dependency graph.)
+
+**Remember:** a `setup` project logs in once, saves `storageState`, and dependent projects load it via `use.storageState` — for TestMarket Lab this is the recommended path, and running once per run keeps the session fresh.
 
 ---
 
 ## Multiple roles
 
-Real applications have multiple user roles with different permissions. With the fixture approach, each role is just another fixture — you already saw `customerPage` and `adminPage` above. With the setup-project approach (token/localStorage apps), you write one setup test per role and wire each saved file to its own project:
+Real applications have multiple user roles with different permissions. With the setup-project approach you write one setup test per role and wire each saved file to its own project:
 
 ```ts
-// tests/setup/auth.setup.ts  (token/localStorage apps only)
+// tests/setup/auth.setup.ts
 import { test as setup, expect } from '@playwright/test';
 import path from 'path';
 
@@ -300,34 +306,43 @@ projects: [
 ],
 ```
 
+(With the fixture approach, each role is just another fixture — `customerPage` and `adminPage`, as you saw above.)
+
 Projects without `dependencies` run in parallel. Projects that declare `dependencies` wait for every listed project to finish and pass before they start. If `setup` fails, the dependent projects are skipped — you won't see misleading failures caused by a missing auth file.
+
+**Remember:** one setup test + one saved file + one project per role keeps roles isolated; `dependencies` makes the role projects wait for `setup` and skip cleanly if it fails.
 
 ---
 
 ## Choosing between the techniques
 
-| Concern | Authenticated fixture | storageState + setup project |
-|---|---|---|
-| Works with HTTP-only session cookie | **Yes** (cookie stays in a live context) | **No** (cookie is not serialised) |
-| Works with token / localStorage auth | Yes | Yes |
-| Best for | Session apps, role-switching, local dev | Token apps, large CI suites |
-| Config change needed | No | Yes (projects + dependencies) |
-| Visible in HTML reporter | Per test | Yes (own setup phase) |
-| Multi-role support | One fixture per role | One project per role |
-| Login cost | Once per test, or once per worker | Once per suite run |
+Both techniques work for TestMarket Lab. Choose by what the suite needs, not by the cookie type:
 
-For **TestMarket Lab**, the left column is the correct choice.
+| Concern | storageState + setup project | Authenticated fixture |
+|---|---|---|
+| Works with HTTP-only session cookie | **Yes** (cookie is serialised) | Yes (live context) |
+| Works with token / localStorage auth | Yes | Yes |
+| Login cost | Once per run | Once per test, or once per worker |
+| Guards against stale saved state | Re-runs each run | N/A — always a live session |
+| Config change needed | Yes (projects + dependencies) | No |
+| Visible in HTML reporter | Yes (own setup phase) | Per test |
+| Multi-role support | One project per role | One fixture per role |
+| Best for | Large CI suites, fewest logins | Role-switching, local iteration, guaranteed-fresh state |
+
+For a large CI run, the setup-project + `storageState` column usually wins on speed (one login for the whole run). For heavy role-switching or quick local work, the fixture is convenient.
+
+**Remember:** for TestMarket Lab both work — default to `storageState` + setup project for the fewest logins in CI, and reach for the fixture when you want a live context or easy role-switching.
 
 ---
 
 ## API login
 
-UI login is convenient but slow (~1–3 seconds). When an app exposes a login API, you can authenticate programmatically and skip the form. The exact mechanics depend on how the app returns auth:
+UI login is convenient but slow (~1–3 seconds). When an app exposes a login API that returns a usable credential, you can authenticate programmatically and skip the form entirely. The exact mechanics depend on what the endpoint gives back:
 
-- **Token in the response body** → read it and store it (a cookie or `localStorage` entry), then save `storageState` or set it on a context.
-- **Session cookie set by the API** → call the endpoint *from a browser context* so the `Set-Cookie` lands in that context, then keep using the context (a fixture) for the rest of the test.
+- **Token in the response body** → read it, store it (`localStorage` or a cookie), then save `storageState`.
+- **Session cookie set by the API** → call it *from a browser context* so the `Set-Cookie` lands there, then keep using that context.
 
-TestMarket Lab's `POST /api/auth/login` returns user data only (`{ id, email, name, role }`) — **no token** — and it does not establish a browser session, so there is nothing for `storageState` to save from it. It's useful for asserting API behaviour, but for authenticated *UI* tests in this app, stick with the fixture-login pattern above.
+TestMarket Lab's `POST /api/auth/login` does **neither**: it returns user data only (`{ id, email, name, role }`) — no token — and it does not set a session cookie. So API login can't seed auth for this app; it's useful for asserting API behaviour, but for authenticated *setup* here you log in through the UI (then save `storageState`, or use a fixture).
 
 When a token-based API *is* available, the speed win is real:
 
@@ -346,14 +361,16 @@ await context.close();
 ```
 
 **When API login is the right choice:**
+- Token-based APIs where the response gives you something to store
 - High-volume setups where setup time is measurable in CI
 - Applications with long, multi-step UI login flows
-- Token-based APIs where the response gives you something `storageState` can keep
 
-**When to stick with UI / fixture login:**
-- Server-side session apps with HTTP-only cookies (like TestMarket Lab)
+**When to stick with UI login (saved via `storageState`, or a fixture):**
+- Server-side session apps whose API returns no token or cookie (like TestMarket Lab)
 - SSO, OAuth2, or multi-factor flows with no direct API endpoint
 - When verifying the actual login UI is part of your coverage
+
+**Remember:** API login only helps when the endpoint hands back something you can store (a token) or sets a cookie — TestMarket Lab's `/api/auth/login` returns neither, so authenticate through the UI and save `storageState`.
 
 <Practice missions={["login-with-validation"]} locale="en" />
 
@@ -363,7 +380,7 @@ await context.close();
 
 Saved auth state and credentials are sensitive. Treat them like passwords.
 
-**Add `auth/` to `.gitignore`** (relevant when you do use `storageState` files):
+**Add `auth/` to `.gitignore`** — a saved `storageState` file is a live session, as good as a password:
 
 ```
 # .gitignore
@@ -379,81 +396,74 @@ CUSTOMER_PASSWORD=customer123
 ```
 
 ```ts
-// fixtures/auth.fixture.ts
+// tests/setup/auth.setup.ts
 import 'dotenv/config';
 
-// ...inside the login helper:
+// ...inside the setup:
 await page.fill('#email', process.env.CUSTOMER_EMAIL!);
 await page.fill('#password', process.env.CUSTOMER_PASSWORD!);
 ```
 
-**In CI,** set credentials as encrypted environment variables in your provider (GitHub Actions Secrets, GitLab CI/CD Variables, etc.). If you use `storageState` files, generate them fresh at the start of each pipeline run and never commit `auth/*.json`.
+**In CI,** set credentials as encrypted environment variables in your provider (GitHub Actions Secrets, GitLab CI/CD Variables, etc.). Generate `auth/*.json` fresh at the start of each pipeline run and never commit it.
+
+**Remember:** a saved `auth/*.json` is a live session — `.gitignore` the `auth/` folder, keep credentials in `.env` / CI secrets, and regenerate the state each run instead of committing it.
 
 ---
 
 ## Exercises
 
-These exercises run against the locally cloned **TestMarket Lab** at `http://localhost:3000` (the app you set up in Module 2). Start it with `npm start` before running tests. Because TestMarket Lab uses an HTTP-only session cookie, every exercise uses the **authenticated-fixture** pattern — not a saved `storageState` file.
+These exercises run against the locally cloned **TestMarket Lab** at `http://localhost:3000` (the app you set up in Module 2). Start it with `npm start` before running tests. You'll build the recommended `storageState` + setup-project flow first, then the live-fixture alternative.
 
-### Exercise 1 — Build the auth fixture
+### Exercise 1 — Auth setup project (storageState)
 
-Write `tests/starter/fixtures/auth.fixture.ts`. It should export a `test` with two fixtures, `customerPage` and `adminPage`. Each fixture:
+Create `tests/starter/tests/setup/auth.setup.ts` and wire it into `playwright.config.ts`:
 
-1. Creates a new browser context and page
-2. Goes to `/auth/login`
-3. Fills `#email` and `#password` (customer: `customer@test.io` / `customer123`; admin: `admin@test.io` / `admin123`)
-4. Clicks `#login-btn`
-5. Waits for the redirect away from `/auth/login`
-6. Yields the page with `use(page)`, then closes the context
+1. A `setup` project with `testMatch: /auth\.setup\.ts/`
+2. A `chromium` project with `use: { storageState: 'auth/customer.json' }` and `dependencies: ['setup']`
+3. The setup test logs in (`#email` / `#password` / `#login-btn`), asserts `.alert-success` is visible, then `await page.context().storageState({ path: 'auth/customer.json' })`
 
-Remember to `import type { Page } from '@playwright/test';` so the fixture types compile.
+Run it and confirm `auth/customer.json` is written and **contains a `connect.sid` cookie**. Add `auth/` to `.gitignore`.
 
-### Exercise 2 — Authenticated customer test (no login code)
+### Exercise 2 — A test that starts logged in (no login code)
 
-Create `tests/starter/tests/profile.spec.ts` using your fixture:
+Create `tests/starter/tests/profile.spec.ts`. With the setup project wired up, the `chromium` project already loads `storageState`, so the test starts authenticated:
 
 ```ts
-import { test } from '../fixtures/auth.fixture';
-import { expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-test('customer sees the profile link', async ({ customerPage }) => {
-  await customerPage.goto('/');
-  await expect(customerPage.locator('[data-testid="nav-profile"]')).toBeVisible();
+test('customer sees the profile link', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('[data-testid="nav-profile"]')).toBeVisible();
 });
 ```
 
-There should be no `page.fill('#email', ...)` in the test body — the fixture handled login.
+There should be no `page.fill('#email', ...)` in the test body — the saved state handled login.
 
-### Exercise 3 — Admin can reach the admin panel
+### Exercise 3 — Multiple roles
 
-```ts
-import { test } from '../fixtures/auth.fixture';
-import { expect } from '@playwright/test';
-
-test('admin reaches the admin panel', async ({ adminPage }) => {
-  await adminPage.goto('/admin');
-  await expect(adminPage.locator('h1')).toContainText('Admin');
-});
-```
+Add an `authenticate as admin` setup test that saves `auth/admin.json`, and an `admin-chromium` project using it. Write a test that visits `/admin` and asserts the `h1` contains `Admin`.
 
 ### Exercise 4 — Customer is denied the admin panel
 
-The app has no `/unauthorized` route. A non-admin hitting `/admin` is redirected to `/` (home) with a flash error.
+The app has no `/unauthorized` route. A non-admin hitting `/admin` is redirected to `/` (home) with a flash error. Using the customer state:
 
 ```ts
-import { test } from '../fixtures/auth.fixture';
-import { expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-test('customer cannot reach the admin panel', async ({ customerPage }) => {
-  await customerPage.goto('/admin');
-  await expect(customerPage).toHaveURL('/');
-  await expect(customerPage.locator('[data-testid="flash-error"]')).toBeVisible();
+test('customer cannot reach the admin panel', async ({ page }) => {
+  await page.goto('/admin');
+  await expect(page).toHaveURL('/');
+  await expect(page.locator('[data-testid="flash-error"]')).toBeVisible();
 });
 ```
 
-### Exercise 5 — Keep one UI login test
+### Exercise 5 — The live-fixture alternative
 
-Maintain `tests/starter/tests/login.spec.ts` that performs a full browser login with the plain `test` from `@playwright/test` (no fixture, no `storageState`). This protects you from silent breakage in the login form:
+Write `tests/starter/fixtures/auth.fixture.ts` exporting a `test` with `customerPage` and `adminPage` fixtures (new context → log in → `use(page)` → close). Use it for a test where you want a guaranteed-fresh session rather than a saved file. Remember to `import type { Page } from '@playwright/test';`.
+
+### Exercise 6 — Keep one UI login test
+
+Maintain `tests/starter/tests/login.spec.ts` that performs a full browser login with the plain `test` from `@playwright/test` (no saved state, no fixture). This protects you from silent breakage in the login form:
 
 ```ts
 import { test, expect } from '@playwright/test';
@@ -467,17 +477,17 @@ test('login flow works end-to-end', async ({ page }) => {
 });
 ```
 
-### Challenge — Worker-scoped login
+### Challenge — Worker-scoped fixture login
 
-Refactor your `customerPage` fixture so login happens **once per worker** instead of once per test (split it into a worker-scoped `customerContext` and a test-scoped `customerPage`, as shown in the "Worker-scoped login" section). Confirm with `--workers=1` that login runs a single time for several customer tests.
+Refactor a `customerPage` fixture so login happens **once per worker** instead of once per test (split it into a worker-scoped `customerContext` and a test-scoped `customerPage`, as shown in the "Worker-scoped login" section). Confirm with `--workers=1` that login runs a single time for several customer tests.
 
 ### Self-check questions
 
-1. Why can't `storageState` capture TestMarket Lab's session cookie?
-2. What does the authenticated-fixture pattern keep alive that `storageState` cannot?
-3. When *is* `storageState` (with a setup project) the right tool?
+1. Does `storageState` capture an `HttpOnly` session cookie like `connect.sid` — and why or why not?
+2. What is the *real* caveat of saving `storageState` for a server-side session app, and how does a setup project address it?
+3. When is an authenticated fixture a better fit than a saved `storageState` file?
 4. What is the difference between a test-scoped and a worker-scoped auth fixture?
 5. Why must you `import type { Page }` in the fixture file?
 6. Where does a non-admin land after requesting `/admin`, and what proves it failed?
-7. Why should `auth/` be in `.gitignore` when you use `storageState` files?
-8. Why keep one UI login test even when every other test uses the fixture?
+7. Why should `auth/` be in `.gitignore`?
+8. Why can't TestMarket Lab's `POST /api/auth/login` be used to seed authenticated state?
