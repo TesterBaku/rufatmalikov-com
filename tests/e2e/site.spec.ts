@@ -40,11 +40,11 @@ test('projects page lists all entries in importance order', async ({ page }) => 
 	const expectedOrder = [
 		'BrauzerLab',
 		'Exam Helper',
-		'Universal Appliances Repair',
 		'SDET Interview Trainer',
 		'Study Quiz',
-		'Grade 5 Math',
 		'Quiz Formatter',
+		'Grade 5 Math',
+		'Universal Appliances Repair',
 		'RMC Tow',
 	];
 	expect(headings).toHaveLength(expectedOrder.length);
