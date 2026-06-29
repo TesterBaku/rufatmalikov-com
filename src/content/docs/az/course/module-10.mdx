@@ -1,49 +1,52 @@
 ---
-title: "Modul 10: Auth və saxlama vəziyyəti"
-description: "Hər testdən əvvəl login etməyə son qoyun. storageState-in nə olduğunu və nə vaxt işlədiyini öyrənin, sonra HTTP-only sessiya tətbiqlərini idarə edən fixture-login nümunəsini mənimsəyin — setup layihələri, çoxsaylı rollar və API login."
+title: "Modul 10: Autentifikasiya və Storage State"
+description: "Hər testdən əvvəl giriş etməyi dayandırın. storageState-in nə olduğunu öyrənin, bir dəfə giriş edib həmin vəziyyəti bütün paketiniz boyu təkrar istifadə edin — HTTP-only sessiya tətbiqləri üçün də işləyir — və autentifikasiya fixture-unun nə zaman daha yaxşı alət olduğunu bilin."
 ---
 
 import Video from '../../../../components/course/Video.astro';
 import Practice from '../../../../components/course/Practice.astro';
 
-Modul 10-a xoş gəldiniz. POM-lar, fixtures, API testləri və CI pipeline-ları qurdunuz. İndi isə real test paketinin ən böyük performans tıxacını — **hər testdən əvvəl sistemə daxil olmağı** aradan qaldırırıq.
+Modul 10-a xoş gəldiniz. POM-lar, fixture-lar, API testləri və CI pipeline-lar qurdunuz. İndi real test paketindəki ən böyük performans darboğazını həll edirik: **hər testdən əvvəl giriş etmək**.
 
-Bu modulun sonunda bir dəfə daxil olacaq, həmin doğrulanmış vəziyyəti bütün paket üzrə yenidən istifadə edəcək və hansı yenidən istifadə texnikasının hansı tip tətbiqə uyğun olduğunu dəqiq biləcəksiniz — o cümlədən praktika tətbiqimizin əslində ehtiyac duyduğunu.
+Bu modulun sonunda **bir dəfə** giriş edəcək, həmin autentifikasiya vəziyyətini bütün paketiniz boyu təkrar istifadə edəcək və hansı təkrar-istifadə üsulunun hansı vəziyyətə uyğun gəldiyini dəqiq başa düşəcəksiniz — həm token əsaslı tətbiqlər, həm də üzərində məşq etdiyimiz HTTP-only sessiya tətbiqi üçün.
 
-<Video title="Modul 10: Auth və saxlama vəziyyəti" />
-
----
-
-## Hər testdə login niyə yavaş və qeyri-sabitdir
-
-Çox test dəstləri `beforeEach` bloku ilə başlayır: login səhifəsinə keçid, istifadəçi adı/şifrə doldurma, forma göndərmə. Bu güvənli görünür, amma praktikada iki ciddi problem yaradır.
-
-**Vaxt problemi.** Tipik UI login 1–3 saniyə çəkir. Bunu 50 testlə vurun — paketi işə salmadan əvvəl 2–3 dəqiqəni yalnız loginə sərf edirsiniz. 200 testdə bu yük 10 dəqiqəni keçir.
-
-**Qeyri-sabitlik problemi.** Hər login cəhdi şəbəkəni keçir, forma sahələrini doldurur, yönləndirmələri gözləyir və serverin dar vaxt çərçivəsində cavab verməsindən asılıdır. Bu addımların hər biri müstəqil uğursuz ola bilər. Qeyri-sabit login bir test xətası deyil — amma elə görünür, hər debug sessiyası isə eyni nöqtəyə gəlib çıxır.
-
-Playwright loginin təkrarlanmasının qarşısını almaq üçün iki yol verir: **`storageState`** (doğrulanmış vəziyyəti diskə serialize edib təkrar oxudur) və **doğrulanmış fixture** (yenidən istifadə oluna bilən bir browser context daxilində bir dəfə login edir və daxil olmuş səhifəni hər testə verir). Bu modul hər ikisini öyrədir və — ən vacibi — hər birinin nə vaxt işlədiyini.
+<Video title="Modul 10: Autentifikasiya və Storage State" />
 
 ---
 
-## `storageState` konsepsiyası
+## Niyə hər testdə giriş etmək yavaş və kövrəkdir
 
-İstifadəçi brauzer vasitəsilə daxil olduqda server kimlik sübutu geri göndərir — adətən bunlardan biri və ya bir neçəsi:
+Əksər test paketləri giriş səhifəsinə keçən, kimlik məlumatlarını dolduran və formanı göndərən bir `beforeEach` ilə başlayır. Bu, təhlükəsiz və proqnozlaşdırıla bilən görünür. Praktikada iki ciddi problem yaradır.
 
-- `Set-Cookie` cavab başlığı ilə göndərilən **sessiya kuki**
-- `localStorage`-da və ya HTTP-only olmayan kukidə saxlanılan **JWT token**
-- İkisinin birləşməsi
+**Vaxt problemi.** Tipik UI girişi 1–3 saniyə çəkir. Bunu 50 testə vurun və tək bir təkid işə düşməzdən əvvəl hər işlətmədə 2–3 dəqiqə itirirsiniz. 200 testdə əlavə yük 10 dəqiqəni keçir.
 
-Playwright-in `storageState`-i bu sübutu iki üst açarlı bir JSON faylına serialize edir:
+**Kövrəklik problemi.** Hər giriş cəhdi şəbəkəni keçir, forma sahələrini doldurur, yönləndirmələri gözləyir və serverin dar bir taymaut içində cavab verməsindən asılıdır. Bu addımların hər biri ayrıca uğursuz ola bilər. Kövrək giriş test xətası deyil — amma elə görünür və hər debug sessiyası eyni yerə gəlib çıxır.
+
+Playwright bizə girişi təkrarlamamağın iki yolunu verir: **`storageState`** (autentifikasiya vəziyyətini diskə seriallaşdırıb yenidən oynatmaq) və **autentifikasiya fixture-u** (təkrar istifadə edilə bilən brauzer kontekstində bir dəfə giriş edib daxil olmuş səhifəni hər testə vermək). Bu modul hər ikisini öyrədir və — əsas məsələ — hər birinin nə zaman uyğun gəldiyini.
+
+**Yadda saxla:** test başına giriş paketin işləmə vaxtına ən böyük və ən kövrək vergidir — bir dəfə giriş edin və nəticəni təkrar istifadə edin; `storageState` və autentifikasiya fixture-u bunu etməyin iki yoludur.
+
+---
+
+## `storageState` konsepti
+
+İstifadəçi brauzer vasitəsilə giriş etdikdə server kimlik sübutu geri göndərir — adətən bunlardan biri və ya bir neçəsi:
+
+- `Set-Cookie` cavab başlığı ilə təyin edilən **sessiya kukisi**
+- `localStorage` və ya kukidə saxlanan **JWT token**
+- Hər ikisinin birləşməsi
+
+Playwright-in `storageState`-i həmin sübutu iki üst səviyyəli açarı olan tək bir JSON faylına seriallaşdırır:
 
 ```json
 {
   "cookies": [
     {
-      "name": "session",
-      "value": "abc123...",
+      "name": "connect.sid",
+      "value": "s%3Aabc123...",
       "domain": "localhost",
-      "path": "/"
+      "path": "/",
+      "httpOnly": true
     }
   ],
   "origins": [
@@ -57,15 +60,15 @@ Playwright-in `storageState`-i bu sübutu iki üst açarlı bir JSON faylına se
 }
 ```
 
-**Vəziyyəti saxlamaq** uğurlu logindən sonra edilir:
+**Vəziyyəti saxlamaq** uğurlu girişdən sonra edilir:
 
 ```ts
 await page.context().storageState({ path: 'auth/customer.json' });
 ```
 
-Diqqət: çağırış `page`-də deyil, `page.context()`-dədir — `storageState` `BrowserContext` metodudur.
+Çağırışın `page`-də yox, `page.context()`-də olduğuna diqqət edin — `storageState` bir `BrowserContext` metodudur.
 
-**Vəziyyəti yükləmək** yeni context yaradanda edilir (və ya konfiqurasiya vasitəsilə — bu avtomatik edir):
+**Vəziyyəti yükləmək** yeni kontekst yaradanda (və ya bunu avtomatik edən konfiqurasiya vasitəsilə) edilir:
 
 ```ts
 const context = await browser.newContext({
@@ -73,34 +76,31 @@ const context = await browser.newContext({
 });
 ```
 
-Həmin context-də hər hansı səhifə yüklənmədən əvvəl Playwright fayldan kukiləri və localStorage-ı öncədən doldurur. Tətbiq artıq doğrulanmış bir brauzer görür.
+Həmin kontekstdə hər hansı səhifə yüklənməzdən əvvəl Playwright kukiləri və localStorage-i fayldan əvvəlcədən doldurur. Tətbiq artıq autentifikasiya edilmiş brauzer görür.
 
-**`storageState` ideal alət olduqda.** O, autentifikasiya əldə edə biləcəyi bir yerdə yaşadıqda parlayır:
-
-- `localStorage`-dakı **JWT (və ya istənilən token)** — `origins` açarı vasitəsilə əldə edilir
-- **HTTP-only olmayan kuki** — JavaScript-in `document.cookie` vasitəsilə oxuya bildiyi kuki
-
-Token əsaslı SPA-ların əksəriyyəti bu kateqoriyaya düşür və onlar üçün klassik "bir dəfə daxil ol, `storageState` saxla, hər yerdə yenidən istifadə et" nümunəsi tam doğrudur.
+**Yadda saxla:** `storageState` `cookies` + `localStorage`-in `BrowserContext` snapshot-udur — girişdən sonra saxlayın, yeni konteksti (və ya layihəni) fayla yönəldin, tətbiq artıq autentifikasiya edilmiş halda yüklənir.
 
 ---
 
-## Tələ: HTTP-only sessiya kukiləri
+## storageState və HTTP-only sessiya kukiləri
 
-`storageState` yalnız səhifənin oxuya bildiyini saxlaya bilər: `document.cookie`-yə açıq olan kukilər, üstəgəl `localStorage`/`sessionStorage`. O, `HttpOnly` işarələnmiş bir kukini **saxlaya bilmir**, çünki brauzer həmin kukiləri JavaScript-dən qəsdən gizlədir.
+Geniş yayılmış bir mif: `storageState` guya sessiya kukili tətbiqlərlə işləyə bilmir, çünki kuki `HttpOnly`-dir. **Bu yanlışdır** — və səbəbini başa düşmək vacibdir, çünki TestMarket Lab məhz belə bir tətbiqdir.
 
-Bu, praktika tətbiqimiz üçün vacibdir. **TestMarket Lab server tərəfli sessiya ilə doğrulayır.** O, `express-session` istifadə edir və onun kukisi (`connect.sid`) defolt olaraq **HTTP-only**-dur. JWT yoxdur və login cavabı heç bir token daşımır — `POST /api/auth/login` yalnız `{ id, email, name, role }` qaytarır.
+Qarışıqlıq `document.cookie`-dən gəlir: səhifədəki JavaScript həqiqətən `HttpOnly` kukini oxuya *bilmir*. Lakin `storageState` `document.cookie` istifadə etmir. O, brauzerin öz kuki anbarını DevTools protokolu vasitəsilə oxuyur, ona görə kontekstdəki **bütün** kukiləri tutur — `HttpOnly`, `Secure`, hamısını.
 
-Nəticə birbaşadır: əgər login edib sonra `page.context().storageState({ path })` çağırsanız, alınan fayl **sessiya kukisini ehtiva etməyəcək**. Həmin vəziyyəti yeni bir context-də yenidən yükləyin — tətbiq sizi sistemdən çıxmış kimi qəbul edir. "Bir dəfə `storageState` saxla" resepti bu cür tətbiq üçün sessiyanı sadəcə daşımır.
+**TestMarket Lab server tərəfli sessiya ilə autentifikasiya edir.** O, `express-session` istifadə edir; onun kukisi (`connect.sid`) `HttpOnly`-dir. UI vasitəsilə giriş edin, `storageState`-i saxlayın və fayl `connect.sid`-i **ehtiva edir**; onu təzə kontekstə yükləyin və tətbiq sizi daxil olmuş kimi qəbul edir. Klassik "bir dəfə giriş et, `storageState`-i saxla, hər yerdə təkrar istifadə et" resepti burada token tətbiqlərində olduğu kimi işləyir.
 
-> Düzəliş kukini HTTP-only olmayan etmək **deyil** — bu, tətbiqin təhlükəsizliyini testlərə uyğunlaşdırmaq üçün zəiflədərdi. Düzəliş canlı, HTTP-only kukini real bir browser context daxilində saxlayan bir nümunədən istifadə etməkdir: **doğrulanmış fixture**.
+> Özünüz yoxlayın: UI girişindən sonra `console.log(await page.context().storageState())` işlədin və `cookies` massivində `connect.sid`-i `"httpOnly": true` ilə görəcəksiniz.
 
-Beləliklə, bu modulun qalan hissəsində: `storageState`-i token/localStorage auth üçün doğru alət kimi öyrənin (bu cür tətbiqlərlə *qarşılaşacaqsınız*), amma hər TestMarket Lab tapşırığı üçün **fixture-login** yanaşmasından istifadə edin.
+**Real bir incəlik var, sadəcə fərqlidir.** Sessiya kukisi yalnız server tərəfli sessiya anbarına *açardır*. Saxlanmış fayl həmin sessiya bitdikdə **köhnəlir** — server yenidən başlayır, sessiya vaxtı keçir və ya istifadəçi çıxış edir. Dünənki işlətmədən saxlanmış `storageState` bu gün heç nəyə autentifikasiya etməyə bilər. Həll yolu `storageState`-dən qaçmaq deyil, vəziyyəti **hər işlətmənin əvvəlində təzədən yaratmaqdır** (setup layihəsi bunu sizin üçün edir).
+
+**Yadda saxla:** `storageState` `HttpOnly` kukiləri də tutur (o, `document.cookie`-ni yox, kuki anbarını oxuyur), ona görə TestMarket Lab-ın `connect.sid`-i üçün işləyir — əsl məhdudiyyət köhnəlmədir: fayl yalnız server tərəfli sessiyaya açar olduğu üçün onu hər işlətmədə təzədən yaradın.
 
 ---
 
-## Doğrulanmış fixture nümunəsi (tətbiqimizin ehtiyacı)
+## Autentifikasiya-fixture nümunəsi (canlı kontekst alternativi)
 
-İdeya sadədir: login-i bir `BrowserContext` daxilində **bir dəfə** həyata keçirin, sonra həmin artıq doğrulanmış context-i (və onun səhifəsini) fixture vasitəsilə hər testə verin. HTTP-only sessiya kukisi bütün müddət ərzində həmin context daxilində yaşayır — onu heç vaxt serialize etməyə çalışmırıq, deməli `HttpOnly` bayrağının əhəmiyyəti yoxdur.
+`storageState` *saxlanmış* sessiyanı yenidən oynadır. Bəzən isə **canlı** sessiya saxlamaq istəyirsiniz: bir `BrowserContext` daxilində **bir dəfə** giriş edin, sonra həmin artıq-autentifikasiya-edilmiş konteksti (və onun səhifəsini) fixture vasitəsilə hər testə verin. Kontekst bütün test boyu canlı olduğundan köhnələcək saxlanmış fayl yoxdur — rol dəyişdirmə və lokal iş üçün əlverişlidir.
 
 ```ts
 // fixtures/auth.fixture.ts
@@ -112,7 +112,7 @@ async function login(page: Page, email: string, password: string) {
   await page.fill('#email', email);
   await page.fill('#password', password);
   await page.click('#login-btn');
-  // The server redirects after login and shows a success flash.
+  // Server girişdən sonra yönləndirir və uğur flash-ı göstərir.
   await page.waitForURL((url) => !url.pathname.startsWith('/auth/login'));
 }
 
@@ -140,35 +140,35 @@ export const test = base.extend<AuthFixtures>({
 });
 ```
 
-Testdə istifadəsi — login kodu yoxdur, sadəcə lazım olan rolu istəyin:
+Testdə istifadə — giriş kodu yoxdur, sadəcə lazım olan rolu istəyin:
 
 ```ts
 import { test } from '../fixtures/auth.fixture';
 import { expect } from '@playwright/test';
 
-test('logged-in customer sees the profile link', async ({ customerPage }) => {
+test('daxil olmuş müştəri profil linkini görür', async ({ customerPage }) => {
   await customerPage.goto('/');
   await expect(customerPage.locator('[data-testid="nav-profile"]')).toBeVisible();
 });
 
-test('admin can reach the admin panel', async ({ adminPage }) => {
+test('admin admin panelinə çata bilir', async ({ adminPage }) => {
   await adminPage.goto('/admin');
   await expect(adminPage.locator('h1')).toContainText('Admin');
 });
 
-test('customer cannot reach the admin panel', async ({ customerPage }) => {
+test('müştəri admin panelinə çata bilmir', async ({ customerPage }) => {
   await customerPage.goto('/admin');
-  // No /unauthorized route — the app redirects non-admins to home with a flash error.
+  // /unauthorized marşrutu yoxdur — tətbiq admin olmayanları flash xətası ilə ana səhifəyə yönləndirir.
   await expect(customerPage).toHaveURL('/');
   await expect(customerPage.locator('[data-testid="flash-error"]')).toBeVisible();
 });
 ```
 
-Burada hər fixture **test-əhatəlidir** (test-scoped): ehtiyacı olan hər test üçün təzə bir context yaradır. Bu təmiz və izolə edilmişdir, amma test başına bir dəfə login edir. Növbəti bölmə login xərcini bütöv bir işçi üzrə necə bölüşdürəcəyinizi göstərir.
+Hər fixture burada **test-scoped-dur**: ehtiyacı olan hər test üçün təzə kontekst yaradır. Bu təmiz və izolyasiyalıdır, amma hər test üçün bir dəfə giriş edir. Növbəti bölmə giriş xərcini bütün worker boyu necə amortizasiya etməyi göstərir.
 
-### İşçi-əhatəli login (işçi başına bir dəfə login)
+### Worker-scoped giriş (worker başına bir dəfə giriş)
 
-Eyni rola ehtiyac duyan çoxlu testiniz varsa, login xərcini test başına deyil, **işçi başına** bir dəfə ödəyin. Fixture-i `{ scope: 'worker' }` ilə işarələyin və onun context-ini yenidən istifadə edin:
+Eyni rolu tələb edən çoxlu testiniz varsa, giriş xərcini test başına yox, **worker başına** bir dəfə ödəyin. Fixture-u `{ scope: 'worker' }` kimi işarələyin və onun kontekstini təkrar istifadə edin:
 
 ```ts
 // fixtures/auth.fixture.ts
@@ -183,7 +183,7 @@ type TestAuthFixtures = {
 };
 
 export const test = base.extend<TestAuthFixtures, WorkerAuthFixtures>({
-  // One logged-in context per worker process.
+  // Worker prosesi başına bir daxil olmuş kontekst.
   customerContext: [async ({ browser }, use) => {
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -197,7 +197,7 @@ export const test = base.extend<TestAuthFixtures, WorkerAuthFixtures>({
     await context.close();
   }, { scope: 'worker' }],
 
-  // A fresh page in the shared authenticated context for each test.
+  // Hər test üçün paylaşılan autentifikasiya kontekstində təzə səhifə.
   customerPage: async ({ customerContext }, use) => {
     const page = await customerContext.newPage();
     await use(page);
@@ -206,16 +206,18 @@ export const test = base.extend<TestAuthFixtures, WorkerAuthFixtures>({
 });
 ```
 
-`customerPage`-ə qarşı yazılmış testlər əvvəlki kimi görünür — sadəcə artıq test başına login ödəmirlər. Sessiya kukisi paylaşılan işçi context-i daxilində işçinin bütün ömrü boyu canlı qalır.
+`customerPage`-ə qarşı yazılan testlər əvvəlki kimi görünür — sadəcə artıq test başına giriş ödəmir. Sessiya bütün worker-ın ömrü boyu paylaşılan worker kontekstində canlı qalır.
+
+**Yadda saxla:** autentifikasiya fixture-u saxlanmış fayl yerinə *canlı* daxil olmuş kontekst saxlayır — zəmanətli təzə vəziyyət və ya asan rol dəyişdirmə istəyəndə ona müraciət edin; test başına yox, worker başına bir dəfə giriş üçün onu `worker` scope edin.
 
 ---
 
-## `globalSetup` və setup layihələri haqqında qeyd
+## `globalSetup` və setup layihələri
 
-Playwright sənədlərində və başqa paketlərdə "bir dəfə login" üçün daha iki yol görəcəksiniz: `globalSetup` funksiyası və digər layihələrin `dependencies` vasitəsilə elan etdiyi xüsusi bir **setup layihəsi**. Hər ikisi login addımını bir dəfə işlədir və sonra `use.storageState`-i saxlanmış fayla yönəldir:
+Əksər paketlər üçün ən təmiz "bir dəfə giriş" digər layihələrin `dependencies` vasitəsilə elan etdiyi xüsusi **setup layihəsidir**: o, UI vasitəsilə bir dəfə giriş edir, `storageState`-i saxlayır və hər asılı layihə həmin faylı yükləyir. TestMarket Lab üçün tövsiyə olunan yanaşma budur — saxlanmış fayl real `connect.sid` sessiyasını daşıyır.
 
 ```ts
-// playwright.config.ts (storageState-based — works for TOKEN/localStorage apps)
+// playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
@@ -234,38 +236,42 @@ export default defineConfig({
 // tests/setup/auth.setup.ts
 import { test as setup, expect } from '@playwright/test';
 
-setup('authenticate as customer', async ({ page }) => {
+setup('müştəri kimi autentifikasiya', async ({ page }) => {
   await page.goto('/auth/login');
   await page.fill('#email', 'customer@test.io');
   await page.fill('#password', 'customer123');
   await page.click('#login-btn');
   await expect(page.locator('.alert-success')).toBeVisible();
+  // connect.sid-i fayla saxlayır — UI girişi sessiya kukisini təyin etdiyi üçün işləyir.
   await page.context().storageState({ path: 'auth/customer.json' });
 });
 ```
 
-Setup layihəsinin üstünlükləri realdır və bilməyə dəyər:
+Setup layihəsinin üstünlükləri realdır:
 
-- Setup testi HTML reporter-da görünür — uğursuz olduqda iz (trace) və skrinşotlara baxa bilərsiniz
-- Asılılıq qrafiki açıq-aydındır: `chromium` yalnız `setup` keçdikdən sonra işləyir
-- Bir neçə layihə eyni setup layihəsindən asılı ola bilər
+- Setup testi HTML reporter-da görünür — uğursuz olarsa trace və skrinşotları görə bilərsiniz
+- Asılılıq qrafı açıqdır: `chromium` yalnız `setup` keçəndən sonra işləyir
+- Birdən çox layihə eyni setup layihəsindən asılı ola bilər
+- O, **işlətmə başına bir dəfə** işləyir, ona görə hər işlətmədə təzə sessiya da yaradır — köhnəlmə incəliyinin tam əksinə
 
-**Amma tələni unutmayın.** Bütün bu yanaşma `storageState`-in auth-u daşımasından asılıdır. **TestMarket Lab-ın HTTP-only sessiyası üçün saxlanmış `auth/customer.json` sessiya kukisini ehtiva etməyəcək**, deməli asılı testlər sistemdən çıxmış vəziyyətdə başlayar. Tətbiqiniz auth-u token/localStorage-da və ya HTTP-only olmayan kukidə saxlayırsa, setup layihəsi nümunəsinə müraciət edin; HTTP-only sessiya istifadə edirsə — praktika tətbiqimiz kimi — yuxarıdakı doğrulanmış fixture-ə müraciət edin.
+(`globalSetup` — konfiqurasiyada tək bir funksiya — eyni şeyi etməyin köhnə yoludur. Setup layihəsi adətən üstündür, çünki reporter-da görünür və asılılıq qrafına inteqrasiya olur.)
+
+**Yadda saxla:** `setup` layihəsi bir dəfə giriş edir, `storageState`-i saxlayır və asılı layihələr onu `use.storageState` ilə yükləyir — TestMarket Lab üçün tövsiyə olunan yol budur və işlətmə başına bir dəfə işləmək sessiyanı təzə saxlayır.
 
 ---
 
 ## Çoxsaylı rollar
 
-Real tətbiqlərdə müxtəlif icazələrə malik çoxsaylı istifadəçi rolları var. Fixture yanaşmasında hər rol sadəcə başqa bir fixture-dir — yuxarıda artıq `customerPage` və `adminPage`-i gördünüz. Setup layihəsi yanaşmasında (token/localStorage tətbiqləri) hər rol üçün bir setup testi yazır və hər saxlanmış faylı öz layihəsinə bağlayırsınız:
+Real tətbiqlərin müxtəlif icazələri olan bir neçə istifadəçi rolu var. Setup layihəsi yanaşması ilə hər rol üçün bir setup testi yazır və hər saxlanmış faylı öz layihəsinə bağlayırsınız:
 
 ```ts
-// tests/setup/auth.setup.ts  (token/localStorage apps only)
+// tests/setup/auth.setup.ts
 import { test as setup, expect } from '@playwright/test';
 import path from 'path';
 
 const authDir = path.join(process.cwd(), 'auth');
 
-setup('authenticate as customer', async ({ page }) => {
+setup('müştəri kimi autentifikasiya', async ({ page }) => {
   await page.goto('/auth/login');
   await page.fill('#email', 'customer@test.io');
   await page.fill('#password', 'customer123');
@@ -274,7 +280,7 @@ setup('authenticate as customer', async ({ page }) => {
   await page.context().storageState({ path: path.join(authDir, 'customer.json') });
 });
 
-setup('authenticate as admin', async ({ page }) => {
+setup('admin kimi autentifikasiya', async ({ page }) => {
   await page.goto('/auth/login');
   await page.fill('#email', 'admin@test.io');
   await page.fill('#password', 'admin123');
@@ -300,44 +306,53 @@ projects: [
 ],
 ```
 
-`dependencies`-siz layihələr paralel işləyir. `dependencies` elan edən layihələr, siyahıdakı hər layihə bitib keçənə qədər gözləyir. `setup` uğursuz olarsa, asılı layihələr ötürülür — mövcud olmayan auth faylından qaynaqlanan çaşdırıcı uğursuzluqlar görməzsiniz.
+(Fixture yanaşması ilə hər rol sadəcə başqa bir fixture-dur — yuxarıda gördüyünüz `customerPage` və `adminPage`.)
+
+`dependencies`-i olmayan layihələr paralel işləyir. `dependencies` elan edən layihələr başlamazdan əvvəl siyahıdakı hər layihənin bitib keçməsini gözləyir. `setup` uğursuz olarsa, asılı layihələr ötürülür — çatışmayan auth faylından yaranan yanıldıcı uğursuzluqları görməyəcəksiniz.
+
+**Yadda saxla:** bir setup testi + bir saxlanmış fayl + hər rol üçün bir layihə rolları izolyasiyalı saxlayır; `dependencies` rol layihələrini `setup`-ı gözlətdirir və o uğursuz olarsa təmiz şəkildə ötürür.
 
 ---
 
-## Texnikalar arasında seçim
+## Üsullar arasında seçim
 
-| Narahatlıq | Doğrulanmış fixture | storageState + setup layihəsi |
+Hər iki üsul TestMarket Lab üçün işləyir. Kuki tipinə görə yox, paketin nəyə ehtiyacı olduğuna görə seçin:
+
+| Məsələ | storageState + setup layihəsi | Autentifikasiya fixture-u |
 |---|---|---|
-| HTTP-only sessiya kukisi ilə işləyir | **Bəli** (kuki canlı context-də qalır) | **Xeyr** (kuki serialize edilmir) |
+| HTTP-only sessiya kukisi ilə işləyir | **Bəli** (kuki seriallaşdırılır) | Bəli (canlı kontekst) |
 | Token / localStorage auth ilə işləyir | Bəli | Bəli |
-| Ən yaxşı olduğu yer | Sessiya tətbiqləri, rol dəyişdirmə, lokal inkişaf | Token tətbiqləri, böyük CI paketləri |
-| Konfiqurasiya dəyişikliyi lazımdır | Xeyr | Bəli (layihələr + dependencies) |
-| HTML reporter-da görünür | Test başına | Bəli (öz setup fazası) |
-| Çox rollara dəstək | Rol başına bir fixture | Rol başına bir layihə |
-| Login xərci | Test başına, və ya işçi başına bir dəfə | Paket işləməsi başına bir dəfə |
+| Giriş xərci | İşlətmə başına bir dəfə | Test başına, ya da worker başına bir dəfə |
+| Köhnə saxlanmış vəziyyətdən qoruyur | Hər işlətmədə təzələnir | Mövzu deyil — həmişə canlı sessiya |
+| Konfiqurasiya dəyişikliyi lazımdır | Bəli (layihələr + dependencies) | Xeyr |
+| HTML reporter-da görünür | Bəli (öz setup mərhələsi) | Test başına |
+| Çoxrollu dəstək | Rol başına bir layihə | Rol başına bir fixture |
+| Üçün ən yaxşı | Böyük CI paketləri, ən az giriş | Rol dəyişdirmə, lokal iş, zəmanətli təzə vəziyyət |
 
-**TestMarket Lab** üçün doğru seçim sol sütundur.
+Böyük CI işlətməsi üçün setup-layihəsi + `storageState` sütunu adətən sürətdə qalib gəlir (bütün işlətmə üçün bir giriş). Ağır rol dəyişdirmə və ya sürətli lokal iş üçün fixture əlverişlidir.
+
+**Yadda saxla:** TestMarket Lab üçün hər ikisi işləyir — CI-də ən az giriş üçün defolt olaraq `storageState` + setup layihəsi, canlı kontekst və ya asan rol dəyişdirmə istəyəndə isə fixture seçin.
 
 ---
 
-## API login
+## API girişi
 
-UI login rahatdır amma yavaşdır (~1–3 saniyə). Tətbiq bir login API açıqlayırsa, proqramatik olaraq doğrulaya və formanı keçə bilərsiniz. Dəqiq mexanika tətbiqin auth-u necə qaytarmasından asılıdır:
+UI girişi əlverişli, amma yavaşdır (~1–3 saniyə). Tətbiq istifadə edilə bilən kimlik qaytaran giriş API-si təqdim edəndə, proqramlı autentifikasiya edib formanı tamamilə ötürə bilərsiniz. Dəqiq mexanizm endpoint-in nə qaytardığından asılıdır:
 
-- **Cavab gövdəsində token** → onu oxuyun və saxlayın (bir kuki və ya `localStorage` qeydi), sonra `storageState` saxlayın və ya onu context-də təyin edin.
-- **API tərəfindən təyin edilən sessiya kukisi** → endpoint-i *bir browser context-dən* çağırın ki, `Set-Cookie` həmin context-ə düşsün, sonra testin qalan hissəsi üçün context-dən (bir fixture) istifadə etməyə davam edin.
+- **Cavab gövdəsində token** → onu oxuyun, saxlayın (`localStorage` və ya kuki), sonra `storageState`-i saxlayın.
+- **API tərəfindən təyin edilən sessiya kukisi** → onu *brauzer kontekstindən* çağırın ki, `Set-Cookie` orada yerləşsin, sonra həmin konteksti istifadə etməyə davam edin.
 
-TestMarket Lab-ın `POST /api/auth/login` yalnız istifadəçi məlumatlarını (`{ id, email, name, role }`) qaytarır — **token yoxdur** — və brauzer sessiyası qurmur, deməli `storageState`-in ondan saxlayacağı heç nə yoxdur. O, API davranışını yoxlamaq üçün faydalıdır, amma bu tətbiqdə doğrulanmış *UI* testləri üçün yuxarıdakı fixture-login nümunəsinə sadiq qalın.
+TestMarket Lab-ın `POST /api/auth/login`-i **heç birini** etmir: yalnız istifadəçi məlumatı qaytarır (`{ id, email, name, role }`) — token yoxdur — və sessiya kukisi təyin etmir. Ona görə API girişi bu tətbiq üçün auth-u toxumlaya bilməz; API davranışını yoxlamaq üçün faydalıdır, amma burada autentifikasiya edilmiş *quraşdırma* üçün UI vasitəsilə giriş edin (sonra `storageState`-i saxlayın və ya fixture istifadə edin).
 
 Token əsaslı API *mövcud olduqda* sürət qazancı realdır:
 
 ```ts
-// Illustrative: only for an app whose /api/auth/login returns a token.
+// İllüstrativ: yalnız /api/auth/login-i token qaytaran tətbiq üçün.
 const response = await request.post('http://localhost:3000/api/auth/login', {
   data: { email: 'customer@test.io', password: 'customer123' },
 });
 expect(response.ok()).toBeTruthy();
-const { token } = await response.json();        // exists only on token-based APIs
+const { token } = await response.json();        // yalnız token əsaslı API-lərdə mövcuddur
 
 const context = await browser.newContext();
 await context.addInitScript((t) => localStorage.setItem('token', t), token);
@@ -345,32 +360,34 @@ await context.storageState({ path: 'auth/customer.json' });
 await context.close();
 ```
 
-**API login-in uyğun olduğu hallar:**
-- Setup müddətinin CI-da ölçülə biləcəyi yüksək həcmli quraşdırmalar
-- Uzun, çox addımlı UI login axınlarına malik tətbiqlər
-- Cavabın `storageState`-in saxlaya biləcəyi bir şey verdiyi token əsaslı API-lər
+**API girişinin doğru seçim olduğu hallar:**
+- Cavabın saxlamağa bir şey verdiyi token əsaslı API-lər
+- Quraşdırma vaxtının CI-də ölçülə bildiyi yüksək həcmli quraşdırmalar
+- Uzun, çoxaddımlı UI giriş axınları olan tətbiqlər
 
-**UI / fixture login-ə sadiq qalmaq lazım olan hallar:**
-- HTTP-only kukili server tərəfli sessiya tətbiqləri (TestMarket Lab kimi)
-- Birbaşa API endpoint-i olmayan SSO, OAuth2 və ya çox faktorlu axınlar
-- Real login UI-nin yoxlanılması əhatənizin bir hissəsi olduqda
+**UI girişində qalmaq lazım olan hallar (`storageState` ilə saxlanmış, ya da fixture):**
+- API-si token və ya kuki qaytarmayan server tərəfli sessiya tətbiqləri (TestMarket Lab kimi)
+- Birbaşa API endpoint-i olmayan SSO, OAuth2 və ya çoxfaktorlu axınlar
+- Real giriş UI-nı yoxlamaq əhatənizin bir hissəsi olduqda
+
+**Yadda saxla:** API girişi yalnız endpoint saxlaya biləcəyiniz bir şey (token) qaytaranda və ya kuki təyin edəndə kömək edir — TestMarket Lab-ın `/api/auth/login`-i heç birini etmir, ona görə UI vasitəsilə autentifikasiya edin və `storageState`-i saxlayın.
 
 <Practice missions={["login-with-validation"]} locale="az" />
 
 ---
 
-## Təhlükəsizlik — real etimadnamələri commit etməyin
+## Təhlükəsizlik — real kimlik məlumatlarını commit etməyin
 
-Saxlanmış auth vəziyyəti və etimadnamələr həssasdır. Onlara şifrə kimi yanaşın.
+Saxlanmış auth vəziyyəti və kimlik məlumatları həssasdır. Onlara parol kimi yanaşın.
 
-**`auth/` qovluğunu `.gitignore`-a əlavə edin** (`storageState` faylları istifadə etdiyiniz hallarda aktualdır):
+**`auth/`-i `.gitignore`-a əlavə edin** — saxlanmış `storageState` faylı canlı sessiyadır, parol qədər dəyərlidir:
 
 ```
 # .gitignore
 auth/
 ```
 
-**Etimadnamələr üçün `.env` istifadə edin, onları heç vaxt kodda yazmayın:**
+**Kimlik məlumatları üçün `.env` istifadə edin, heç vaxt sabit kodlamayın:**
 
 ```ts
 // .env
@@ -379,86 +396,79 @@ CUSTOMER_PASSWORD=customer123
 ```
 
 ```ts
-// fixtures/auth.fixture.ts
+// tests/setup/auth.setup.ts
 import 'dotenv/config';
 
-// ...inside the login helper:
+// ...setup daxilində:
 await page.fill('#email', process.env.CUSTOMER_EMAIL!);
 await page.fill('#password', process.env.CUSTOMER_PASSWORD!);
 ```
 
-**CI-da** etimadnamələri provayderinizin şifrəli mühit dəyişənlərində (GitHub Actions Secrets, GitLab CI/CD Variables və s.) təyin edin. `storageState` faylları istifadə edirsinizsə, onları hər pipeline işinin başında təzədən yaradın və `auth/*.json`-ı heç vaxt commit etməyin.
+**CI-də** kimlik məlumatlarını provayderinizdə şifrələnmiş mühit dəyişənləri kimi təyin edin (GitHub Actions Secrets, GitLab CI/CD Variables və s.). `auth/*.json`-u hər pipeline işlətməsinin əvvəlində təzədən yaradın və heç vaxt commit etməyin.
+
+**Yadda saxla:** saxlanmış `auth/*.json` canlı sessiyadır — `auth/` qovluğunu `.gitignore` edin, kimlik məlumatlarını `.env` / CI sirlərində saxlayın və vəziyyəti commit etmək yerinə hər işlətmədə təzədən yaradın.
 
 ---
 
 ## Tapşırıqlar
 
-Bu tapşırıqlar lokal olaraq klonlanmış **TestMarket Lab** üzərində `http://localhost:3000`-də işləyir (Modul 2-də quraşdırdığınız tətbiq). Testləri işlətməzdən əvvəl onu `npm start` ilə başladın. TestMarket Lab HTTP-only sessiya kukisi istifadə etdiyi üçün hər tapşırıq saxlanmış `storageState` faylını deyil, **doğrulanmış fixture** nümunəsini istifadə edir.
+Bu tapşırıqlar lokal klonlanmış **TestMarket Lab**-a qarşı `http://localhost:3000`-də işləyir (Modul 2-də qurduğunuz tətbiq). Testləri işlətməzdən əvvəl `npm start` ilə başladın. Əvvəlcə tövsiyə olunan `storageState` + setup-layihəsi axınını, sonra canlı-fixture alternativini quracaqsınız.
 
-### Tapşırıq 1 — Auth fixture-i qurun
+### Tapşırıq 1 — Auth setup layihəsi (storageState)
 
-`tests/starter/fixtures/auth.fixture.ts` yazın. O, iki fixture — `customerPage` və `adminPage` — ilə bir `test` ixrac etməlidir. Hər fixture:
+`tests/starter/tests/setup/auth.setup.ts` yaradın və onu `playwright.config.ts`-ə bağlayın:
 
-1. Yeni bir browser context və səhifə yaradır
-2. `/auth/login`-ə keçir
-3. `#email` və `#password`-u doldurur (müştəri: `customer@test.io` / `customer123`; admin: `admin@test.io` / `admin123`)
-4. `#login-btn`-a klikləyir
-5. `/auth/login`-dən kənara yönləndirməni gözləyir
-6. `use(page)` ilə səhifəni verir, sonra context-i bağlayır
+1. `testMatch: /auth\.setup\.ts/` olan bir `setup` layihəsi
+2. `use: { storageState: 'auth/customer.json' }` və `dependencies: ['setup']` olan bir `chromium` layihəsi
+3. Setup testi giriş edir (`#email` / `#password` / `#login-btn`), `.alert-success`-in göründüyünü yoxlayır, sonra `await page.context().storageState({ path: 'auth/customer.json' })`
 
-Fixture tipləri kompilyasiya olunsun deyə `import type { Page } from '@playwright/test';` yazmağı unutmayın.
+Onu işlədin və `auth/customer.json`-un yazıldığını və **`connect.sid` kukisini ehtiva etdiyini** təsdiqləyin. `auth/`-i `.gitignore`-a əlavə edin.
 
-### Tapşırıq 2 — Doğrulanmış müştəri testi (login kodu yoxdur)
+### Tapşırıq 2 — Daxil olmuş halda başlayan test (giriş kodu yoxdur)
 
-Fixture-inizi istifadə edərək `tests/starter/tests/profile.spec.ts` yaradın:
-
-```ts
-import { test } from '../fixtures/auth.fixture';
-import { expect } from '@playwright/test';
-
-test('customer sees the profile link', async ({ customerPage }) => {
-  await customerPage.goto('/');
-  await expect(customerPage.locator('[data-testid="nav-profile"]')).toBeVisible();
-});
-```
-
-Test gövdəsində `page.fill('#email', ...)` olmamalıdır — login-i fixture həll etdi.
-
-### Tapşırıq 3 — Admin admin panelinə çata bilir
-
-```ts
-import { test } from '../fixtures/auth.fixture';
-import { expect } from '@playwright/test';
-
-test('admin reaches the admin panel', async ({ adminPage }) => {
-  await adminPage.goto('/admin');
-  await expect(adminPage.locator('h1')).toContainText('Admin');
-});
-```
-
-### Tapşırıq 4 — Müştəriyə admin paneli qadağandır
-
-Tətbiqin `/unauthorized` route-u yoxdur. `/admin`-ə daxil olan qeyri-admin `/` (ana səhifə) ünvanına flash xətası ilə yönləndirilir.
-
-```ts
-import { test } from '../fixtures/auth.fixture';
-import { expect } from '@playwright/test';
-
-test('customer cannot reach the admin panel', async ({ customerPage }) => {
-  await customerPage.goto('/admin');
-  await expect(customerPage).toHaveURL('/');
-  await expect(customerPage.locator('[data-testid="flash-error"]')).toBeVisible();
-});
-```
-
-### Tapşırıq 5 — Bir UI login testi saxlayın
-
-`@playwright/test`-dən sadə `test` ilə (fixture yox, `storageState` yox) tam brauzer login-i həyata keçirən `tests/starter/tests/login.spec.ts`-i qoruyun. Bu test sizi login formasındakı səssiz pozulmalardan qoruyur:
+`tests/starter/tests/profile.spec.ts` yaradın. Setup layihəsi qoşulduqda `chromium` layihəsi artıq `storageState` yüklədiyi üçün test autentifikasiya edilmiş halda başlayır:
 
 ```ts
 import { test, expect } from '@playwright/test';
 
-test('login flow works end-to-end', async ({ page }) => {
+test('müştəri profil linkini görür', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('[data-testid="nav-profile"]')).toBeVisible();
+});
+```
+
+Test gövdəsində heç bir `page.fill('#email', ...)` olmamalıdır — saxlanmış vəziyyət girişi idarə etdi.
+
+### Tapşırıq 3 — Çoxsaylı rollar
+
+`auth/admin.json`-u saxlayan `admin kimi autentifikasiya` setup testi və ondan istifadə edən `admin-chromium` layihəsi əlavə edin. `/admin`-ə keçən və `h1`-in `Admin` ehtiva etdiyini yoxlayan bir test yazın.
+
+### Tapşırıq 4 — Müştəriyə admin paneli qadağandır
+
+Tətbiqin `/unauthorized` marşrutu yoxdur. Admin olmayan `/admin`-ə daxil olanda flash xətası ilə `/`-ə (ana səhifə) yönləndirilir. Müştəri vəziyyətindən istifadə edərək:
+
+```ts
+import { test, expect } from '@playwright/test';
+
+test('müştəri admin panelinə çata bilmir', async ({ page }) => {
+  await page.goto('/admin');
+  await expect(page).toHaveURL('/');
+  await expect(page.locator('[data-testid="flash-error"]')).toBeVisible();
+});
+```
+
+### Tapşırıq 5 — Canlı-fixture alternativi
+
+`customerPage` və `adminPage` fixture-larını ixrac edən `tests/starter/fixtures/auth.fixture.ts` yazın (təzə kontekst → giriş → `use(page)` → bağla). Saxlanmış fayl yerinə zəmanətli təzə sessiya istədiyiniz test üçün ondan istifadə edin. `import type { Page } from '@playwright/test';` yazmağı unutmayın.
+
+### Tapşırıq 6 — Bir UI giriş testi saxlayın
+
+`@playwright/test`-dən adi `test` ilə tam brauzer girişi həyata keçirən `tests/starter/tests/login.spec.ts`-i saxlayın (saxlanmış vəziyyət yox, fixture yox). Bu, sizi giriş formasındakı səssiz pozulmadan qoruyur:
+
+```ts
+import { test, expect } from '@playwright/test';
+
+test('giriş axını uçdan-uca işləyir', async ({ page }) => {
   await page.goto('/auth/login');
   await page.fill('#email', 'customer@test.io');
   await page.fill('#password', 'customer123');
@@ -467,17 +477,17 @@ test('login flow works end-to-end', async ({ page }) => {
 });
 ```
 
-### Çətin tapşırıq — İşçi-əhatəli login
+### Çağırış — Worker-scoped fixture girişi
 
-`customerPage` fixture-inizi yenidən qurun ki, login test başına deyil, **işçi başına bir dəfə** baş versin (onu "İşçi-əhatəli login" bölməsində göstərildiyi kimi işçi-əhatəli `customerContext` və test-əhatəli `customerPage`-ə bölün). `--workers=1` ilə təsdiqləyin ki, login bir neçə müştəri testi üçün yalnız bir dəfə işləyir.
+`customerPage` fixture-unu giriş test başına yox, **worker başına bir dəfə** olacaq şəkildə yenidən düzəldin (onu "Worker-scoped giriş" bölməsində göstərildiyi kimi worker-scoped `customerContext` və test-scoped `customerPage`-ə bölün). `--workers=1` ilə bir neçə müştəri testi üçün girişin yalnız bir dəfə işlədiyini təsdiqləyin.
 
 ### Öz-özünü yoxlama sualları
 
-1. `storageState` niyə TestMarket Lab-ın sessiya kukisini əldə edə bilmir?
-2. Doğrulanmış fixture nümunəsi `storageState`-in saxlaya bilmədiyi nəyi canlı saxlayır?
-3. `storageState` (setup layihəsi ilə) nə vaxt doğru alətdir?
-4. Test-əhatəli və işçi-əhatəli auth fixture arasındakı fərq nədir?
-5. Fixture faylında niyə `import type { Page }` etmək lazımdır?
-6. Qeyri-admin `/admin` istədikdən sonra hara düşür və nə onun uğursuzluğunu sübut edir?
-7. `storageState` faylları istifadə etdiyiniz zaman niyə `auth/` `.gitignore`-da olmalıdır?
-8. Hər digər test fixture istifadə etsə belə bir UI login testini saxlamaq niyə dəyərlidir?
+1. `storageState` `connect.sid` kimi `HttpOnly` sessiya kukisini tuturmu — və niyə tutur ya da tutmur?
+2. Server tərəfli sessiya tətbiqi üçün `storageState` saxlamağın *əsl* incəliyi nədir və setup layihəsi onu necə həll edir?
+3. Autentifikasiya fixture-u saxlanmış `storageState` faylından nə zaman daha uyğundur?
+4. Test-scoped və worker-scoped auth fixture-u arasındakı fərq nədir?
+5. Fixture faylında niyə `import type { Page }` etməlisiniz?
+6. Admin olmayan `/admin` istəyəndən sonra harada düşür və uğursuzluğu nə sübut edir?
+7. `auth/` niyə `.gitignore`-da olmalıdır?
+8. TestMarket Lab-ın `POST /api/auth/login`-i niyə autentifikasiya vəziyyətini toxumlamaq üçün istifadə edilə bilməz?
