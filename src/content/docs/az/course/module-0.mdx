@@ -214,6 +214,42 @@ göstərir. CI mühitlərində bu hesabat artifakt kimi saxlanılır.
 
 ---
 
+## Praktiki tətbiqi əldə et (TestMarket Lab)
+
+Modul 2-dən etibarən tapşırıqlar **TestMarket Lab**-a qarşı yazılıb — öz kompüterində işləyən kiçik, amma real bir veb tətbiq (login, məhsullar, səbət, ödəniş və admin bölməsi). Bu, sənin `playwright-kurs` qovluğundan **ayrı bir layihədir**: tətbiqi bir terminalda, testlərini başqa terminalda işlədirsən.
+
+Klonla, quraşdır və işə sal:
+
+```bash
+git clone https://github.com/TesterBaku/testmarket-lab
+cd testmarket-lab
+npm install
+npm start
+```
+
+Onu işlək saxla və brauzerdə [http://localhost:3000](http://localhost:3000) ünvanını aç — TestMarket mağazasını görməlisən.
+
+Sonra **test** layihəni ona yönəlt — `playwright.config.ts`-ə `baseURL` əlavə et:
+
+```javascript
+// playwright.config.ts
+export default defineConfig({
+  use: {
+    baseURL: 'http://localhost:3000',
+  },
+});
+```
+
+İndi tapşırıqlardakı nisbi yollar (məsələn, `page.goto('/auth/login')`) işlək tətbiqə bağlanır.
+
+:::tip[Məlumatları istənilən vaxt sıfırla]
+TestMarket Lab kiçik yerli verilənlər bazası istifadə edir. Tapşırıqlar arasında ilkin vəziyyətə qaytarmaq üçün tətbiqin qovluğunda `npm run reset` işlət (və ya işləyərkən `/api/reset`-ə `POST` göndər).
+:::
+
+**İki cür məşq:** [BrauzerLab](https://brauzerlab.rufatmalikov.com/az/) brauzerində heç nə quraşdırmadan işləyir — sürətli məşqlər üçün; **TestMarket Lab** isə yerli işləyir və ona qarşı tam test dəstləri yazırsan.
+
+---
+
 ## Əsas nəticələr
 
 - **Playwright** — çoxbrauzerli avtomatlaşdırma freymvorkudur; bir test Chromium, Firefox və WebKit-də işləyir, avtomatik gözləmə ilə.
@@ -221,7 +257,7 @@ göstərir. CI mühitlərində bu hesabat artifakt kimi saxlanılır.
 - Layihədə üç fayl vacibdir: **`package.json`** (skriptlər və asılılıqlar), **`tests/`** qovluğu (`.spec.ts` fayllarınız) və **`playwright.config.ts`** (parametrlər — brauzerlər, `baseURL`, retries).
 - Testləri **`npx playwright test`** ilə işlət; nəticələri **`npx playwright show-report`** ilə gör.
 
-**Yoxlama siyahısı — indi sənin əlində olmalıdır:** Node, VS Code və Git quraşdırılıb; `npm init playwright@latest` ilə `playwright-kurs` layihəsi yaradılıb; nümunə test keçir və aça biləcəyin HTML hesabat var.
+**Yoxlama siyahısı — indi sənin əlində olmalıdır:** Node, VS Code və Git quraşdırılıb; `npm init playwright@latest` ilə `playwright-kurs` layihəsi yaradılıb; nümunə test keçir və aça biləcəyin HTML hesabat var; və qarşıdakı tapşırıqlar üçün **TestMarket Lab** klonlanıb `http://localhost:3000`-də işləyir.
 
 Modul 1-də hər test faylında istifadə edəcəyin JavaScript və TypeScript-i öyrənirik.
 

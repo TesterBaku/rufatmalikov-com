@@ -213,6 +213,42 @@ In CI environments this report is saved as an artifact.
 
 ---
 
+## Get the practice app (TestMarket Lab)
+
+From Module 2 onward, the exercises are written against **TestMarket Lab** — a small but realistic web app (login, products, cart, checkout, and an admin area) that runs on your own machine. It's a **separate project** from your `playwright-course` folder: you run the app in one terminal and your tests in another.
+
+Clone, install, and start it:
+
+```bash
+git clone https://github.com/TesterBaku/testmarket-lab
+cd testmarket-lab
+npm install
+npm start
+```
+
+Leave it running and open [http://localhost:3000](http://localhost:3000) — you should see the TestMarket storefront.
+
+Then point your **test** project at it by adding a `baseURL` to `playwright.config.ts`:
+
+```javascript
+// playwright.config.ts
+export default defineConfig({
+  use: {
+    baseURL: 'http://localhost:3000',
+  },
+});
+```
+
+Now the relative paths in the exercises (like `page.goto('/auth/login')`) resolve to the running app.
+
+:::tip[Reset the data anytime]
+TestMarket Lab uses a small local database. To restore it to its starting state between exercises, run `npm run reset` in the app's folder (or send a `POST` to `/api/reset` while it's running).
+:::
+
+**Two ways to practice:** [BrauzerLab](https://brauzerlab.rufatmalikov.com/en/) runs in your browser with nothing to install — great for quick drills; **TestMarket Lab** runs locally and is what you write full test suites against.
+
+---
+
 ## Key takeaways
 
 - **Playwright** is a cross-browser automation framework — one test runs on Chromium, Firefox, and WebKit, with auto-waiting built in.
@@ -220,6 +256,6 @@ In CI environments this report is saved as an artifact.
 - Three files matter in a project: **`package.json`** (scripts & dependencies), the **`tests/`** folder (your `.spec.ts` files), and **`playwright.config.ts`** (settings — browsers, `baseURL`, retries).
 - Run tests with **`npx playwright test`**; view results with **`npx playwright show-report`**.
 
-**Checklist — you should now have:** Node, VS Code, and Git installed; a `playwright-course` project created with `npm init playwright@latest`; and the example test passing with an HTML report you can open.
+**Checklist — you should now have:** Node, VS Code, and Git installed; a `playwright-course` project created with `npm init playwright@latest`; the example test passing with an HTML report you can open; and **TestMarket Lab** cloned and running at `http://localhost:3000` for the exercises ahead.
 
 In Module 1, we cover the JavaScript and TypeScript you'll use in every test file.
