@@ -22,7 +22,7 @@ Yoxlamalar bunlardır:
 |---------|--------|
 | **Attached** | Element DOM-da mövcuddur |
 | **Visible** | Element gizlənməyib (`display:none`, `visibility:hidden`, `opacity:0`, sıfır ölçü) |
-| **Stable** | Element ən azı iki animasiya çərçivəsi (500 ms) boyunca hərəkət etməyib |
+| **Stable** | Element iki ardıcıl animasiya çərçivəsi boyunca eyni sərhəd qutusunu saxlayır (hərəkəti/animasiyası dayanıb) |
 | **Receives events** | Heç bir element hədəfi örtmür (overlay, modal və ya tooltip yoxdur) |
 | **Enabled** | Element `disabled` deyil |
 
@@ -45,6 +45,8 @@ await page.getByRole('button', { name: 'Sifariş ver' }).click();
 - Element hazırda animasiya edirsə (sürüşərək girən, silinərək görünən), `click()` sabitləşməsini gözləyir.
 
 Buna görə Playwright ilə açıq gözləmələrin əksəriyyəti lazımsızdır.
+
+**Yadda saxla:** hər əməliyyat işə düşməzdən əvvəl attached + visible + stable + receives-events + enabled gözləyir — əməliyyatdan əvvəl nadir hallarda açıq gözləmə lazım olur.
 
 ---
 
@@ -81,6 +83,8 @@ await page.waitForTimeout(5000); // COMMIT ETMƏZDƏN ƏVVƏL SİLİN
 // Şərh xatırladıcınızdır. Həqiqətən silin.
 ```
 
+**Yadda saxla:** sabit yuxuma heç nəyi yoxlamır və testi hardware sürətinə bağlayır — onu faktiki şərti gözləməklə əvəz et.
+
 ---
 
 ## `expect` avtomatik yenidən cəhdi — xatırlatma
@@ -97,6 +101,8 @@ await expect(page.locator('.status')).toHaveText('Hazır');
 ```
 
 Mətn, say, URL ya da görünürlük vəziyyətini yoxlamadan əvvəl `waitForTimeout` yazdığınızı görürsünüzsə — yoxlamanı veb-first ekvivalenti ilə əvəz edin. Yuxuma avtomatik yox olur.
+
+**Yadda saxla:** əksər `waitForTimeout`-lar yenidən cəhd etməyən assertion səbəbindən var — veb-first `expect(locator)` qoy, yuxuma yox olur.
 
 ---
 
@@ -143,6 +149,8 @@ async placeOrder() {
   await this.page.waitForURL(/\/orders\/\d+/);
 }
 ```
+
+**Yadda saxla:** əvvəl tetiklə, sonra gözlə; testlərdə `toHaveURL`, köməkçilərdə və page object-lərdə `waitForURL` üstün tut.
 
 ---
 
@@ -195,6 +203,8 @@ expect(body.products).toHaveLength(10);
 - Forma göndərdikdən sonra — təsdiq mesajını iddia etməzdən əvvəl POST cavabını gözləyin
 - Şəbəkə xətası işləmini sınaqdan keçirərkən — 4xx ya da 5xx cavabını gözləyin
 
+**Yadda saxla:** dinləyicini əməliyyatdan **əvvəl** `Promise.all` ilə qeydiyyata al, yoxsa cavab sən dinləməyə başlamazdan əvvəl gələ bilər.
+
 ---
 
 ## `waitForLoadState`
@@ -220,6 +230,8 @@ await page.waitForLoadState('networkidle');
 ```
 
 **Vacib:** `page.goto()` defolt olaraq artıq `'load'`-u gözləyir, buna görə `goto()`-dan sonra `waitForLoadState('load')` çağırmaq demək olar ki, həmişə artıqdır.
+
+**Yadda saxla:** `goto()` artıq `load`-u gözləyir — vəziyyətə yalnız konkret olaraq `domcontentloaded` və ya (nadir hallarda) `networkidle` lazım olanda müraciət et.
 
 ---
 
@@ -252,6 +264,8 @@ await expect(page.locator('.product-card')).toHaveCount(10);
 - Arxa planda sorğu olmayan sadə statik səhifə yüklənməsi
 - SPA marşrutlaması olmayan köhnəlmiş tətbiqlərdə testlər
 - Daha yaxşı siqnal olmadıqda son çarə kimi — hətta o zaman belə, nə üçün olduğunu izah edən şərh əlavə edin
+
+**Yadda saxla:** maraqlandığın konkret cavabı gözlə, bütün şəbəkənin sakitləşməsini deyil — SPA-da `networkidle` heç vaxt gəlməyə bilər.
 
 ---
 
@@ -337,6 +351,8 @@ await page.locator('.submit-btn').click();
 | `console.log` əlavə etdiyinizdə keçir | Əlavə mikrotask tick-i ilə üzə çıxan yarış şərti | Düzgün `await` ya da `Promise.all` əlavə edin |
 | Həmişə eyni addımda uğursuz olur | Real bug, flakiness deyil | Tətbiqi ya da assertion məntiqi düzəldin |
 
+**Yadda saxla:** flakiness-in kök səbəbi var — yuxuma əlavə etmək əvəzinə yoxlama siyahısını keç (yuxumalar, yenidən cəhd etməyən assertion-lar, sinxron URL yoxlamaları, çatışmayan `Promise.all`, `{ force: true }`).
+
 ---
 
 ## Xüsusi əməliyyat vaxt aşımları
@@ -359,6 +375,21 @@ export default defineConfig({
 
 **Bir şeyin sürətli olması lazım olduğunu bildiyiniz zaman vaxt aşımını azaldın.** Düymə tıklaması 2 saniyə içində naviqasiyaya səbəb olmalıdırsa, amma 30 saniyelik vaxt aşımınız varsa, real reqressiya test uğursuz olmazdan əvvəl 30 saniyə aşkar edilməyə bilər.
 
+**Yadda saxla:** sürətli olmalı şeylərdə vaxt aşımını azalt ki, real reqressiya 30 s asılı qalmaqdansa tez uğursuz olsun.
+
+---
+
+## Ağıllı gözləmə yaddaş vərəqi
+
+| Nəyi gözləmək istəyirəm… | İstifadə et |
+|---|---|
+| Element / mətn / say şərti | veb-first `expect(locator)…` (default seçimin) |
+| Naviqasiya və ya yönləndirmə | `expect(page).toHaveURL(…)` (test) · `page.waitForURL(…)` (köməkçi) |
+| Konkret şəbəkə cavabı | `Promise.all([page.waitForResponse(…), əməliyyat])` |
+| DOM ayrıştırılıb (şəkillər yox) | `page.waitForLoadState('domcontentloaded')` |
+| Bütün şəbəkə sakitləşsin (son çarə) | `page.waitForLoadState('networkidle')` |
+| Sabit gecikmə | ❌ heç vaxt `waitForTimeout` — yalnız debug üçün |
+
 ---
 
 <Practice missions={['custom-timeout','wait-for-selector','auto-waiting','wait-for-url','wait-for-response','click-actionability','fix-flaky-test','wait-for-load-state']} />
@@ -376,22 +407,24 @@ Bu tapşırıqlar `http://localhost:3000`-də yerli olaraq işləyən TestMarket
 Bu testi refaktor edin — hər `waitForTimeout`-u düzgün veb-first alternativlə əvəz edin:
 
 ```javascript
-// ƏVVƏL (flaky)
+// ƏVVƏL (flaky — hər yerdə sabit yuxular)
+import { test, expect } from '@playwright/test';
+
 test('məhsul axtarışı', async ({ page }) => {
   await page.goto('/products');
   await page.waitForTimeout(1500);
 
-  await page.fill('#search', 'vidget');
+  await page.fill('#search', 'Wireless');
   await page.waitForTimeout(800);
 
-  await page.click('#search-btn');
+  await page.click('#apply-filters');
   await page.waitForTimeout(3000);
 
   const count = await page.locator('.product-card').count();
   expect(count).toBeGreaterThan(0);
 
   await page.waitForTimeout(500);
-  expect(page.url()).toContain('?q=vidget');
+  expect(page.url()).toContain('search=Wireless');
 });
 ```
 
@@ -399,52 +432,110 @@ test('məhsul axtarışı', async ({ page }) => {
 |-----------|-------|
 | `waitForTimeout(1500)` | Silin — `fill()` artıq element üçün avtomatik gözləyir |
 | `waitForTimeout(800)` | Silin — `click()` artıq avtomatik gözləyir |
-| `waitForTimeout(3000)` + `count()` | `expect(locator).toHaveCount(greaterThan(0))` |
-| `waitForTimeout(500)` + `page.url()` | `expect(page).toHaveURL(/\?q=vidget/)` |
+| `waitForTimeout(3000)` + `count()` | `expect(locator).not.toHaveCount(0)` |
+| `waitForTimeout(500)` + `page.url()` | `expect(page).toHaveURL(/[?&]search=Wireless/)` |
+
+```javascript
+// SONRA (veb-first — sabit yuxular yoxdur)
+import { test, expect } from '@playwright/test';
+
+test('məhsul axtarışı', async ({ page }) => {
+  await page.goto('/products');
+  await page.locator('#search').fill('Wireless');
+  await page.locator('#apply-filters').click();
+
+  await expect(page.locator('.product-card')).not.toHaveCount(0);
+  await expect(page).toHaveURL(/[?&]search=Wireless/);
+});
+```
 
 ---
 
 ### Tapşırıq 2: Flaky naviqasiya testini düzəldin
 
-Aşağıdakı test flaky-dir çünki URL sinxron olaraq yoxlanılır. Onu yenidən yazın.
+Orijinal iki səbəbdən flaky-dir: URL-i **sinxron** yoxlayır (yenidən cəhd yoxdur) sabit yuxudan sonra, və quraşdırması natamamdır — `/checkout` daxil olmuş, səbətində element olan istifadəçi tələb edir, ona görə sadə `goto('/checkout')` sadəcə login səhifəsinə qayıdır.
 
 ```javascript
-// ƏVVƏL
-test('ödəniş sifariş səhifəsinə yönləndirir', async ({ page }) => {
-  await page.goto('/checkout');
-  await fillCheckoutForm(page);
-  await page.click('#place-order');
-  await page.waitForTimeout(2000);
-  expect(page.url()).toMatch(/\/orders\/\d+/);
+// ƏVVƏL (flaky — və checkout-a heç çatmır)
+await page.goto('/checkout');
+await fillCheckoutForm(page);
+await page.click('#place-order');
+await page.waitForTimeout(2000);
+expect(page.url()).toMatch(/\/orders\/\d+/);   // sinxron — yenidən cəhd yoxdur
+```
+
+Öz-özünə yetərli, veb-first yenidən yazılış:
+
+```javascript
+// SONRA
+import { test, expect } from '@playwright/test';
+
+test.describe('Ödəniş yönləndirməsi', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.locator('#email').fill('customer@test.io');
+    await page.locator('#password').fill('customer123');
+    await page.getByTestId('login-submit').click();
+
+    await page.goto('/products');
+    await page.getByTestId('add-to-cart').first().click();
+    await page.goto('/checkout');
+  });
+
+  test('sifariş vermək sifariş səhifəsinə yönləndirir', async ({ page }) => {
+    await page.locator('#shipping_name').fill('Jane Doe');
+    await page.locator('#shipping_address').fill('123 Main Street');
+    await page.locator('#shipping_city').fill('Portland');
+    await page.locator('#shipping_zip').fill('97201');
+
+    // Click avtomatik gözləyir; toHaveURL yönləndirmə gələnə qədər yenidən cəhd edir
+    await page.getByTestId('place-order').click();
+    await expect(page).toHaveURL(/\/orders\/\d+/);
+  });
 });
 ```
 
-Yuxumanı və sinxron URL yoxlamasını `waitForURL` ya da `toHaveURL` ilə əvəz edin.
+**Tapşırıqlar:**
+- `toHaveURL`-u köhnə `expect(page.url()).toMatch(/\/orders\/\d+/)` ilə əvəz edin və bir neçə dəfə işlədin — flaky edən məhz sinxron yoxlama idi.
+- Page-object köməkçisində bunun əvəzinə `await page.waitForURL(/\/orders\/\d+/)` yazardınız — hər ikisi gözləyir; assertion forması sadəcə həm də yoxlama rolunu oynayır.
 
 ---
 
-### Tapşırıq 3: Şəbəkə cavabını gözləyin
+### Tapşırıq 3: Avtomatik gözləmə və `waitForResponse`
 
-Aşağıdakıları edən bir test yazın:
-1. `/products`-a keçin
-2. "Daha yüklə" düyməsini tıklayın
-3. `Promise.all` istifadə edərək `/api/products` cavabını gözləyin
-4. Daha çox məhsul kartının göründüyünü iddia edin
+TestMarket Lab məhsullar səhifəsini `?delay=NNNN` query parametri (millisaniyə) ilə qəsdən yavaşlada bilər — avtomatik gözləməni bir dənə də yuxu olmadan görmək üçün ideal yol. Sonra cavabı `Promise.all` şablonu ilə tut.
 
 ```javascript
-test('daha yüklə məhsulları əlavə edir', async ({ page }) => {
-  await page.goto('/products');
-  const initial = await page.locator('.product-card').count();
+import { test, expect } from '@playwright/test';
 
-  const [response] = await Promise.all([
-    page.waitForResponse('**/api/products**'),
-    page.click('.load-more-btn'),
-  ]);
+test.describe('Real tətbiqi gözləmək', () => {
 
-  expect(response.ok()).toBeTruthy();
-  await expect(page.locator('.product-card')).toHaveCount(initial + 10);
+  test('veb-first assertion yavaş səhifəni gözləyir — yuxu lazım deyil', async ({ page }) => {
+    // ?delay=2000 serverin cavabı 2s saxlamasına səbəb olur
+    await page.goto('/products?delay=2000');
+
+    // waitForTimeout yoxdur: assertion sadəcə kartlar render olana qədər gözləyir
+    await expect(page.locator('.product-card')).not.toHaveCount(0);
+  });
+
+  test('cavabı Promise.all ilə tut', async ({ page }) => {
+    // Dinləyici onu tetikleyen naviqasiyadan ƏVVƏL qeydiyyata alınır
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes('/products') && resp.request().method() === 'GET'
+      ),
+      page.goto('/products?search=Wireless'),
+    ]);
+
+    expect(response.ok()).toBeTruthy();
+    await expect(page.locator('.product-card')).not.toHaveCount(0);
+  });
 });
 ```
+
+**Tapşırıqlar:**
+- Birinci testi `?delay=4000`-ə qaldırın — yenə `waitForTimeout` olmadan keçir; Playwright sadəcə daha çox gözləyir.
+- `waitForResponse`-u `goto`-dan *sonraya* keçirin (`Promise.all`-dan kənara) — sürətli cavabda dinləyici onu qaçıra bilər və test asılı qalır. Buna görə əvvəl qeydiyyata alırsan.
 
 ---
 
