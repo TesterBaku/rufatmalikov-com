@@ -24,6 +24,8 @@ API testing gives you three key advantages:
 
 > A common pattern in professional test suites: use the API to **set up** data, then use the browser to **verify** it renders correctly.
 
+**Remember:** API tests are 10–50× faster than UI and isolate one endpoint — the professional pattern is to set up data via the API, then verify it renders through the browser.
+
 ---
 
 ## The `request` fixture and `APIRequestContext`
@@ -50,6 +52,8 @@ test('GET products returns 200', async ({ request }) => {
 | `request.patch(url, options?)` | PATCH |
 
 You can set a `baseURL` for the context in `playwright.config.ts` so you only write `/api/products` in tests instead of the full URL.
+
+**Remember:** destructure `{ request }` for a built-in `APIRequestContext` exposing `.get/.post/.put/.delete/.patch`; set a `baseURL` in the config so tests use bare paths like `/api/products`.
 
 ---
 
@@ -84,6 +88,8 @@ test('POST /api/products creates a product', async ({ request }) => {
 ```
 
 Pass request body as `data` in the options object. Playwright automatically sets `Content-Type: application/json`.
+
+**Remember:** `request.get()` reads; `request.post(url, { data })` sends a JSON body (Content-Type set for you). Assert on `res.status()` and the parsed `await res.json()`.
 
 ---
 
@@ -126,6 +132,8 @@ test('DELETE /api/products/:id deletes a product', async ({ request }) => {
 
 The chained pattern — **create → capture ID → operate** — is the foundation of reliable API test data management.
 
+**Remember:** create → capture the returned `id` → operate on it. `PUT` updates and returns the new body; `DELETE` removes and returns a confirmation message — never hardcode an id you didn't just create.
+
 ---
 
 ## Asserting status codes and JSON body
@@ -147,6 +155,8 @@ expect(body).not.toHaveProperty('password'); // security check!
 ```
 
 Always test **both** the status and the body shape. A broken API can return 200 with an error message inside — `status()` alone won't catch that.
+
+**Remember:** assert BOTH the status (`res.status()` / `res.ok()`) and the body shape — a broken endpoint can return 200 with an error payload, so status alone isn't enough. A `not.toHaveProperty('password')` check is a cheap security guard.
 
 ---
 
@@ -170,6 +180,8 @@ test('product created via API appears in UI', async ({ page, request }) => {
 
 You have access to both `page` and `request` in the same test — they come from the same test context and share cookies/auth state.
 
+**Remember:** `page` and `request` share one context (cookies/auth), so seed state fast over the API, then verify it in the browser — the API does setup, the UI is the real assertion.
+
 ---
 
 ## Network interception with `page.route`
@@ -188,6 +200,8 @@ The `pattern` accepts:
 - Glob strings: `'**/api/**'`
 - Full URLs: `'https://api.example.com/track'`
 - Regular expressions: `/analytics/`
+
+**Remember:** `page.route(pattern, handler)` intercepts matching requests before they reach the server; the pattern can be a glob (`**/api/**`), a full URL, or a regex.
 
 ---
 
@@ -212,6 +226,8 @@ test('page loads without images (faster)', async ({ page }) => {
   await expect(page.getByText('Keyboard')).toBeVisible();
 });
 ```
+
+**Remember:** `route.abort()` drops a request — block analytics, trackers, or images to make tests faster and steadier when you only care about text content.
 
 ---
 
@@ -242,6 +258,8 @@ test('shows product list from mocked API', async ({ page }) => {
 - `body` — response body as string
 - `headers` — custom response headers
 
+**Remember:** `route.fulfill({ status, contentType, body, headers })` replaces the real response with a fake one — ideal for driving the UI with data the server may never actually return.
+
 ---
 
 ## Modifying responses
@@ -268,6 +286,8 @@ test('adds extra field to API response', async ({ page }) => {
   // Now test how the UI handles the extra badge field
 });
 ```
+
+**Remember:** to tweak a real response, `await route.fetch()` to get it, edit the parsed body, then `route.fulfill({ response, body })` — the UI sees your modified version, not the original.
 
 ---
 
@@ -308,6 +328,8 @@ test('shows loading state during slow API', async ({ page }) => {
 });
 ```
 
+**Remember:** `fulfill` a 500 to test error UIs you can't trigger for real, and `await` a delay before `route.continue()` to exercise loading states — both are conditions a live backend won't reliably produce on demand.
+
 ---
 
 ## `page.waitForResponse`
@@ -338,6 +360,8 @@ const response = await page.waitForResponse(
   res => res.url().includes('/api/products') && res.status() === 200
 );
 ```
+
+**Remember:** set up `page.waitForResponse(urlOrPredicate)` BEFORE the action that triggers the request, or you'll miss it and hang; a predicate lets you match on URL and status together.
 
 <Practice
   missions={['block-analytics', 'empty-data-edge-case', 'simulate-500', 'mock-api', 'combo-block-mock', 'slow-network']}

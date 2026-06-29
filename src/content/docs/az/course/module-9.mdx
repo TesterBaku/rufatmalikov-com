@@ -24,11 +24,13 @@ API testi sizə üç əsas üstünlük verir:
 
 > Peşəkar test paketlərindəki ümumi nümunə: məlumatı **qurmaq** üçün API, onun düzgün görüntüləndiyini **yoxlamaq** üçün brauzer.
 
+**Yadda saxla:** API testləri UI-dan 10–50 dəfə sürətlidir və tək bir endpoint-i təcrid edir — peşəkar nümunə məlumatı API vasitəsilə qurmaq, sonra onu brauzerdə yoxlamaqdır.
+
 ---
 
 ## `request` fixture-u və `APIRequestContext`
 
-Playwright daxili HTTP müşteri ilə gəlir. İstənilən testdə `request`-i destructuring edərək alırsınız:
+Playwright daxili HTTP müştəri ilə gəlir. İstənilən testdə `request`-i destructuring edərək alırsınız:
 
 ```ts
 import { test, expect } from '@playwright/test';
@@ -50,6 +52,8 @@ test('GET products 200 qaytarır', async ({ request }) => {
 | `request.patch(url, options?)` | PATCH |
 
 `playwright.config.ts`-də kontekst üçün `baseURL` qura bilərsiniz ki, testlərdə tam URL əvəzinə yalnız `/api/products` yazsanız kifayətdir.
+
+**Yadda saxla:** `{ request }`-i destructuring edin və `.get/.post/.put/.delete/.patch` açan daxili `APIRequestContext` alın; konfiqurasiyada `baseURL` qurun ki, testlər `/api/products` kimi qısa yollar işlətsin.
 
 ---
 
@@ -73,7 +77,7 @@ test('GET /api/products massiv qaytarır', async ({ request }) => {
 ```ts
 test('POST /api/products məhsul yaradır', async ({ request }) => {
   const res = await request.post('/api/products', {
-    data: { name: 'Klaviatura', price: 49.99, category: 'elektronika' },
+    data: { name: 'Klaviatura', price: 49.99, category: 'electronics' },
   });
   expect(res.status()).toBe(201);
 
@@ -84,6 +88,8 @@ test('POST /api/products məhsul yaradır', async ({ request }) => {
 ```
 
 Sorğu gövdəsini `data` parametrindən keçirin. Playwright avtomatik olaraq `Content-Type: application/json` qoyur.
+
+**Yadda saxla:** `request.get()` oxuyur; `request.post(url, { data })` JSON gövdə göndərir (Content-Type sizin üçün qoyulur). `res.status()` və ayrıştırılmış `await res.json()` üzərində yoxlayın.
 
 ---
 
@@ -126,6 +132,8 @@ test('DELETE /api/products/:id məhsulu silir', async ({ request }) => {
 
 Zəncirvari nümunə — **yarat → ID-ni saxla → əməliyyat et** — etibarlı API test məlumatları idarəetməsinin əsasıdır.
 
+**Yadda saxla:** yarat → qaytarılan `id`-ni saxla → onun üzərində əməliyyat et. `PUT` yeniləyir və yeni gövdəni qaytarır; `DELETE` silir və təsdiq mesajı qaytarır — yaratmadığınız id-ni heç vaxt sabit kodlamayın.
+
 ---
 
 ## Status kodları və JSON gövdəsini yoxlamaq
@@ -147,6 +155,8 @@ expect(body).not.toHaveProperty('password'); // təhlükəsizlik yoxlaması!
 ```
 
 Həmişə həm **status**u, həm də gövdə formasını test edin. Sınıq API 200 ilə içəridə xəta mesajı qaytara bilər — yalnız `status()` bunu tutmaz.
+
+**Yadda saxla:** həm status (`res.status()` / `res.ok()`), həm də gövdə formasını yoxlayın — sınıq endpoint 200 ilə xəta gövdəsi qaytara bilər, ona görə tək status kifayət deyil. `not.toHaveProperty('password')` ucuz təhlükəsizlik yoxlamasıdır.
 
 ---
 
@@ -170,6 +180,8 @@ test('API vasitəsilə yaradılan məhsul UI-da görünür', async ({ page, requ
 
 `page` və `request`-in ikisini də eyni testdə istifadə edə bilərsiniz — hər ikisi eyni test kontekstindən gəlir və kukiləri/auth vəziyyətini paylaşır.
 
+**Yadda saxla:** `page` və `request` eyni konteksti (kuki/auth) paylaşır, ona görə vəziyyəti API ilə sürətlə qurun, sonra brauzerdə yoxlayın — API quraşdırır, UI əsl təkiddir.
+
 ---
 
 ## `page.route` ilə şəbəkə müdaxiləsi
@@ -188,6 +200,8 @@ await page.goto('/panel');
 - Glob sətirləri: `'**/api/**'`
 - Tam URL-lər: `'https://api.nümunə.com/izlə'`
 - Müntəzəm ifadələr: `/analytics/`
+
+**Yadda saxla:** `page.route(nümunə, işləyici)` uyğun sorğuları serverə çatmadan əvvəl ələ keçirir; nümunə glob (`**/api/**`), tam URL və ya regex ola bilər.
 
 ---
 
@@ -212,6 +226,8 @@ test('səhifə şəkilsiz yüklənir (daha sürətli)', async ({ page }) => {
   await expect(page.getByText('Klaviatura')).toBeVisible();
 });
 ```
+
+**Yadda saxla:** `route.abort()` sorğunu atır — yalnız mətn məzmunu önəmli olduqda testləri sürətli və sabit etmək üçün analytics, izləyiciləri və ya şəkilləri bloklayın.
 
 ---
 
@@ -242,6 +258,8 @@ test('mock API-dən məhsul siyahısını göstərir', async ({ page }) => {
 - `body` — sətir kimi cavab gövdəsi
 - `headers` — xüsusi cavab başlıqları
 
+**Yadda saxla:** `route.fulfill({ status, contentType, body, headers })` real cavabı saxta ilə əvəz edir — serverin heç vaxt qaytarmaya biləcəyi məlumatla UI-ı sürmək üçün idealdır.
+
 ---
 
 ## Cavabları dəyişdirmək
@@ -269,6 +287,8 @@ test('API cavabına əlavə sahə qoyur', async ({ page }) => {
 });
 ```
 
+**Yadda saxla:** real cavabı dəyişmək üçün `await route.fetch()` ilə onu alın, ayrıştırılmış gövdəni redaktə edin, sonra `route.fulfill({ response, body })` edin — UI orijinalı yox, sizin dəyişdirilmiş versiyanızı görür.
+
 ---
 
 ## Xətaları (500) və yavaş şəbəkəni simulyasiya etmək
@@ -290,7 +310,7 @@ test('API 500 qaytardıqda xəta mesajı göstərir', async ({ page }) => {
 });
 ```
 
-Bu nümunə xəta sərhədlərini, ehtiyat UI-larını və yenidən cəhd məntiqini test etmək üçün vacibdir — test mühitində real 500-ü etibarlı şəkildə tetikləmək mümkün deyil.
+Bu nümunə xəta sərhədlərini, ehtiyat UI-larını və yenidən cəhd məntiqini test etmək üçün vacibdir — test mühitində real 500-ü etibarlı şəkildə tətikləmək mümkün deyil.
 
 ### Yavaş şəbəkəni simulyasiya etmək
 
@@ -308,6 +328,8 @@ test('yavaş API zamanı yükləmə vəziyyətini göstərir', async ({ page }) 
 });
 ```
 
+**Yadda saxla:** real tətikləyə bilmədiyiniz xəta UI-larını test etmək üçün 500-ü `fulfill` edin, yükləmə vəziyyətlərini yoxlamaq üçün `route.continue()`-dən əvvəl gecikmə `await` edin — hər ikisi canlı backend-in tələblə etibarlı yaratmadığı şərtlərdir.
+
 ---
 
 ## `page.waitForResponse`
@@ -316,7 +338,7 @@ Yoxlamadan əvvəl müəyyən bir cavabın gəlməsini gözləmək lazım olduqd
 
 ```ts
 test('products API-ni gözləyib yoxlayır', async ({ page }) => {
-  // Sorğunu tetikləyən əməliyyatdan ƏVVƏL dinləməyə başlayın
+  // Sorğunu tətikləyən əməliyyatdan ƏVVƏL dinləməyə başlayın
   const cavabVədi = page.waitForResponse('**/api/products');
 
   await page.goto('/products');
@@ -329,7 +351,7 @@ test('products API-ni gözləyib yoxlayır', async ({ page }) => {
 });
 ```
 
-`waitForResponse` vədini həmişə sorğunu tetikləyən əməliyyatdan **əvvəl** qurun. Sonra qursanız, cavab artıq gəlib keçmiş ola bilər və sonsuz gözləyəcəksiniz.
+`waitForResponse` vədini həmişə sorğunu tətikləyən əməliyyatdan **əvvəl** qurun. Sonra qursanız, cavab artıq gəlib keçmiş ola bilər və sonsuz gözləyəcəksiniz.
 
 Daha mürəkkəb uyğunlaşdırma üçün predikat funksiyasından da istifadə edə bilərsiniz:
 
@@ -338,6 +360,8 @@ const response = await page.waitForResponse(
   res => res.url().includes('/api/products') && res.status() === 200
 );
 ```
+
+**Yadda saxla:** `page.waitForResponse(urlVəYaPredikat)`-i sorğunu tətikləyən əməliyyatdan ƏVVƏL qurun, yoxsa onu qaçırıb ilişəcəksiniz; predikat URL və status üzrə birlikdə uyğunlaşdırmağa imkan verir.
 
 <Practice
   missions={['block-analytics', 'empty-data-edge-case', 'simulate-500', 'mock-api', 'combo-block-mock', 'slow-network']}
@@ -379,7 +403,7 @@ Bütün giriş və qeydiyyat vəziyyətlərini əhatə edən testlər yazın:
 
 Məhsulun tam həyat dövrü üçün testlər yazın:
 - `GET /api/products` → 200, `id`, `name`, `price` olan massiv
-- `GET /api/products?category=elektronika` → bütün nəticələr `category: 'elektronika'`-ya malikdir
+- `GET /api/products?category=electronics` → bütün nəticələr `category: 'electronics'`-ə malikdir
 - `POST /api/products` → 201, yeni `id` ilə
 - `PUT /api/products/:id` → zəncir: yarat → yenilə → yeni dəyərləri yoxla
 - `DELETE /api/products/:id` → zəncir: yarat → sil → `{ message: 'Product deleted' }` yoxla
