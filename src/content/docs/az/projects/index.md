@@ -38,21 +38,6 @@ TypeScript və Next.js ilə qurulub (statik export).
 
 [İmtahan Köməkçisini aç →](https://exam.rufatmalikov.com/) · [Ətraflı →](/az/exam-helper/)
 
-## Universal Appliances Repair — müştəri vebsaytı
-
-Orange County, Kaliforniyada yerləşən Universal Appliances Repair adlı məişət texnikası təmiri xidməti üçün qurduğum statik marketinq vebsaytı. Sayt canlı işləyir və sevdiyim test-və-avtomatlaşdırma iş axınını nümayiş etdirir: hər dəyişiklik avtomatik yoxlamalarla qorunan PR vasitəsilə yayımlanır.
-
-**İçərisində nə var:**
-
-- **Çoxsəhifəli marketinq saytı** — ana səhifə, xidmətlər, haqqında, əlaqə, FAQ, rəylər və bloq (əl ilə qurulmuş HTML + Tailwind CSS, freymvork yoxdur, build addımı yoxdur)
-- **Avtomatlaşdırılmış testlər** — daxili keçid yoxlayıcısı və hər birləşmədən əvvəl keçməli olan Puppeteer vizual skrinşot testləri
-- **PR ilə qorunan iş axını** — Husky pre-push hook-ları; `master`-a birbaşa commit yoxdur
-- **Avtomatlaşdırılmış SEO məzmunu** — Claude Code rutinləri hər Bazar ertəsi/Çərşənbə/Cümə 3 yeni lokal SEO məqaləsi araşdırır, yazır və yayımlayır; üstəlik rüblük SEO auditi düzəliş PR-i açır
-
-HTML + Tailwind CSS ilə qurulub.
-
-[Sayta bax →](https://fixappliancesfast.com/) · [Koda bax →](https://github.com/TesterBaku/appliance-repair-website)
-
 ## SDET Interview Trainer
 
 QA və SDET müsahibələrinə hazırlıq üçün məşq tətbiqi. Müsahibələrə hazırlaşıram və istər masamda, istərsə də yolda — istənilən yerdə istifadə edə biləcəyim bir köməkçi istəyirdim, ona görə də onu qurdum və eyni vəziyyətdə olan hər kəs üçün açıq etdim.
@@ -62,9 +47,9 @@ QA və SDET müsahibələrinə hazırlıq üçün məşq tətbiqi. Müsahibələ
 **İçərisində nə var:**
 
 - **Gündəlik məşq** — kodlaşdırma, SQL, Playwright/Selenium, API/CI/AWS və strategiya suallarını birləşdirən fokuslanmış gündəlik plan
-- **Coding Gym** — Python və Java-da kodlaşdırma inamı qazanmaq üçün QA yönümlü tapşırıqlar
+- **Coding Gym** — Python, Java, SQL və TypeScript-də kodlaşdırma inamı qazanmaq üçün QA yönümlü tapşırıqlar
 - **Mock müsahibə** — cavab yaz, model cavabı aç və yoxlama siyahısına görə özünü qiymətləndir
-- **Tərəqqi izləməsi** — ~250 element üzrə tamamlanma göstəriciləri və "zəif mövzular" baxışı
+- **Tərəqqi izləməsi** — 500 məşq elementi üzrə tamamlanma göstəriciləri və "zəif mövzular" baxışı
 
 Hələlik backend olmadan işləyir, ona görə də masaüstündə və mobil cihazda sürətlə istifadə olunur. Bu, erkən bir konsepsiya sübutudur — üzərində qurmağa davam edəcəyim başlanğıc nöqtəsi.
 
@@ -86,24 +71,6 @@ Python ilə qurulub.
 
 [Koda bax →](https://github.com/TesterBaku/softeng-study-quiz)
 
-## 5-ci sinif riyaziyyatı — interaktiv dərslər və testlər
-
-Riyaziyyat və rus dili müəllimi olan (texniki olmayan) bacım üçün qurduğum müstəqil riyaziyyat tətbiqi. O — və ya şagirdləri — tətbiqi yükləyib, arxivdən çıxarıb bir cüt kliklə başlada bilər; terminal lazım deyil. 5-ci sinif riyaziyyat kurrikulumunu rus dilində əhatə edir.
-
-Bu, [İmtahan Köməkçisi](/az/exam-helper/)-nin 5-ci sinif riyaziyyat bölməsinin **yüklənə bilən sələfidir** — eyni məzmun, brauzer əvəzinə müəllimin öz kompüterində oflayn işləməsi üçün paketlənib.
-
-**İçərisində nə var:**
-
-- **8 fəsil üzrə 57 dərs** — vizual nümunələrlə izahlar
-- **Pilləli testlər** — asan / orta / çətin / qarışıq, hər səhv üçün rəylə
-- **1 710 sual** — hər dərsdə hər pillə üçün 10 sual, hər sessiyada təsadüfi
-- **Texniki olmayan istifadə üçün** — başlamaq üçün bir cüt klik; skript ilk işə salındıqda lazım olanı quraşdırır, sonra brauzerdə açılır
-- **Test olunub** — quiz məntiqi üçün unit testlər və brauzer (end-to-end) testləri
-
-TypeScript və Next.js ilə qurulub (Docker-a hazır).
-
-[Koda bax →](https://github.com/TesterBaku/math-teacher-prototype)
-
 ## Quiz Formatter — PDF-dən viktorina hazırlayan köməkçi
 
 Bacımqızı üçün qurduğum təhsil köməkçisi — o, UNEC-də (Azərbaycan) rus dilində təhsil alır, ona görə də tətbiq rus dilindədir. Dərs materialları cavab açarı ilə birlikdə PDF şəklində gəlir; bu alət onları məşq viktorinalarına çevirir.
@@ -123,6 +90,39 @@ Alət həmin UNEC PDF-lərinin konkret formatına uyğunlaşdırılıb — unive
 Python ilə qurulub.
 
 [Necə istifadə olunduğunu izlə →](https://youtu.be/qLmmXnKrZoI) · [Koda bax →](https://github.com/TesterBaku/quiz_formatter_with_chatgpt)
+
+## 5-ci sinif riyaziyyatı — interaktiv dərslər və testlər
+
+Riyaziyyat və rus dili müəllimi olan (texniki olmayan) bacım üçün qurduğum müstəqil riyaziyyat tətbiqi. O — və ya şagirdləri — tətbiqi yükləyib, arxivdən çıxarıb bir cüt kliklə başlada bilər; terminal lazım deyil. 5-ci sinif riyaziyyat kurrikulumunu rus dilində əhatə edir.
+
+Bu, [İmtahan Köməkçisi](/az/exam-helper/)-nin 5-ci sinif riyaziyyat bölməsinin **yüklənə bilən sələfidir** — eyni məzmun, brauzer əvəzinə müəllimin öz kompüterində oflayn işləməsi üçün paketlənib.
+
+**İçərisində nə var:**
+
+- **8 fəsil üzrə 57 dərs** — vizual nümunələrlə izahlar
+- **Pilləli testlər** — asan / orta / çətin / qarışıq, hər səhv üçün rəylə
+- **1 710 sual** — hər dərsdə hər pillə üçün 10 sual, hər sessiyada təsadüfi
+- **Texniki olmayan istifadə üçün** — başlamaq üçün bir cüt klik; skript ilk işə salındıqda lazım olanı quraşdırır, sonra brauzerdə açılır
+- **Test olunub** — quiz məntiqi üçün unit testlər və brauzer (end-to-end) testləri
+
+TypeScript və Next.js ilə qurulub (Docker-a hazır).
+
+[Koda bax →](https://github.com/TesterBaku/math-teacher-prototype)
+
+## Universal Appliances Repair — müştəri vebsaytı
+
+Orange County, Kaliforniyada yerləşən Universal Appliances Repair adlı məişət texnikası təmiri xidməti üçün qurduğum statik marketinq vebsaytı. Sayt canlı işləyir və sevdiyim test-və-avtomatlaşdırma iş axınını nümayiş etdirir: hər dəyişiklik avtomatik yoxlamalarla qorunan PR vasitəsilə yayımlanır.
+
+**İçərisində nə var:**
+
+- **Çoxsəhifəli marketinq saytı** — ana səhifə, xidmətlər, haqqında, əlaqə, FAQ, rəylər və bloq (əl ilə qurulmuş HTML + Tailwind CSS, freymvork yoxdur, build addımı yoxdur)
+- **Avtomatlaşdırılmış testlər** — daxili keçid yoxlayıcısı və hər birləşmədən əvvəl keçməli olan Puppeteer vizual skrinşot testləri
+- **PR ilə qorunan iş axını** — Husky pre-push hook-ları; `master`-a birbaşa commit yoxdur
+- **Avtomatlaşdırılmış SEO məzmunu** — Claude Code pipeline-ı lokal SEO məqalələri araşdırır, yazır və yayımlayır (40+ dərc olunub); üstəlik rüblük SEO auditi düzəliş PR-i açır
+
+HTML + Tailwind CSS ilə qurulub.
+
+[Sayta bax →](https://fixappliancesfast.com/) · [Koda bax →](https://github.com/TesterBaku/appliance-repair-website)
 
 ## RMC Tow — yedək xidməti vebsaytı
 

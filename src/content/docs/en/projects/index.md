@@ -38,21 +38,6 @@ Built with TypeScript and Next.js (static export).
 
 [Open Exam Helper →](https://exam.rufatmalikov.com/) · [More about it →](/en/exam-helper/)
 
-## Universal Appliances Repair — client website
-
-A static marketing website I built for Universal Appliances Repair, an appliance repair service in Orange County, CA. It's live in production and shows the testing-and-automation workflow I enjoy: every change ships through a PR gated by automated checks.
-
-**What's inside:**
-
-- **Multi-page marketing site** — home, services, about, contact, FAQ, testimonials, and a blog (hand-built HTML + Tailwind CSS, no framework, no build step)
-- **Automated tests** — an internal link checker and Puppeteer visual screenshot tests that must pass before any merge
-- **PR-gated workflow** — Husky pre-push hooks; no direct commits to `master`
-- **Automated SEO content** — Claude Code routines research, write, and publish 3 new local-SEO articles every Mon/Wed/Fri, plus a quarterly SEO audit that opens a fix-up PR
-
-Built with HTML + Tailwind CSS.
-
-[Visit the site →](https://fixappliancesfast.com/) · [View the code →](https://github.com/TesterBaku/appliance-repair-website)
-
 ## SDET Interview Trainer
 
 A practice app for QA and SDET interview prep. I'm getting ready for interviews and wanted a helper I could use anywhere — at my desk or on the go — so I built one and opened it up for anyone in the same spot.
@@ -60,9 +45,9 @@ A practice app for QA and SDET interview prep. I'm getting ready for interviews 
 **What's inside:**
 
 - **Daily Practice** — a focused daily plan mixing coding, SQL, Playwright/Selenium, API/CI/AWS, and strategy questions
-- **Coding Gym** — QA-focused tasks to build coding confidence in Python and Java
+- **Coding Gym** — QA-focused tasks to build coding confidence in Python, Java, SQL, and TypeScript
 - **Mock Interview** — type an answer, reveal a model answer, and self-rate against a checklist
-- **Progress tracking** — completion metrics and a "weak topics" view across ~250 items
+- **Progress tracking** — completion metrics and a "weak topics" view across 500 practice items
 
 For now it runs without a backend, so it's quick to use on desktop or mobile. It's an early proof of concept — a starting point I'll keep building on.
 
@@ -84,6 +69,24 @@ Built with Python.
 
 [View the code →](https://github.com/TesterBaku/softeng-study-quiz)
 
+## Quiz Formatter — PDF-to-quiz study helper
+
+A study helper I built for my niece, a student at UNEC (Azerbaijan) who studies in Russian — so the app is in Russian. Her course materials arrive as PDFs of questions with an answer key; this tool turns them into practice quizzes.
+
+It's tuned to the specific layout of those UNEC course PDFs — a study tool for that format rather than a general-purpose PDF parser, so other document layouts may need adjusting.
+
+**What's inside:**
+
+- **PDF parsing** — pulls questions and answer choices straight out of the course PDF
+- **Configurable quizzes** — randomized quizzes with a chosen number of questions (`--count`)
+- **Instant grading** — checks your answers and explains mistakes using the answer key embedded in the PDF
+- **Saved results** — keeps your attempt history between sessions
+- **Runs anywhere** — a terminal, a local web UI, or a standalone Windows `.exe`
+
+Built with Python.
+
+[Watch the how-to video →](https://youtu.be/qLmmXnKrZoI) · [View the code →](https://github.com/TesterBaku/quiz_formatter_with_chatgpt)
+
 ## Grade 5 Math — interactive lessons & quizzes
 
 A self-contained math app I built for my sister, a (non-technical) math and Russian-language tutor. She — or her students — can download it, unzip, and start it with a double-click; no command line. It covers the Grade 5 mathematics curriculum, in Russian.
@@ -102,23 +105,20 @@ Built with TypeScript and Next.js (Docker-ready).
 
 [View the code →](https://github.com/TesterBaku/math-teacher-prototype)
 
-## Quiz Formatter — PDF-to-quiz study helper
+## Universal Appliances Repair — client website
 
-A study helper I built for my niece, a student at UNEC (Azerbaijan) who studies in Russian — so the app is in Russian. Her course materials arrive as PDFs of questions with an answer key; this tool turns them into practice quizzes.
-
-It's tuned to the specific layout of those UNEC course PDFs — a study tool for that format rather than a general-purpose PDF parser, so other document layouts may need adjusting.
+A static marketing website I built for Universal Appliances Repair, an appliance repair service in Orange County, CA. It's live in production and shows the testing-and-automation workflow I enjoy: every change ships through a PR gated by automated checks.
 
 **What's inside:**
 
-- **PDF parsing** — pulls questions and answer choices straight out of the course PDF
-- **Configurable quizzes** — randomized quizzes with a chosen number of questions (`--count`)
-- **Instant grading** — checks your answers and explains mistakes using the answer key embedded in the PDF
-- **Saved results** — keeps your attempt history between sessions
-- **Runs anywhere** — a terminal, a local web UI, or a standalone Windows `.exe`
+- **Multi-page marketing site** — home, services, about, contact, FAQ, testimonials, and a blog (hand-built HTML + Tailwind CSS, no framework, no build step)
+- **Automated tests** — an internal link checker and Puppeteer visual screenshot tests that must pass before any merge
+- **PR-gated workflow** — Husky pre-push hooks; no direct commits to `master`
+- **Automated SEO content** — a Claude Code pipeline researches, writes, and publishes local-SEO articles (40+ published), plus a quarterly SEO audit that opens a fix-up PR
 
-Built with Python.
+Built with HTML + Tailwind CSS.
 
-[Watch the how-to video →](https://youtu.be/qLmmXnKrZoI) · [View the code →](https://github.com/TesterBaku/quiz_formatter_with_chatgpt)
+[Visit the site →](https://fixappliancesfast.com/) · [View the code →](https://github.com/TesterBaku/appliance-repair-website)
 
 ## RMC Tow — towing company website
 
