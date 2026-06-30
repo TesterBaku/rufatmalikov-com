@@ -33,7 +33,6 @@ Four things, in order:
 Playwright for Python comes later, in Module 6 — no need to install it yet.
 
 **Remember:** the toolchain for this course is **Python + venv + pytest + requests**.
-Playwright is added in Module 6.
 
 ---
 
@@ -183,8 +182,8 @@ python-sdet/
 └── pytest.ini            # pytest configuration (optional, added below)
 ```
 
-Add a small `pytest.ini` so the app's base URL lives in one place instead of being repeated
-in every test:
+Add a small `pytest.ini` to mark the project root and point pytest at your `tests/` folder, so
+a bare `pytest` (run from the project root) discovers them without you naming the path:
 
 ```ini
 # pytest.ini
