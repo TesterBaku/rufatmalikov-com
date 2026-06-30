@@ -87,22 +87,10 @@
         <div class="kicker-label">Scope — isolation vs speed</div>
         <h2 class="section-head">How often a fixture runs</h2>
         <div style="display:flex;flex-direction:column;gap:14px;max-width:1500px;">
-          <div style="display:flex;align-items:center;gap:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 28px;">
-            <span style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);font-size:24px;font-weight:700;min-width:240px;">scope="function"</span>
-            <span style="color:oklch(74% 0.04 255);font-size:22px;">once per test · the default · most isolated</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 28px;">
-            <span style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);font-size:24px;font-weight:700;min-width:240px;">scope="class"</span>
-            <span style="color:oklch(74% 0.04 255);font-size:22px;">once per test class</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 28px;">
-            <span style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);font-size:24px;font-weight:700;min-width:240px;">scope="module"</span>
-            <span style="color:oklch(74% 0.04 255);font-size:22px;">once per .py file</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 28px;">
-            <span style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);font-size:24px;font-weight:700;min-width:240px;">scope="session"</span>
-            <span style="color:oklch(74% 0.04 255);font-size:22px;">once per whole run · fastest · shared state</span>
-          </div>
+          <div class="spec-row"><span class="key">scope="function"</span><span class="val">once per test · the default · most isolated</span></div>
+          <div class="spec-row"><span class="key">scope="class"</span><span class="val">once per test class</span></div>
+          <div class="spec-row"><span class="key">scope="module"</span><span class="val">once per .py file</span></div>
+          <div class="spec-row"><span class="key">scope="session"</span><span class="val">once per whole run · fastest · shared state</span></div>
         </div>
         <div class="step-tip" style="margin-top:28px;max-width:1400px;"><span class="tip-icon">⚖️</span><span>Use the <strong>narrowest</strong> scope that's correct. Widen only for read-only or safe-to-share setup (like <code style="font-family:ui-monospace,Consolas,monospace;">base_url</code>).</span></div>
         <div class="brand-bar">
