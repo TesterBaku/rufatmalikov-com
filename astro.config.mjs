@@ -15,6 +15,32 @@ export default defineConfig({
 		// Root redirects to the default locale's homepage.
 		// Browsers that send Accept-Language could be auto-routed in middleware later if desired.
 		'/': '/en/',
+		// Python course slugs were anglicized (AZ → English dir/file names) for the
+		// English-audience SEO. Redirect the old live AZ URLs to the new ones.
+		'/az/python/00-baslangic/proqramlasdirma-nedir/': '/az/python/00-foundations/what-is-programming/',
+		'/az/python/00-baslangic/ilk-proqramin/': '/az/python/00-foundations/your-first-program/',
+		'/az/python/01-python-ile-danis/print-ve-metnler/': '/az/python/01-talk-to-python/print-and-text/',
+		'/az/python/01-python-ile-danis/deyisenler/': '/az/python/01-talk-to-python/variables/',
+		'/az/python/01-python-ile-danis/reqemler-ve-hesab/': '/az/python/01-talk-to-python/numbers-and-math/',
+		'/az/python/01-python-ile-danis/input/': '/az/python/01-talk-to-python/input/',
+		'/az/python/02-qerar-ver/if-egar/': '/az/python/02-make-decisions/if-statements/',
+		'/az/python/02-qerar-ver/muqayise-ve-elif/': '/az/python/02-make-decisions/comparisons-and-elif/',
+		'/az/python/02-qerar-ver/ve-veya-deyil/': '/az/python/02-make-decisions/and-or-not/',
+		'/az/python/03-tekrarla/for-dovru/': '/az/python/03-repeat/for-loops/',
+		'/az/python/03-tekrarla/while-dovru/': '/az/python/03-repeat/while-loops/',
+		'/az/python/03-tekrarla/dovrle-hesabla/': '/az/python/03-repeat/counting-with-loops/',
+		'/az/python/04-kolleksiyalar/siyahilar/': '/az/python/04-collections/lists/',
+		'/az/python/04-kolleksiyalar/siyahi-metodlari/': '/az/python/04-collections/list-methods/',
+		'/az/python/04-kolleksiyalar/indeks-ve-dilim/': '/az/python/04-collections/index-and-slice/',
+		'/az/python/04-kolleksiyalar/lugetler/': '/az/python/04-collections/dictionaries/',
+		'/az/python/05-funksiyalar/ilk-funksiyan/': '/az/python/05-functions/your-first-function/',
+		'/az/python/05-funksiyalar/parametrler/': '/az/python/05-functions/parameters/',
+		'/az/python/05-funksiyalar/return/': '/az/python/05-functions/return/',
+		'/az/python/06-layihe-missiyalari/kalkulyator/': '/az/python/06-projects/calculator/',
+		'/az/python/06-layihe-missiyalari/eded-tap-oyunu/': '/az/python/06-projects/number-guessing-game/',
+		'/az/python/06-layihe-missiyalari/sezar-sifresi/': '/az/python/06-projects/caesar-cipher/',
+		'/az/python/06-layihe-missiyalari/viktorina/': '/az/python/06-projects/quiz/',
+		'/az/python/sozluk/': '/az/python/glossary/',
 	},
 	integrations: [
 		starlight({
@@ -107,39 +133,39 @@ export default defineConfig({
 						{
 							label: '00 — Start here',
 							translations: { az: '00 — Başlanğıc' },
-							items: [{ autogenerate: { directory: 'python/00-baslangic' } }],
+							items: [{ autogenerate: { directory: 'python/00-foundations' } }],
 						},
 						{
 							label: '01 — Talk to Python',
 							translations: { az: '01 — Python ilə danış' },
-							items: [{ autogenerate: { directory: 'python/01-python-ile-danis' } }],
+							items: [{ autogenerate: { directory: 'python/01-talk-to-python' } }],
 						},
 						{
 							label: '02 — Make decisions',
 							translations: { az: '02 — Qərar ver' },
-							items: [{ autogenerate: { directory: 'python/02-qerar-ver' } }],
+							items: [{ autogenerate: { directory: 'python/02-make-decisions' } }],
 						},
 						{
 							label: '03 — Repeat',
 							translations: { az: '03 — Təkrarla' },
-							items: [{ autogenerate: { directory: 'python/03-tekrarla' } }],
+							items: [{ autogenerate: { directory: 'python/03-repeat' } }],
 						},
 						{
 							label: '04 — Collections',
 							translations: { az: '04 — Kolleksiyalar' },
-							items: [{ autogenerate: { directory: 'python/04-kolleksiyalar' } }],
+							items: [{ autogenerate: { directory: 'python/04-collections' } }],
 						},
 						{
 							label: '05 — Functions',
 							translations: { az: '05 — Funksiyalar' },
-							items: [{ autogenerate: { directory: 'python/05-funksiyalar' } }],
+							items: [{ autogenerate: { directory: 'python/05-functions' } }],
 						},
 						{
 							label: '06 — Projects',
 							translations: { az: '06 — Layihə missiyaları' },
-							items: [{ autogenerate: { directory: 'python/06-layihe-missiyalari' } }],
+							items: [{ autogenerate: { directory: 'python/06-projects' } }],
 						},
-						{ label: 'Glossary', translations: { az: 'Sözlük' }, link: '/python/sozluk/' },
+						{ label: 'Glossary', translations: { az: 'Sözlük' }, link: '/python/glossary/' },
 					],
 				},
 				{

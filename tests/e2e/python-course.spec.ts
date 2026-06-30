@@ -7,13 +7,13 @@ import { test, expect } from '@playwright/test';
 
 const pythonPages = [
 	'/az/python/',
-	'/az/python/00-baslangic/proqramlasdirma-nedir/',
-	'/az/python/00-baslangic/ilk-proqramin/',
-	'/az/python/01-python-ile-danis/print-ve-metnler/',
-	'/az/python/01-python-ile-danis/reqemler-ve-hesab/',
-	'/az/python/01-python-ile-danis/deyisenler/',
-	'/az/python/01-python-ile-danis/input/',
-	'/az/python/sozluk/',
+	'/az/python/00-foundations/what-is-programming/',
+	'/az/python/00-foundations/your-first-program/',
+	'/az/python/01-talk-to-python/print-and-text/',
+	'/az/python/01-talk-to-python/numbers-and-math/',
+	'/az/python/01-talk-to-python/variables/',
+	'/az/python/01-talk-to-python/input/',
+	'/az/python/glossary/',
 	'/en/python/',
 ];
 
@@ -29,13 +29,13 @@ test('AZ index sidebar lists every lesson', async ({ page }) => {
 	await page.goto('/az/python/');
 	const nav = page.locator('nav');
 	for (const slug of [
-		'00-baslangic/proqramlasdirma-nedir',
-		'00-baslangic/ilk-proqramin',
-		'01-python-ile-danis/print-ve-metnler',
-		'01-python-ile-danis/reqemler-ve-hesab',
-		'01-python-ile-danis/deyisenler',
-		'01-python-ile-danis/input',
-		'sozluk',
+		'00-foundations/what-is-programming',
+		'00-foundations/your-first-program',
+		'01-talk-to-python/print-and-text',
+		'01-talk-to-python/numbers-and-math',
+		'01-talk-to-python/variables',
+		'01-talk-to-python/input',
+		'glossary',
 	]) {
 		await expect(nav.locator(`a[href="/az/python/${slug}/"]`).first()).toBeVisible();
 	}
@@ -51,12 +51,12 @@ test('relative inter-lesson links resolve (index → first lesson → next lesso
 }) => {
 	await page.goto('/az/python/');
 	await page.getByRole('link', { name: /İlk dərsdən başla/ }).click();
-	await expect(page).toHaveURL(/\/az\/python\/00-baslangic\/proqramlasdirma-nedir\/$/);
+	await expect(page).toHaveURL(/\/az\/python\/00-foundations\/what-is-programming\/$/);
 
 	// "Davam et →" chain inside module 01.
-	await page.goto('/az/python/01-python-ile-danis/print-ve-metnler/');
+	await page.goto('/az/python/01-talk-to-python/print-and-text/');
 	await page.getByRole('link', { name: /Davam et/ }).click();
-	await expect(page).toHaveURL(/\/az\/python\/01-python-ile-danis\/reqemler-ve-hesab\/$/);
+	await expect(page).toHaveURL(/\/az\/python\/01-talk-to-python\/numbers-and-math\/$/);
 	await expect(page.locator('h1')).toContainText('Ədədlər və hesab');
 });
 
@@ -64,7 +64,7 @@ test('ModuleProgress on a real lesson updates after a passing mission', async ({
 	test.setTimeout(90_000);
 	// Module 00 lesson 1; its first mission's starter already prints "Salam, Dünya!",
 	// which passes the check on Run with no editing.
-	await page.goto('/az/python/00-baslangic/proqramlasdirma-nedir/');
+	await page.goto('/az/python/00-foundations/what-is-programming/');
 
 	const mod = page.locator('[data-modprog][data-module="00"]').first();
 	await expect(mod.locator('[data-count]')).toHaveText('0 / 5');
@@ -83,7 +83,7 @@ test('Module 06 capstone m06-p1: typed if/elif solution passes and awards XP', a
 }) => {
 	test.setTimeout(90_000);
 	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-	await page.goto('/az/python/06-layihe-missiyalari/kalkulyator/');
+	await page.goto('/az/python/06-projects/calculator/');
 
 	const mission = page.locator('[data-mission][data-id="m06-p1"]');
 	// The if/elif calculator solution. Pre-filled inputs are 8, 2, * → "8 * 2 = 16".
