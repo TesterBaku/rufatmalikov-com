@@ -83,19 +83,20 @@ as teardown — even if the test fails.
 import pytest
 import requests
 
+BASE_URL = "http://localhost:3000"
+
 
 @pytest.fixture
 def api():
     # setup: a Session reuses the TCP connection across requests
     session = requests.Session()
-    session.base_url = "http://localhost:3000"
     yield session          # the test runs here
     # teardown: always runs, even if the test raised
     session.close()
 
 
 def test_products_with_session(api):
-    response = api.get(f"{api.base_url}/api/products")
+    response = api.get(f"{BASE_URL}/api/products")
     assert response.status_code == 200
 ```
 
@@ -237,6 +238,13 @@ You can parametrize **multiple** arguments per row — perfect for input/expecte
 the bread and butter of API testing:
 
 ```python
+# tests/test_login_states.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
 @pytest.mark.parametrize(
     "email, password, expected_status",
     [
@@ -377,7 +385,7 @@ the one session.
 ### Exercise 3 — A `reset_db` fixture (10 min)
 
 Add a `reset_db` fixture that `POST`s to `/api/reset` before yielding. Write a test that:
-creates a product via `POST /api/products`, then a **second** test that asserts the product
+adds a product via `POST /api/products`, then a **second** test that asserts the product
 count is back to 15 — proving `reset_db` isolated them. (Order-independence is the point.)
 
 ### Exercise 4 — Parametrize login states (10 min)
