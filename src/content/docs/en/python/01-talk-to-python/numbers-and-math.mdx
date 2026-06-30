@@ -1,0 +1,91 @@
+---
+title: Numbers and math
+description: Math in Python — addition, multiplication, division, remainder, and powers.
+sidebar:
+  order: 2
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Numbers are different from text: they're written **without quotes**. When you leave the quotes off, Python actually does the math:
+
+<PyRunner
+	id="ex-ferq"
+	starterCode={`print(5 + 3)\nprint("5 + 3")`}
+	height="4rem"
+/>
+
+See that? `5 + 3` was calculated and came out as `8`, while `"5 + 3"` was printed as plain text. **Quotes = text, no quotes = number.**
+
+## Math operations
+
+| Sign | Operation | Example | Result |
+|---|---|---|---|
+| `+` | addition | `7 + 2` | `9` |
+| `-` | subtraction | `7 - 2` | `5` |
+| `*` | multiplication | `7 * 2` | `14` |
+| `/` | division | `7 / 2` | `3.5` |
+| `//` | whole division | `7 // 2` | `3` |
+| `%` | remainder | `7 % 2` | `1` |
+| `**` | power | `7 ** 2` | `49` |
+
+Here's how to remember the `//` and `%` pair: share 7 candies among 2 kids — each one gets `7 // 2 = 3` candies, and `7 % 2 = 1` candy is left over. 🍬
+
+## Python — a super-calculator
+
+How many seconds are there in a day? Easy:
+
+<PyRunner
+	id="ex-saniye"
+	starterCode={`print(24 * 60 * 60)\nprint(2 ** 100)`}
+	height="4rem"
+/>
+
+Look at the second line: 2 to the power of 100 — an ordinary calculator can't handle it, but Python doesn't even blink. 😎
+
+## Missions
+
+<Mission
+	id="m01-l02-m1"
+	xp={10}
+	title="How many hours in a year?"
+	starterCode={`# How many hours are there in a year? Don't work it out yourself — let Python do it!\nprint(...)`}
+	checkCode={`assert "8760" in _stdout, "HINT:A year has 365 days, and each day has 24 hours — write print(365 * 24)."`}
+	inputs={[]}
+>
+	Have Python calculate how many **hours** are in a year. (Don't type the answer yourself — use multiplication!)
+</Mission>
+
+<Mission
+	id="m01-l02-m2"
+	xp={15}
+	title="Sharing apples"
+	starterCode={`# We split 17 apples equally among 5 kids.\n# line 1: how many apples does each kid get? (whole division)\n# line 2: how many apples are left over? (remainder)\n`}
+	checkCode={`_lines = [l.strip() for l in _stdout.strip().splitlines() if l.strip()]\nassert len(_lines) >= 2, "HINT:You need two prints — one for whole division (//), one for remainder (%)."\nassert "3" in _lines[0], "HINT:The first line should show the result of 17 // 5."\nassert "2" in _lines[1], "HINT:The second line should show the result of 17 % 5."`}
+	inputs={[]}
+>
+	17 apples, 5 kids. Use `//` and `%` to work out: how many apples does each kid get, and how many are left over?
+</Mission>
+
+<Mission
+	id="m01-l02-m3"
+	xp={10}
+	title="The power of powers"
+	starterCode={`# Calculate 2 to the power of 10\nprint(...)`}
+	checkCode={`assert "1024" in _stdout, "HINT:The sign for power is ** : print(2 ** 10)."`}
+	inputs={[]}
+>
+	There's a famous number in the world of computers: 2 to the power of 10. Have Python calculate it and see the result.
+</Mission>
+
+<ModuleProgress
+	moduleId="01"
+	missions={['m01-l01-m1', 'm01-l01-m2', 'm01-l01-m3', 'm01-l02-m1', 'm01-l02-m2', 'm01-l02-m3', 'm01-l03-m1', 'm01-l03-m2', 'm01-l03-m3', 'm01-l04-m1', 'm01-l04-m2', 'm01-l04-m3']}
+	badgeLabel="Talk to Python badge"
+/>
+
+---
+
+**Next lesson:** variables — boxes for **storing** information. One of the most important ideas in all of programming. [Continue →](../variables/)

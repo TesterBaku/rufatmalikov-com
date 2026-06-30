@@ -116,3 +116,57 @@ test('Module 06 capstone m06-p1: typed if/elif solution passes and awards XP', a
 	await expect(mission.locator('[data-state]')).toBeVisible({ timeout: 45_000 });
 	await expect(mission.locator('[data-feedback]')).toContainText('25'); // +25 XP awarded
 });
+
+test('EN: ModuleProgress updates after a passing mission', async ({ page }) => {
+	test.setTimeout(90_000);
+	// EN module 00 lesson 1; m00-l01-m1 starter prints "Hello, World!", which passes
+	// the check on Run with no editing.
+	await page.goto('/en/python/00-foundations/what-is-programming/');
+
+	const mod = page.locator('[data-modprog][data-module="00"]').first();
+	await expect(mod.locator('[data-count]')).toHaveText('0 / 5');
+
+	const mission = page.locator('[data-mission][data-id="m00-l01-m1"]');
+	await mission.locator('[data-run]').click();
+
+	await expect(mission.locator('[data-state]')).toBeVisible({ timeout: 45_000 });
+	await expect(mod.locator('[data-count]')).toHaveText('1 / 5');
+	await expect(mod.locator('[data-xp]')).toContainText('5');
+});
+
+test('EN: Module 06 calculator m06-p1: typed if/elif solution passes and awards XP', async ({
+	page,
+	context,
+}) => {
+	test.setTimeout(90_000);
+	await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+	await page.goto('/en/python/06-projects/calculator/');
+
+	const mission = page.locator('[data-mission][data-id="m06-p1"]');
+	// Inputs are 8, 2, * → "8 * 2 = 16".
+	const solution = [
+		'num1 = int(input("First number: "))',
+		'num2 = int(input("Second number: "))',
+		'op = input("Operation (+, -, *, /): ")',
+		'if op == "+":',
+		'    print(f"{num1} + {num2} = {num1 + num2}")',
+		'elif op == "-":',
+		'    print(f"{num1} - {num2} = {num1 - num2}")',
+		'elif op == "*":',
+		'    print(f"{num1} * {num2} = {num1 * num2}")',
+		'else:',
+		'    print(f"{num1} / {num2} = {num1 / num2}")',
+	].join('\n');
+
+	const editor = mission.locator('.cm-content');
+	await editor.click();
+	await page.keyboard.press('ControlOrMeta+A');
+	await page.evaluate((text) => navigator.clipboard.writeText(text), solution);
+	await page.keyboard.press('ControlOrMeta+V');
+	await expect(editor).toContainText('elif op =='); // paste landed
+
+	await mission.locator('[data-run]').click();
+
+	await expect(mission.locator('[data-state]')).toBeVisible({ timeout: 45_000 });
+	await expect(mission.locator('[data-feedback]')).toContainText('25'); // +25 XP awarded
+});

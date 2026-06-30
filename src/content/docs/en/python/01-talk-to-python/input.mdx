@@ -1,0 +1,96 @@
+---
+title: input() — the program asks you
+description: Getting information from the user, answers that come back as text, and converting with int().
+sidebar:
+  order: 4
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+So far your programs have only talked. Now let's teach them to **listen**: `input()` gets information from the user.
+
+:::note[How does input() work in our playground?]
+On a normal computer, `input()` pauses the program and waits for the user to type. In our code playground, you write the answers **in advance** in the "Inputs" box — one answer per line. Each time the program calls `input()`, it takes the answers from there in order.
+:::
+
+## First conversation
+
+In the example below, `Aysel` is already written in the "Inputs" box. Open the box and take a look, then run it:
+
+<PyRunner
+	id="ex-input"
+	starterCode={`name = input("What's your name? ")\nprint(f"Hello, {name}! Nice to meet you.")`}
+	inputs={'Aysel'}
+	height="5rem"
+/>
+
+`input("What's your name? ")` — shows the question, takes the answer, and puts it in the `name` box. Change the name in the Inputs box and run it again!
+
+## Heads up: input() always returns text
+
+Here's the trap. Even if the user types `12`, `input()` returns it as **text** — `"12"`. You can't do math with text:
+
+<PyRunner
+	id="ex-tele"
+	starterCode={`age = input("How old are you? ")\nprint(age + 1)`}
+	inputs={'12'}
+	height="5rem"
+/>
+
+Run it — you'll see an error: Python says it can't add a number to text. The fix: use `int()` to turn the text into a **whole number**:
+
+<PyRunner
+	id="ex-int"
+	starterCode={`age = int(input("How old are you? "))\nprint(f"Next year you'll be {age + 1}!")`}
+	inputs={'12'}
+	height="5rem"
+/>
+
+The rule is simple: **if you need to do math with a number — `int(input(...))`.**
+
+## Missions
+
+<Mission
+	id="m01-l04-m1"
+	xp={10}
+	title="A program that greets you"
+	starterCode={`# Ask for a name, then print "Hello, <name>!"\n`}
+	checkCode={`assert "hello, tural" in _stdout.lower(), "HINT:Read the name with input() and print it with an f-string: print(f\\"Hello, {name}!\\") — the Inputs box has Tural in it."`}
+	inputs={['Tural']}
+>
+	Use `input()` to ask for the user's name and reply in the form `Hello, <name>!` (For checking, `Tural` is already filled in under Inputs.)
+</Mission>
+
+<Mission
+	id="m01-l04-m2"
+	xp={15}
+	title="Next year"
+	starterCode={`# Ask for an age and print how old they'll be next year\n`}
+	checkCode={`assert "13" in _stdout, "HINT:The answer comes back as text — convert it with int(): age = int(input(...)), then print age + 1. The Inputs box has 12."`}
+	inputs={['12']}
+>
+	Ask for an age, add 1, and print the result. Don't forget the `int()` conversion! (The Inputs box has `12` — so the answer should show `13`.)
+</Mission>
+
+<Mission
+	id="m01-l04-m3"
+	xp={15}
+	title="Adding machine"
+	starterCode={`# Ask for two numbers and print their sum\n`}
+	checkCode={`assert "12" in _stdout, "HINT:Call int(input(...)) twice and print the sum. The Inputs box has 7 and 5 — the answer should be 12."`}
+	inputs={['7', '5']}
+>
+	Build your first calculator: the program should ask for two numbers and print their sum. (`7` and `5` are ready under Inputs.)
+</Mission>
+
+<ModuleProgress
+	moduleId="01"
+	missions={['m01-l01-m1', 'm01-l01-m2', 'm01-l01-m3', 'm01-l02-m1', 'm01-l02-m2', 'm01-l02-m3', 'm01-l03-m1', 'm01-l03-m2', 'm01-l03-m3', 'm01-l04-m1', 'm01-l04-m2', 'm01-l04-m3']}
+	badgeLabel="Talk to Python badge"
+/>
+
+---
+
+🏅 **You finished this module!** Your programs can now talk, calculate, remember, and listen. **In the next module** the most exciting part begins: your program will learn to **make decisions** — `if/else`. The "right answer / wrong answer" logic in games comes straight from there.

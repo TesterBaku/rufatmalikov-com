@@ -1,0 +1,83 @@
+---
+title: The while loop
+description: Repeat as long as a condition is true — and how to escape the infinite-loop trap.
+sidebar:
+  order: 3
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+`for` knows **in advance** how many times it will repeat. But what if you don't? In a game, "keep asking until the right answer is found" — nobody knows how many tries that will take. That's what `while` is for: *"as long as the condition is true — repeat"*.
+
+## How while works
+
+<PyRunner
+	id="ex-while"
+	starterCode={`i = 1\nwhile i <= 5:\n    print(f"Repeat {i}")\n    i = i + 1\nprint("Done!")`}
+	height="7rem"
+/>
+
+Three essential parts:
+
+1. **Start:** `i = 1` — the counter is set up before the loop
+2. **Condition:** `while i <= 5:` — checked before every repeat
+3. **Change:** `i = i + 1` — the counter moves forward, otherwise the condition never becomes false!
+
+## ⚠️ The infinite-loop trap
+
+What happens if you forget the 3rd part? The condition stays **always** true and the loop **never** ends. Try it — don't be afraid, our playground stops it on its own after 5 seconds:
+
+<PyRunner
+	id="ex-sonsuz"
+	starterCode={`i = 1\nwhile i <= 5:\n    print("Help, I can't stop! 😱")\n    # we "forgot" to increase i`}
+	height="6rem"
+/>
+
+See that? `i` never gets past 5, because nothing is increasing it. On your own computer a program like this would run **forever** — so whenever you write a `while`, always ask yourself: *"will this loop ever end?"*
+
+## Missions
+
+<Mission
+	id="m03-l03-m1"
+	xp={10}
+	title="Countdown"
+	starterCode={`# Count down from 5 to 1, then print "Start!" at the end\n# 5\n# 4\n# ...\n# 1\n# Start!\n`}
+	checkCode={`_lines = [l.strip() for l in _stdout.strip().splitlines() if l.strip()]\nassert _lines[:5] == ["5", "4", "3", "2", "1"], "HINT:Start with i = 5, and inside while i >= 1: do print(i) and i = i - 1."\nassert "start" in _stdout.lower(), "HINT:After the loop ends (no indentation!) write print(\\"Start!\\")."`}
+	inputs={[]}
+>
+	Rocket launch: use `while` to count down from 5 to 1, and after the loop ends, print `Start!`.
+</Mission>
+
+<Mission
+	id="m03-l03-m2"
+	xp={15}
+	title="Double-double"
+	starterCode={`number = 1\n# Keep multiplying the number by 2, and stop as soon as it passes 1000\n# then print that number\n`}
+	checkCode={`assert "1024" in _stdout, "HINT:Inside while number <= 1000: do number = number * 2, and print(number) after the loop. The answer should be 1024."`}
+	inputs={[]}
+>
+	Start at 1 and multiply by 2 each time: 1, 2, 4, 8... Find the **first** number that passes 1000. (A familiar figure will pop up! 😉)
+</Mission>
+
+<Mission
+	id="m03-l03-m3"
+	xp={20}
+	title="Guess the number game"
+	starterCode={`secret = 7\nguess = int(input("Guess the number (1-10): "))\n# As long as the guess is not equal to the secret number,\n# ask again. When it's found: "You got it! 🎉"\n`}
+	checkCode={`assert "you got it" in _stdout.lower(), "HINT:Inside while guess != secret: do guess = int(input(...)) — there are 3 attempts in the inputs, and the third is correct."`}
+	inputs={['5', '9', '7']}
+>
+	Write your first **real game**! The secret number is `7`. Keep asking with `while` until the player guesses it, and when they do, say `You got it! 🎉`. (Three of the player's attempts are ready in the inputs: `5`, `9`, `7`.)
+</Mission>
+
+<ModuleProgress
+	moduleId="03"
+	missions={['m03-l01-m1', 'm03-l01-m2', 'm03-l01-m3', 'm03-l02-m1', 'm03-l02-m2', 'm03-l02-m3', 'm03-l03-m1', 'm03-l03-m2', 'm03-l03-m3']}
+	badgeLabel="Repeat badge"
+/>
+
+---
+
+🏅 **You finished this module!** You've even written a real game now. **In the next module** we'll give your program whole **lists** instead of single memory boxes — `list` and `dict` for keeping hundreds of pieces of data in one place. [Continue →](../../04-collections/lists/)

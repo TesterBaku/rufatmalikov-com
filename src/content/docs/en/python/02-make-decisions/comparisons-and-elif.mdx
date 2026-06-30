@@ -1,0 +1,86 @@
+---
+title: Comparisons and elif
+description: All the comparison operators, True/False, and multi-way choices with elif.
+sidebar:
+  order: 2
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Last lesson you saw `>=` and `==`. Now let's meet the whole set.
+
+## Comparison operators
+
+| Symbol | Meaning | Example | Result |
+|---|---|---|---|
+| `==` | equal to | `5 == 5` | `True` |
+| `!=` | not equal | `5 != 3` | `True` |
+| `>` | greater than | `5 > 7` | `False` |
+| `<` | less than | `5 < 7` | `True` |
+| `>=` | greater than or equal | `5 >= 5` | `True` |
+| `<=` | less than or equal | `5 <= 4` | `False` |
+
+`True` and `False` are Python's "yes" and "no". Put a comparison inside `print` and you'll see the answer directly:
+
+<PyRunner
+	id="ex-bool"
+	starterCode={`print(10 > 5)\nprint(3 == 7)\nprint("apple" == "apple")`}
+/>
+
+## elif — "no, but what about this?"
+
+When two paths aren't enough, `elif` (*else if*) comes to the rescue. Python checks the conditions **top to bottom** and stops at the **first true** one:
+
+<PyRunner
+	id="ex-elif"
+	starterCode={`score = 85\nif score >= 90:\n    print("Excellent! 🥇")\nelif score >= 70:\n    print("Good job! 🥈")\nelif score >= 50:\n    print("Passing 🥉")\nelse:\n    print("You need a bit more practice 💪")`}
+/>
+
+Change `score` and try to hit all four answers. Try `95`, `60`, `30`!
+
+## Missions
+
+<Mission
+	id="m02-l02-m1"
+	xp={10}
+	title="True or false?"
+	starterCode={`# Print three comparisons:\n# one True, one False, and the third your own choice\nprint(...)\nprint(...)\nprint(...)`}
+	checkCode={`assert "True" in _stdout, "HINT:At least one comparison must give True — for example print(10 > 5)."\nassert "False" in _stdout, "HINT:At least one comparison must give False — for example print(3 == 7)."`}
+	inputs={[]}
+>
+	Write three comparisons and print their results — at least one `True` and one `False`.
+</Mission>
+
+<Mission
+	id="m02-l02-m2"
+	xp={15}
+	title="Weather advisor"
+	starterCode={`temp = int(input("What's the temperature in degrees? "))\n# 30 and up: "hot"\n# 15 to 29: "mild"\n# below 15: "cold"\n`}
+	checkCode={`assert "mild" in _stdout.lower(), "HINT:Set up if temp >= 30 / elif temp >= 15 / else — the input is 22, so the answer should be mild."`}
+	inputs={['22']}
+>
+	Give advice based on the temperature: 30°+ `hot`, 15–29° `mild`, below 15° `cold`. (The input is `22`.)
+</Mission>
+
+<Mission
+	id="m02-l02-m3"
+	xp={15}
+	title="Odd or even?"
+	starterCode={`number = int(input("Enter a number: "))\n# Remember the remainder operator (%):\n# if dividing by 2 leaves a remainder of 0 — it's even\n`}
+	checkCode={`assert "odd" in _stdout.lower(), "HINT:Check if number % 2 == 0: remainder 0 means even, otherwise odd. The input is 7 — the answer should be odd."`}
+	inputs={['7']}
+>
+	Our old friend `%` is back: if the number is even print `even`, if it's odd print `odd`. (The input is `7`.)
+</Mission>
+
+<ModuleProgress
+	moduleId="02"
+	missions={['m02-l01-m1', 'm02-l01-m2', 'm02-l01-m3', 'm02-l02-m1', 'm02-l02-m2', 'm02-l02-m3', 'm02-l03-m1', 'm02-l03-m2', 'm02-l03-m3']}
+	badgeLabel="Decision Maker badge"
+/>
+
+---
+
+**Next lesson:** we learn to combine several conditions — `and`, `or`, `not`. [Continue →](../and-or-not/)

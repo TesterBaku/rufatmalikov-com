@@ -1,0 +1,88 @@
+---
+title: Change the list
+description: append, remove, sort — and searching with "in".
+sidebar:
+  order: 3
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+A list is alive: points get added during a game, products land in a basket, rankings shift. A list has its own **methods** — operations you call with a dot.
+
+## Add, remove
+
+<PyRunner
+	id="ex-append"
+	starterCode={`groceries = ["bread", "milk"]\ngroceries.append("cheese")\nprint(groceries)\ngroceries.remove("milk")\nprint(groceries)`}
+	height="6rem"
+/>
+
+- `.append(x)` — adds to the end
+- `.remove(x)` — removes the first `x` it finds
+
+## Sort
+
+<PyRunner
+	id="ex-sort"
+	starterCode={`scores = [42, 7, 99, 23]\nscores.sort()\nprint(scores)\n\nnames = ["Tural", "Aysel", "Nigar"]\nnames.sort()\nprint(names)`}
+	height="6rem"
+/>
+
+`.sort()` arranges numbers from smallest to largest, and text in alphabetical order.
+
+## in — "is it inside?"
+
+`in` checks whether an item is in the list — the result is `True`/`False`, so it plugs straight into an `if`:
+
+<PyRunner
+	id="ex-in"
+	starterCode={`guests = ["Aysel", "Tural", "Nigar"]\nif "Tural" in guests:\n    print("Come on in! 🎉")\nelse:\n    print("Your name isn't on the list.")`}
+	height="6rem"
+/>
+
+## Missions
+
+<Mission
+	id="m04-l03-m1"
+	xp={10}
+	title="Fill the basket"
+	starterCode={`groceries = ["bread", "milk"]\n# add "cheese" and "eggs", then print the list\n`}
+	checkCode={`assert "groceries" in globals() and len(globals()["groceries"]) == 4, "HINT:Call .append(...) twice — the list should have 4 products."\nassert "cheese" in _stdout and "eggs" in _stdout, "HINT:Check at the end with print(groceries)."`}
+	inputs={[]}
+>
+	Add `cheese` and `eggs` to the basket (with `.append()`) and print the final list.
+</Mission>
+
+<Mission
+	id="m04-l03-m2"
+	xp={15}
+	title="Tournament table"
+	starterCode={`scores = [42, 7, 99, 23, 56]\n# Sort and print\n`}
+	checkCode={`assert "[7, 23, 42, 56, 99]" in _stdout, "HINT:Call scores.sort() (empty parentheses), then print(scores)."`}
+	inputs={[]}
+>
+	Sort the scores from smallest to largest and print the list.
+</Mission>
+
+<Mission
+	id="m04-l03-m3"
+	xp={15}
+	title="Guest list"
+	starterCode={`guests = ["Aysel", "Tural", "Nigar", "Kamran"]\nname = input("What's your name? ")\n# If the name is in the list: "Come on in!"\n# otherwise: "Sorry, you're not on the list."\n`}
+	checkCode={`assert "come on in" in _stdout.lower(), "HINT:Check with if name in guests: — the inputs include Nigar, who is on the list."`}
+	inputs={['Nigar']}
+>
+	You're the party's doorkeeper: if the name is on the list, let them in; if not, decline politely. (The inputs include `Nigar`.)
+</Mission>
+
+<ModuleProgress
+	moduleId="04"
+	missions={['m04-l01-m1', 'm04-l01-m2', 'm04-l01-m3', 'm04-l02-m1', 'm04-l02-m2', 'm04-l02-m3', 'm04-l03-m1', 'm04-l03-m2', 'm04-l03-m3', 'm04-l04-m1', 'm04-l04-m2', 'm04-l04-m3']}
+	badgeLabel="Collections badge"
+/>
+
+---
+
+**Next lesson:** a list keeps things in order — but what if you need a **name → value** match? Dictionaries (dict) are next. [Continue →](../dictionaries/)

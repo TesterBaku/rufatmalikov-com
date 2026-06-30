@@ -1,0 +1,54 @@
+---
+title: "Project 4: Caesar cipher"
+description: Julius Caesar's 2000-year-old cipher — shift every letter one step along the alphabet.
+sidebar:
+  order: 4
+---
+
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+In his secret letters, Julius Caesar would **shift** each letter a few steps along the alphabet: `a → b`, `b → c`... An enemy couldn't read it, but friends knew the secret. This is one of history's first ciphers — and you're about to **write** it.
+
+:::tip[You'll use in this project]
+`for` over text (Module 03) · `.index()` and indexing (Module 04) · text concatenation with `+` (Module 01) · the remainder `%` (Module 01)
+:::
+
+## How it works
+
+Keep the alphabet as text: `alphabet = "abcdefghijklmnopqrstuvwxyz"`. `.index()` finds each letter's position, and `+1` shifts it:
+
+- `alphabet.index("s")` → `18`, so its cipher is `alphabet[19]` → `"t"`
+- The trap: shifting `"z"` (index 25) gives 26 — there's no such index! The fix: `% 26` closes the circle: `26 % 26 = 0` → `"a"`. (Module 01's `%` becomes the hero here!)
+
+## Plan
+
+1. Build the `alphabet` text
+2. Get the word with `input()`, start with an empty `cipher = ""`
+3. `for letter in word:` — for each letter:
+   - `pos = alphabet.index(letter)`
+   - `cipher = cipher + alphabet[(pos + 1) % 26]`
+4. Print the cipher
+
+## Mission
+
+<Mission
+	id="m06-p4"
+	xp={30}
+	title="Caesar cipher"
+	starterCode={`alphabet = "abcdefghijklmnopqrstuvwxyz"\nword = input("Word to encrypt (lowercase latin letters): ")\ncipher = ""\n# Use for to shift each letter and add it to cipher,\n# then print it at the end\n`}
+	checkCode={`assert "ifmmp" in _stdout, "HINT:The word hello encrypts to ifmmp. For each letter: cipher = cipher + alphabet[(alphabet.index(letter) + 1) % 26]"`}
+	inputs={['hello']}
+>
+	Follow the plan and finish the encoder. (The input is `hello` — its cipher should be `ifmmp`.) Then send a friend a secret message, and figure out the decoding rule too: just shift in the opposite direction. 🕵️
+</Mission>
+
+<ModuleProgress
+	moduleId="06"
+	missions={['m06-p1', 'm06-p2', 'm06-p3', 'm06-p4']}
+	badgeLabel="Python Explorer badge"
+/>
+
+---
+
+🏆 **Congratulations — you finished the course!** You wrote four real projects and earned the "Python Explorer" badge. What's next? Write your own idea — that's the best way to learn. If you have questions, [get in touch](/en/about/). Good luck, programmer! 🐍

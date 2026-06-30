@@ -1,0 +1,94 @@
+---
+title: The for loop
+description: A computer's superpower — repeating the same work tirelessly. for and range.
+sidebar:
+  order: 1
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+If you need to print the word "Hello" 100 times, are you going to write 100 `print` lines? No way! That's what a **loop** is for.
+
+:::tip[In this module]
+Across this module's 3 lessons you'll teach your program to repeat itself: `for`, `range`, calculating with loops, and `while`.
+:::
+
+## for — "repeat this many times"
+
+<PyRunner
+	id="ex-for"
+	starterCode={`for i in range(5):\n    print("Hello!")`}
+	height="6rem"
+/>
+
+Read it as: *"repeat 5 times: print Hello"*. The indentation rule applies here too — the lines **inside** the loop are 4 spaces in.
+
+## i — the counter
+
+`i` is just an ordinary variable, and its value changes on every repeat. Look:
+
+<PyRunner
+	id="ex-sayqac"
+	starterCode={`for i in range(5):\n    print(f"Step: {i}")`}
+	height="6rem"
+/>
+
+Not what you expected, right? **It started at 0 and ended at 4!** Programmers love counting from 0. `range(5)` = "0, 1, 2, 3, 4" — that's 5 numbers in total, but starting at 0.
+
+## The two forms of range
+
+- `range(5)` → 0, 1, 2, 3, 4
+- `range(1, 6)` → 1, 2, 3, 4, 5 — *from a start* *up to an end* (the last number is **not included**!)
+
+<PyRunner
+	id="ex-range"
+	starterCode={`for i in range(1, 6):\n    print(f"Step {i}")`}
+	height="6rem"
+/>
+
+## Missions
+
+<Mission
+	id="m03-l01-m1"
+	xp={10}
+	title="The repeat machine"
+	starterCode={`# Print the sentence "Python is great!" 10 times with a for loop\n# (write print only ONCE!)\n`}
+	checkCode={`assert _stdout.lower().count("python is great") >= 10, "HINT:Set up for i in range(10): with a single print inside."`}
+	inputs={[]}
+>
+	Print the sentence `Python is great!` **10 times** — but write `print` only once in your code.
+</Mission>
+
+<Mission
+	id="m03-l01-m2"
+	xp={15}
+	title="1 to 10"
+	starterCode={`# Print the numbers from 1 to 10 (each on its own line)\n`}
+	checkCode={`_lines = [l.strip() for l in _stdout.strip().splitlines() if l.strip()]\nassert _lines == [str(n) for n in range(1, 11)], "HINT:You need range(1, 11) — since the last number isn't included, we write 11. Use print(i) on each step."`}
+	inputs={[]}
+>
+	Print the numbers from 1 to 10 in order. Careful: in `range`, the last number is not included!
+</Mission>
+
+<Mission
+	id="m03-l01-m3"
+	xp={15}
+	title="Times table"
+	starterCode={`# Print the 5 times table:\n# 5 x 1 = 5\n# 5 x 2 = 10\n# ... up to 10\n`}
+	checkCode={`assert "35" in _stdout, "HINT:Use an f-string on each step: print(f\\"5 x {i} = {5 * i}\\") — i goes from 1 to 10."\nassert "50" in _stdout, "HINT:The table should go up to 10: range(1, 11)."`}
+	inputs={[]}
+>
+	Solve it with code before the teacher even finishes writing it on the board: the 5 times table, from 1 to 10, in the format `5 x 3 = 15`.
+</Mission>
+
+<ModuleProgress
+	moduleId="03"
+	missions={['m03-l01-m1', 'm03-l01-m2', 'm03-l01-m3', 'm03-l02-m1', 'm03-l02-m2', 'm03-l02-m3', 'm03-l03-m1', 'm03-l03-m2', 'm03-l03-m3']}
+	badgeLabel="Repeat badge"
+/>
+
+---
+
+**Next lesson:** loop + variable = superpower. We'll add up every number from 1 to 100 in a split second — like a little Gauss. [Continue →](../counting-with-loops/)

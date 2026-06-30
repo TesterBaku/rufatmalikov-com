@@ -1,0 +1,77 @@
+---
+title: Parameters
+description: Pass information into a function — same function, different results.
+sidebar:
+  order: 2
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+`greet()` always says the same thing. So how does `print` print something **different** every time? Because we hand it information inside the parentheses. We can hand information to our own functions too — that's called a **parameter**.
+
+## A function with a parameter
+
+<PyRunner
+	id="ex-param"
+	starterCode={`def greet(name):\n    print(f"Hello, {name}!")\n\ngreet("Aysel")\ngreet("Tural")\ngreet("Nigar")`}
+	height="8rem"
+/>
+
+`def greet(name):` — `name` is the parameter: inside the function it works like an ordinary variable, and its value is supplied by the **call**. `greet("Aysel")` → `name = "Aysel"`.
+
+## Several parameters
+
+Separate them with commas — order matters:
+
+<PyRunner
+	id="ex-iki-param"
+	starterCode={`def introduce(name, age):\n    print(f"{name}, age {age}")\n\nintroduce("Aysel", 14)\nintroduce("Tural", 12)`}
+	height="7rem"
+/>
+
+## Missions
+
+<Mission
+	id="m05-l02-m1"
+	xp={10}
+	title="A personal hello"
+	starterCode={`# Build a function called "greet" — with a name parameter,\n# it should print "Hello, <name>!".\n# Call it with two different names.\n`}
+	checkCode={`assert "greet" in globals() and callable(globals()["greet"]), "HINT:def greet(name): — the parameter goes inside the parentheses."\n_lines = [l for l in _stdout.strip().splitlines() if "hello" in l.lower()]\nassert len(_lines) >= 2 and _lines[0] != _lines[1], "HINT:Call it with two DIFFERENT names: greet(\\"Aysel\\") and greet(\\"Tural\\") — the lines should differ."`}
+	inputs={[]}
+>
+	Write a `greet` function with a `name` parameter and call it with **two different** names.
+</Mission>
+
+<Mission
+	id="m05-l02-m2"
+	xp={15}
+	title="Square machine"
+	starterCode={`# Build a function called "square" — with a number parameter,\n# it should print the square of the number.\n# Call square(4) and square(9).\n`}
+	checkCode={`assert "square" in globals() and callable(globals()["square"]), "HINT:Build def square(number):."\nassert "16" in _stdout and "81" in _stdout, "HINT:Inside the function, print(number ** 2) — square(4) → 16, square(9) → 81."`}
+	inputs={[]}
+>
+	Write a `square(number)` function — it should print the square of the number. Test it with `square(4)` and `square(9)`.
+</Mission>
+
+<Mission
+	id="m05-l02-m3"
+	xp={15}
+	title="Universal times table"
+	starterCode={`# Turn the times table from Module 03 into a function:\n# times_table(number) — print the table for any number (1 through 10).\n# Call it with times_table(7).\n`}
+	checkCode={`assert "times_table" in globals() and callable(globals()["times_table"]), "HINT:Build def times_table(number): with for i in range(1, 11): inside."\nassert "21" in _stdout and "70" in _stdout, "HINT:times_table(7) should produce the lines 7 x 3 = 21 and 7 x 10 = 70 — print(f\\"{number} x {i} = {number * i}\\")."`}
+	inputs={[]}
+>
+	Make the old times-table mission **universal**: `times_table(number)` should work for any number. Test it with `times_table(7)`. Loop + function = 🔥
+</Mission>
+
+<ModuleProgress
+	moduleId="05"
+	missions={['m05-l01-m1', 'm05-l01-m2', 'm05-l02-m1', 'm05-l02-m2', 'm05-l02-m3', 'm05-l03-m1', 'm05-l03-m2', 'm05-l03-m3']}
+	badgeLabel="Functions badge"
+/>
+
+---
+
+**Next lesson:** instead of just printing the result, a function can **return** it: `return`. [Continue →](../return/)

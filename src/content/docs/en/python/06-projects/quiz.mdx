@@ -1,0 +1,48 @@
+---
+title: "Project 3: Quiz"
+description: Questions in a list, answers checked, points tallied — your own knowledge contest.
+sidebar:
+  order: 3
+---
+
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Teachers use Kahoot; you'll **write** your own. Questions and answers live in lists, a loop asks them one by one, and a correct answer earns a point.
+
+:::tip[You'll use in this project]
+Lists + index (Module 04) · `for` + `range` (Module 03) · `if` (Module 02) · an accumulator (Module 03)
+:::
+
+## Plan
+
+1. Make two **parallel lists**: `questions` and `answers` — the question and its answer share the same index
+2. `score = 0`
+3. `for i in range(len(questions)):` — for each question:
+   - show the question: `input(questions[i])`
+   - if the answer equals `answers[i]`: "Correct! ✅" + a point
+   - if not: "Wrong ❌"
+4. At the end: `f"Result: {score}/{len(questions)}"`
+
+## Mission
+
+<Mission
+	id="m06-p3"
+	xp={25}
+	title="Quiz"
+	starterCode={`questions = ["Capital of Azerbaijan? ", "What is 2 ** 3? ", "Which brackets create a list in Python? (one word) "]\nanswers = ["Baku", "8", "square"]\nscore = 0\n# Use for to ask the questions, check the answers, add up the score,\n# then print the result at the end\n`}
+	checkCode={`assert "2/3" in _stdout, "HINT:In the inputs there are 2 correct answers and 1 wrong — the result should be 2/3: print(f\\"Result: {score}/{len(questions)}\\")"\nassert "correct" in _stdout.lower(), "HINT:Print a confirmation on a correct answer: if answer == answers[i]:"`}
+	inputs={['Baku', 'eight', 'square']}
+>
+	Follow the plan and run the quiz. (The player's answers are in the inputs: `Baku` ✅, `eight` ❌ — the program expects `8`! — and `square` ✅. The result should be `2/3`.) Then swap in questions from your own subject!
+</Mission>
+
+<ModuleProgress
+	moduleId="06"
+	missions={['m06-p1', 'm06-p2', 'm06-p3', 'm06-p4']}
+	badgeLabel="Python Explorer badge"
+/>
+
+---
+
+**Last project:** secret messages — write your own cipher. 🕵️ [Continue →](../caesar-cipher/)
