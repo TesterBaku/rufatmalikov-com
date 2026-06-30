@@ -253,6 +253,7 @@ def test_products_returns_a_nonempty_list():
 
 def test_each_product_has_core_fields():
     products = requests.get(f"{BASE_URL}/api/products").json()
+    assert products                      # guard: an empty list would pass the loop vacuously
     for product in products:
         assert "id" in product
         assert "name" in product
@@ -325,9 +326,9 @@ With several test files present, practice the filters:
 
 ### Exercise 5 — Extend the products API tests (15 min)
 
-You already have the three tests from the worked example in `tests/test_products_api.py`. Add
-two more to that file — the category filter with a different value, and the `search` param you
-haven't used yet:
+You already have the three tests from the worked example in `tests/test_products_api.py` (write
+that file first if you skipped ahead). Add two more to it — the category filter with a different
+value, and the `search` param you haven't used yet:
 - `GET /api/products?category=accessories` → status `200` and every result has
   `category == "accessories"`.
 - `GET /api/products?search=keyboard` → at least one result, and "Keyboard" appears in some
