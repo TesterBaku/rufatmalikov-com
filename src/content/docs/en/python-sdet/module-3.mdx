@@ -1,0 +1,367 @@
+---
+title: "Module 3: API testing with requests"
+description: "Test a real REST API end to end with requests: GET/POST/PUT/DELETE across /api/*, reading status codes and JSON bodies, sending query params and headers, and a full create-read-update-delete lifecycle against TestMarket Lab."
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+So far you've mostly *read* from the API with `GET`. Real API testing exercises the whole
+surface — reading **and** writing: adding a product, updating it, deleting it, placing an
+order. In this module you'll use [`requests`](/en/reference/apis/) to drive all four HTTP
+verbs against TestMarket Lab, read what comes back (status code, JSON body, headers), and
+finish with a **full create-read-update-delete lifecycle** in one test.
+
+Keep TestMarket Lab running at `http://localhost:3000` and your `.venv` active. If you want a
+refresher on the concepts, the [APIs](/en/reference/apis/), [HTTP](/en/reference/http/), and
+[status codes](/en/reference/http-status-codes/) reference pages pair well with this module.
+
+<Video title="Module 3: API testing with requests" />
+
+---
+
+## Anatomy of a response
+
+Every `requests` call returns a `Response` object. Four attributes carry almost everything
+you'll assert on:
+
+```python
+# tests/test_response_anatomy.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_response_anatomy():
+    response = requests.get(f"{BASE_URL}/api/products/1")
+
+    assert response.status_code == 200          # the HTTP status
+    assert response.ok                          # True for any 2xx/3xx
+    assert response.headers["Content-Type"].startswith("application/json")
+
+    product = response.json()                   # parse the JSON body into a dict/list
+    assert product["name"] == "Wireless Mouse"
+```
+
+- `.status_code` — the integer status (200, 201, 404 …).
+- `.ok` — `True` for any status below 400; a quick "did it broadly succeed?" check.
+- `.headers` — a case-insensitive dict of response headers.
+- `.json()` — parses the body and hands you a Python `dict` or `list`. (`.text` gives the
+  raw string if you ever need it.)
+
+**Remember:** a `requests` response exposes `.status_code`, `.ok`, `.headers`, and `.json()`.
+Most API assertions are "right status" + "right body shape" — those four cover both.
+
+---
+
+## GET — read data
+
+You've met `GET` already; here it is with the two shapes you'll use constantly — a
+**collection** and a **single resource** — plus query params:
+
+```python
+# tests/test_get.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_get_collection():
+    response = requests.get(f"{BASE_URL}/api/products")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_get_single_resource():
+    response = requests.get(f"{BASE_URL}/api/products/1")
+    assert response.status_code == 200
+    assert response.json()["id"] == 1
+
+
+def test_get_with_query_params():
+    # params={...} builds ?category=electronics&search=mouse for you
+    response = requests.get(
+        f"{BASE_URL}/api/products",
+        params={"category": "electronics", "search": "mouse"},
+    )
+    assert response.status_code == 200
+    assert all(p["category"] == "electronics" for p in response.json())
+```
+
+**Remember:** `GET` reads. A collection endpoint returns a **list**; a `/:id` endpoint
+returns a single **object**. Pass filters as `params={...}` — never hand-build the query string.
+
+---
+
+## POST — make new data
+
+`POST` sends a body to make a new resource. With `requests`, pass a dict to **`json=`** and it
+serializes the body *and* sets the `Content-Type: application/json` header for you. A
+successful creation returns **`201 Created`**, and TestMarket Lab echoes back the new record —
+including the server-assigned `id`:
+
+```python
+# tests/test_post.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_create_product():
+    payload = {"name": "Test Widget", "price": 9.99, "category": "electronics"}
+    response = requests.post(f"{BASE_URL}/api/products", json=payload)
+
+    assert response.status_code == 201          # Created
+    body = response.json()
+    assert body["id"]                           # server assigned an id
+    assert body["name"] == "Test Widget"        # echoes what we sent
+    assert body["price"] == 9.99
+```
+
+:::note[`json=` vs `data=`]
+Use **`json=payload`** to send a JSON body (the API here expects JSON). `data=payload` sends
+a form-encoded body instead — a different `Content-Type`, and not what this API wants. Reach
+for `json=` throughout this course.
+:::
+
+A richer `POST` — placing an order — shows the server doing work you can assert on. You send
+items; the server computes the **total**:
+
+```python
+def test_place_order_computes_total():
+    payload = {
+        "email": "customer@test.io",
+        "items": [{"product_id": 1, "quantity": 2}],   # Wireless Mouse @ 29.99
+    }
+    response = requests.post(f"{BASE_URL}/api/orders", json=payload)
+
+    assert response.status_code == 201
+    order = response.json()
+    assert order["total"] == 29.99 * 2            # 59.98, computed server-side
+    assert order["items"][0]["quantity"] == 2
+```
+
+**Remember:** `POST` with `json=payload` makes a resource, sets `Content-Type` for you, and
+returns **201** plus the created record (with its new `id`). Assert the status *and* that the
+body reflects what you sent / what the server computed.
+
+---
+
+## PUT — update existing data
+
+`PUT` updates a resource at a known URL. Send the changed fields in the body; a success is
+**`200`**, and the response shows the updated record:
+
+```python
+# tests/test_put.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_update_product():
+    # make one to update
+    created = requests.post(
+        f"{BASE_URL}/api/products",
+        json={"name": "Old Name", "price": 5.00, "category": "accessories"},
+    ).json()
+    product_id = created["id"]
+
+    # update it
+    response = requests.put(
+        f"{BASE_URL}/api/products/{product_id}",
+        json={"name": "New Name", "price": 7.50},
+    )
+
+    assert response.status_code == 200
+    updated = response.json()
+    assert updated["name"] == "New Name"
+    assert updated["price"] == 7.50
+```
+
+Notice the test **makes its own data first** instead of assuming a particular product exists —
+a habit that keeps tests independent. (Module 5 turns this into clean fixtures.)
+
+**Remember:** `PUT /resource/:id` updates; send the new field values as the `json=` body and
+assert the returned record reflects them. Arrange your own data so the test doesn't depend on
+what's already there.
+
+---
+
+## DELETE — remove data
+
+`DELETE` removes a resource. TestMarket Lab returns **`200`** with a small confirmation body;
+the real proof it worked is that a follow-up `GET` then returns **`404`**:
+
+```python
+# tests/test_delete.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_delete_product():
+    created = requests.post(
+        f"{BASE_URL}/api/products",
+        json={"name": "Disposable", "price": 1.00, "category": "accessories"},
+    ).json()
+    product_id = created["id"]
+
+    response = requests.delete(f"{BASE_URL}/api/products/{product_id}")
+    assert response.status_code == 200
+
+    # it's really gone
+    follow_up = requests.get(f"{BASE_URL}/api/products/{product_id}")
+    assert follow_up.status_code == 404
+```
+
+**Remember:** `DELETE /resource/:id` removes it (here, `200` + a confirmation). Prove the
+effect, not just the status: a follow-up `GET` should now return `404`.
+
+---
+
+## Status codes, briefly
+
+Each verb has a "success" status worth memorizing — the rest of the course leans on them:
+
+| Verb | Typical success | Meaning |
+|---|---|---|
+| `GET` | `200 OK` | here's the resource |
+| `POST` | `201 Created` | made it; body has the new record |
+| `PUT` | `200 OK` | updated |
+| `DELETE` | `200 OK` | removed |
+
+`requests` never raises on a `4xx`/`5xx` by itself — `response.status_code` is just data you
+assert on. (If you *want* an exception on error statuses, call `response.raise_for_status()`,
+handy in setup steps where a failure should stop the test immediately.) We go deep on the
+**error** statuses — `400`, `401`, `404`, `409` — in [Module 4](/en/python-sdet/module-4/).
+
+**Remember:** `GET`/`PUT`/`DELETE` succeed with `200`, `POST` with `201`. A `4xx` is not an
+exception in `requests` — it's a `status_code` you assert. Use `raise_for_status()` only when
+you want a hard stop on failure.
+
+---
+
+## Headers
+
+Read response headers off `response.headers` (case-insensitive), and send request headers with
+`headers={...}`:
+
+```python
+# tests/test_headers.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_response_content_type():
+    response = requests.get(f"{BASE_URL}/api/products")
+    assert response.headers["Content-Type"].startswith("application/json")
+
+
+def test_send_request_headers():
+    # custom headers go in headers={...}; json= already sets Content-Type
+    response = requests.get(
+        f"{BASE_URL}/api/products",
+        headers={"Accept": "application/json"},
+    )
+    assert response.status_code == 200
+```
+
+When you send a body with `json=`, `requests` sets `Content-Type: application/json`
+automatically — you only set headers manually for things like `Accept` or, later, auth tokens.
+
+**Remember:** `response.headers["Content-Type"]` reads a header (case-insensitive); send your
+own with `headers={...}`. `json=` already sets the request `Content-Type`, so you rarely set
+it by hand.
+
+---
+
+## Putting it together: a CRUD lifecycle
+
+The shape of a real API test is often the whole lifecycle of a resource in one flow —
+**create → read → update → delete → confirm gone**. Using the `reset_db`, `base_url`, and
+`api` fixtures from your Module 2 `conftest.py`, it reads cleanly:
+
+```python
+# tests/test_product_lifecycle.py
+def test_product_crud_lifecycle(reset_db, base_url, api):
+    # CREATE
+    created = api.post(
+        f"{base_url}/api/products",
+        json={"name": "Lifecycle Lamp", "price": 39.99, "category": "furniture"},
+    )
+    assert created.status_code == 201
+    product_id = created.json()["id"]
+
+    # READ
+    read = api.get(f"{base_url}/api/products/{product_id}")
+    assert read.status_code == 200
+    assert read.json()["name"] == "Lifecycle Lamp"
+
+    # UPDATE
+    updated = api.put(
+        f"{base_url}/api/products/{product_id}", json={"price": 34.99}
+    )
+    assert updated.status_code == 200
+    assert updated.json()["price"] == 34.99
+
+    # DELETE
+    deleted = api.delete(f"{base_url}/api/products/{product_id}")
+    assert deleted.status_code == 200
+
+    # CONFIRM GONE
+    gone = api.get(f"{base_url}/api/products/{product_id}")
+    assert gone.status_code == 404
+```
+
+One test, every verb, and it cleans up after itself by deleting what it made — plus `reset_db`
+guarantees a known starting point. This is the backbone of API test suites.
+
+**Remember:** a create→read→update→delete→confirm-gone flow exercises every verb in one
+coherent test and leaves the system as it found it. Lean on `reset_db` for a known start and
+capture the new `id` from the create response rather than hardcoding it.
+
+---
+
+## Exercises
+
+Work in your `python-sdet` project with TestMarket Lab running, reusing the `conftest.py` from
+Module 2. Run with `pytest -v`.
+
+### Exercise 1 — Read a single product (5 min)
+
+`GET /api/products/1` and assert: status `200`, the body is a `dict`, and it has `id`, `name`,
+and `price`. Then `GET /api/products/99999` and assert the status is `404` (a taste of
+Module 4).
+
+### Exercise 2 — Create and verify (10 min)
+
+`POST /api/products` with `{"name": ..., "price": ..., "category": "electronics"}`. Assert
+status `201`, that the response has an `id`, and that `name`/`price` match what you sent.
+
+### Exercise 3 — Update a product (10 min)
+
+Create a product, capture its `id`, then `PUT /api/products/<id>` with a new `price`. Assert
+status `200` and that the returned `price` is the new value.
+
+### Exercise 4 — Delete and confirm (10 min)
+
+Create a product, `DELETE` it (assert `200`), then `GET` it and assert `404`. The follow-up
+`GET` is the real proof — don't trust the delete status alone.
+
+### Exercise 5 — Place an order (15 min)
+
+`POST /api/orders` with `{"email": "customer@test.io", "items": [{"product_id": 1,
+"quantity": 3}]}`. Assert status `201` and that the server-computed `total` equals
+`29.99 * 3`. *(Hint: prices are floats — use `pytest.approx`.)*
+
+### Bonus — Full lifecycle in one test
+
+Write the create→read→update→delete→confirm-gone flow as a single test using the `reset_db`,
+`base_url`, and `api` fixtures, capturing the `id` from the create response.
+
+---
+
+In **[Module 4](/en/python-sdet/module-4/)** we focus on **negative and validation testing** —
+deliberately triggering `400` (missing fields), `401` (bad login), `404` (missing resource),
+and `409` (duplicate registration), and asserting the API fails the *right* way.

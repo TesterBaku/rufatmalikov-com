@@ -183,6 +183,7 @@ export default defineConfig({
 						{ label: '0 — Setup & first test', link: '/python-sdet/module-0/' },
 						{ label: '1 — pytest fundamentals', link: '/python-sdet/module-1/' },
 						{ label: '2 — Fixtures & parametrize', link: '/python-sdet/module-2/' },
+						{ label: '3 — API testing with requests', link: '/python-sdet/module-3/' },
 					],
 				},
 				{
