@@ -135,7 +135,7 @@
     }
   </style>
   <style>
-    /* SLOT: per-deck styles */
+    /* Per-deck component styles — Python-SDET deck set (only what these decks use). */
 
     .circuit-bg {
       position: absolute;
@@ -182,36 +182,21 @@
       background-clip: text;
     }
 
-    .step-badge {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      margin-bottom: 32px;
-    }
-    .step-num {
-      width: 72px; height: 72px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, oklch(72% 0.23 210), oklch(58% 0.28 265));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 30px; font-weight: 900; color: #fff;
-      box-shadow: 0 0 28px oklch(72% 0.23 210 / 0.5);
-      flex-shrink: 0;
-    }
-    .step-label {
-      font-size: 20px;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
+    /* Section kicker + heading (full-width step slides) */
+    .kicker-label {
+      font-size: 22px; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
       color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .section-head {
+      font-size: 64px; font-weight: 900;
+      letter-spacing: -0.025em; line-height: 1.0;
+      margin-bottom: 36px;
     }
 
     /* Title */
-    .s-title {
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 80px;
-    }
+    .s-title { align-items: center; justify-content: center; text-align: center; padding: 80px; }
     .s-title .kicker {
       font-size: 26px; font-weight: 600;
       letter-spacing: 0.14em; text-transform: uppercase;
@@ -239,24 +224,7 @@
       background: oklch(12% 0.06 255 / 0.5);
     }
 
-    /* Intro */
-    .s-intro {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: center;
-      height: 100%;
-      padding: 80px 100px;
-      gap: 80px;
-    }
-    .intro-heading {
-      font-size: 80px; font-weight: 900;
-      line-height: 1.0; letter-spacing: -0.03em;
-      margin-bottom: 32px;
-    }
-    .intro-subtext {
-      font-size: 30px; line-height: 1.55;
-      color: oklch(70% 0.04 255);
-    }
+    /* Feature cards (stacked) */
     .feature-cards { display: flex; flex-direction: column; gap: 20px; }
     .feature-card {
       background: var(--surface);
@@ -269,30 +237,10 @@
     .feature-card h3 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
     .feature-card p  { font-size: 20px; color: var(--muted); }
 
-    /* Step layout */
-    .s-step {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      height: 100%;
-    }
-    .step-left {
-      padding: 80px 64px 80px 96px;
-      display: flex; flex-direction: column; justify-content: center;
-    }
-    .step-right {
-      display: flex; align-items: center; justify-content: center;
-      padding: 48px 64px; position: relative;
-    }
-    .step-headline {
-      font-size: 68px; font-weight: 800;
-      line-height: 1.08; letter-spacing: -0.025em;
-      margin-bottom: 28px;
-    }
-    .step-body {
-      font-size: 30px; line-height: 1.55;
-      color: oklch(74% 0.04 255);
-      max-width: 680px; margin-bottom: 28px;
-    }
+    /* Step layout (base; slides set their own grid inline where needed) */
+    .s-step { display: grid; grid-template-columns: 1fr 1fr; height: 100%; }
+    .step-headline { font-size: 68px; font-weight: 800; line-height: 1.08; letter-spacing: -0.025em; margin-bottom: 28px; }
+    .step-body { font-size: 30px; line-height: 1.55; color: oklch(74% 0.04 255); max-width: 680px; margin-bottom: 28px; }
     .step-tip {
       display: flex; align-items: flex-start; gap: 16px;
       padding: 20px 28px;
@@ -305,77 +253,7 @@
     }
     .tip-icon { font-size: 26px; flex-shrink: 0; margin-top: 2px; }
 
-    .url-bar {
-      display: flex; align-items: center; gap: 14px;
-      background: oklch(94% 0.005 255);
-      border-radius: 8px; padding: 18px 24px;
-      font-family: ui-monospace, Menlo, monospace;
-      font-size: 26px;
-      border: 2px solid oklch(72% 0.23 210);
-      box-shadow: 0 0 0 4px oklch(72% 0.23 210 / 0.15);
-      color: #111;
-    }
-    .url-highlight { color: oklch(38% 0.28 265); font-weight: 700; }
-
-    /* Windows mockup */
-    .win-dialog {
-      border-radius: 8px; overflow: hidden;
-      box-shadow: 0 28px 72px rgba(0,0,0,0.55);
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-    .win-titlebar {
-      height: 34px; background: #1a1a2e;
-      display: flex; align-items: center; justify-content: flex-end;
-      padding: 0; position: relative;
-    }
-    .win-titlebar .title-text {
-      position: absolute; left: 50%; transform: translateX(-50%);
-      font-size: 13px; color: #aaa; white-space: nowrap;
-    }
-    .win-btn { width: 46px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #ccc; }
-    .win-btn.close-btn { background: #c42b1c; color: #fff; }
-    .win-body { background: #fff; color: #111; padding: 28px 32px; }
-    .win-body h4 { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: #111; }
-    .win-body p  { font-size: 13px; color: #555; margin-bottom: 14px; }
-    .win-next-btn { display: inline-flex; align-items: center; padding: 9px 28px; background: #0050ef; color: #fff; border-radius: 4px; font-size: 14px; font-weight: 600; }
-    .win-back-btn { display: inline-flex; align-items: center; padding: 9px 22px; border: 1px solid #bbb; color: #555; border-radius: 4px; font-size: 14px; }
-    .win-btn-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
-    .radio-on { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #0050ef; background: #0050ef; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .radio-on::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
-    .radio-off { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #bbb; background: #fff; flex-shrink: 0; }
-    .win-radio-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-size: 15px; color: #222; }
-    .chk-on { width: 18px; height: 18px; border-radius: 3px; background: #0050ef; border: 2px solid #0050ef; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0; }
-    .chk-off { width: 18px; height: 18px; border-radius: 3px; border: 2px solid #bbb; background: #fff; flex-shrink: 0; }
-    .chk-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 14px; color: #333; }
-    .setup-progress-track { background: #e0e0e0; border-radius: 4px; height: 20px; overflow: hidden; margin: 14px 0; }
-    .setup-progress-fill { height: 100%; background: #0050ef; border-radius: 4px; width: 68%; }
-
-    .dl-btn { display: inline-flex; align-items: center; gap: 14px; background: #026e00; color: #fff; padding: 26px 52px; border-radius: 6px; font-size: 32px; font-weight: 700; box-shadow: 0 8px 36px rgba(2,110,0,0.45); }
-
-    .explorer-row { display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-radius: 6px; }
-    .explorer-row.selected { background: #cce5f7; border: 2px solid #0078d4; }
-    .explorer-row.dim { opacity: 0.35; }
-
-    /* Done */
-    .s-done { align-items: center; justify-content: center; text-align: center; padding: 80px; }
-    .done-icon { font-size: 110px; margin-bottom: 28px; filter: drop-shadow(0 0 36px oklch(72% 0.23 210)); }
-    .done-head { font-size: 92px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.0; margin-bottom: 22px; }
-    .done-sub  { font-size: 34px; color: var(--muted); margin-bottom: 52px; }
-    .next-cards { display: flex; gap: 24px; }
-    .next-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 36px; text-align: left; width: 340px; }
-    .next-card .nc-icon  { font-size: 38px; margin-bottom: 14px; }
-    .next-card .nc-title { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
-    .next-card .nc-desc  { font-size: 20px; color: var(--muted); line-height: 1.4; }
-
-    /* Outro */
-    .s-outro { align-items: center; justify-content: center; text-align: center; padding: 80px; }
-    .sub-badge { display: inline-flex; align-items: center; gap: 12px; background: #ff0000; color: #fff; font-size: 24px; font-weight: 800; padding: 14px 44px; border-radius: 8px; letter-spacing: 0.06em; margin-bottom: 40px; }
-    .outro-head { font-size: 86px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.0; margin-bottom: 24px; }
-    .outro-sub  { font-size: 34px; color: var(--muted); margin-bottom: 52px; }
-    .social-row { display: flex; gap: 20px; justify-content: center; }
-    .social-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 16px 36px; font-size: 26px; font-weight: 600; display: flex; align-items: center; gap: 12px; }
-
-    /* Per-deck: two-column comparison layout */
+    /* Two-column comparison */
     .s-two-col {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -384,54 +262,22 @@
       height: 100%;
       align-items: start;
     }
-    .s-two-col .col-heading-red {
-      font-size: 32px; font-weight: 800;
-      color: #f44336;
-      margin-bottom: 24px;
-      letter-spacing: -0.01em;
-    }
-    .s-two-col .col-heading-green {
-      font-size: 32px; font-weight: 800;
-      color: #4caf50;
-      margin-bottom: 24px;
-      letter-spacing: -0.01em;
-    }
+    .s-two-col .col-heading-red   { font-size: 32px; font-weight: 800; color: #f44336; margin-bottom: 24px; letter-spacing: -0.01em; }
+    .s-two-col .col-heading-green { font-size: 32px; font-weight: 800; color: #4caf50; margin-bottom: 24px; letter-spacing: -0.01em; }
     .s-two-col .full-heading {
       grid-column: 1 / -1;
       font-size: 64px; font-weight: 900;
-      letter-spacing: -0.025em;
-      line-height: 1.0;
+      letter-spacing: -0.025em; line-height: 1.0;
       margin-bottom: 8px;
     }
 
     /* Terminal mockup */
-    .terminal {
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-    .terminal-bar {
-      height: 36px;
-      background: #1a1a2e;
-      display: flex; align-items: center;
-      padding: 0 14px; gap: 8px;
-      position: relative;
-    }
+    .terminal { border-radius: 8px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.06); }
+    .terminal-bar { height: 36px; background: #1a1a2e; display: flex; align-items: center; padding: 0 14px; gap: 8px; position: relative; }
     .terminal-bar .t-dots { display: flex; gap: 7px; }
     .terminal-bar .t-dots span { width: 11px; height: 11px; border-radius: 50%; display: block; }
-    .terminal-bar .t-title {
-      position: absolute; left: 50%; transform: translateX(-50%);
-      font-size: 13px; color: #888; white-space: nowrap;
-      font-family: ui-monospace, Consolas, monospace;
-    }
-    .terminal-body {
-      background: #012456;
-      padding: 20px 24px;
-      font-family: ui-monospace, Consolas, monospace;
-      font-size: 18px;
-      line-height: 1.8;
-    }
+    .terminal-bar .t-title { position: absolute; left: 50%; transform: translateX(-50%); font-size: 13px; color: #888; white-space: nowrap; font-family: ui-monospace, Consolas, monospace; }
+    .terminal-body { background: #012456; padding: 20px 24px; font-family: ui-monospace, Consolas, monospace; font-size: 18px; line-height: 1.8; }
 
     /* Code block */
     .code-block {
@@ -445,13 +291,18 @@
     }
 
     /* Full-width step variant */
-    .s-full {
-      display: flex;
-      flex-direction: column;
-      padding: 80px 120px;
-      justify-content: center;
-      height: 100%;
-    }
+    .s-full { display: flex; flex-direction: column; padding: 80px 120px; justify-content: center; height: 100%; }
+
+    /* Done */
+    .s-done { align-items: center; justify-content: center; text-align: center; padding: 80px; }
+    .done-icon { font-size: 110px; margin-bottom: 28px; filter: drop-shadow(0 0 36px oklch(72% 0.23 210)); }
+    .done-head { font-size: 92px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.0; margin-bottom: 22px; }
+    .done-sub  { font-size: 34px; color: var(--muted); margin-bottom: 52px; }
+    .next-cards { display: flex; gap: 24px; }
+    .next-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 36px; text-align: left; width: 340px; }
+    .next-card .nc-icon  { font-size: 38px; margin-bottom: 14px; }
+    .next-card .nc-title { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+    .next-card .nc-desc  { font-size: 20px; color: var(--muted); line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -479,8 +330,8 @@
       <!-- 02 The toolchain -->
       <section class="slide s-full" data-screen-label="02 The Toolchain">
         <div class="circuit-bg"></div>
-        <div style="font-size:22px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;">What you'll install</div>
-        <h2 style="font-size:68px;font-weight:900;letter-spacing:-0.025em;line-height:1.0;margin-bottom:40px;">Four tools, one toolchain</h2>
+        <div class="kicker-label">What you'll install</div>
+        <h2 class="section-head">Four tools, one toolchain</h2>
         <div class="feature-cards" style="max-width:1500px;">
           <div class="feature-card">
             <div class="feature-icon">🐍</div>
@@ -508,8 +359,8 @@
       <!-- 03 The setup pipeline -->
       <section class="slide s-full" data-screen-label="03 Setup Pipeline">
         <div class="circuit-bg"></div>
-        <div style="font-size:22px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;">The path to green</div>
-        <h2 style="font-size:64px;font-weight:900;letter-spacing:-0.025em;line-height:1.0;margin-bottom:44px;">Setup, end to end</h2>
+        <div class="kicker-label">The path to green</div>
+        <h2 class="section-head">Setup, end to end</h2>
 
         <!-- Row 1: your project -->
         <div style="color:var(--muted);font-size:20px;font-weight:700;letter-spacing:0.08em;margin-bottom:14px;">YOUR TEST PROJECT</div>
@@ -583,19 +434,21 @@
       </section>
 
       <!-- 05 First green test -->
-      <section class="slide s-step" data-screen-label="05 First Test" style="display:grid;grid-template-columns:1fr 1fr;gap:60px;padding:60px 80px;height:100%;align-items:center;">
+      <section class="slide s-two-col" data-screen-label="05 First Test" style="align-items:center;">
         <div class="circuit-bg"></div>
-        <div style="grid-column:1/-1;font-size:60px;font-weight:900;letter-spacing:-0.025em;line-height:1.0;margin-bottom:4px;">One test proves the whole stack</div>
+        <div class="full-heading">One test proves the whole stack</div>
 
         <div>
           <div style="font-size:24px;font-weight:700;color:var(--accent);margin-bottom:16px;">tests/test_smoke.py</div>
-          <div class="code-block" style="font-size:19px;">
+          <div class="code-block" style="font-size:18px;">
             <div><span style="color:#569cd6;">import</span> <span style="color:#d4d4d4;">requests</span></div>
             <div style="height:1em;"></div>
             <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_products_endpoint_is_up</span>():</div>
             <div style="margin-left:28px;color:#d4d4d4;">r = requests.get(<span style="color:#ce9178;">"http://localhost:3000/api/products"</span>)</div>
             <div style="margin-left:28px;"><span style="color:#c586c0;">assert</span> <span style="color:#d4d4d4;">r.status_code ==</span> <span style="color:#b5cea8;">200</span></div>
-            <div style="margin-left:28px;"><span style="color:#c586c0;">assert</span> <span style="color:#dcdcaa;">len</span>(r.json()) &gt; <span style="color:#b5cea8;">0</span></div>
+            <div style="margin-left:28px;color:#d4d4d4;">products = r.json()</div>
+            <div style="margin-left:28px;"><span style="color:#c586c0;">assert</span> <span style="color:#dcdcaa;">isinstance</span>(products, <span style="color:#4ec9b0;">list</span>)</div>
+            <div style="margin-left:28px;"><span style="color:#c586c0;">assert</span> <span style="color:#dcdcaa;">len</span>(products) &gt; <span style="color:#b5cea8;">0</span></div>
           </div>
         </div>
 
