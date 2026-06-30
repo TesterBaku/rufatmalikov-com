@@ -20,7 +20,11 @@ export const onRequest = defineRouteMiddleware((context) => {
 	// don't touch dozens of MDX files. (The standalone /resume page is not a
 	// Starlight route and sets its own tags.)
 	{
-		const isPython = context.url.pathname.includes('/python/');
+		// Both the Tier 1 Python course (/python/) and Tier 2 "Python for SDETs"
+		// (/python-sdet/) share the Python OG card. A dedicated python-sdet card is
+		// future polish; until then the python-course card beats the generic default.
+		const isPython =
+			context.url.pathname.includes('/python/') || context.url.pathname.includes('/python-sdet/');
 		const file = isPython ? '/og/python-course.png' : '/og/default.png';
 		const img = new URL(file, context.site ?? context.url).href;
 		const alt = isPython
@@ -62,7 +66,11 @@ export const onRequest = defineRouteMiddleware((context) => {
 		const isHome = path === '/' || path === '/en/' || path === '/az/';
 		const isAbout = path.endsWith('/about/');
 		const isCourseLanding =
-			path === '/en/course/' || path === '/az/course/' || path === '/az/python/' || path === '/en/python/';
+			path === '/en/course/' ||
+			path === '/az/course/' ||
+			path === '/az/python/' ||
+			path === '/en/python/' ||
+			path === '/en/python-sdet/';
 
 		if (isHome) {
 			ld({
@@ -96,21 +104,24 @@ export const onRequest = defineRouteMiddleware((context) => {
 		}
 	}
 
-	type Entry = (typeof route.sidebar)[number];
-
-	// "Python for SDETs" (Tier 2) is English-only — drop it from every other
-	// locale's sidebar so AZ doesn't show an empty group / links to pages that
-	// don't exist in that locale.
-	if (route.lang !== 'en') {
-		route.sidebar = route.sidebar.filter(
-			(entry) => !(entry.type === 'group' && entry.label === 'Python for SDETs')
-		);
-		return;
+	// "Python for SDETs" (Tier 2) is English-only, but Starlight still builds
+	// /<locale>/python-sdet/ fallback pages that render the EN content. Mark those
+	// non-default-locale fallbacks noindex so search engines don't index duplicate
+	// English content under e.g. /az/ (the sitemap already omits them; noindex is the
+	// signal that actually deindexes).
+	if (route.lang !== 'en' && context.url.pathname.includes('/python-sdet/')) {
+		route.head.push({ tag: 'meta', attrs: { name: 'robots', content: 'noindex, follow' } });
 	}
 
+	// Per-locale sidebar pruning: hide the group whose content only exists in the
+	// *other* locale, so each locale's nav stays free of empty groups / cross-locale
+	// links. Exam Helper is AZ/RU-only (hidden in EN); "Python for SDETs" is EN-only
+	// (hidden everywhere else). One mechanism, one label per locale.
+	type Entry = (typeof route.sidebar)[number];
+	const dropLabel = route.lang === 'en' ? 'Exam Helper' : 'Python for SDETs';
 	const prune = (entries: Entry[]): Entry[] =>
 		entries
-			.filter((entry) => !(entry.type === 'group' && entry.label === 'Exam Helper'))
+			.filter((entry) => !(entry.type === 'group' && entry.label === dropLabel))
 			.map((entry) => (entry.type === 'group' ? { ...entry, entries: prune(entry.entries) } : entry))
 			.filter((entry) => !(entry.type === 'group' && entry.entries.length === 0));
 

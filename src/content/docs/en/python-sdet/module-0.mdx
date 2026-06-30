@@ -93,14 +93,14 @@ your machine — no version clashes, and you can delete the whole thing by delet
 
 <Steps>
 
-1. **Create the project folder:**
+1. **Make the project folder:**
 
    ```bash
    mkdir python-sdet
    cd python-sdet
    ```
 
-2. **Create the virtual environment** (the second `venv` is the folder name — `.venv` is a
+2. **Set up the virtual environment** (the second `venv` is the folder name — `.venv` is a
    common convention):
 
    ```bash
@@ -137,7 +137,7 @@ Then run the activation command again.
 
 To leave the environment later, run `deactivate`.
 
-**Remember:** a `venv` isolates one project's packages. **Create once** (`python -m venv
+**Remember:** a `venv` isolates one project's packages. **Set it up once** (`python -m venv
 .venv`), **activate every new terminal** — the `(.venv)` prefix tells you it's on.
 
 ---
@@ -156,7 +156,7 @@ Record what you installed so anyone (including future you, or CI) can reproduce 
 pip freeze > requirements.txt
 ```
 
-`requirements.txt` now lists the exact versions. Later, a fresh machine recreates the
+`requirements.txt` now lists the exact versions. Later, a fresh machine rebuilds the
 environment with `pip install -r requirements.txt`.
 
 Quick sanity check that pytest is on the path:
@@ -298,7 +298,7 @@ toolchain — Python, venv, pytest, requests, and the running app — is wired u
 
 - This course uses a **real local setup**, not a browser runner — the way the job works.
 - The toolchain is **Python + venv + pytest + requests** (Playwright comes in Module 6).
-- A **venv** isolates packages: create once, **activate in every new terminal**, install
+- A **venv** isolates packages: set it up once, **activate in every new terminal**, install
   there, and `pip freeze > requirements.txt` to pin versions.
 - **TestMarket Lab** runs in its own terminal at `http://localhost:3000` and is what every
   test targets.

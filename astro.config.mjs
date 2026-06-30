@@ -172,8 +172,8 @@ export default defineConfig({
 					// Tier 2 Python course — English-only (net-new). Explicit module links
 					// like the Playwright Course group above; links are added per increment
 					// as modules ship, so the nav never points at unauthored pages. The
-					// route middleware (src/starlightRouteData.ts) prunes this whole group
-					// from the AZ sidebar (no AZ Tier 2 pages exist).
+					// route middleware (src/starlightRouteData.ts) prunes this group from
+					// non-EN sidebars and noindexes the Starlight locale-fallback pages.
 					label: 'Python for SDETs',
 					items: [
 						{ label: 'Overview', link: '/python-sdet/' },
