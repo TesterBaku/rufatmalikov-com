@@ -96,11 +96,12 @@ returns a single **object**. Pass filters as `params={...}` — never hand-build
 
 `POST` sends a body to make a new resource. With `requests`, pass a dict to **`json=`** and it
 serializes the body *and* sets the `Content-Type: application/json` header for you. A
-successful creation returns **`201 Created`**, and TestMarket Lab echoes back the new record —
+successful `POST` returns **`201 Created`**, and TestMarket Lab echoes back the new record —
 including the server-assigned `id`:
 
 ```python
 # tests/test_post.py
+import pytest
 import requests
 
 BASE_URL = "http://localhost:3000"
@@ -136,12 +137,13 @@ def test_place_order_computes_total():
 
     assert response.status_code == 201
     order = response.json()
-    assert order["total"] == 29.99 * 2            # 59.98, computed server-side
+    # the total is computed server-side, so it's a float — compare with approx (Module 1)
+    assert order["total"] == pytest.approx(29.99 * 2)   # 59.98
     assert order["items"][0]["quantity"] == 2
 ```
 
 **Remember:** `POST` with `json=payload` makes a resource, sets `Content-Type` for you, and
-returns **201** plus the created record (with its new `id`). Assert the status *and* that the
+returns **201** plus the new record (with its `id`). Assert the status *and* that the
 body reflects what you sent / what the server computed.
 
 ---
@@ -319,7 +321,7 @@ guarantees a known starting point. This is the backbone of API test suites.
 
 **Remember:** a create→read→update→delete→confirm-gone flow exercises every verb in one
 coherent test and leaves the system as it found it. Lean on `reset_db` for a known start and
-capture the new `id` from the create response rather than hardcoding it.
+capture the new `id` from the `POST` response rather than hardcoding it.
 
 ---
 
@@ -334,19 +336,19 @@ Module 2. Run with `pytest -v`.
 and `price`. Then `GET /api/products/99999` and assert the status is `404` (a taste of
 Module 4).
 
-### Exercise 2 — Create and verify (10 min)
+### Exercise 2 — Add and verify (10 min)
 
 `POST /api/products` with `{"name": ..., "price": ..., "category": "electronics"}`. Assert
 status `201`, that the response has an `id`, and that `name`/`price` match what you sent.
 
 ### Exercise 3 — Update a product (10 min)
 
-Create a product, capture its `id`, then `PUT /api/products/<id>` with a new `price`. Assert
+Add a product, capture its `id`, then `PUT /api/products/<id>` with a new `price`. Assert
 status `200` and that the returned `price` is the new value.
 
 ### Exercise 4 — Delete and confirm (10 min)
 
-Create a product, `DELETE` it (assert `200`), then `GET` it and assert `404`. The follow-up
+Add a product, `DELETE` it (assert `200`), then `GET` it and assert `404`. The follow-up
 `GET` is the real proof — don't trust the delete status alone.
 
 ### Exercise 5 — Place an order (15 min)
@@ -355,10 +357,12 @@ Create a product, `DELETE` it (assert `200`), then `GET` it and assert `404`. Th
 "quantity": 3}]}`. Assert status `201` and that the server-computed `total` equals
 `29.99 * 3`. *(Hint: prices are floats — use `pytest.approx`.)*
 
-### Bonus — Full lifecycle in one test
+### Bonus — A `make_product` helper
 
-Write the create→read→update→delete→confirm-gone flow as a single test using the `reset_db`,
-`base_url`, and `api` fixtures, capturing the `id` from the create response.
+Exercises 3 and 4 both start the same way: `POST` a product and grab its `id`. Factor that
+into a helper `make_product(**fields)` that posts to `/api/products` and returns the new
+product's `id`, then use it in both tests to cut the repetition. *(In Module 5 this becomes a
+proper fixture.)*
 
 ---
 
