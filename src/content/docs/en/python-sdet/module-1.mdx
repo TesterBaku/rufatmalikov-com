@@ -1,0 +1,343 @@
+---
+title: "Module 1: pytest fundamentals"
+description: "How pytest discovers and runs tests, why plain assert gives readable failures, running exactly the tests you want with -k/-x/-v, and pytest.raises and pytest.approx — grounded in TestMarket Lab."
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+In [Module 0](/en/python-sdet/module-0/) you got one test passing. Now we'll understand
+**pytest** itself: how it finds your tests, why a plain `assert` is all you need, how to run
+exactly the tests you want, and the two helpers — `pytest.raises` and `pytest.approx` —
+you'll reach for constantly. Everything here is grounded in TestMarket Lab, so it already
+feels like real test work.
+
+Keep TestMarket Lab running at `http://localhost:3000` (from Module 0) and your `.venv`
+active for the app-based examples.
+
+<Video title="Module 1: pytest fundamentals" />
+
+---
+
+## A test is just a function
+
+A pytest test is a plain Python function whose name starts with `test_`. Inside it, you make
+a claim with `assert`. If the claim holds, the test passes; if not, it fails.
+
+```python
+# tests/test_basics.py
+def test_addition():
+    assert 1 + 1 == 2
+
+
+def test_string_upper():
+    name = "playwright"
+    assert name.upper() == "PLAYWRIGHT"
+```
+
+No classes to inherit, no special assert methods to memorize — just functions and `assert`.
+That simplicity is a big part of why pytest is the SDET standard.
+
+**Remember:** a pytest test is a function named `test_*` that makes a claim with `assert` —
+no boilerplate, no base class.
+
+---
+
+## How pytest discovers tests
+
+When you run `pytest`, it walks the folder looking for tests using simple naming rules:
+
+| Kind | Rule |
+|---|---|
+| **Files** | `test_*.py` or `*_test.py` |
+| **Functions** | start with `test_` |
+| **Classes** (optional grouping) | start with `Test` (and have no `__init__`) |
+
+```python
+# tests/test_discovery_demo.py
+
+def test_this_runs():        # discovered: starts with test_
+    assert True
+
+def helper_not_a_test():     # ignored: no test_ prefix
+    return 42
+
+class TestProducts:          # discovered: class starts with Test
+    def test_inside_a_class(self):
+        assert helper_not_a_test() == 42
+```
+
+This is exactly why the Module 0 smoke test had to be `test_smoke.py` with a function named
+`test_products_endpoint_is_up` — anything off-pattern is silently skipped, which is the most
+common "why did no tests run?" gotcha.
+
+**Remember:** files `test_*.py`/`*_test.py`, functions `test_*`, classes `Test*`. Off-pattern
+names are skipped silently — if a test "doesn't run," check the name first.
+
+---
+
+## Why plain `assert` is enough
+
+In some frameworks you write `assertEqual(a, b)` or `assertTrue(x)`. pytest rewrites the
+plain `assert` statement so that **when it fails, it shows you both sides**. Watch what a
+failure looks like:
+
+```python
+# tests/test_failure_demo.py
+def test_intentional_failure():
+    expected = 5
+    actual = 2 + 2
+    assert actual == expected
+```
+
+Running it prints the values, not just "assertion failed":
+
+```
+    def test_intentional_failure():
+        expected = 5
+        actual = 2 + 2
+>       assert actual == expected
+E       assert 4 == 5
+
+tests/test_failure_demo.py:4: AssertionError
+```
+
+You instantly see `4 == 5` is the problem. You can add a message for extra context, shown
+after the expression:
+
+```python
+assert actual == expected, f"got {actual}, expected {expected}"
+```
+
+**Remember:** pytest's rewritten `assert` shows both sides on failure (`assert 4 == 5`), so
+you rarely need special assert methods. Add `, "message"` only for extra context.
+
+---
+
+## The asserts you'll use most
+
+A quick tour, with the kinds of checks API tests are full of:
+
+```python
+# tests/test_assert_styles.py
+
+def test_equality():
+    assert 2 + 2 == 4
+
+def test_membership():
+    roles = ["customer", "admin"]
+    assert "admin" in roles
+    assert "guest" not in roles
+
+def test_truthiness():
+    products = [1, 2, 3]
+    assert products            # non-empty list is truthy
+    assert not []              # empty list is falsy
+
+def test_comparisons():
+    price = 29.99
+    assert price > 0
+    assert 0 < price < 1000
+```
+
+**Remember:** lean on Python's own operators — `==`, `in` / `not in`, truthiness (`assert
+products`), and chained comparisons (`0 < price < 1000`). pytest reports all of them clearly.
+
+---
+
+## Expecting an exception: `pytest.raises`
+
+Sometimes the *correct* behavior is to raise an error. You assert that with
+`pytest.raises` as a context manager — the test passes only if the block raises the
+expected exception type:
+
+```python
+# tests/test_exceptions.py
+import pytest
+
+
+def test_bad_int_conversion_raises():
+    with pytest.raises(ValueError):
+        int("not a number")
+
+
+def test_can_inspect_the_error_message():
+    with pytest.raises(ValueError) as exc_info:
+        int("nope")
+    assert "invalid literal" in str(exc_info.value)
+```
+
+If the block *doesn't* raise, the test fails — which is what you want when you're verifying
+that invalid input is rejected.
+
+**Remember:** `with pytest.raises(ExceptionType):` asserts the block raises that error;
+capture it `as exc_info` to assert on the message. No raise = failed test.
+
+---
+
+## Comparing floats: `pytest.approx`
+
+Floating-point math is inexact, so `0.1 + 0.2 == 0.3` is `False` in Python. Prices and
+totals are floats, so compare them with `pytest.approx`:
+
+```python
+# tests/test_floats.py
+import pytest
+
+
+def test_float_math_needs_approx():
+    assert 0.1 + 0.2 == pytest.approx(0.3)   # passes
+    # assert 0.1 + 0.2 == 0.3                 # would FAIL
+
+
+def test_order_total():
+    # 29.99 + 89.99 + 24.99
+    assert 29.99 + 89.99 + 24.99 == pytest.approx(144.97)
+```
+
+**Remember:** never compare computed floats with `==`; use `== pytest.approx(value)` for
+prices, totals, and any arithmetic result.
+
+---
+
+## Running exactly the tests you want
+
+`pytest` runs everything by default, but you'll constantly want to run *less*. The flags
+that matter day to day:
+
+```bash
+pytest                       # run all tests
+pytest -v                    # verbose: one line per test with PASSED/FAILED
+pytest -q                    # quiet: compact output
+pytest tests/test_basics.py  # just one file
+pytest tests/test_basics.py::test_addition   # one specific test
+pytest -x                    # stop at the first failure
+pytest -k "product"          # only tests whose name matches the expression
+```
+
+`-k` takes a substring expression and supports `and` / `or` / `not`:
+
+```bash
+pytest -k "product and not slow"   # names containing 'product' but not 'slow'
+pytest -k "login or register"
+```
+
+A typical debugging loop is `pytest -x -k "the_thing_im_fixing"` — stop on the first
+failure, and only consider the tests you care about.
+
+**Remember:** `-v` (verbose), `-q` (quiet), `-x` (stop on first failure), `-k "expr"` (filter
+by name, supports `and`/`or`/`not`), and `file::test` to target one test. `pytest -x -k …`
+is the everyday debug loop.
+
+---
+
+## Putting it together against TestMarket Lab
+
+These tests hit the real app — make sure TestMarket Lab is running. They're deliberately
+small; Module 3 goes deep on API testing.
+
+```python
+# tests/test_products_api.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_products_returns_a_nonempty_list():
+    response = requests.get(f"{BASE_URL}/api/products")
+    assert response.status_code == 200
+    products = response.json()
+    assert isinstance(products, list)
+    assert len(products) > 0
+
+
+def test_each_product_has_core_fields():
+    products = requests.get(f"{BASE_URL}/api/products").json()
+    first = products[0]
+    assert "id" in first
+    assert "name" in first
+    assert "price" in first
+
+
+def test_category_filter_returns_only_that_category():
+    response = requests.get(
+        f"{BASE_URL}/api/products", params={"category": "electronics"}
+    )
+    assert response.status_code == 200
+    products = response.json()
+    assert len(products) > 0
+    assert all(p["category"] == "electronics" for p in products)
+```
+
+Run only this file while you work on it:
+
+```bash
+pytest tests/test_products_api.py -v
+```
+
+```
+tests/test_products_api.py::test_products_returns_a_nonempty_list PASSED
+tests/test_products_api.py::test_each_product_has_core_fields PASSED
+tests/test_products_api.py::test_category_filter_returns_only_that_category PASSED
+```
+
+Notice `requests.get(url, params={...})` builds the query string (`?category=electronics`)
+for you — no manual string-joining.
+
+**Remember:** real API tests are still just `test_*` functions with `assert`s — assert the
+**status** and the **body shape** (a list, the right fields, every item matching a filter).
+`requests.get(url, params={...})` builds the query string for you.
+
+---
+
+## Exercises
+
+Work in your `python-sdet` project with TestMarket Lab running. Add the files under
+`tests/` and run them with `pytest -v`.
+
+### Exercise 1 — Discovery rules (5 min)
+
+Write `tests/test_discovery.py` with: one function that **runs** and passes, one helper
+function that pytest **ignores** (wrong name), and one test grouped inside a `Test`-prefixed
+class. Run `pytest tests/test_discovery.py -v` and confirm only the two real tests appear.
+
+### Exercise 2 — Readable failures (5 min)
+
+Write a test that you *expect to fail* (e.g. `assert 2 + 2 == 5`). Run it and read the
+output — confirm pytest shows both sides (`assert 4 == 5`). Then add a failure message and
+re-run to see where it appears. Finally, fix the assertion so it passes.
+
+### Exercise 3 — `raises` and `approx` (10 min)
+
+In `tests/test_helpers.py`:
+- Assert that `int("abc")` raises `ValueError`, and that the message contains
+  `"invalid literal"`.
+- Assert that `0.1 + 0.2 == pytest.approx(0.3)`.
+- Assert that the three prices `29.99 + 89.99 + 24.99` equal `pytest.approx(144.97)`.
+
+### Exercise 4 — Run exactly what you want (5 min)
+
+With several test files present, practice the filters:
+- Run a single test by its `file::test` path.
+- Use `-k "product"` to run only product-related tests.
+- Use `-k "not product"` to run everything *except* them.
+- Use `-x` to stop at the first failure (introduce a failing test to see it).
+
+### Exercise 5 — Products API checks (15 min)
+
+In `tests/test_products_api.py`, write tests that:
+- `GET /api/products` → status `200` and a non-empty list.
+- Every product has `id`, `name`, and `price`.
+- `GET /api/products?category=accessories` → every result has `category == "accessories"`.
+- `GET /api/products?search=keyboard` → at least one result, and "Keyboard" appears in some
+  product's `name`. *(Hint: `requests.get(url, params={"search": "keyboard"})`.)*
+
+### Bonus — A `get_json` helper
+
+Write a small helper `get_json(path)` that does
+`requests.get(f"{BASE_URL}{path}").json()` and reuse it across your tests to cut repetition.
+(In Module 2 we'll turn this kind of setup into a proper pytest **fixture**.)
+
+---
+
+In **Module 2** we tackle **fixtures and parametrize** — sharing setup (like a base URL or a
+freshly reset database) across tests, and running one test over many inputs without copy-paste.

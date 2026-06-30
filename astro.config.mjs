@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
+import { PYTHON_SDET } from './src/courses.mjs';
 
 // https://astro.build/config
 export default defineConfig({
@@ -169,6 +170,21 @@ export default defineConfig({
 					],
 				},
 				{
+					// Tier 2 Python course — English-only (net-new). Explicit module links
+					// like the Playwright Course group above; links are added per increment
+					// as modules ship, so the nav never points at unauthored pages. The
+					// route middleware (src/starlightRouteData.ts) prunes this group from
+					// non-EN sidebars and noindexes the Starlight locale-fallback pages.
+					// Label comes from the shared PYTHON_SDET constant so the middleware's
+					// label-based prune can't drift from it.
+					label: PYTHON_SDET.groupLabel,
+					items: [
+						{ label: 'Overview', link: '/python-sdet/' },
+						{ label: '0 — Setup & first test', link: '/python-sdet/module-0/' },
+						{ label: '1 — pytest fundamentals', link: '/python-sdet/module-1/' },
+					],
+				},
+				{
 					label: 'BrauzerLab',
 					items: [{ autogenerate: { directory: 'playwright' } }],
 				},
@@ -188,7 +204,14 @@ export default defineConfig({
 		}),
 		sitemap({
 			// /python-demo/ is an internal M1 verification page — keep it out of the sitemap.
-			filter: (page) => !page.includes('/python-demo'),
+			// /<non-en>/python-sdet/ are Starlight locale-fallback pages (the Tier 2 course is
+			// English-only, see src/courses.mjs) that render EN content under another locale —
+			// keep only the canonical /en/ ones so the sitemap doesn't advertise duplicate
+			// content in the wrong language. Locale-agnostic so a future /ru/ etc. is covered
+			// automatically (those fallbacks are also noindexed in the middleware).
+			filter: (page) =>
+				!page.includes('/python-demo') &&
+				!(page.includes(PYTHON_SDET.segment) && !page.includes(PYTHON_SDET.enLanding)),
 		}),
 	],
 });

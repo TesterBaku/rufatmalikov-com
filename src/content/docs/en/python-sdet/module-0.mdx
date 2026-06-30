@@ -1,0 +1,315 @@
+---
+title: "Module 0: Setup & first test"
+description: "Set up a real Python test toolchain — venv, pip, pytest, and requests — clone and run TestMarket Lab, and write a first test that proves the whole stack works."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+Welcome to **Python for SDETs**. This first module gets your machine ready and ends with a
+real test passing against a real app. By the end you'll have Python, a virtual environment,
+`pytest`, and `requests` installed, **TestMarket Lab** running locally, and a green test
+that proves the whole toolchain works end to end.
+
+:::note[Coming from Python Fundamentals?]
+[Python Fundamentals](/en/python/) runs entirely in your browser — nothing to install. This
+course is different: real automation work happens in a terminal, so here you install Python
+and the tools locally and run tests yourself. That's the setup every SDET job uses.
+:::
+
+<Video title="Module 0: Setup & first test" />
+
+---
+
+## What you'll install
+
+Four things, in order:
+
+1. **Python 3** — the language (you likely have it from Fundamentals; we'll verify).
+2. **A virtual environment (`venv`)** — an isolated, per-project set of packages.
+3. **`pytest`** — the test runner that's the de-facto standard for Python testing.
+4. **`requests`** — the library we'll use to call the app's REST API.
+
+Playwright for Python comes later, in Module 6 — no need to install it yet.
+
+**Remember:** the toolchain for this course is **Python + venv + pytest + requests**.
+Playwright is added in Module 6.
+
+---
+
+## Install and verify Python
+
+You need **Python 3.9 or newer**.
+
+<Steps>
+
+1. **Check what you already have.** Open a terminal and run:
+
+   ```bash
+   python --version
+   ```
+
+   If you see `Python 3.9.x` or higher, you're set — skip to the next section. On some
+   systems the command is `python3`:
+
+   ```bash
+   python3 --version
+   ```
+
+2. **Install it if missing.** Download the installer from
+   [python.org/downloads](https://www.python.org/downloads/) and run it.
+
+   :::caution[Windows: check "Add Python to PATH"]
+   On the first screen of the Windows installer, tick **"Add python.exe to PATH"** before
+   clicking Install. Without it, the `python` command won't be found in your terminal.
+   :::
+
+3. **Verify `pip`** (Python's package installer — it ships with Python):
+
+   ```bash
+   pip --version
+   ```
+
+   If `pip` isn't found, try `python -m pip --version` instead.
+
+</Steps>
+
+:::note[`python` vs `python3` / `pip` vs `pip3`]
+On macOS and Linux the commands are often `python3` and `pip3`. On Windows they're usually
+`python` and `pip`. Use whichever your system recognizes — the rest of this course writes
+`python` and `pip`.
+:::
+
+**Remember:** confirm `python --version` (≥ 3.9) and `pip --version` before going further —
+a broken Python is the #1 cause of setup pain.
+
+---
+
+## Make a project and a virtual environment
+
+A **virtual environment** is a private copy of Python's package area that belongs to one
+project. Installing into it keeps this course's packages separate from everything else on
+your machine — no version clashes, and you can delete the whole thing by deleting one folder.
+
+<Steps>
+
+1. **Make the project folder:**
+
+   ```bash
+   mkdir python-sdet
+   cd python-sdet
+   ```
+
+2. **Set up the virtual environment** (the second `venv` is the folder name — `.venv` is a
+   common convention):
+
+   ```bash
+   python -m venv .venv
+   ```
+
+3. **Activate it.** This is the step people forget — you must activate the venv in *each new
+   terminal* before installing or running:
+
+   ```bash
+   # Windows (PowerShell)
+   .venv\Scripts\Activate.ps1
+
+   # Windows (cmd)
+   .venv\Scripts\activate.bat
+
+   # macOS / Linux (bash, zsh)
+   source .venv/bin/activate
+   ```
+
+   When it's active, your prompt shows `(.venv)` at the start.
+
+</Steps>
+
+:::caution[Windows PowerShell: "running scripts is disabled"]
+If activation fails with an execution-policy error, allow local scripts for your user once:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+Then run the activation command again.
+:::
+
+To leave the environment later, run `deactivate`.
+
+**Remember:** a `venv` isolates one project's packages. **Set it up once** (`python -m venv
+.venv`), **activate every new terminal** — the `(.venv)` prefix tells you it's on.
+
+---
+
+## Install pytest and requests
+
+With the venv **active**, install the two libraries:
+
+```bash
+pip install pytest requests
+```
+
+Record what you installed so anyone (including future you, or CI) can reproduce it:
+
+```bash
+pip freeze > requirements.txt
+```
+
+`requirements.txt` now lists the exact versions. Later, a fresh machine rebuilds the
+environment with `pip install -r requirements.txt`.
+
+Quick sanity check that pytest is on the path:
+
+```bash
+pytest --version
+```
+
+**Remember:** install into the **active** venv, then `pip freeze > requirements.txt` to
+pin versions — that file is how CI and teammates get the same setup.
+
+---
+
+## Project layout
+
+A clean test project starts small. Make a `tests/` folder — pytest discovers tests there:
+
+```
+python-sdet/
+├── .venv/                # the virtual environment (don't commit this)
+├── tests/
+│   └── test_smoke.py     # your tests live here
+├── requirements.txt      # pinned dependencies
+└── pytest.ini            # pytest configuration (optional, added below)
+```
+
+Add a small `pytest.ini` so the app's base URL lives in one place instead of being repeated
+in every test:
+
+```ini
+# pytest.ini
+[pytest]
+# Where pytest looks for tests
+testpaths = tests
+```
+
+:::tip[Using git? Ignore the venv]
+If this folder is a git repo, add a `.gitignore` with `.venv/` and `__pycache__/` so you
+never commit the environment or Python's caches. New to git? See the
+[Git & GitHub reference](/en/reference/git-github/).
+:::
+
+**Remember:** keep tests in `tests/`, pin deps in `requirements.txt`, and keep `.venv/` out
+of version control.
+
+---
+
+## Get the practice app: TestMarket Lab
+
+Every test in this course runs against **TestMarket Lab** — a small, realistic shop with a
+REST API and a web UI. It's a **separate project** from your `python-sdet` folder: the app
+runs in one terminal, your tests run in another.
+
+You'll need [Node.js](https://nodejs.org) installed to run it (the **LTS** version). Then,
+in a folder *outside* `python-sdet`:
+
+```bash
+git clone https://github.com/TesterBaku/testmarket-lab
+cd testmarket-lab
+npm install
+npm start
+```
+
+Leave it running and open [http://localhost:3000](http://localhost:3000) — you should see
+the TestMarket storefront. Confirm the API answers too, in a browser or another terminal:
+
+```bash
+# In a new terminal
+curl http://localhost:3000/api/products
+```
+
+You should get back a JSON array of products.
+
+:::tip[Reset the data anytime]
+TestMarket Lab uses a small local database. To restore it to its starting state, send a
+`POST` to `/api/reset` while it's running (we'll automate this in a later module). Demo
+accounts: `customer@test.io` / `customer123` and `admin@test.io` / `admin123`.
+:::
+
+**Remember:** the app runs in its **own terminal** at `http://localhost:3000`; keep it
+running while you work. `/api/reset` returns the data to a known starting state.
+
+---
+
+## Your first test
+
+Time to prove the whole stack works. In your `python-sdet` project, with the venv active and
+TestMarket Lab running, put this in `tests/test_smoke.py`:
+
+```python
+# tests/test_smoke.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_products_endpoint_is_up():
+    response = requests.get(f"{BASE_URL}/api/products")
+
+    # The request succeeded
+    assert response.status_code == 200
+
+    # The body is a JSON array with products in it
+    products = response.json()
+    assert isinstance(products, list)
+    assert len(products) > 0
+```
+
+Run it from the `python-sdet` folder:
+
+```bash
+pytest
+```
+
+You should see something like:
+
+```
+========================= test session starts =========================
+collected 1 item
+
+tests/test_smoke.py .                                            [100%]
+
+========================== 1 passed in 0.05s ==========================
+```
+
+That single dot after the filename is your passing test. 🎉
+
+If you see `Connection refused` instead, the app isn't running — start TestMarket Lab in its
+own terminal and try again. If pytest reports **"no tests ran,"** check the file is named
+`test_smoke.py` (the `test_` prefix matters) and the function starts with `test_`. We'll
+unpack exactly why those names matter in Module 1.
+
+**Remember:** a passing API smoke test (`200` + a non-empty list) proves your whole
+toolchain — Python, venv, pytest, requests, and the running app — is wired up correctly.
+
+---
+
+## Key takeaways
+
+- This course uses a **real local setup**, not a browser runner — the way the job works.
+- The toolchain is **Python + venv + pytest + requests** (Playwright comes in Module 6).
+- A **venv** isolates packages: set it up once, **activate in every new terminal**, install
+  there, and `pip freeze > requirements.txt` to pin versions.
+- **TestMarket Lab** runs in its own terminal at `http://localhost:3000` and is what every
+  test targets.
+- pytest discovers files named `test_*.py` and functions named `test_*`; a passing API
+  smoke test confirms the stack end to end.
+
+**Checklist — you should now have:** Python ≥ 3.9 verified; a `python-sdet` project with an
+active `.venv`; `pytest` and `requests` installed and pinned in `requirements.txt`;
+TestMarket Lab cloned and running at `http://localhost:3000`; and `tests/test_smoke.py`
+passing.
+
+In **[Module 1](/en/python-sdet/module-1/)** we go deep on pytest itself — how tests are
+discovered, how `assert` gives you readable failures, and how to run exactly the tests you
+want.

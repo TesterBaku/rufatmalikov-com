@@ -1,0 +1,85 @@
+---
+title: "Python for SDETs"
+description: "Write real Python tests — API and UI — against a real app, with pytest, requests, Playwright, and CI. A free, hands-on test-automation course in English."
+prev: false
+next: false
+---
+
+This course turns Python basics into a real **test-automation** skill set. You'll write
+genuine tests — REST API tests with `requests`, UI tests with Playwright — run them with
+**pytest**, and wire them into **CI**, all against a real web app you run on your own
+machine.
+
+It's **free**, in **English**, and built for the people moving into automation: aspiring and
+junior SDETs, and manual testers taking the step to code. It's the advanced half of this
+site's Python track and the Python-language sibling of the [JavaScript Playwright
+course](/en/course/) — same skills, same practice app, different language.
+
+## The promise
+
+By the end you can **write real Python tests — API and UI — against a real app, with
+pytest and CI.** Not toy snippets: a structured suite you could show in an interview or
+drop into a job.
+
+## Prerequisites
+
+- **Python basics** — variables, `if`, loops, functions, lists/dicts. New to Python? Start
+  with [Python Fundamentals](/en/python/) (free, runs in your browser) and come back.
+- **Comfort in the terminal** — running commands, `cd`, installing packages. The
+  [Command line & npm reference](/en/reference/command-line-npm/) covers the essentials.
+- **No prior pytest, requests, or Playwright experience needed** — we build each from zero.
+
+## How the course works: Learn → Build
+
+Unlike [Python Fundamentals](/en/python/), which runs in your browser, this course uses a
+**real local setup** — you install Python, pytest, and the libraries, and run tests from
+your terminal, exactly like on the job.
+
+- **Learn** — each module introduces a concept with explanations and runnable examples.
+- **Build** — you apply it to [TestMarket Lab](https://github.com/TesterBaku/testmarket-lab),
+  a real web app (login, products, cart, checkout, admin) you clone and run locally with
+  `npm install && npm start`.
+
+### TestMarket Lab — your training ground
+
+[TestMarket Lab](https://github.com/TesterBaku/testmarket-lab) is a small but realistic shop
+with two surfaces you'll test:
+
+- A **REST API** under `/api` — `auth`, `products`, `orders`, `users`, `cart`, plus a
+  `reset` endpoint built for test setup/teardown. Perfect for the `requests` modules.
+- A **web UI** with `data-testid` hooks throughout — perfect for the Playwright modules.
+
+It's the same app the [JavaScript course](/en/course/) tests, so if you ever work across
+both languages, the endpoints and selectors carry over.
+
+:::tip[New to APIs, HTTP, or status codes?]
+The **[Reference](/en/reference/)** section has short primers on
+[APIs](/en/reference/apis/), [HTTP request/response](/en/reference/http/), and
+[status codes](/en/reference/http-status-codes/) that ground the vocabulary used
+throughout the API modules.
+:::
+
+## Module plan
+
+| # | Title | Status |
+|---|-------|--------|
+| 0 | [Setup & first test](/en/python-sdet/module-0/) | Available |
+| 1 | [pytest fundamentals](/en/python-sdet/module-1/) | Available |
+| 2 | Fixtures & parametrize | Coming soon |
+| 3 | API testing with `requests` | Coming soon |
+| 4 | Negative & validation testing | Coming soon |
+| 5 | Test data setup & teardown | Coming soon |
+| 6 | UI automation — Playwright for Python | Coming soon |
+| 7 | Page Object Model in Python | Coming soon |
+| 8 | Data-driven tests | Coming soon |
+| 9 | Reporting & suite structure | Coming soon |
+| 10 | CI with GitHub Actions | Coming soon |
+| 11 | Capstone — full API + UI suite | Coming soon |
+
+New modules are rolling out — check back as they land.
+
+---
+
+Ready? [**Start with Module 0 →**](/en/python-sdet/module-0/)
+
+Just need the basics first? Begin with [**Python Fundamentals →**](/en/python/).
