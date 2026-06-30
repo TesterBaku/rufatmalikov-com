@@ -142,7 +142,9 @@
     radial-gradient(ellipse 45% 40% at 50% 110%, oklch(15% 0.10 250 / 0.4) 0%, transparent 50%);
 }
 
-.grad-text {
+/* gradient wordmark/accent text — shared by .grad-text and the brand wordmark */
+.grad-text,
+.brand-name strong {
   background: linear-gradient(135deg, oklch(84% 0.25 200) 0%, oklch(62% 0.30 265) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -152,12 +154,6 @@
 .brand-bar { position: absolute; bottom: 44px; right: 64px; display: flex; align-items: center; gap: 10px; z-index: 10; }
 .brand-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 .brand-name { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: oklch(70% 0.04 252); }
-.brand-name strong {
-  background: linear-gradient(135deg, oklch(84% 0.25 200), oklch(62% 0.30 265));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
 
 /* Section kicker + heading (full-width step slides) */
 .kicker-label { font-size: 22px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
@@ -198,6 +194,7 @@
 .full-heading { grid-column: 1 / -1; font-size: 64px; font-weight: 900; letter-spacing: -0.025em; line-height: 1.0; margin-bottom: 8px; }
 
 /* Pipeline chips (flow diagrams) */
+.pipe-label { color: var(--muted); font-size: 20px; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 14px; }
 .pipe-row { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
 .pipe-chip { border-radius: 10px; padding: 18px 22px; white-space: nowrap; font-size: 20px; font-weight: 700; }
 .pipe-chip.green { background: #1b5e20; border: 2px solid #4caf50; color: #a5d6a7; }
