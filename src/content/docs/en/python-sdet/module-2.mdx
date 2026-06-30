@@ -1,0 +1,414 @@
+---
+title: "Module 2: Fixtures & parametrize"
+description: "Stop repeating setup: pytest fixtures (with yield teardown and scope), conftest.py for sharing them, @pytest.mark.parametrize for one test over many inputs, and markers — all against TestMarket Lab."
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+In [Module 1](/en/python-sdet/module-1/) every test repeated the same lines —
+`BASE_URL`, a fresh `requests.get(...)`. That copy-paste is exactly what **fixtures** remove.
+In this module you'll factor setup into fixtures, give them teardown and the right **scope**,
+share them across files with **`conftest.py`**, run one test over many inputs with
+**`@pytest.mark.parametrize`**, and tag tests with **markers**. These four features are what
+turn a pile of test functions into a maintainable suite.
+
+Keep TestMarket Lab running at `http://localhost:3000` and your `.venv` active.
+
+<Video title="Module 2: Fixtures & parametrize" />
+
+---
+
+## The problem: repeated setup
+
+Look at two tests from Module 1 — the first two lines are identical, and every test rebuilds
+the same base URL:
+
+```python
+BASE_URL = "http://localhost:3000"
+
+def test_products():
+    products = requests.get(f"{BASE_URL}/api/products").json()
+    assert len(products) > 0
+
+def test_electronics():
+    products = requests.get(f"{BASE_URL}/api/products", params={"category": "electronics"}).json()
+    assert len(products) > 0
+```
+
+If the URL changes, or you want every test to start from a clean database, you'd edit every
+test. Fixtures give you **one place** to prepare what tests need.
+
+**Remember:** when several tests repeat the same setup (a base URL, a client, a clean
+database), that's the signal to extract a **fixture**.
+
+---
+
+## Your first fixture
+
+A fixture is a function decorated with `@pytest.fixture`. A test **requests** it by putting
+its name in the test's parameter list — pytest runs the fixture and passes its return value in.
+
+```python
+# tests/test_fixtures_intro.py
+import pytest
+import requests
+
+
+@pytest.fixture
+def base_url():
+    return "http://localhost:3000"
+
+
+def test_products(base_url):
+    response = requests.get(f"{base_url}/api/products")
+    assert response.status_code == 200
+```
+
+`base_url` is no longer a global — `test_products` declares it as a parameter, and pytest
+"injects" it. This is **dependency injection**: the test says what it needs, pytest provides it.
+
+**Remember:** `@pytest.fixture` turns a function into reusable setup; a test gets it by naming
+it as a parameter. pytest matches the name and injects the return value — no manual calls.
+
+---
+
+## Setup, teardown, and `yield`
+
+Real setup often needs cleanup afterwards. A fixture that `yield`s runs the code **before**
+the `yield` as setup, hands the value to the test, then runs the code **after** the `yield`
+as teardown — even if the test fails.
+
+```python
+# tests/test_session_fixture.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+@pytest.fixture
+def api():
+    # setup: a Session reuses the TCP connection across requests
+    session = requests.Session()
+    yield session          # the test runs here
+    # teardown: always runs, even if the test raised
+    session.close()
+
+
+def test_products_with_session(api):
+    response = api.get(f"{BASE_URL}/api/products")
+    assert response.status_code == 200
+```
+
+Everything before `yield` is arrange; everything after is cleanup. No `try/finally` needed —
+pytest guarantees the teardown runs.
+
+**Remember:** a `yield` fixture is setup-before / teardown-after in one function; the teardown
+runs even when the test fails, so it replaces `try/finally` for cleanup.
+
+---
+
+## Fixture scope: don't redo expensive setup
+
+By default a fixture runs **once per test** (`function` scope). For setup that's safe to
+share, widen the scope so it runs once per module or once per whole session:
+
+```python
+# tests/test_scope.py
+import pytest
+import requests
+
+
+@pytest.fixture(scope="session")
+def base_url():
+    # built once for the entire test run
+    return "http://localhost:3000"
+
+
+@pytest.fixture(scope="module")
+def all_products(base_url):
+    # fetched once per test file, reused by every test in it
+    return requests.get(f"{base_url}/api/products").json()
+
+
+def test_has_products(all_products):
+    assert len(all_products) > 0
+
+
+def test_products_have_names(all_products):
+    assert all("name" in p for p in all_products)
+```
+
+| Scope | Runs |
+|---|---|
+| `function` (default) | once per test |
+| `class` | once per test class |
+| `module` | once per `.py` file |
+| `session` | once per whole `pytest` run |
+
+Use the **narrowest** scope that's correct. Wider scope is faster but means tests share state —
+fine for read-only data like `base_url`, risky for anything a test mutates.
+
+**Remember:** fixture scope (`function`→`class`→`module`→`session`) trades isolation for
+speed. Default to `function`; widen only for setup that's read-only or safe to share.
+
+---
+
+## `conftest.py`: share fixtures across files
+
+Fixtures you want in **every** test file go in a special file named `conftest.py`. pytest
+loads it automatically — no import needed — for every test in that folder and below.
+
+```python
+# tests/conftest.py
+import pytest
+import requests
+
+
+@pytest.fixture(scope="session")
+def base_url():
+    return "http://localhost:3000"
+
+
+@pytest.fixture
+def api(base_url):
+    session = requests.Session()
+    yield session
+    session.close()
+
+
+@pytest.fixture
+def reset_db(base_url):
+    """Reseed TestMarket Lab before the test, so it starts from a known state."""
+    requests.post(f"{base_url}/api/reset")
+    yield
+    # No teardown needed: reseeding *before* each test is enough — the next test
+    # that wants a clean slate just requests reset_db and reseeds itself. Adding a
+    # second reset here would only double the work.
+```
+
+Now any test in `tests/` can request `base_url`, `api`, or `reset_db` directly:
+
+```python
+# tests/test_uses_conftest.py
+def test_clean_db_has_seed_products(reset_db, base_url, api):
+    products = api.get(f"{base_url}/api/products").json()
+    assert len(products) == 15   # the seed always has 15 products
+```
+
+`reset_db` is the SDET superpower: each test starts from a **known** state, so tests can't
+pollute each other. (We go deeper on data setup/teardown in Module 5.)
+
+**Remember:** `conftest.py` holds fixtures shared across files — pytest finds it automatically,
+no import. A `reset_db` fixture that reseeds before each test gives every test a known starting
+state.
+
+---
+
+## `@pytest.mark.parametrize`: one test, many inputs
+
+When the same test logic should run over several inputs, don't copy the function — parametrize
+it. pytest runs the test once per row and reports each as a separate result.
+
+```python
+# tests/test_parametrize.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+@pytest.mark.parametrize("category", ["electronics", "accessories", "furniture"])
+def test_category_filter(category):
+    response = requests.get(f"{BASE_URL}/api/products", params={"category": category})
+    assert response.status_code == 200
+    products = response.json()
+    assert len(products) > 0
+    assert all(p["category"] == category for p in products)
+```
+
+Running it shows three independent tests:
+
+```
+test_parametrize.py::test_category_filter[electronics] PASSED
+test_parametrize.py::test_category_filter[accessories] PASSED
+test_parametrize.py::test_category_filter[furniture] PASSED
+```
+
+You can parametrize **multiple** arguments per row — perfect for input/expected-output tables,
+the bread and butter of API testing:
+
+```python
+# tests/test_login_states.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+@pytest.mark.parametrize(
+    "email, password, expected_status",
+    [
+        ("customer@test.io", "customer123", 200),   # valid login
+        ("customer@test.io", "wrongpass", 401),      # bad password
+        ("", "", 400),                                # missing fields
+    ],
+)
+def test_login_states(email, password, expected_status):
+    response = requests.post(
+        f"{BASE_URL}/api/auth/login", json={"email": email, "password": password}
+    )
+    assert response.status_code == expected_status
+```
+
+One function now covers the happy path **and** two failure modes — and a fourth case is just
+one more row.
+
+**Remember:** `@pytest.mark.parametrize("a, b", [(...), (...)])` runs the test once per row,
+each reported separately (`test[case]`). It's the clean way to cover happy path + edge cases
+without duplicating the function.
+
+---
+
+## Markers: tag and select tests
+
+A **marker** labels a test so you can run a subset or change how it runs. You apply one with
+`@pytest.mark.<name>`. pytest has built-in markers, and you can register your own.
+
+### Built-in: `skip` and `xfail`
+
+```python
+# tests/test_markers.py
+import pytest
+
+
+@pytest.mark.skip(reason="endpoint not implemented yet")
+def test_future_feature():
+    ...
+
+
+@pytest.mark.xfail(reason="known bug: returns 200 instead of 404")
+def test_known_bug():
+    assert 1 == 2   # expected to fail; won't break the suite
+```
+
+### Custom markers for grouping
+
+Register custom markers in `pytest.ini` so pytest doesn't warn about unknown names:
+
+```ini
+# pytest.ini
+[pytest]
+testpaths = tests
+markers =
+    smoke: a fast, critical subset to run first
+    api: tests that hit the REST API
+```
+
+Tag tests and select them with `-m`:
+
+```python
+@pytest.mark.smoke
+@pytest.mark.api
+def test_products_up():
+    ...
+```
+
+```bash
+pytest -m smoke            # only smoke tests
+pytest -m "api and not smoke"
+```
+
+**Remember:** `@pytest.mark.skip`/`xfail` skip or tolerate-failure a test; custom markers
+(registered in `pytest.ini`) tag tests so `-m "smoke"` runs just that subset. `-m` selects by
+marker, `-k` selects by name.
+
+---
+
+## Putting it together against TestMarket Lab
+
+A small, realistic file that uses a shared `conftest.py` (the one above), parametrize, and a
+clean-database fixture:
+
+```python
+# tests/test_products_suite.py
+import pytest
+
+
+@pytest.mark.parametrize(
+    "category, present",
+    [
+        ("electronics", True),
+        ("accessories", True),
+        ("furniture", True),
+        ("nonexistent", False),   # filter that matches nothing → empty list
+    ],
+)
+def test_category_presence(reset_db, base_url, api, category, present):
+    products = api.get(f"{base_url}/api/products", params={"category": category}).json()
+    assert (len(products) > 0) is present
+    assert all(p["category"] == category for p in products)
+
+
+def test_reset_restores_seed_count(reset_db, base_url, api):
+    # reset_db reseeded first, so the count is the known seed total
+    products = api.get(f"{base_url}/api/products").json()
+    assert len(products) == 15
+```
+
+`reset_db`, `base_url`, and `api` all come from `conftest.py` with no imports; `category` and
+`present` come from parametrize. Notice the empty-filter case (`nonexistent`) passes cleanly
+because `all(...)` over an empty list is `True`.
+
+**Remember:** fixtures (shared setup) + parametrize (input tables) compose — a test can take
+both injected setup and per-row data in the same parameter list. That combination is the shape
+of most real API test suites.
+
+---
+
+## Exercises
+
+Work in your `python-sdet` project with TestMarket Lab running. Build a `tests/conftest.py`
+and the test files below; run with `pytest -v`.
+
+### Exercise 1 — A `base_url` fixture (5 min)
+
+Move the hardcoded `BASE_URL` from your Module 1 tests into a `session`-scoped `base_url`
+fixture in `conftest.py`. Update two existing tests to request it as a parameter instead of
+using the global. Confirm they still pass.
+
+### Exercise 2 — An `api` session fixture with teardown (10 min)
+
+Add an `api` fixture that yields a `requests.Session()` and closes it after. Use it in a test
+that makes two requests (e.g. list products, then fetch one by id) and confirm both run over
+the one session.
+
+### Exercise 3 — A `reset_db` fixture (10 min)
+
+Add a `reset_db` fixture that `POST`s to `/api/reset` before yielding. Write a test that:
+adds a product via `POST /api/products`, then a **second** test that asserts the product
+count is back to 15 — proving `reset_db` isolated them. (Order-independence is the point.)
+
+### Exercise 4 — Parametrize login states (10 min)
+
+Write one parametrized test covering: valid login → 200, wrong password → 401, missing fields
+→ 400, and unknown email → 401. Each case is a row of
+`(email, password, expected_status)`.
+
+### Exercise 5 — Markers (10 min)
+
+Register `smoke` and `api` markers in `pytest.ini`. Tag your fastest, most critical test as
+`@pytest.mark.smoke`. Run `pytest -m smoke` and confirm only it runs. Then `xfail` a test that
+asserts something currently false and confirm the suite still reports green.
+
+### Bonus — `parametrize` with `ids`
+
+Give your login parametrize readable case names with the `ids=` argument — one id per
+row, so a 4-case test needs 4 ids
+(e.g. `ids=["valid", "bad-password", "missing-fields", "unknown-email"]`) so the output
+reads `test_login_states[valid]` instead of the raw values. Check `pytest -v`.
+
+---
+
+In **Module 3** we go all-in on **API testing with `requests`** — GET/POST/PUT/DELETE across
+the full `/api/*` surface, status codes, JSON bodies, query params, and headers.
