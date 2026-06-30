@@ -179,11 +179,12 @@ def api(base_url):
 
 @pytest.fixture
 def reset_db(base_url):
-    """Restore TestMarket Lab to its seed state before the test runs."""
+    """Reseed TestMarket Lab before the test, so it starts from a known state."""
     requests.post(f"{base_url}/api/reset")
     yield
-    # (optional) reset again after, so the next test starts clean too
-    requests.post(f"{base_url}/api/reset")
+    # No teardown needed: reseeding *before* each test is enough — the next test
+    # that wants a clean slate just requests reset_db and reseeds itself. Adding a
+    # second reset here would only double the work.
 ```
 
 Now any test in `tests/` can request `base_url`, `api`, or `reset_db` directly:
@@ -402,9 +403,10 @@ asserts something currently false and confirm the suite still reports green.
 
 ### Bonus — `parametrize` with `ids`
 
-Give your login parametrize readable case names with the `ids=` argument
-(e.g. `ids=["valid", "bad-password", "missing-fields"]`) so the output reads
-`test_login_states[valid]` instead of the raw values. Check `pytest -v`.
+Give your login parametrize readable case names with the `ids=` argument — one id per
+row, so a 4-case test needs 4 ids
+(e.g. `ids=["valid", "bad-password", "missing-fields", "unknown-email"]`) so the output
+reads `test_login_states[valid]` instead of the raw values. Check `pytest -v`.
 
 ---
 
