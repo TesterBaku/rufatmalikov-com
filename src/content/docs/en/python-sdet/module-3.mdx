@@ -94,21 +94,24 @@ returns a single **object**. Pass filters as `params={...}` — never hand-build
 
 ## POST — make new data
 
-`POST` sends a body to make a new resource. With `requests`, pass a dict to **`json=`** and it
-serializes the body *and* sets the `Content-Type: application/json` header for you. A
-successful `POST` returns **`201 Created`**, and TestMarket Lab echoes back the new record —
-including the server-assigned `id`:
+:::note[The write examples use your Module 2 fixtures]
+From here on, the **write** examples (`POST`/`PUT`/`DELETE`) request `reset_db`, `base_url`, and
+`api` from the `conftest.py` you built in [Module 2](/en/python-sdet/module-2/). `reset_db`
+reseeds first, so each test starts from the 15-product seed and **re-runs stay green** — without
+it, a second run would try to add a product whose name already exists and the server would
+reject it. (The read-only `GET` examples above don't change state, so they stay plain.)
+:::
+
+`POST` sends a body to make a new resource. With `requests` (here via the `api` session), pass a
+dict to **`json=`** and it serializes the body *and* sets the `Content-Type: application/json`
+header for you. A successful `POST` returns **`201 Created`**, and TestMarket Lab echoes back the
+new record — including the server-assigned `id`:
 
 ```python
-# tests/test_post.py
-import requests
-
-BASE_URL = "http://localhost:3000"
-
-
-def test_create_product():
+# tests/test_post.py  (api, base_url, reset_db come from Module 2's conftest.py)
+def test_create_product(reset_db, base_url, api):
     payload = {"name": "Test Widget", "price": 9.99, "category": "electronics"}
-    response = requests.post(f"{BASE_URL}/api/products", json=payload)
+    response = api.post(f"{base_url}/api/products", json=payload)
 
     assert response.status_code == 201          # Created
     body = response.json()
@@ -128,18 +131,15 @@ items; the server computes the **total**:
 
 ```python
 # tests/test_orders.py
-import pytest
-import requests
-
-BASE_URL = "http://localhost:3000"
+import pytest   # for pytest.approx
 
 
-def test_place_order_computes_total():
+def test_place_order_computes_total(reset_db, base_url, api):
     payload = {
         "email": "customer@test.io",
         "items": [{"product_id": 1, "quantity": 2}],   # Wireless Mouse @ 29.99
     }
-    response = requests.post(f"{BASE_URL}/api/orders", json=payload)
+    response = api.post(f"{base_url}/api/orders", json=payload)
 
     assert response.status_code == 201
     order = response.json()
@@ -161,22 +161,17 @@ body reflects what you sent / what the server computed.
 
 ```python
 # tests/test_put.py
-import requests
-
-BASE_URL = "http://localhost:3000"
-
-
-def test_update_product():
+def test_update_product(reset_db, base_url, api):
     # make one to update
-    created = requests.post(
-        f"{BASE_URL}/api/products",
+    created = api.post(
+        f"{base_url}/api/products",
         json={"name": "Old Name", "price": 5.00, "category": "accessories"},
     ).json()
     product_id = created["id"]
 
     # update it
-    response = requests.put(
-        f"{BASE_URL}/api/products/{product_id}",
+    response = api.put(
+        f"{base_url}/api/products/{product_id}",
         json={"name": "New Name", "price": 7.50},
     )
 
@@ -202,23 +197,18 @@ the real proof it worked is that a follow-up `GET` then returns **`404`**:
 
 ```python
 # tests/test_delete.py
-import requests
-
-BASE_URL = "http://localhost:3000"
-
-
-def test_delete_product():
-    created = requests.post(
-        f"{BASE_URL}/api/products",
+def test_delete_product(reset_db, base_url, api):
+    created = api.post(
+        f"{base_url}/api/products",
         json={"name": "Disposable", "price": 1.00, "category": "accessories"},
     ).json()
     product_id = created["id"]
 
-    response = requests.delete(f"{BASE_URL}/api/products/{product_id}")
+    response = api.delete(f"{base_url}/api/products/{product_id}")
     assert response.status_code == 200
 
     # it's really gone
-    follow_up = requests.get(f"{BASE_URL}/api/products/{product_id}")
+    follow_up = api.get(f"{base_url}/api/products/{product_id}")
     assert follow_up.status_code == 404
 ```
 
@@ -241,7 +231,7 @@ Each verb has a "success" status worth memorizing — the rest of the course lea
 `requests` never raises on a `4xx`/`5xx` by itself — `response.status_code` is just data you
 assert on. (If you *want* an exception on error statuses, call `response.raise_for_status()`,
 handy in setup steps where a failure should stop the test immediately.) We go deep on the
-**error** statuses — `400`, `401`, `404`, `409` — in [Module 4](/en/python-sdet/module-4/).
+**error** statuses — `400`, `401`, `404`, `409` — in **Module 4**.
 
 **Remember:** `GET`/`PUT`/`DELETE` succeed with `200`, `POST` with `201`. A `4xx` is not an
 exception in `requests` — it's a `status_code` you assert. Use `raise_for_status()` only when
@@ -334,7 +324,8 @@ capture the new `id` from the `POST` response rather than hardcoding it.
 ## Exercises
 
 Work in your `python-sdet` project with TestMarket Lab running, reusing the `conftest.py` from
-Module 2. Run with `pytest -v`.
+Module 2. Run with `pytest -v`. For the **write** exercises (2–4), request `reset_db` so each
+re-run starts from the clean seed.
 
 ### Exercise 1 — Read a single product (5 min)
 
@@ -372,6 +363,6 @@ proper fixture.)*
 
 ---
 
-In **[Module 4](/en/python-sdet/module-4/)** we focus on **negative and validation testing** —
-deliberately triggering `400` (missing fields), `401` (bad login), `404` (missing resource),
-and `409` (duplicate registration), and asserting the API fails the *right* way.
+In **Module 4** we focus on **negative and validation testing** — deliberately triggering `400`
+(missing fields), `401` (bad login), `404` (missing resource), and `409` (duplicate
+registration), and asserting the API fails the *right* way.
