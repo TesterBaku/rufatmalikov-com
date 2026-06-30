@@ -1,0 +1,76 @@
+---
+title: What is programming?
+description: What a program is, how a computer understands it — and run your first Python code right now.
+sidebar:
+  order: 1
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+The apps on your phone, YouTube, WhatsApp, the website you booked a flight on, even the buttons in an elevator — all of these are **programs**.
+
+A program is a set of **step-by-step instructions** written for a computer. A computer is incredibly fast, but it doesn't think for itself: it does **exactly** what you tell it. No more, no less.
+
+:::tip[In this lesson]
+You'll learn what a program is and run your first Python code **right now** — yes, in the very first lesson.
+:::
+
+## A program is a recipe
+
+If we wrote "make a cup of tea" as a recipe:
+
+1. Pour water into the kettle
+2. Bring the water to a boil
+3. Add tea to the pot and let it steep
+4. Wait 5 minutes
+
+A program is the same idea — the instructions are just written in a language the computer understands. We'll learn **Python**: one of the most popular programming languages in the world, and one of the friendliest for beginners. It's also the language most test automation, data, and AI work is written in — so it's a practical first step into tech.
+
+## Run your first code
+
+The box below is your **code playground**. Real Python runs inside it. Press **▶ Run** and see what happens:
+
+<PyRunner
+	id="ex-hello"
+	starterCode={`print("Hi! I'm Python 🐍")\nprint("You just ran a program!")\nprint("=" * 30)\nprint("Welcome to programming!")`}
+/>
+
+What happened? Each `print(...)` line gives the computer one command: *"display whatever is inside the parentheses on the screen."* The computer ran the lines **top to bottom, in order**.
+
+Go ahead — change the text and run it again. Don't worry, you can't break anything here. 😄
+
+## Missions
+
+<Mission
+	id="m00-l01-m1"
+	xp={5}
+	title="Start the engine"
+	starterCode={`print("Hello, World!")`}
+	checkCode={`assert "hello" in _stdout.lower(), "HINT:Press the ▶ Run button — the code will run on its own."`}
+	inputs={[]}
+>
+	Programmers have a tradition more than 50 years old: the first program always says "Hello, World!" Just **run it** — and earn your first XP!
+</Mission>
+
+<Mission
+	id="m00-l01-m2"
+	xp={10}
+	title="Say something of your own"
+	starterCode={`print("I'm learning to program!")`}
+	checkCode={`assert _stdout.strip(), "HINT:The program printed nothing — keep the print line and only change the text inside the quotes."\nassert _stdout.strip() != "I'm learning to program!", "HINT:Replace the text with a sentence of your own — change what's inside the quotes."`}
+	inputs={[]}
+>
+	Replace the text inside the quotes with **your own sentence** — your name, your goal, anything you like — and run it.
+</Mission>
+
+<ModuleProgress
+	moduleId="00"
+	missions={['m00-l01-m1', 'm00-l01-m2', 'm00-l02-m1', 'm00-l02-m2', 'm00-l02-m3']}
+	badgeLabel="Getting Started badge"
+/>
+
+---
+
+**Next lesson:** we'll get to know `print` more closely and you'll see your first **error**. Yes, that's good news — errors are a programmer's best teacher. 😉

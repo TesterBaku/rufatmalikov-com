@@ -1,0 +1,98 @@
+---
+title: Your first program
+description: The anatomy of print — quotes, parentheses — and you'll see that errors are actually your friend.
+sidebar:
+  order: 2
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+In the last lesson you printed text to the screen with `print`. Now let's break that command down into its parts.
+
+:::tip[In this lesson]
+You'll learn the exact structure of `print`, see your first error, and fix it yourself.
+:::
+
+## The anatomy of print
+
+```python
+print("Hello!")
+```
+
+There are three parts:
+
+- `print` — the name of the command: *"display this"*
+- `(` `)` — the parentheses: whatever gets printed goes **inside** them
+- `"Hello!"` — the **text**, inside quotes. The quotes tell the computer: *"this isn't a command, it's just text."*
+
+All three matter. What happens if you forget one? Let's find out. 🙂
+
+## An error is your friend
+
+In the code below, the closing quote is **left out on purpose**. Run it and see what happens:
+
+<PyRunner
+	id="ex-error"
+	starterCode={`print("Hello, friend!`}
+	height="5rem"
+/>
+
+See the red text? That's an **error**. The computer is saying *"I didn't understand this line"* — and it shows you **which line** has the problem.
+
+Remember this: **an error isn't a punishment, it's a hint.** Even the most experienced programmers see errors every day. The only difference is that they've learned to read an error and fix it. Now you will too — add a `"` after the `!` in the code above and run it again.
+
+## Lines run in order
+
+A program can have as many `print` lines as you want — the computer runs them top to bottom:
+
+<PyRunner
+	id="ex-order"
+	starterCode={`print("One")\nprint("Two")\nprint("On three, we go...")\nprint("🚀")`}
+/>
+
+## Missions
+
+<Mission
+	id="m00-l02-m1"
+	xp={10}
+	title="Introduce yourself"
+	starterCode={`# Write one print per line:\n# 1) your name  2) your age  3) the city you live in\n`}
+	checkCode={`_lines = [l for l in _stdout.strip().splitlines() if l.strip()]\nassert len(_lines) >= 3, "HINT:At least 3 lines should be printed — write a separate print for each piece of info."`}
+	inputs={[]}
+>
+	Introduce yourself with three `print` commands: your name, your age, your city. (Lines starting with `#` are **comments** — the computer ignores them; they're notes for you.)
+</Mission>
+
+<Mission
+	id="m00-l02-m2"
+	xp={10}
+	title="Fix the error"
+	starterCode={`print("Football is great!)`}
+	checkCode={`assert "football" in _stdout.lower(), "HINT:The closing quote is missing — add a \\" at the end of the text, before the closing parenthesis."`}
+	inputs={[]}
+>
+	This program is broken — run it and you'll see an error. Read the error, find the cause, fix it, and run it.
+</Mission>
+
+<Mission
+	id="m00-l02-m3"
+	xp={10}
+	title="Print it exactly"
+	starterCode={`# Write a program that prints exactly this:\n# I am a programmer!\n`}
+	checkCode={`assert _stdout.strip() == "I am a programmer!", "HINT:The printed text must match letter for letter: I am a programmer! — mind the capital letter and the ! mark."`}
+	inputs={[]}
+>
+	Write a program that prints **exactly** this sentence to the screen: `I am a programmer!`
+</Mission>
+
+<ModuleProgress
+	moduleId="00"
+	missions={['m00-l01-m1', 'm00-l01-m2', 'm00-l02-m1', 'm00-l02-m2', 'm00-l02-m3']}
+	badgeLabel="Getting Started badge"
+/>
+
+---
+
+**Next module:** the real conversation with Python begins — you'll join text together, do math, and teach your program to **talk**. [Continue →](../../01-talk-to-python/print-and-text/)
