@@ -1,4 +1,5 @@
 import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
+import { PYTHON_SDET } from './courses.mjs';
 
 // The sidebar config is shared across locales, so per-locale adjustments (plus
 // OG images and JSON-LD) happen here at request time. Two locale-scoped courses
@@ -7,25 +8,13 @@ import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
 //  - Exam Helper is an Azerbaijani/Russian-only school exam-prep app; its sidebar
 //    group is dropped from the English navigation so the EN site reads as
 //    QA/testing-focused.
-//  - "Python for SDETs" (Tier 2) is English-only — see the PYTHON_SDET block in
-//    onRequest for the single source of truth and the full scheme (OG card, Course
-//    JSON-LD on the EN landing, noindex on non-EN fallbacks, group dropped from
-//    non-EN nav). One per-locale `dropLabel` drives the pruning for both courses.
+//  - "Python for SDETs" (Tier 2) is English-only — see src/courses.mjs (PYTHON_SDET,
+//    the single source of truth) for the full scheme: shared OG card, Course JSON-LD
+//    on the EN landing, noindex on non-EN fallbacks, and the group dropped from
+//    non-EN nav. One per-locale `dropLabel` drives the pruning for both courses.
 export const onRequest = defineRouteMiddleware((context) => {
 	const route = context.locals.starlightRoute;
 	const pathname = context.url.pathname;
-
-	// Single source of truth for the EN-only Tier 2 course. It has no Azerbaijani
-	// translation, so Starlight serves /<non-en>/python-sdet/ as English fallback
-	// pages. ASSUMPTION: the course stays EN-only and lives under
-	// /<locale>/python-sdet/ — if an AZ translation is ever added, revisit the
-	// locale-keyed noindex and the English group-label drop below (and the matching
-	// sitemap filter in astro.config.mjs).
-	const PYTHON_SDET = {
-		segment: '/python-sdet/',
-		enLanding: '/en/python-sdet/',
-		groupLabel: 'Python for SDETs',
-	};
 	const isPythonSdet = pathname.includes(PYTHON_SDET.segment);
 
 	// OG image defaults. Starlight emits og:/twitter: tags + `twitter:card=
@@ -64,7 +53,7 @@ export const onRequest = defineRouteMiddleware((context) => {
 	// schema for a personal site (knowledge panel + course rich results). Kept
 	// here so it stays in one place and out of the MDX.
 	{
-		const path = context.url.pathname;
+		const path = pathname;
 		const abs = (p: string) => new URL(p, context.site ?? context.url).href;
 		const ld = (obj: object) =>
 			route.head.push({ tag: 'script', attrs: { type: 'application/ld+json' }, content: JSON.stringify(obj) });
