@@ -96,9 +96,18 @@ export const onRequest = defineRouteMiddleware((context) => {
 		}
 	}
 
-	if (route.lang !== 'en') return;
-
 	type Entry = (typeof route.sidebar)[number];
+
+	// "Python for SDETs" (Tier 2) is English-only — drop it from every other
+	// locale's sidebar so AZ doesn't show an empty group / links to pages that
+	// don't exist in that locale.
+	if (route.lang !== 'en') {
+		route.sidebar = route.sidebar.filter(
+			(entry) => !(entry.type === 'group' && entry.label === 'Python for SDETs')
+		);
+		return;
+	}
+
 	const prune = (entries: Entry[]): Entry[] =>
 		entries
 			.filter((entry) => !(entry.type === 'group' && entry.label === 'Exam Helper'))

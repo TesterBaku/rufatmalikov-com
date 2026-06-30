@@ -169,6 +169,19 @@ export default defineConfig({
 					],
 				},
 				{
+					// Tier 2 Python course — English-only (net-new). Explicit module links
+					// like the Playwright Course group above; links are added per increment
+					// as modules ship, so the nav never points at unauthored pages. The
+					// route middleware (src/starlightRouteData.ts) prunes this whole group
+					// from the AZ sidebar (no AZ Tier 2 pages exist).
+					label: 'Python for SDETs',
+					items: [
+						{ label: 'Overview', link: '/python-sdet/' },
+						{ label: '0 — Setup & first test', link: '/python-sdet/module-0/' },
+						{ label: '1 — pytest fundamentals', link: '/python-sdet/module-1/' },
+					],
+				},
+				{
 					label: 'BrauzerLab',
 					items: [{ autogenerate: { directory: 'playwright' } }],
 				},
@@ -188,7 +201,10 @@ export default defineConfig({
 		}),
 		sitemap({
 			// /python-demo/ is an internal M1 verification page — keep it out of the sitemap.
-			filter: (page) => !page.includes('/python-demo'),
+			// /az/python-sdet/ are Starlight locale-fallback pages (the Tier 2 course is
+			// English-only) that render EN content under the az locale — exclude them so the
+			// sitemap doesn't advertise duplicate content in the wrong language.
+			filter: (page) => !page.includes('/python-demo') && !page.includes('/az/python-sdet'),
 		}),
 	],
 });
