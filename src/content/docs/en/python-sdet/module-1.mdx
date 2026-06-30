@@ -98,7 +98,7 @@ Running it prints the values, not just "assertion failed":
 >       assert actual == expected
 E       assert 4 == 5
 
-tests/test_failure_demo.py:4: AssertionError
+tests/test_failure_demo.py:5: AssertionError
 ```
 
 You instantly see `4 == 5` is the problem. You can add a message for extra context, shown
@@ -233,7 +233,8 @@ is the everyday debug loop.
 ## Putting it together against TestMarket Lab
 
 These tests hit the real app — make sure TestMarket Lab is running. They're deliberately
-small; Module 3 goes deep on API testing.
+small; Module 3 goes deep on API testing. The first one is the Module 0 smoke test, now
+living in its own file alongside its siblings.
 
 ```python
 # tests/test_products_api.py
@@ -311,8 +312,8 @@ re-run to see where it appears. Finally, fix the assertion so it passes.
 In `tests/test_helpers.py`:
 - Assert that `int("abc")` raises `ValueError`, and that the message contains
   `"invalid literal"`.
-- Assert that `0.1 + 0.2 == pytest.approx(0.3)`.
-- Assert that the three prices `29.99 + 89.99 + 24.99` equal `pytest.approx(144.97)`.
+- Assert that `0.1 + 0.1 + 0.1 == pytest.approx(0.3)` (and confirm plain `== 0.3` would fail).
+- Assert that the three prices `19.99 + 4.99 + 49.99` equal `pytest.approx(74.97)`.
 
 ### Exercise 4 — Run exactly what you want (5 min)
 
@@ -322,12 +323,12 @@ With several test files present, practice the filters:
 - Use `-k "not product"` to run everything *except* them.
 - Use `-x` to stop at the first failure (introduce a failing test to see it).
 
-### Exercise 5 — Products API checks (15 min)
+### Exercise 5 — Extend the products API tests (15 min)
 
-In `tests/test_products_api.py`, write tests that:
-- `GET /api/products` → status `200` and a non-empty list.
-- Every product has `id`, `name`, and `price`.
-- `GET /api/products?category=accessories` → every result has `category == "accessories"`.
+You already have the three tests from the worked example in `tests/test_products_api.py`. Add
+two more to that file, exercising query params you haven't tried yet:
+- `GET /api/products?category=accessories` → status `200` and every result has
+  `category == "accessories"`.
 - `GET /api/products?search=keyboard` → at least one result, and "Keyboard" appears in some
   product's `name`. *(Hint: `requests.get(url, params={"search": "keyboard"})`.)*
 
