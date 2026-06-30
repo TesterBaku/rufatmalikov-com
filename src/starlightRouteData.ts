@@ -1,16 +1,32 @@
 import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
 
-// The sidebar config is shared across locales, so per-locale adjustments happen
-// here at request time.
+// The sidebar config is shared across locales, so per-locale adjustments (plus
+// OG images and JSON-LD) happen here at request time. Two locale-scoped courses
+// drive most of the logic below:
 //
-//  - Exam Helper is an Azerbaijani/Russian-only school exam-prep app; drop it
-//    from the English navigation so the EN site reads as QA/testing-focused.
-//  - The Python course is Azerbaijani-first (EN has only a stub). Its explicit
-//    per-module groups autogenerate nothing in EN, and the glossary has no EN
-//    page, so we prune empty groups and the AZ-only glossary link to keep the EN
-//    sidebar free of empty groups and dead links.
+//  - Exam Helper is an Azerbaijani/Russian-only school exam-prep app; its sidebar
+//    group is dropped from the English navigation so the EN site reads as
+//    QA/testing-focused.
+//  - "Python for SDETs" (Tier 2) is English-only — see the PYTHON_SDET block in
+//    onRequest for the single source of truth and the full scheme (OG card, Course
+//    JSON-LD on the EN landing, noindex on non-EN fallbacks, group dropped from
+//    non-EN nav). One per-locale `dropLabel` drives the pruning for both courses.
 export const onRequest = defineRouteMiddleware((context) => {
 	const route = context.locals.starlightRoute;
+	const pathname = context.url.pathname;
+
+	// Single source of truth for the EN-only Tier 2 course. It has no Azerbaijani
+	// translation, so Starlight serves /<non-en>/python-sdet/ as English fallback
+	// pages. ASSUMPTION: the course stays EN-only and lives under
+	// /<locale>/python-sdet/ — if an AZ translation is ever added, revisit the
+	// locale-keyed noindex and the English group-label drop below (and the matching
+	// sitemap filter in astro.config.mjs).
+	const PYTHON_SDET = {
+		segment: '/python-sdet/',
+		enLanding: '/en/python-sdet/',
+		groupLabel: 'Python for SDETs',
+	};
+	const isPythonSdet = pathname.includes(PYTHON_SDET.segment);
 
 	// OG image defaults. Starlight emits og:/twitter: tags + `twitter:card=
 	// summary_large_image` from each page's frontmatter description, but no image —
@@ -23,15 +39,17 @@ export const onRequest = defineRouteMiddleware((context) => {
 		// Both the Tier 1 Python course (/python/) and Tier 2 "Python for SDETs"
 		// (/python-sdet/) share the Python OG card. A dedicated python-sdet card is
 		// future polish; until then the python-course card beats the generic default.
-		const isPython =
-			context.url.pathname.includes('/python/') || context.url.pathname.includes('/python-sdet/');
+		const isPython = pathname.includes('/python/') || isPythonSdet;
 		const file = isPython ? '/og/python-course.png' : '/og/default.png';
 		const img = new URL(file, context.site ?? context.url).href;
-		const alt = isPython
-			? route.lang === 'az'
-				? 'Python Dərsləri — rufatmalikov.com'
-				: 'Python course — rufatmalikov.com'
-			: 'Rufat Malikov — rufatmalikov.com';
+		// Tier 2 is EN-only, so its alt stays English even on /az/ fallback pages;
+		// Tier 1 is bilingual and gets a locale-specific alt.
+		let alt = 'Rufat Malikov — rufatmalikov.com';
+		if (isPythonSdet) {
+			alt = 'Python for SDETs — rufatmalikov.com';
+		} else if (isPython) {
+			alt = route.lang === 'az' ? 'Python Dərsləri — rufatmalikov.com' : 'Python course — rufatmalikov.com';
+		}
 		route.head.push(
 			{ tag: 'meta', attrs: { property: 'og:image', content: img } },
 			{ tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
@@ -70,7 +88,7 @@ export const onRequest = defineRouteMiddleware((context) => {
 			path === '/az/course/' ||
 			path === '/az/python/' ||
 			path === '/en/python/' ||
-			path === '/en/python-sdet/';
+			path === PYTHON_SDET.enLanding;
 
 		if (isHome) {
 			ld({
@@ -104,12 +122,11 @@ export const onRequest = defineRouteMiddleware((context) => {
 		}
 	}
 
-	// "Python for SDETs" (Tier 2) is English-only, but Starlight still builds
-	// /<locale>/python-sdet/ fallback pages that render the EN content. Mark those
-	// non-default-locale fallbacks noindex so search engines don't index duplicate
-	// English content under e.g. /az/ (the sitemap already omits them; noindex is the
-	// signal that actually deindexes).
-	if (route.lang !== 'en' && context.url.pathname.includes('/python-sdet/')) {
+	// Starlight still builds /<non-en>/python-sdet/ fallback pages that render the EN
+	// content. Mark those noindex so search engines don't index duplicate English
+	// content under e.g. /az/ (the sitemap already omits them; noindex is the signal
+	// that actually deindexes).
+	if (route.lang !== 'en' && isPythonSdet) {
 		route.head.push({ tag: 'meta', attrs: { name: 'robots', content: 'noindex, follow' } });
 	}
 
@@ -118,7 +135,7 @@ export const onRequest = defineRouteMiddleware((context) => {
 	// links. Exam Helper is AZ/RU-only (hidden in EN); "Python for SDETs" is EN-only
 	// (hidden everywhere else). One mechanism, one label per locale.
 	type Entry = (typeof route.sidebar)[number];
-	const dropLabel = route.lang === 'en' ? 'Exam Helper' : 'Python for SDETs';
+	const dropLabel = route.lang === 'en' ? 'Exam Helper' : PYTHON_SDET.groupLabel;
 	const prune = (entries: Entry[]): Entry[] =>
 		entries
 			.filter((entry) => !(entry.type === 'group' && entry.label === dropLabel))

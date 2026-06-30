@@ -201,10 +201,14 @@ export default defineConfig({
 		}),
 		sitemap({
 			// /python-demo/ is an internal M1 verification page — keep it out of the sitemap.
-			// /az/python-sdet/ are Starlight locale-fallback pages (the Tier 2 course is
-			// English-only) that render EN content under the az locale — exclude them so the
-			// sitemap doesn't advertise duplicate content in the wrong language.
-			filter: (page) => !page.includes('/python-demo') && !page.includes('/az/python-sdet'),
+			// /<non-en>/python-sdet/ are Starlight locale-fallback pages (the Tier 2 course is
+			// English-only, see src/starlightRouteData.ts) that render EN content under another
+			// locale — keep only the canonical /en/ ones so the sitemap doesn't advertise
+			// duplicate content in the wrong language. Locale-agnostic so a future /ru/ etc. is
+			// covered automatically (those fallbacks are also noindexed in the middleware).
+			filter: (page) =>
+				!page.includes('/python-demo') &&
+				!(page.includes('/python-sdet') && !page.includes('/en/python-sdet')),
 		}),
 	],
 });
