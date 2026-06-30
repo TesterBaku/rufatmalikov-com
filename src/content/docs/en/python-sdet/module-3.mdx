@@ -101,7 +101,6 @@ including the server-assigned `id`:
 
 ```python
 # tests/test_post.py
-import pytest
 import requests
 
 BASE_URL = "http://localhost:3000"
@@ -128,6 +127,13 @@ A richer `POST` — placing an order — shows the server doing work you can ass
 items; the server computes the **total**:
 
 ```python
+# tests/test_orders.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
 def test_place_order_computes_total():
     payload = {
         "email": "customer@test.io",
