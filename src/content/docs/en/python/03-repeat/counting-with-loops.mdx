@@ -1,0 +1,93 @@
+---
+title: Calculate with loops
+description: The accumulator variable, the += shortcut, and a condition inside the loop.
+sidebar:
+  order: 2
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+A teacher hands young Carl Gauss a task: *"add up all the numbers from 1 to 100"* — hoping to keep the kid busy for a long while. Gauss finds the answer in **a few seconds**. You, on the other hand, have Python. 😏
+
+## The accumulator variable
+
+The trick: **before** the loop, set up an accumulator variable (`total = 0`), and **inside** the loop, add to it:
+
+<PyRunner
+	id="ex-qauss"
+	starterCode={`total = 0\nfor i in range(1, 101):\n    total = total + i\nprint(f"Sum from 1 to 100: {total}")`}
+	height="6rem"
+/>
+
+This technique is called the **accumulator**, and you'll run into it everywhere in programming: tallying points, counting money, calculating an average...
+
+By the way, there's a shortcut for `total = total + i`: `total += i` — same thing, just shorter.
+
+## A condition inside the loop
+
+Module 02 meets Module 03: you can put an `if` inside a loop. For example, let's print only the **even** numbers from 1 to 20:
+
+<PyRunner
+	id="ex-dovr-if"
+	starterCode={`for i in range(1, 21):\n    if i % 2 == 0:\n        print(i)`}
+	height="6rem"
+/>
+
+Notice the double indentation: `if` is inside the loop (4 spaces), and `print` is inside the `if` (8 spaces).
+
+## Looping over text
+
+`for` doesn't only work with numbers — it can walk through the letters of a piece of text too:
+
+<PyRunner
+	id="ex-herf"
+	starterCode={`for letter in "Hello":\n    print(letter)`}
+	height="6rem"
+/>
+
+## Missions
+
+<Mission
+	id="m03-l02-m1"
+	xp={15}
+	title="Be Gauss"
+	starterCode={`total = 0\n# Add up the numbers from 1 to 100 and print the result\n`}
+	checkCode={`assert "5050" in _stdout, "HINT:Inside for i in range(1, 101): do total += i, then print(total) after the loop. The answer should be 5050."`}
+	inputs={[]}
+>
+	Calculate the sum of all the numbers from 1 to 100. Gauss's answer was `5050` — yours should be too!
+</Mission>
+
+<Mission
+	id="m03-l02-m2"
+	xp={15}
+	title="Sum of the evens"
+	starterCode={`total = 0\n# Add up ONLY the even numbers from 1 to 50\n# (use an if inside the loop!)\n`}
+	checkCode={`assert "650" in _stdout, "HINT:Inside the loop check if i % 2 == 0:, and only then do total += i. The answer should be 650."`}
+	inputs={[]}
+>
+	Find the sum of only the **even** numbers from 1 to 50. Loop + condition + accumulator — three weapons combined!
+</Mission>
+
+<Mission
+	id="m03-l02-m3"
+	xp={15}
+	title="Star pyramid"
+	starterCode={`# Print a pyramid like this (5 floors):\n# *\n# **\n# ***\n# ****\n# *****\n`}
+	checkCode={`_lines = [l.rstrip() for l in _stdout.splitlines() if l.strip()]\nassert _lines == ["*" * n for n in range(1, 6)], "HINT:Inside for i in range(1, 6): use print(\\"*\\" * i) — remember the text-repeat trick!"`}
+	inputs={[]}
+>
+	Combine the `"*" * i` trick from Module 01 with a loop: print a pyramid that grows from 1 star to 5 stars.
+</Mission>
+
+<ModuleProgress
+	moduleId="03"
+	missions={['m03-l01-m1', 'm03-l01-m2', 'm03-l01-m3', 'm03-l02-m1', 'm03-l02-m2', 'm03-l02-m3', 'm03-l03-m1', 'm03-l03-m2', 'm03-l03-m3']}
+	badgeLabel="Repeat badge"
+/>
+
+---
+
+**Next lesson:** `while` — "as long as this is true, repeat". And you'll come face to face with the famous **infinite loop** trap. [Continue →](../while-loops/)

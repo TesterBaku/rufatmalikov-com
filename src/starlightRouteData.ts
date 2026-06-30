@@ -102,7 +102,6 @@ export const onRequest = defineRouteMiddleware((context) => {
 	const prune = (entries: Entry[]): Entry[] =>
 		entries
 			.filter((entry) => !(entry.type === 'group' && entry.label === 'Exam Helper'))
-			.filter((entry) => !(entry.type === 'link' && entry.href.endsWith('/python/glossary/')))
 			.map((entry) => (entry.type === 'group' ? { ...entry, entries: prune(entry.entries) } : entry))
 			.filter((entry) => !(entry.type === 'group' && entry.entries.length === 0));
 

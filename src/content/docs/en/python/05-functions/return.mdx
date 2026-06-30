@@ -1,0 +1,73 @@
+---
+title: return — give the result back
+description: Don't just print the result — return it, so you can work with it afterward.
+sidebar:
+  order: 3
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+`square(4)` **printed** the result. But what if we want to use that result in another calculation? `print` writes to the screen and... it's gone. **`return`**, on the other hand, **gives the result back** — so you can store it in a variable, add it up, or compare it.
+
+## return, not print
+
+<PyRunner
+	id="ex-return"
+	starterCode={`def add(a, b):\n    return a + b\n\nresult = add(3, 4)\nprint(result)\nprint(add(10, 20) + add(1, 2))`}
+	height="7rem"
+/>
+
+The call `add(3, 4)` **becomes the value 7** — as if 7 were written right there. That's why `add(10, 20) + add(1, 2)` = `30 + 3` = `33` works. You couldn't do this with a `print`-based function!
+
+Remember: **`return` ends the function immediately** — any lines after it don't run.
+
+## The secret of len() revealed
+
+Now you know how `len()` works: it **returns** its result too. That's why `print(len(my_list))` nests neatly: `len` returns first, then `print` prints. You can already write functions like that yourself.
+
+## Missions
+
+<Mission
+	id="m05-l03-m1"
+	xp={15}
+	title="An add function"
+	starterCode={`# Write an add(a, b) function — it should RETURN the sum (return!),\n# then check it with print(add(3, 4)).\n`}
+	checkCode={`assert "add" in globals() and callable(globals()["add"]), "HINT:Build def add(a, b):."\nassert globals()["add"](2, 3) == 5 and globals()["add"](10, -2) == 8, "HINT:The function must return the sum: return a + b (not print!)."\nassert "7" in _stdout, "HINT:Print the result: print(add(3, 4))."`}
+	inputs={[]}
+>
+	Write `add(a, b)` — it should `return` the sum. The checker will **call the function itself** to test it, so `print` won't be enough — you really need `return`!
+</Mission>
+
+<Mission
+	id="m05-l03-m2"
+	xp={15}
+	title="Square 2.0"
+	starterCode={`# Rewrite the square(number) function using return,\n# then print(square(5) + square(3)).\n`}
+	checkCode={`assert "square" in globals() and callable(globals()["square"]), "HINT:Build def square(number):."\nassert globals()["square"](6) == 36, "HINT:return number ** 2 — return it, don't print it."\nassert "34" in _stdout, "HINT:print(square(5) + square(3)) → 25 + 9 = 34."`}
+	inputs={[]}
+>
+	Rewrite `square` with `return` and print the **sum** of two squares: `square(5) + square(3)` → `34`.
+</Mission>
+
+<Mission
+	id="m05-l03-m3"
+	xp={20}
+	title="Average grade"
+	starterCode={`# Write an average(numbers) function — it should RETURN the\n# average of the numbers in the list.\n# Hint: sum(numbers) gives the total, len(numbers) gives the count.\ngrades = [4, 5, 3, 5, 4]\n# check it with print\n`}
+	checkCode={`assert "average" in globals() and callable(globals()["average"]), "HINT:Build def average(numbers):."\nassert globals()["average"]([2, 4, 6]) == 4, "HINT:return sum(numbers) / len(numbers) — divide the total by the count."\nassert "4.2" in _stdout, "HINT:print(average(grades)) — for [4, 5, 3, 5, 4] the average is 4.2."`}
+	inputs={[]}
+>
+	Write an `average(numbers)` function — it should return the average of the numbers. Test it with your own grades! (A new friend: `sum()` returns the total of a list.)
+</Mission>
+
+<ModuleProgress
+	moduleId="05"
+	missions={['m05-l01-m1', 'm05-l01-m2', 'm05-l02-m1', 'm05-l02-m2', 'm05-l02-m3', 'm05-l03-m1', 'm05-l03-m2', 'm05-l03-m3']}
+	badgeLabel="Functions badge"
+/>
+
+---
+
+🏅 **You finished this module!** You now have all of Python's core tools: variables, conditions, loops, collections, and functions. The **final module** is the proving ground: four **real projects** are waiting for you. [On to the projects →](../../06-projects/calculator/)

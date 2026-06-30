@@ -1,0 +1,48 @@
+---
+title: "Project 1: Calculator"
+description: Your first real program — two numbers, one operation, a working calculator.
+sidebar:
+  order: 1
+---
+
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+This module is different: no lessons — **projects**. Each page is a real program that ties together everything you've learned. Nobody hands you finished code — you get a plan, the rest is on you. 😎
+
+:::tip[You'll use in this project]
+`input()` + `int()` (Module 01) · `if/elif/else` (Module 02) · f-strings (Module 01)
+:::
+
+## Plan
+
+1. Get the **first number** from the user (`int(input(...))`)
+2. Get the **second number**
+3. Get the **operation**: `+`, `-`, `*` or `/` (this one is text — no `int()` needed!)
+4. Use `if/elif` to check the operation and compute the matching result
+5. Print the result nicely with an `f-string`: `8 * 2 = 16`
+
+Bonus idea (optional): for an operation it doesn't recognize, have the `else` branch say "I don't know that operation."
+
+## Mission
+
+<Mission
+	id="m06-p1"
+	xp={25}
+	title="Calculator"
+	starterCode={`num1 = int(input("First number: "))\nnum2 = int(input("Second number: "))\nop = input("Operation (+, -, *, /): ")\n# Now use if/elif to calculate and print the result\n`}
+	checkCode={`assert "16" in _stdout, "HINT:The inputs are 8, 2 and * — so the program should compute 8 * 2 = 16. Build if op == \\"+\\": ... elif op == \\"*\\": ..."`}
+	inputs={['8', '2', '*']}
+>
+	Follow the plan and finish the calculator. (A test scenario is ready in the inputs: `8`, `2`, `*` — the answer should be `16`.) If you like, change the inputs and try other operations too!
+</Mission>
+
+<ModuleProgress
+	moduleId="06"
+	missions={['m06-p1', 'm06-p2', 'm06-p3', 'm06-p4']}
+	badgeLabel="Python Explorer badge"
+/>
+
+---
+
+**Next project:** a **pro** version of the "Guess the number" game — this time the program gives you hints. [Continue →](../number-guessing-game/)

@@ -1,0 +1,91 @@
+---
+title: if — making a choice
+description: Your program learns to make decisions — if, else, and the secret of indentation.
+sidebar:
+  order: 1
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+So far, every line in your programs ran in order, no questions asked. But real programs **make decisions**: if the password is correct — open the door, if it's wrong — keep it shut. In games, "right answer / wrong answer" is exactly this.
+
+:::tip[In this module]
+Across the 3 lessons of this module you'll teach your program to make decisions: `if/else`, comparison operators, and `and/or/not`.
+:::
+
+## if — "if this is true..."
+
+<PyRunner
+	id="ex-if"
+	starterCode={`age = 14\nif age >= 13:\n    print("You're a teenager!")\nprint("Program finished.")`}
+/>
+
+Let's read it line by line:
+
+- `if age >= 13:` — *"if age is greater than or equal to 13"*. The **colon** `:` at the end is required.
+- `    print(...)` — the line that runs when the condition is true. Notice: there are **4 spaces** at the start of the line!
+- The last `print` has no indentation — it doesn't depend on the condition, so it always runs.
+
+Replace `age = 14` with `age = 10` and run it again. What changed?
+
+## Indentation — Python's golden rule
+
+Those 4 spaces aren't decoration. Python uses **indentation** to know which lines belong to the condition: indented lines are "inside" the condition, un-indented ones are "outside" it. If you forget the indentation or make it uneven, Python will throw an error. The rule is simple: **every line inside a condition is indented 4 spaces.**
+
+## else — "otherwise..."
+
+What should happen when the condition isn't true? `else` handles that:
+
+<PyRunner
+	id="ex-else"
+	starterCode={`password = "apple123"\nif password == "apple123":\n    print("Door unlocked! 🔓")\nelse:\n    print("Wrong password! 🔒")`}
+/>
+
+One important detail: to compare, you write **two** equals signs — `==`. A single `=` is assignment (*put it in the box*), while `==` is a question (*are these equal?*). Mixing these up is the number 1 mistake for beginners. 🙂
+
+## Missions
+
+<Mission
+	id="m02-l01-m1"
+	xp={10}
+	title="Door guard"
+	starterCode={`password = input("Enter the password: ")\n# If the password is "python123", print "Door unlocked!",\n# otherwise print "Wrong password!"\n`}
+	checkCode={`assert "unlocked" in _stdout.lower(), "HINT:Check if password == \\"python123\\": — the input has the correct password, so the door should unlock."`}
+	inputs={['python123']}
+>
+	Build a password checker: if the password is `python123`, say `Door unlocked!`, otherwise say `Wrong password!`. (The correct password is ready in the inputs.)
+</Mission>
+
+<Mission
+	id="m02-l01-m2"
+	xp={10}
+	title="Negative or positive?"
+	starterCode={`number = int(input("Enter a number: "))\n# If it's negative print "negative", otherwise print "positive or zero"\n`}
+	checkCode={`assert "negative" in _stdout.lower(), "HINT:Check if number < 0 — the input is -5, so the answer should be negative."`}
+	inputs={['-5']}
+>
+	Have the program read a number: if it's less than zero, print `negative`, otherwise print `positive or zero`. (The input is `-5`.)
+</Mission>
+
+<Mission
+	id="m02-l01-m3"
+	xp={15}
+	title="Movie ticket"
+	starterCode={`age = int(input("Your age: "))\n# 16 and up: "Enjoy the movie!"\n# otherwise: "This film is for adults."\n`}
+	checkCode={`assert "adults" in _stdout.lower(), "HINT:Set up if age >= 16 / else — the input is 14, so the else branch should run."`}
+	inputs={['14']}
+>
+	Cinema program: if the age is 16 or up, say `Enjoy the movie!`, otherwise say `This film is for adults.` (The input is `14` — which answer should come out?)
+</Mission>
+
+<ModuleProgress
+	moduleId="02"
+	missions={['m02-l01-m1', 'm02-l01-m2', 'm02-l01-m3', 'm02-l02-m1', 'm02-l02-m2', 'm02-l02-m3', 'm02-l03-m1', 'm02-l03-m2', 'm02-l03-m3']}
+	badgeLabel="Decision Maker badge"
+/>
+
+---
+
+**Next lesson:** all of the comparison operators and `elif` — choosing between more than two paths. [Continue →](../comparisons-and-elif/)

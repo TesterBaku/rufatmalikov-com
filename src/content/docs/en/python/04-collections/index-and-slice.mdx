@@ -1,0 +1,85 @@
+---
+title: Index and slice
+description: Grabbing a single item or a chunk out of a list — don't forget to count from 0!
+sidebar:
+  order: 2
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Every item in a list has its own number — that's called the **index**. And yes, just like with `range`: **counting starts at 0.**
+
+## Grab an item by index
+
+<PyRunner
+	id="ex-indeks"
+	starterCode={`fruits = ["apple", "pear", "quince", "pomegranate"]\nprint(fruits[0])\nprint(fruits[2])\nprint(fruits[-1])`}
+	height="6rem"
+/>
+
+- `fruits[0]` — the **first** item (index 0!)
+- `fruits[2]` — the third item
+- `fruits[-1]` — a negative index counts **from the end**: the last item. A very handy trick!
+
+## Slice — a part of the list
+
+A colon grabs a range: `list[start:stop]`. Just like with `range`, the **stop index is not included**:
+
+<PyRunner
+	id="ex-dilim"
+	starterCode={`fruits = ["apple", "pear", "quince", "pomegranate"]\nprint(fruits[1:3])\nprint(fruits[:2])`}
+	height="5rem"
+/>
+
+`[1:3]` → indexes 1 and 2 (3 not included). `[:2]` → from the start up to index 2.
+
+## A missing index = an error
+
+If a list has 4 items, what does `fruits[10]` give you? `IndexError` — *"there's no such index."* You'll see this error yourself in a mission soon. 😉
+
+## Missions
+
+<Mission
+	id="m04-l02-m1"
+	xp={10}
+	title="First and last"
+	starterCode={`standings = ["Arsenal", "Chelsea", "Liverpool", "Tottenham"]\n# Print the first and last team\n`}
+	checkCode={`assert "Arsenal" in _stdout, "HINT:For the first item use standings[0]."\nassert "Tottenham" in _stdout, "HINT:For the last one use a negative index: standings[-1]."`}
+	inputs={[]}
+>
+	Print the **first** and **last** team in the table — use a negative index for the last one.
+</Mission>
+
+<Mission
+	id="m04-l02-m2"
+	xp={15}
+	title="The middle ones"
+	starterCode={`fruits = ["apple", "pear", "quince", "pomegranate"]\n# With a slice, print ONLY the middle two: pear and quince\n`}
+	checkCode={`assert "pear" in _stdout and "quince" in _stdout, "HINT:Use a slice: fruits[1:3] — index 1 up to 3 (3 not included)."\nassert "apple" not in _stdout and "pomegranate" not in _stdout, "HINT:apple and pomegranate shouldn't appear — check the slice bounds: [1:3]."`}
+	inputs={[]}
+>
+	With a slice, print only the **middle two** fruits in the list.
+</Mission>
+
+<Mission
+	id="m04-l02-m3"
+	xp={15}
+	title="Catch the error"
+	starterCode={`games = ["Minecraft", "FIFA", "Roblox"]\nprint(games[10])`}
+	checkCode={`assert "Roblox" in _stdout or "Minecraft" in _stdout or "FIFA" in _stdout, "HINT:Index 10 doesn't exist — IndexError! Use an index that exists, for example games[-1]."`}
+	inputs={[]}
+>
+	This program raises an `IndexError` — run it, read the error, and fix it with an index that **exists**.
+</Mission>
+
+<ModuleProgress
+	moduleId="04"
+	missions={['m04-l01-m1', 'm04-l01-m2', 'm04-l01-m3', 'm04-l02-m1', 'm04-l02-m2', 'm04-l02-m3', 'm04-l03-m1', 'm04-l03-m2', 'm04-l03-m3', 'm04-l04-m1', 'm04-l04-m2', 'm04-l04-m3']}
+	badgeLabel="Collections badge"
+/>
+
+---
+
+**Next lesson:** a list isn't frozen — add items, remove them, sort them. [Continue →](../list-methods/)

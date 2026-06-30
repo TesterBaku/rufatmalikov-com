@@ -1,0 +1,93 @@
+---
+title: Variables
+description: Boxes that store information — and the magic of f-strings.
+sidebar:
+  order: 3
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+A **variable** is a box with a name written on it. You put information inside, then call it back later by its name:
+
+<PyRunner
+	id="ex-qutu"
+	starterCode={`name = "Aysel"\nage = 12\nprint(name)\nprint(age)`}
+/>
+
+`name = "Aysel"` reads like this: *"make a box called name, and put the text Aysel inside it"*. Here `=` doesn't mean "equals" — it means **"assign"**.
+
+## The magic of f-strings
+
+The easiest way to use a variable inside a sentence is an **f-string**. Write `f` before the quote, and wrap the variable in curly braces:
+
+<PyRunner
+	id="ex-fstring"
+	starterCode={`name = "Tural"\nage = 13\nprint(f"My name is {name}, and I'm {age} years old.")`}
+	height="5rem"
+/>
+
+Python replaces whatever is inside the curly braces `{}` with the variable's **value**. It looks like magic, but it's real technology. ✨
+
+## A box's contents can change
+
+That's exactly where the name comes from — **variable** (something that can vary):
+
+<PyRunner
+	id="ex-deyis"
+	starterCode={`score = 0\nprint(f"Game started: {score} points")\nscore = score + 10\nprint(f"You found gold: {score} points")\nscore = score + 10\nprint(f"Another gold: {score} points")`}
+/>
+
+`score = score + 10` looks odd, but the logic is simple: *"take the old value of the score box, add 10, and put the result back in the box"*. The score counter in computer games works exactly like this. 🎮
+
+## Rules for naming
+
+- No spaces: `my name` ❌ → `my_name` ✅ (use `_` instead of a space)
+- Can't start with a number: `1score` ❌ → `score1` ✅
+- Uppercase and lowercase matter: `Name` and `name` are two different boxes!
+
+## Missions
+
+<Mission
+	id="m01-l03-m1"
+	xp={10}
+	title="Intro card"
+	starterCode={`# Make the variables name and age,\n# then print them in one sentence with an f-string\n`}
+	checkCode={`assert "name" in globals() and isinstance(globals()["name"], str), "HINT:Make a variable called name: name = \\"...\\""\nassert "age" in globals(), "HINT:Make a variable called age: age = ..."\nassert str(globals()["name"]) in _stdout and str(globals()["age"]) in _stdout, "HINT:Use both variables inside one f-string: print(f\\"...{name}...{age}...\\")"`}
+	inputs={[]}
+>
+	Make the variables `name` and `age` (with your own info) and print both of them in one sentence using a single f-string.
+</Mission>
+
+<Mission
+	id="m01-l03-m2"
+	xp={15}
+	title="Age calculator"
+	starterCode={`year = 2026\nbirth_year = ...\n# Calculate the difference and print it\n`}
+	checkCode={`assert "birth_year" in globals() and isinstance(globals()["birth_year"], int), "HINT:Give birth_year your own birth year as a number (no quotes!)."\nassert str(globals()["year"] - globals()["birth_year"]) in _stdout, "HINT:Print the difference: print(year - birth_year)"`}
+	inputs={[]}
+>
+	Put your own birth year into the `birth_year` variable, and have the program calculate and print how old you are (roughly).
+</Mission>
+
+<Mission
+	id="m01-l03-m3"
+	xp={15}
+	title="Score counter"
+	starterCode={`score = 0\n# Add 10 points three times (each on its own line),\n# then print the result at the end\n`}
+	checkCode={`assert "30" in _stdout, "HINT:At the end score should be 30 — write score = score + 10 three times, then print(score)."\nassert globals().get("score") == 30, "HINT:The final value of score should be 30."`}
+	inputs={[]}
+>
+	Build a game counter: `score` starts at zero, grows three times with `score = score + 10`, and is shown at the end with `print`.
+</Mission>
+
+<ModuleProgress
+	moduleId="01"
+	missions={['m01-l01-m1', 'm01-l01-m2', 'm01-l01-m3', 'm01-l02-m1', 'm01-l02-m2', 'm01-l02-m3', 'm01-l03-m1', 'm01-l03-m2', 'm01-l03-m3', 'm01-l04-m1', 'm01-l04-m2', 'm01-l04-m3']}
+	badgeLabel="Talk to Python badge"
+/>
+
+---
+
+**Next lesson:** the program will **talk with you** — we'll learn to get information from the user with `input()`. [Continue →](../input/)

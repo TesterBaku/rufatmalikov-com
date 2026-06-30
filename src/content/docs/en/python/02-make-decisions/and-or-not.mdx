@@ -1,0 +1,89 @@
+---
+title: and, or, not
+description: and, or, not — combine several conditions to make powerful decisions.
+sidebar:
+  order: 3
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Sometimes one condition isn't enough. *"If you're older than 13 **and** you have a ticket — come in."* Python has three keywords for exactly this:
+
+| Word | Meaning | It's true when... |
+|---|---|---|
+| `and` | and | **both** conditions are true |
+| `or` | or | **at least one** is true |
+| `not` | not | the **opposite** of the condition is true |
+
+## and — both are required
+
+<PyRunner
+	id="ex-and"
+	starterCode={`age = 14\nticket = "yes"\nif age >= 13 and ticket == "yes":\n    print("Enjoy the movie! 🎬")\nelse:\n    print("Sorry, you can't come in.")`}
+/>
+
+Write `ticket = "no"` and run it again — when `and` doesn't see both sides as true, the whole condition becomes false.
+
+## or — one is enough
+
+<PyRunner
+	id="ex-or"
+	starterCode={`rain = "yes"\nwind = "no"\nif rain == "yes" or wind == "yes":\n    print("Take an umbrella! ☔")\nelse:\n    print("The weather's great, go for a walk! 😎")`}
+/>
+
+## not — flip it around
+
+<PyRunner
+	id="ex-not"
+	starterCode={`homework_done = False\nif not homework_done:\n    print("Finish your homework first! 📚")`}
+	height="5rem"
+/>
+
+`not False` becomes `True`, which is why the warning was printed. Try writing `True` and see.
+
+## Missions
+
+<Mission
+	id="m02-l03-m1"
+	xp={10}
+	title="Ride entry"
+	starterCode={`age = int(input("Your age: "))\nheight = int(input("Your height (cm): "))\n# If age 10+ AND height 140+: "You can ride!"\n# otherwise: "Not yet."\n`}
+	checkCode={`assert "ride" in _stdout.lower(), "HINT:Set up if age >= 10 and height >= 140 — the inputs are 12 and 150, both pass."`}
+	inputs={['12', '150']}
+>
+	Ride rule: age must be **10+** and height **140 cm+** — both at once! Check it with `and`. (The inputs are `12` and `150`.)
+</Mission>
+
+<Mission
+	id="m02-l03-m2"
+	xp={15}
+	title="Need an umbrella?"
+	starterCode={`rain = input("Is it raining? (yes/no): ")\nwind = input("Strong wind? (yes/no): ")\n# If either is "yes": "Take an umbrella!"\n# if neither: "The weather's great!"\n`}
+	checkCode={`assert "umbrella" in _stdout.lower(), "HINT:Set up if rain == \\"yes\\" or wind == \\"yes\\" — the rain answer is yes, so an umbrella is needed."`}
+	inputs={['yes', 'no']}
+>
+	A weather advisor with `or`: if there's rain **or** wind, say `Take an umbrella!`, if neither, say `The weather's great!`. (In the inputs: rain `yes`, wind `no`.)
+</Mission>
+
+<Mission
+	id="m02-l03-m3"
+	xp={15}
+	title="Login system"
+	starterCode={`username = input("Username: ")\npassword = input("Password: ")\n# If username "admin" AND password "1234":\n#   "Welcome, admin!"\n# otherwise: "Access denied."\n`}
+	checkCode={`assert "welcome" in _stdout.lower(), "HINT:Set up if username == \\"admin\\" and password == \\"1234\\" — the inputs have the correct username and password."`}
+	inputs={['admin', '1234']}
+>
+	A login system like the real sites: the username **and** the password both have to be correct. (The correct pair is ready in the inputs.)
+</Mission>
+
+<ModuleProgress
+	moduleId="02"
+	missions={['m02-l01-m1', 'm02-l01-m2', 'm02-l01-m3', 'm02-l02-m1', 'm02-l02-m2', 'm02-l02-m3', 'm02-l03-m1', 'm02-l03-m2', 'm02-l03-m3']}
+	badgeLabel="Decision Maker badge"
+/>
+
+---
+
+🏅 **You finished this module!** Your program can make decisions now. **In the next module** we give it its biggest superpower: **repetition**. A computer can do the same task a million times without tiring — meet the `for` and `while` loops. [Continue →](../../03-repeat/for-loops/)

@@ -1,0 +1,79 @@
+---
+title: Dictionaries (dict)
+description: Key–value pairs — a collection that works like a phone book.
+sidebar:
+  order: 4
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+In a phone book you look up a number by **name**, not by **row number**. Python has a **dictionary** for exactly this: each **key** maps to a **value**.
+
+## How a dictionary is made
+
+Curly braces `{ }` plus `key: value` pairs:
+
+<PyRunner
+	id="ex-dict"
+	starterCode={`player = {"name": "Aysel", "score": 120, "level": 3}\nprint(player["name"])\nprint(player["score"])`}
+	height="5rem"
+/>
+
+`player["name"]` — access by **key**, not by index: *"the value of the name key in the player dictionary."*
+
+## Change a value, add a new one
+
+<PyRunner
+	id="ex-dict-deyis"
+	starterCode={`player = {"name": "Aysel", "score": 120}\nplayer["score"] = player["score"] + 50\nplayer["team"] = "Stars"\nprint(player)`}
+	height="6rem"
+/>
+
+Assigning to an existing key **updates** its value; assigning to a new key **adds** a pair. This is exactly how character data is stored in video games. 🎮
+
+## Missions
+
+<Mission
+	id="m04-l04-m1"
+	xp={10}
+	title="Player card"
+	starterCode={`# Build a dictionary called "player" with "name" and "score" keys,\n# then print it with an f-string: "<name> — <score> points"\n`}
+	checkCode={`assert "player" in globals() and isinstance(globals()["player"], dict), "HINT:Build it with curly braces: player = {\\"name\\": \\"...\\", \\"score\\": ...}"\nassert "name" in globals()["player"] and "score" in globals()["player"], "HINT:The dictionary needs name and score keys."\nassert str(globals()["player"]["score"]) in _stdout, "HINT:To print, access the key with single quotes inside the f-string: print(f\\"{player['name']} — {player['score']} points\\")"`}
+	inputs={[]}
+>
+	Build a `player` dictionary (with `name` and `score` keys) and print the info like `Aysel — 120 points`. Tip: inside an f-string, write the dictionary key with **single** quotes: `{player['name']}`.
+</Mission>
+
+<Mission
+	id="m04-l04-m2"
+	xp={15}
+	title="Score boost"
+	starterCode={`player = {"name": "Tural", "score": 120}\n# The player earned a bonus: increase the score by 50,\n# then print the new score\n`}
+	checkCode={`assert globals()["player"]["score"] == 170, "HINT:player[\\"score\\"] = player[\\"score\\"] + 50 — build on top of the old value."\nassert "170" in _stdout, "HINT:Print the new score: print(player[\\"score\\"])"`}
+	inputs={[]}
+>
+	Increase the player's score by **50** (building on the old value!) and print the new score.
+</Mission>
+
+<Mission
+	id="m04-l04-m3"
+	xp={15}
+	title="Phone book"
+	starterCode={`numbers = {"Aysel": "050-123-45-67", "Tural": "055-987-65-43"}\nname = input("Whose number do you need? ")\n# Print that person's number\n`}
+	checkCode={`assert "050-123-45-67" in _stdout, "HINT:The key is stored in a variable: print(numbers[name]) — the inputs include Aysel."`}
+	inputs={['Aysel']}
+>
+	Find and print the number of the person the user asked about, from the dictionary. (The inputs include `Aysel`.)
+</Mission>
+
+<ModuleProgress
+	moduleId="04"
+	missions={['m04-l01-m1', 'm04-l01-m2', 'm04-l01-m3', 'm04-l02-m1', 'm04-l02-m2', 'm04-l02-m3', 'm04-l03-m1', 'm04-l03-m2', 'm04-l03-m3', 'm04-l04-m1', 'm04-l04-m2', 'm04-l04-m3']}
+	badgeLabel="Collections badge"
+/>
+
+---
+
+🏅 **You finished this module!** Lists and dictionaries — a program's memory store. **In the next module** we tidy up the code: you'll write your own **functions**. [Continue →](../../05-functions/your-first-function/)

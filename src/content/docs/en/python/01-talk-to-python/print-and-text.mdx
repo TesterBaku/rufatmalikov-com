@@ -1,0 +1,101 @@
+---
+title: Text (strings)
+description: Joining text, repeating it, and having fun with print.
+sidebar:
+  order: 1
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Anything inside quotes is called **text** in programming (the technical word is *string*). Python can do some surprisingly fun things with text.
+
+:::tip[What you'll learn in this module]
+Across the 4 lessons in this module you'll learn to "talk" with Python: text, numbers, variables, and how a program asks *you* for information (`input`).
+:::
+
+## Join text together: +
+
+The `+` sign glues two pieces of text together:
+
+<PyRunner
+	id="ex-birlesdir"
+	starterCode={`print("Hello, " + "Aysel!")\nprint("Py" + "thon")`}
+	height="5rem"
+/>
+
+Notice: if you don't leave a space after `"Hello,"`, the words come out stuck together. Try it! 🙂
+
+## Repeat text: *
+
+The `*` sign repeats text as many times as you want:
+
+<PyRunner
+	id="ex-tekrar"
+	starterCode={`print("Na" * 4 + " Batman!")\nprint("=" * 30)\nprint("🎉" * 5)`}
+/>
+
+`"=" * 30` — thirty equals signs in a row. A great trick for drawing tables and frames.
+
+## Single or double quotes?
+
+Either works — Python doesn't care:
+
+```python
+print("Hello")
+print('Hello')
+```
+
+But if the text has a quote **inside** it, pick a different one for the outside:
+
+<PyRunner
+	id="ex-dirnaq"
+	starterCode={`print('The teacher said: "Well done!"')`}
+	height="4rem"
+/>
+
+## Missions
+
+<Mission
+	id="m01-l01-m1"
+	xp={10}
+	title="Glue it together"
+	starterCode={`print("Python " + "...")`}
+	checkCode={`assert _stdout.strip() == "Python rocks", "HINT:Replace the three dots with rocks — the result must be exactly: Python rocks"`}
+	inputs={[]}
+>
+	Use `+` to join two pieces of text so the screen shows exactly `Python rocks`.
+</Mission>
+
+<Mission
+	id="m01-l01-m2"
+	xp={10}
+	title="Laughter generator"
+	starterCode={`# Repeat the text "ha" 5 times with *\nprint(...)`}
+	checkCode={`assert "hahahahaha" in _stdout, "HINT:Use the form print(\\"ha\\" * 5) — the word ha five times, no spaces in between."`}
+	inputs={[]}
+>
+	Use `*` to print `hahahahaha` to the screen — but write the word `"ha"` only **once**!
+</Mission>
+
+<Mission
+	id="m01-l01-m3"
+	xp={15}
+	title="Framed name"
+	starterCode={`# line 1: 20 of =\n# line 2: your name\n# line 3: 20 of = again\n`}
+	checkCode={`_lines = [l for l in _stdout.strip().splitlines() if l.strip()]\nassert len(_lines) >= 3, "HINT:You need three lines: a line, your name, a line."\nassert "=" in _lines[0] and "=" in _lines[-1], "HINT:The first and last lines should be a line made of = signs — for example print(\\"=\\" * 20)."`}
+	inputs={[]}
+>
+	Frame your name between lines made of `=` signs — a line on top, your name in the middle, a line below.
+</Mission>
+
+<ModuleProgress
+	moduleId="01"
+	missions={['m01-l01-m1', 'm01-l01-m2', 'm01-l01-m3', 'm01-l02-m1', 'm01-l02-m2', 'm01-l02-m3', 'm01-l03-m1', 'm01-l03-m2', 'm01-l03-m3', 'm01-l04-m1', 'm01-l04-m2', 'm01-l04-m3']}
+	badgeLabel="Talk to Python badge"
+/>
+
+---
+
+**Next lesson:** numbers and math — Python is far more powerful than your pocket calculator. [Continue →](../numbers-and-math/)

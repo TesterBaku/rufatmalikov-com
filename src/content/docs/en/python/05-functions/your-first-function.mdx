@@ -1,0 +1,67 @@
+---
+title: Your first function
+description: def — build your own command and call it as many times as you like.
+sidebar:
+  order: 1
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+`print()`, `len()`, `input()` — these are all **functions**: named pieces of code you can call. Now for the exciting part: you'll build a function **of your own**.
+
+:::tip[In this module]
+Across the 3 lessons of this module you'll write your own functions: `def`, parameters, and `return`.
+:::
+
+## def — build a function
+
+<PyRunner
+	id="ex-def"
+	starterCode={`def greet():\n    print("Hello!")\n    print("Good to see you!")\n\ngreet()\ngreet()\ngreet()`}
+	height="8rem"
+/>
+
+There are two stages:
+
+1. **Definition:** `def greet():` — *"I'm building a function called greet"*. The lines inside it are indented (a familiar rule!). This part does **nothing yet** — it just writes the recipe.
+2. **Call:** `greet()` — *"now run it!"*. Each call runs the body of the function once.
+
+## Why bother?
+
+Instead of writing the same 2 lines 3 times, we wrote them once and called them 3 times. The programmer's golden rule: **don't repeat yourself!** And when you need to change something, you change it in one place — no hunting down every copy.
+
+## Missions
+
+<Mission
+	id="m05-l01-m1"
+	xp={10}
+	title="Your own command"
+	starterCode={`# Build a function called "greet" — it should print "Hello, world!".\n# Then call it TWICE.\n`}
+	checkCode={`assert "greet" in globals() and callable(globals()["greet"]), "HINT:Start with def greet(): — parentheses and a colon after the name."\nassert _stdout.lower().count("hello") >= 2, "HINT:Call the function twice: greet() on two separate lines."`}
+	inputs={[]}
+>
+	Build a function called `greet` and call it **twice**.
+</Mission>
+
+<Mission
+	id="m05-l01-m2"
+	xp={15}
+	title="Banner function"
+	starterCode={`# Build a function called "banner" — it should print three lines:\n# ====================\n# PYTHON COURSE\n# ====================\n# Then call it.\n`}
+	checkCode={`assert "banner" in globals() and callable(globals()["banner"]), "HINT:Build the function with def banner():."\n_lines = [l for l in _stdout.strip().splitlines() if l.strip()]\nassert len(_lines) >= 3 and "=" in _lines[0], "HINT:Put three prints inside the function, use the \\"=\\" * 20 trick for the lines — and don't forget to call it!"`}
+	inputs={[]}
+>
+	Turn the banner trick from Module 01 into a function: when `banner()` is called, it should print a three-line header.
+</Mission>
+
+<ModuleProgress
+	moduleId="05"
+	missions={['m05-l01-m1', 'm05-l01-m2', 'm05-l02-m1', 'm05-l02-m2', 'm05-l02-m3', 'm05-l03-m1', 'm05-l03-m2', 'm05-l03-m3']}
+	badgeLabel="Functions badge"
+/>
+
+---
+
+**Next lesson:** passing information into a function — parameters. What happens when you write `greet("Aysel")`? [Continue →](../parameters/)

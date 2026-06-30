@@ -1,0 +1,48 @@
+---
+title: "Project 2: Guess the number 2.0"
+description: The game now gives hints — higher, lower — and counts your tries.
+sidebar:
+  order: 2
+---
+
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+In Module 03 you wrote "Guess the number." Now let's turn it into a **real game**: the program gives a hint after every wrong guess and tells you how many tries it took.
+
+:::tip[You'll use in this project]
+`while` (Module 03) · `if/elif` (Module 02) · a counter variable (Module 03) · f-strings
+:::
+
+## Plan
+
+1. Start with `secret = 7` and `tries = 0`
+2. Read the first guess (`int(input(...))`) and count the try
+3. `while guess != secret:` — until it's found:
+   - if the guess is **less** than the secret: "The secret number is higher ⬆️"
+   - if it's **greater**: "The secret number is lower ⬇️"
+   - read a new guess, count the try again
+4. When the loop ends: `f"You found it in {tries} tries 🎉"`
+
+## Mission
+
+<Mission
+	id="m06-p2"
+	xp={25}
+	title="Guess the number 2.0"
+	starterCode={`secret = 7\ntries = 0\nguess = int(input("Guess the number (1-10): "))\ntries = tries + 1\n# Continue with a while loop: give a hint, read again, count the tries\n`}
+	checkCode={`assert "found" in _stdout.lower(), "HINT:Inside while guess != secret: give a hint + a new input, and after the loop print the You found it message."\nassert "higher" in _stdout.lower(), "HINT:The first guess is 3 (less than the secret 7) — the program should give a higher hint: if guess < secret:"\nassert "4" in _stdout, "HINT:Count the tries (tries = tries + 1 after each input) and print the count at the end — in this scenario it takes 4 tries."`}
+	inputs={['3', '9', '6', '7']}
+>
+	Follow the plan. (The player's scenario is in the inputs: `3` → higher, `9` → lower, `6` → higher, `7` → found it! The program should say `4 tries` at the end.)
+</Mission>
+
+<ModuleProgress
+	moduleId="06"
+	missions={['m06-p1', 'm06-p2', 'm06-p3', 'm06-p4']}
+	badgeLabel="Python Explorer badge"
+/>
+
+---
+
+**Next project:** build your own quiz — questions in a list, points on a counter. [Continue →](../quiz/)

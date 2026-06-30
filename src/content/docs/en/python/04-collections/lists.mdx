@@ -1,0 +1,85 @@
+---
+title: Lists (list)
+description: Many items in one variable — building a list, printing it, and looping over it.
+sidebar:
+  order: 1
+---
+
+import PyRunner from '../../../../../components/python/PyRunner.astro';
+import Mission from '../../../../../components/python/Mission.astro';
+import ModuleProgress from '../../../../../components/python/ModuleProgress.astro';
+
+Going to make 30 separate variables to store 30 students' names? `name1`, `name2`, `name3`... No! That's what a **list** is for — an ordered box that holds lots of data in **one** variable.
+
+:::tip[What you'll learn in this module]
+Across this module's 4 lessons you'll learn collections: lists, index and slice, list methods, and dictionaries.
+:::
+
+## How a list is made
+
+Square brackets `[ ]` plus comma-separated items:
+
+<PyRunner
+	id="ex-siyahi"
+	starterCode={`friends = ["Aysel", "Tural", "Nigar"]\nprint(friends)\nprint(len(friends))`}
+	height="5rem"
+/>
+
+`len(...)` tells you the **length** of the list (how many items it holds). A list can store anything: text, numbers, even a mix.
+
+## List + loop = a powerful pair
+
+The `for` from module 03 works beautifully with a list — it walks each item one by one:
+
+<PyRunner
+	id="ex-siyahi-for"
+	starterCode={`friends = ["Aysel", "Tural", "Nigar"]\nfor friend in friends:\n    print(f"Hi, {friend}!")`}
+	height="6rem"
+/>
+
+Read it as: *"for each friend in the friends list: greet them."* Whether the list held 3 names or 300, the code would stay **the same**. That's the superpower. 💪
+
+## Missions
+
+<Mission
+	id="m04-l01-m1"
+	xp={10}
+	title="A list of foods"
+	starterCode={`# Build a list called "foods" — at least 3 of your favorite foods,\n# then print the list\n`}
+	checkCode={`assert "foods" in globals() and isinstance(globals()["foods"], list), "HINT:Build a list with square brackets: foods = [\\"pizza\\", \\"pasta\\", \\"soup\\"]"\nassert len(globals()["foods"]) >= 3, "HINT:The list needs at least 3 foods — separate them with commas."\nassert _stdout.strip(), "HINT:Don't forget to print the list: print(foods)"`}
+	inputs={[]}
+>
+	Build a list called `foods` — with at least 3 of your favorite foods in it — and print it.
+</Mission>
+
+<Mission
+	id="m04-l01-m2"
+	xp={10}
+	title="Greet everyone"
+	starterCode={`friends = ["Aysel", "Tural", "Nigar", "Kamran"]\n# with for, greet each friend on its own line\n`}
+	checkCode={`assert _stdout.lower().count("hi") >= 4, "HINT:for friend in friends: with print(f\\"Hi, {friend}!\\") inside — there are 4 friends, so 4 greetings should appear."`}
+	inputs={[]}
+>
+	With `for`, greet **every** friend in the list on its own line: `Hi, Aysel!` and so on.
+</Mission>
+
+<Mission
+	id="m04-l01-m3"
+	xp={15}
+	title="How many are we?"
+	starterCode={`classroom = ["Leyla", "Murad", "Aytac", "Elvin", "Zahra"]\n# Print the list's length inside a sentence with an f-string:\n# "There are N students in the class"\n`}
+	checkCode={`assert "5" in _stdout, "HINT:len(classroom) gives the length — print(f\\"There are {len(classroom)} students in the class\\")"\nassert "student" in _stdout.lower(), "HINT:Make the answer a full sentence: There are 5 students in the class"`}
+	inputs={[]}
+>
+	Use `len()` to find the length of the class list and print it like `There are 5 students in the class`.
+</Mission>
+
+<ModuleProgress
+	moduleId="04"
+	missions={['m04-l01-m1', 'm04-l01-m2', 'm04-l01-m3', 'm04-l02-m1', 'm04-l02-m2', 'm04-l02-m3', 'm04-l03-m1', 'm04-l03-m2', 'm04-l03-m3', 'm04-l04-m1', 'm04-l04-m2', 'm04-l04-m3']}
+	badgeLabel="Collections badge"
+/>
+
+---
+
+**Next lesson:** how do you grab a **single** item out of a list? The index — and Python counting from 0 again. [Continue →](../index-and-slice/)
