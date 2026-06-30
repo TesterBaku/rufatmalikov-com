@@ -1,0 +1,727 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module 0: Setup &amp; first test — Python for SDETs</title>
+  <style>
+    /* ===========================================================
+       Deck framework — DO NOT EDIT the rules in this <style> block.
+       =========================================================== */
+    :root {
+      /* SLOT: theme tokens — AI with Rufat brand */
+      --bg:      oklch(9% 0.06 255);
+      --fg:      oklch(97% 0.006 255);
+      --muted:   oklch(52% 0.05 255);
+      --accent:  oklch(72% 0.23 210);
+      --accent2: oklch(58% 0.28 265);
+      --surface: oklch(14% 0.08 255);
+      --border:  oklch(22% 0.10 255);
+      --shell:   oklch(5% 0.03 252);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--shell);
+      color: var(--fg);
+      font: 18px/1.5 -apple-system, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .deck-shell {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+    .deck-stage {
+      width: 1920px;
+      height: 1080px;
+      background: var(--bg);
+      position: relative;
+      transform-origin: top left;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+    }
+    .slide {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+    .slide:not(.active) { display: none !important; }
+    :where(.slide.active) { display: flex; flex-direction: column; }
+    .deck-counter {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(10, 14, 26, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font: 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.18em;
+      z-index: 1000;
+    }
+    .deck-counter button {
+      width: 36px; height: 36px;
+      background: transparent;
+      color: #fff;
+      border: 0;
+      border-radius: 50%;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 0.15s;
+    }
+    .deck-counter button:hover { background: rgba(255, 255, 255, 0.12); }
+    .deck-counter button[disabled] { opacity: 0.3; cursor: default; }
+    .deck-counter .deck-count {
+      padding: 0 14px;
+      letter-spacing: 0.22em;
+    }
+    .deck-counter .deck-count .total { color: rgba(255, 255, 255, 0.5); }
+    .deck-hint {
+      position: fixed;
+      bottom: 26px;
+      right: 28px;
+      color: rgba(255, 255, 255, 0.4);
+      font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      z-index: 999;
+      pointer-events: none;
+    }
+    @media print {
+      @page { size: 1920px 1080px; margin: 0; }
+      html, body {
+        width: 1920px !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
+      }
+      .deck-shell {
+        position: static !important;
+        display: block !important;
+        inset: auto !important;
+      }
+      .deck-stage {
+        width: 1920px !important;
+        height: auto !important;
+        transform: none !important;
+        box-shadow: none !important;
+        position: static !important;
+      }
+      .slide {
+        display: flex !important;
+        position: relative !important;
+        inset: auto !important;
+        width: 1920px !important;
+        height: 1080px !important;
+        page-break-after: always;
+        break-after: page;
+      }
+      .slide:last-child { page-break-after: auto; break-after: auto; }
+      .deck-counter, .deck-hint { display: none !important; }
+    }
+  </style>
+  <style>
+    /* SLOT: per-deck styles */
+
+    .circuit-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 60% at 8% 50%,  oklch(22% 0.16 265 / 0.35) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 92% 40%, oklch(28% 0.20 220 / 0.28) 0%, transparent 55%),
+        radial-gradient(ellipse 45% 40% at 50% 110%, oklch(15% 0.10 250 / 0.4) 0%, transparent 50%);
+    }
+
+    .grad-text {
+      background: linear-gradient(135deg, oklch(84% 0.25 200) 0%, oklch(62% 0.30 265) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-bar {
+      position: absolute;
+      bottom: 44px;
+      right: 64px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10;
+    }
+    .brand-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .brand-name {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: oklch(70% 0.04 252);
+    }
+    .brand-name strong {
+      background: linear-gradient(135deg, oklch(84% 0.25 200), oklch(62% 0.30 265));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .step-badge {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 32px;
+    }
+    .step-num {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, oklch(72% 0.23 210), oklch(58% 0.28 265));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; font-weight: 900; color: #fff;
+      box-shadow: 0 0 28px oklch(72% 0.23 210 / 0.5);
+      flex-shrink: 0;
+    }
+    .step-label {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    /* Title */
+    .s-title {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px;
+    }
+    .s-title .kicker {
+      font-size: 26px; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 28px;
+    }
+    .s-title .headline {
+      font-size: 100px; font-weight: 900;
+      line-height: 1.0; letter-spacing: -0.03em;
+      max-width: 1400px;
+      margin-bottom: 36px;
+    }
+    .s-title .subtitle {
+      font-size: 34px; font-weight: 400;
+      color: var(--muted);
+      max-width: 860px; line-height: 1.4;
+    }
+    .s-title .pills { display: flex; gap: 16px; margin-top: 48px; }
+    .pill {
+      padding: 10px 30px;
+      border-radius: 999px;
+      border: 1px solid oklch(30% 0.10 255);
+      font-size: 22px; font-weight: 500;
+      color: var(--muted);
+      background: oklch(12% 0.06 255 / 0.5);
+    }
+
+    /* Intro */
+    .s-intro {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      height: 100%;
+      padding: 80px 100px;
+      gap: 80px;
+    }
+    .intro-heading {
+      font-size: 80px; font-weight: 900;
+      line-height: 1.0; letter-spacing: -0.03em;
+      margin-bottom: 32px;
+    }
+    .intro-subtext {
+      font-size: 30px; line-height: 1.55;
+      color: oklch(70% 0.04 255);
+    }
+    .feature-cards { display: flex; flex-direction: column; gap: 20px; }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 32px;
+      display: flex; align-items: center; gap: 22px;
+    }
+    .feature-icon { font-size: 36px; flex-shrink: 0; }
+    .feature-card h3 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+    .feature-card p  { font-size: 20px; color: var(--muted); }
+
+    /* Step layout */
+    .s-step {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      height: 100%;
+    }
+    .step-left {
+      padding: 80px 64px 80px 96px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .step-right {
+      display: flex; align-items: center; justify-content: center;
+      padding: 48px 64px; position: relative;
+    }
+    .step-headline {
+      font-size: 68px; font-weight: 800;
+      line-height: 1.08; letter-spacing: -0.025em;
+      margin-bottom: 28px;
+    }
+    .step-body {
+      font-size: 30px; line-height: 1.55;
+      color: oklch(74% 0.04 255);
+      max-width: 680px; margin-bottom: 28px;
+    }
+    .step-tip {
+      display: flex; align-items: flex-start; gap: 16px;
+      padding: 20px 28px;
+      background: oklch(72% 0.23 210 / 0.10);
+      border: 1px solid oklch(72% 0.23 210 / 0.28);
+      border-radius: 12px;
+      font-size: 25px; line-height: 1.45;
+      color: oklch(80% 0.10 210);
+      max-width: 680px;
+    }
+    .tip-icon { font-size: 26px; flex-shrink: 0; margin-top: 2px; }
+
+    .url-bar {
+      display: flex; align-items: center; gap: 14px;
+      background: oklch(94% 0.005 255);
+      border-radius: 8px; padding: 18px 24px;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 26px;
+      border: 2px solid oklch(72% 0.23 210);
+      box-shadow: 0 0 0 4px oklch(72% 0.23 210 / 0.15);
+      color: #111;
+    }
+    .url-highlight { color: oklch(38% 0.28 265); font-weight: 700; }
+
+    /* Windows mockup */
+    .win-dialog {
+      border-radius: 8px; overflow: hidden;
+      box-shadow: 0 28px 72px rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .win-titlebar {
+      height: 34px; background: #1a1a2e;
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: 0; position: relative;
+    }
+    .win-titlebar .title-text {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      font-size: 13px; color: #aaa; white-space: nowrap;
+    }
+    .win-btn { width: 46px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #ccc; }
+    .win-btn.close-btn { background: #c42b1c; color: #fff; }
+    .win-body { background: #fff; color: #111; padding: 28px 32px; }
+    .win-body h4 { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: #111; }
+    .win-body p  { font-size: 13px; color: #555; margin-bottom: 14px; }
+    .win-next-btn { display: inline-flex; align-items: center; padding: 9px 28px; background: #0050ef; color: #fff; border-radius: 4px; font-size: 14px; font-weight: 600; }
+    .win-back-btn { display: inline-flex; align-items: center; padding: 9px 22px; border: 1px solid #bbb; color: #555; border-radius: 4px; font-size: 14px; }
+    .win-btn-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .radio-on { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #0050ef; background: #0050ef; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .radio-on::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+    .radio-off { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #bbb; background: #fff; flex-shrink: 0; }
+    .win-radio-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-size: 15px; color: #222; }
+    .chk-on { width: 18px; height: 18px; border-radius: 3px; background: #0050ef; border: 2px solid #0050ef; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .chk-off { width: 18px; height: 18px; border-radius: 3px; border: 2px solid #bbb; background: #fff; flex-shrink: 0; }
+    .chk-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 14px; color: #333; }
+    .setup-progress-track { background: #e0e0e0; border-radius: 4px; height: 20px; overflow: hidden; margin: 14px 0; }
+    .setup-progress-fill { height: 100%; background: #0050ef; border-radius: 4px; width: 68%; }
+
+    .dl-btn { display: inline-flex; align-items: center; gap: 14px; background: #026e00; color: #fff; padding: 26px 52px; border-radius: 6px; font-size: 32px; font-weight: 700; box-shadow: 0 8px 36px rgba(2,110,0,0.45); }
+
+    .explorer-row { display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-radius: 6px; }
+    .explorer-row.selected { background: #cce5f7; border: 2px solid #0078d4; }
+    .explorer-row.dim { opacity: 0.35; }
+
+    /* Done */
+    .s-done { align-items: center; justify-content: center; text-align: center; padding: 80px; }
+    .done-icon { font-size: 110px; margin-bottom: 28px; filter: drop-shadow(0 0 36px oklch(72% 0.23 210)); }
+    .done-head { font-size: 92px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.0; margin-bottom: 22px; }
+    .done-sub  { font-size: 34px; color: var(--muted); margin-bottom: 52px; }
+    .next-cards { display: flex; gap: 24px; }
+    .next-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 36px; text-align: left; width: 340px; }
+    .next-card .nc-icon  { font-size: 38px; margin-bottom: 14px; }
+    .next-card .nc-title { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+    .next-card .nc-desc  { font-size: 20px; color: var(--muted); line-height: 1.4; }
+
+    /* Outro */
+    .s-outro { align-items: center; justify-content: center; text-align: center; padding: 80px; }
+    .sub-badge { display: inline-flex; align-items: center; gap: 12px; background: #ff0000; color: #fff; font-size: 24px; font-weight: 800; padding: 14px 44px; border-radius: 8px; letter-spacing: 0.06em; margin-bottom: 40px; }
+    .outro-head { font-size: 86px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.0; margin-bottom: 24px; }
+    .outro-sub  { font-size: 34px; color: var(--muted); margin-bottom: 52px; }
+    .social-row { display: flex; gap: 20px; justify-content: center; }
+    .social-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 16px 36px; font-size: 26px; font-weight: 600; display: flex; align-items: center; gap: 12px; }
+
+    /* Per-deck: two-column comparison layout */
+    .s-two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      padding: 60px 80px;
+      height: 100%;
+      align-items: start;
+    }
+    .s-two-col .col-heading-red {
+      font-size: 32px; font-weight: 800;
+      color: #f44336;
+      margin-bottom: 24px;
+      letter-spacing: -0.01em;
+    }
+    .s-two-col .col-heading-green {
+      font-size: 32px; font-weight: 800;
+      color: #4caf50;
+      margin-bottom: 24px;
+      letter-spacing: -0.01em;
+    }
+    .s-two-col .full-heading {
+      grid-column: 1 / -1;
+      font-size: 64px; font-weight: 900;
+      letter-spacing: -0.025em;
+      line-height: 1.0;
+      margin-bottom: 8px;
+    }
+
+    /* Terminal mockup */
+    .terminal {
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .terminal-bar {
+      height: 36px;
+      background: #1a1a2e;
+      display: flex; align-items: center;
+      padding: 0 14px; gap: 8px;
+      position: relative;
+    }
+    .terminal-bar .t-dots { display: flex; gap: 7px; }
+    .terminal-bar .t-dots span { width: 11px; height: 11px; border-radius: 50%; display: block; }
+    .terminal-bar .t-title {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      font-size: 13px; color: #888; white-space: nowrap;
+      font-family: ui-monospace, Consolas, monospace;
+    }
+    .terminal-body {
+      background: #012456;
+      padding: 20px 24px;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 18px;
+      line-height: 1.8;
+    }
+
+    /* Code block */
+    .code-block {
+      background: oklch(10% 0.05 255);
+      border: 1px solid oklch(22% 0.10 255);
+      border-radius: 10px;
+      padding: 28px 32px;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 18px;
+      line-height: 1.8;
+    }
+
+    /* Full-width step variant */
+    .s-full {
+      display: flex;
+      flex-direction: column;
+      padding: 80px 120px;
+      justify-content: center;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Module 0 · Python for SDETs</div>
+        <h1 class="headline">Set Up Your<br><span class="grad-text">Python Test Stack</span></h1>
+        <p class="subtitle">From an empty folder to a green test against a real app</p>
+        <div class="pills">
+          <span class="pill">Python</span>
+          <span class="pill">venv</span>
+          <span class="pill">pytest</span>
+          <span class="pill">requests</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 The toolchain -->
+      <section class="slide s-full" data-screen-label="02 The Toolchain">
+        <div class="circuit-bg"></div>
+        <div style="font-size:22px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;">What you'll install</div>
+        <h2 style="font-size:68px;font-weight:900;letter-spacing:-0.025em;line-height:1.0;margin-bottom:40px;">Four tools, one toolchain</h2>
+        <div class="feature-cards" style="max-width:1500px;">
+          <div class="feature-card">
+            <div class="feature-icon">🐍</div>
+            <div><h3>Python 3.9+</h3><p>The language your tests are written in.</p></div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📦</div>
+            <div><h3>venv</h3><p>An isolated, per-project package folder — no version clashes.</p></div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">✅</div>
+            <div><h3>pytest</h3><p>The test runner that's the de-facto SDET standard.</p></div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🌐</div>
+            <div><h3>requests</h3><p>The library you'll use to call the app's REST API.</p></div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 The setup pipeline -->
+      <section class="slide s-full" data-screen-label="03 Setup Pipeline">
+        <div class="circuit-bg"></div>
+        <div style="font-size:22px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;">The path to green</div>
+        <h2 style="font-size:64px;font-weight:900;letter-spacing:-0.025em;line-height:1.0;margin-bottom:44px;">Setup, end to end</h2>
+
+        <!-- Row 1: your project -->
+        <div style="color:var(--muted);font-size:20px;font-weight:700;letter-spacing:0.08em;margin-bottom:14px;">YOUR TEST PROJECT</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:nowrap;margin-bottom:40px;">
+          <div style="background:#1b5e20;border:2px solid #4caf50;border-radius:10px;padding:18px 22px;font-size:20px;font-weight:700;color:#a5d6a7;white-space:nowrap;">Install Python</div>
+          <div style="color:#555;font-size:24px;">→</div>
+          <div style="background:#1b5e20;border:2px solid #4caf50;border-radius:10px;padding:18px 22px;font-family:ui-monospace,Consolas,monospace;font-size:18px;color:#a5d6a7;white-space:nowrap;">python -m venv .venv</div>
+          <div style="color:#555;font-size:24px;">→</div>
+          <div style="background:#1b5e20;border:2px solid #4caf50;border-radius:10px;padding:18px 22px;font-size:20px;font-weight:700;color:#a5d6a7;white-space:nowrap;">activate</div>
+          <div style="color:#555;font-size:24px;">→</div>
+          <div style="background:#1b5e20;border:2px solid #4caf50;border-radius:10px;padding:18px 22px;font-family:ui-monospace,Consolas,monospace;font-size:18px;color:#a5d6a7;white-space:nowrap;">pip install pytest requests</div>
+        </div>
+
+        <!-- Row 2: the app + first test -->
+        <div style="color:var(--muted);font-size:20px;font-weight:700;letter-spacing:0.08em;margin-bottom:14px;">THE PRACTICE APP, THEN PROOF</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:nowrap;">
+          <div style="background:oklch(20% 0.12 265);border:2px solid var(--accent);border-radius:10px;padding:18px 22px;font-family:ui-monospace,Consolas,monospace;font-size:18px;color:#90caf9;white-space:nowrap;">git clone</div>
+          <div style="color:#555;font-size:24px;">→</div>
+          <div style="background:oklch(20% 0.12 265);border:2px solid var(--accent);border-radius:10px;padding:18px 22px;font-family:ui-monospace,Consolas,monospace;font-size:18px;color:#90caf9;white-space:nowrap;">npm install &amp;&amp; npm start</div>
+          <div style="color:#555;font-size:24px;">→</div>
+          <div style="background:oklch(20% 0.12 265);border:2px solid var(--accent);border-radius:10px;padding:18px 22px;font-size:20px;font-weight:700;color:#90caf9;white-space:nowrap;">write test_smoke.py</div>
+          <div style="color:#555;font-size:24px;">→</div>
+          <div style="background:linear-gradient(135deg,#1b5e20,#2e7d32);border:2px solid #4caf50;border-radius:10px;padding:18px 26px;font-size:22px;font-weight:800;color:#fff;white-space:nowrap;box-shadow:0 0 24px rgba(76,175,80,0.4);">✓ 1 passed</div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Two terminals -->
+      <section class="slide s-two-col" data-screen-label="04 Two Terminals">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Two terminals, two jobs</div>
+
+        <div>
+          <div style="font-size:30px;font-weight:800;color:#90caf9;margin-bottom:20px;">🖥️ Terminal 1 — the app</div>
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="t-dots"><span style="background:#ff5f57;"></span><span style="background:#febc2e;"></span><span style="background:#28c840;"></span></div>
+              <span class="t-title">testmarket-lab</span>
+            </div>
+            <div class="terminal-body">
+              <div style="color:#9cdcfe;">$ npm start</div>
+              <div style="color:#d4d4d4;">TestMarket Lab running</div>
+              <div style="color:#4caf50;">→ http://localhost:3000</div>
+              <div style="color:#888;margin-top:8px;">(leave this running)</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:30px;font-weight:800;color:#a5d6a7;margin-bottom:20px;">🧪 Terminal 2 — your tests</div>
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="t-dots"><span style="background:#ff5f57;"></span><span style="background:#febc2e;"></span><span style="background:#28c840;"></span></div>
+              <span class="t-title">python-sdet</span>
+            </div>
+            <div class="terminal-body">
+              <div style="color:#888;">(.venv) active</div>
+              <div style="color:#9cdcfe;">$ pytest</div>
+              <div style="color:#4caf50;">1 passed in 0.05s</div>
+              <div style="color:#888;margin-top:8px;">(run as often as you like)</div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 First green test -->
+      <section class="slide s-step" data-screen-label="05 First Test" style="display:grid;grid-template-columns:1fr 1fr;gap:60px;padding:60px 80px;height:100%;align-items:center;">
+        <div class="circuit-bg"></div>
+        <div style="grid-column:1/-1;font-size:60px;font-weight:900;letter-spacing:-0.025em;line-height:1.0;margin-bottom:4px;">One test proves the whole stack</div>
+
+        <div>
+          <div style="font-size:24px;font-weight:700;color:var(--accent);margin-bottom:16px;">tests/test_smoke.py</div>
+          <div class="code-block" style="font-size:19px;">
+            <div><span style="color:#569cd6;">import</span> <span style="color:#d4d4d4;">requests</span></div>
+            <div style="height:1em;"></div>
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_products_endpoint_is_up</span>():</div>
+            <div style="margin-left:28px;color:#d4d4d4;">r = requests.get(<span style="color:#ce9178;">"http://localhost:3000/api/products"</span>)</div>
+            <div style="margin-left:28px;"><span style="color:#c586c0;">assert</span> <span style="color:#d4d4d4;">r.status_code ==</span> <span style="color:#b5cea8;">200</span></div>
+            <div style="margin-left:28px;"><span style="color:#c586c0;">assert</span> <span style="color:#dcdcaa;">len</span>(r.json()) &gt; <span style="color:#b5cea8;">0</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:24px;font-weight:700;color:#4caf50;margin-bottom:16px;">pytest</div>
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="t-dots"><span style="background:#ff5f57;"></span><span style="background:#febc2e;"></span><span style="background:#28c840;"></span></div>
+              <span class="t-title">python-sdet</span>
+            </div>
+            <div class="terminal-body" style="font-size:17px;">
+              <div style="color:#d4d4d4;">collected 1 item</div>
+              <div style="margin-top:6px;"><span style="color:#4caf50;">tests/test_smoke.py .</span><span style="color:#888;"> [100%]</span></div>
+              <div style="margin-top:10px;color:#4caf50;font-weight:700;">1 passed in 0.05s</div>
+            </div>
+          </div>
+          <div style="margin-top:18px;font-size:21px;color:#4caf50;font-weight:600;">Green = Python + venv + pytest + requests + the app all wired up.</div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 You're Set Up">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🎉</div>
+        <h2 class="done-head">You're<br><span class="grad-text">Set Up</span></h2>
+        <p class="done-sub">A real local stack — and a real app answering on <code style="font-family:ui-monospace,Consolas,monospace;">:3000</code></p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Module 1</div>
+            <div class="nc-desc">pytest itself — discovery, assert, running exactly what you want</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">♻️</div>
+            <div class="nc-title">Reset anytime</div>
+            <div class="nc-desc">POST /api/reset returns the data to a known state</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🖥️</div>
+            <div class="nc-title">Keep it running</div>
+            <div class="nc-desc">The app stays up in its own terminal while you test</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script>
+    (function () {
+      var stage = document.getElementById('deck-stage');
+      var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+      var prev = document.getElementById('deck-prev');
+      var next = document.getElementById('deck-next');
+      var cur = document.getElementById('deck-cur');
+      var total = document.getElementById('deck-total');
+      var STORE = 'deck:idx:' + (location.pathname || '/');
+      var idx = 0;
+
+      function fit() {
+        var sw = window.innerWidth;
+        var sh = window.innerHeight;
+        var pad = 32;
+        var s = Math.min((sw - pad) / 1920, (sh - pad) / 1080);
+        if (!isFinite(s) || s <= 0) s = 1;
+        var tx = (sw - 1920 * s) / 2;
+        var ty = (sh - 1080 * s) / 2;
+        stage.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + s + ')';
+      }
+
+      function pad2(n) { return (n < 10 ? '0' : '') + n; }
+      function paint() {
+        slides.forEach(function (el, i) { el.classList.toggle('active', i === idx); });
+        if (cur) cur.textContent = pad2(idx + 1);
+        if (total) total.textContent = pad2(slides.length);
+        if (prev) prev.toggleAttribute('disabled', idx <= 0);
+        if (next) next.toggleAttribute('disabled', idx >= slides.length - 1);
+      }
+      function go(i) {
+        idx = Math.max(0, Math.min(slides.length - 1, i));
+        paint();
+        try { localStorage.setItem(STORE, String(idx)); } catch (_) {}
+      }
+      function onKey(e) {
+        var t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(idx + 1); }
+        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(idx - 1); }
+        else if (e.key === 'Home') { e.preventDefault(); go(0); }
+        else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+      }
+      window.addEventListener('keydown', onKey, true);
+      document.addEventListener('keydown', onKey, true);
+      if (prev) prev.addEventListener('click', function () { go(idx - 1); });
+      if (next) next.addEventListener('click', function () { go(idx + 1); });
+
+      document.body.setAttribute('tabindex', '-1');
+      document.body.style.outline = 'none';
+      function focusDeck() { try { window.focus(); document.body.focus({ preventScroll: true }); } catch (_) {} }
+      document.addEventListener('mousedown', focusDeck);
+      window.addEventListener('load', focusDeck);
+
+      try {
+        var saved = parseInt(localStorage.getItem(STORE) || '0', 10);
+        if (!isNaN(saved) && saved >= 0 && saved < slides.length) idx = saved;
+      } catch (_) {}
+
+      window.addEventListener('resize', fit);
+      fit();
+      paint();
+      focusDeck();
+    })();
+  </script>
+</body>
+</html>
