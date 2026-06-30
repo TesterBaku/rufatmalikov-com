@@ -182,8 +182,8 @@ python-sdet/
 └── pytest.ini            # pytest configuration (optional, added below)
 ```
 
-Add a small `pytest.ini` to mark the project root and tell pytest where your tests live, so
-`pytest` behaves the same no matter which folder you run it from:
+Add a small `pytest.ini` to mark the project root and point pytest at your `tests/` folder, so
+a bare `pytest` (run from the project root) discovers them without you naming the path:
 
 ```ini
 # pytest.ini
