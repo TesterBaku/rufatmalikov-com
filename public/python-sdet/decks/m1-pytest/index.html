@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module 1: pytest fundamentals — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Module 1 · Python for SDETs</div>
+        <h1 class="headline"><span class="grad-text">pytest</span><br>Fundamentals</h1>
+        <p class="subtitle">How tests are found, why plain assert is enough, and running exactly what you want</p>
+        <div class="pills">
+          <span class="pill">discovery</span>
+          <span class="pill">assert</span>
+          <span class="pill">-k / -x</span>
+          <span class="pill">raises / approx</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 Discovery -->
+      <section class="slide s-step" data-screen-label="02 Discovery" style="gap:60px;padding:60px 90px;align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">What pytest collects</div>
+
+        <div>
+          <div class="code-block" style="font-size:19px;">
+            <div style="color:#6a9955;"># tests/test_demo.py</div>
+            <div style="height:0.6em;"></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="color:#4caf50;">✓</span><span><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_this_runs</span>():</span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="color:#f44336;">✗</span><span><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">helper_not_a_test</span>():</span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="color:#4caf50;">✓</span><span><span style="color:#569cd6;">class</span> <span style="color:#4ec9b0;">TestProducts</span>:</span></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-left:28px;"><span style="color:#4caf50;">✓</span><span><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_inside</span>(self):</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <div class="feature-card"><div class="feature-icon">📄</div><div><h3>Files</h3><p><code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">test_*.py</code> or <code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">*_test.py</code></p></div></div>
+            <div class="feature-card"><div class="feature-icon">🔧</div><div><h3>Functions</h3><p>start with <code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">test_</code></p></div></div>
+            <div class="feature-card"><div class="feature-icon">📦</div><div><h3>Classes</h3><p>start with <code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">Test</code> (no <code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">__init__</code>)</p></div></div>
+          </div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">💡</span><span>Off-pattern names are skipped <strong>silently</strong> — the #1 "why did no tests run?"</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 Plain assert -->
+      <section class="slide s-step" data-screen-label="03 Readable Failures" style="gap:60px;padding:60px 90px;align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Plain <span class="grad-text" style="font-family:ui-monospace,Consolas,monospace;">assert</span> — and a readable failure</div>
+
+        <div>
+          <div style="font-size:22px;font-weight:700;color:var(--accent);margin-bottom:14px;">tests/test_failure_demo.py</div>
+          <div class="code-block" style="font-size:19px;">
+            <div style="color:#6a9955;"># line 1</div>
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_intentional_failure</span>():</div>
+            <div style="margin-left:28px;color:#d4d4d4;">expected = <span style="color:#b5cea8;">5</span></div>
+            <div style="margin-left:28px;color:#d4d4d4;">actual = <span style="color:#b5cea8;">2 + 2</span></div>
+            <div style="margin-left:28px;"><span style="color:#c586c0;">assert</span> <span style="color:#d4d4d4;">actual == expected</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:22px;font-weight:700;color:#f44336;margin-bottom:14px;">pytest output</div>
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="t-dots"><span style="background:#ff5f57;"></span><span style="background:#febc2e;"></span><span style="background:#28c840;"></span></div>
+              <span class="t-title">python-sdet</span>
+            </div>
+            <div class="terminal-body" style="font-size:17px;background:#2a0a0a;">
+              <div style="color:#d4d4d4;">&gt; assert actual == expected</div>
+              <div style="color:#f44336;font-weight:700;">E assert 4 == 5</div>
+              <div style="margin-top:8px;color:#d4d4d4;">test_failure_demo.py:5: AssertionError</div>
+            </div>
+          </div>
+          <div style="margin-top:16px;font-size:21px;color:#4caf50;font-weight:600;">pytest rewrites <code style="font-family:ui-monospace,Consolas,monospace;">assert</code> to show <em>both sides</em> — no special methods.</div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Flags -->
+      <section class="slide s-full" data-screen-label="04 Run What You Want">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">The everyday flags</div>
+        <h2 class="section-head">Run exactly the tests you want</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px 40px;max-width:1500px;font-family:ui-monospace,Consolas,monospace;">
+          <div style="display:flex;align-items:center;gap:18px;"><span style="color:var(--accent);font-size:24px;font-weight:700;min-width:170px;">pytest -v</span><span style="color:oklch(74% 0.04 255);font-size:22px;">one line per test</span></div>
+          <div style="display:flex;align-items:center;gap:18px;"><span style="color:var(--accent);font-size:24px;font-weight:700;min-width:170px;">pytest -q</span><span style="color:oklch(74% 0.04 255);font-size:22px;">quiet, compact output</span></div>
+          <div style="display:flex;align-items:center;gap:18px;"><span style="color:var(--accent);font-size:24px;font-weight:700;min-width:170px;">pytest -x</span><span style="color:oklch(74% 0.04 255);font-size:22px;">stop at first failure</span></div>
+          <div style="display:flex;align-items:center;gap:18px;"><span style="color:var(--accent);font-size:24px;font-weight:700;min-width:170px;">pytest -k "expr"</span><span style="color:oklch(74% 0.04 255);font-size:22px;">filter by name (and/or/not)</span></div>
+          <div style="display:flex;align-items:center;gap:18px;grid-column:1/-1;"><span style="color:var(--accent);font-size:24px;font-weight:700;min-width:170px;white-space:nowrap;">pytest file.py::test_x</span><span style="color:oklch(74% 0.04 255);font-size:22px;">run one specific test</span></div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1100px;"><span class="tip-icon">🔁</span><span>The everyday debug loop: <code style="font-family:ui-monospace,Consolas,monospace;color:#fff;">pytest -x -k "the_thing_im_fixing"</code></span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 raises + approx -->
+      <section class="slide s-two-col" data-screen-label="05 Two Helpers">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Two helpers you'll reach for</div>
+
+        <div>
+          <div style="font-size:30px;font-weight:800;color:var(--accent);margin-bottom:18px;">pytest.raises — expect an error</div>
+          <div class="code-block" style="font-size:19px;">
+            <div><span style="color:#c586c0;">with</span> pytest.raises(<span style="color:#4ec9b0;">ValueError</span>):</div>
+            <div style="margin-left:28px;color:#d4d4d4;"><span style="color:#dcdcaa;">int</span>(<span style="color:#ce9178;">"not a number"</span>)</div>
+          </div>
+          <div style="margin-top:16px;font-size:20px;color:oklch(74% 0.04 255);line-height:1.5;">Passes only if the block raises that error — how you verify invalid input is rejected.</div>
+        </div>
+
+        <div>
+          <div style="font-size:30px;font-weight:800;color:var(--accent);margin-bottom:18px;">pytest.approx — compare floats</div>
+          <div class="code-block" style="font-size:19px;">
+            <div><span style="color:#c586c0;">assert</span> <span style="color:#b5cea8;">0.1 + 0.2</span> == pytest.approx(<span style="color:#b5cea8;">0.3</span>)</div>
+            <div style="color:#6a9955;margin-top:6px;"># plain == 0.3 would FAIL</div>
+          </div>
+          <div style="margin-top:16px;font-size:20px;color:oklch(74% 0.04 255);line-height:1.5;">Floating-point math is inexact — never compare computed prices or totals with bare <code style="font-family:ui-monospace,Consolas,monospace;">==</code>.</div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">✅</div>
+        <h2 class="done-head">pytest,<br><span class="grad-text">in your hands</span></h2>
+        <p class="done-sub">Find tests, read failures, run exactly what you want</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Module 2</div>
+            <div class="nc-desc">Fixtures &amp; parametrize — share setup, run one test over many inputs</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🧪</div>
+            <div class="nc-title">Practice</div>
+            <div class="nc-desc">Write real product-API checks against TestMarket Lab</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🔁</div>
+            <div class="nc-title">Debug loop</div>
+            <div class="nc-desc">pytest -x -k "name" — stop fast, focus tight</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>
