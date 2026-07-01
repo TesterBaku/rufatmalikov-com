@@ -4,6 +4,7 @@ description: "Stop repeating setup: pytest fixtures (with yield teardown and sco
 ---
 
 import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
 
 In [Module 1](/en/python-sdet/module-1/) every test repeated the same lines —
 `BASE_URL`, a fresh `requests.get(...)`. That copy-paste is exactly what **fixtures** remove.
@@ -15,6 +16,8 @@ turn a pile of test functions into a maintainable suite.
 Keep TestMarket Lab running at `http://localhost:3000` and your `.venv` active.
 
 <Video title="Module 2: Fixtures & parametrize" />
+
+<Deck href="/python-sdet/decks/m2-fixtures/" title="Module 2: fixtures & parametrize at a glance — slide guide" locale="en" />
 
 ---
 

@@ -174,6 +174,11 @@
 .feature-card h3 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
 .feature-card p  { font-size: 20px; color: var(--muted); }
 
+/* Labeled spec rows (e.g. the scope ladder) — key on the left, description on the right */
+.spec-row { display: flex; align-items: center; gap: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 28px; }
+.spec-row .key { font-family: ui-monospace, Consolas, monospace; color: var(--accent); font-size: 24px; font-weight: 700; min-width: 240px; }
+.spec-row .val { color: oklch(74% 0.04 255); font-size: 22px; }
+
 /* Step layout (grid; slides set their own columns inline where needed) */
 .s-step { display: grid; grid-template-columns: 1fr 1fr; height: 100%; }
 .step-tip {

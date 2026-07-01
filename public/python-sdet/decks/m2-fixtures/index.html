@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module 2: Fixtures &amp; parametrize — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Module 2 · Python for SDETs</div>
+        <h1 class="headline"><span class="grad-text">Fixtures</span> &amp; parametrize</h1>
+        <p class="subtitle">Stop repeating setup — and run one test over many inputs</p>
+        <div class="pills">
+          <span class="pill">fixtures</span>
+          <span class="pill">yield</span>
+          <span class="pill">scope</span>
+          <span class="pill">parametrize</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 Dependency injection -->
+      <section class="slide s-full" data-screen-label="02 Dependency Injection">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Fixtures = reusable setup</div>
+        <h2 class="section-head">A test asks; pytest provides</h2>
+        <div style="display:flex;align-items:center;gap:40px;max-width:1600px;">
+          <div class="code-block" style="font-size:19px;flex:1;">
+            <div><span style="color:#d4d4d4;">@pytest.fixture</span></div>
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">base_url</span>():</div>
+            <div style="margin-left:28px;"><span style="color:#c586c0;">return</span> <span style="color:#ce9178;">"http://localhost:3000"</span></div>
+          </div>
+          <div style="font-size:40px;color:var(--accent);">→</div>
+          <div class="code-block" style="font-size:19px;flex:1;">
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_products</span>(<span style="color:#4fc1ff;">base_url</span>):</div>
+            <div style="margin-left:28px;color:#d4d4d4;">r = requests.get(<span style="color:#4fc1ff;">base_url</span> + <span style="color:#ce9178;">"/api/products"</span>)</div>
+            <div style="margin-left:28px;"><span style="color:#c586c0;">assert</span> r.status_code == <span style="color:#b5cea8;">200</span></div>
+          </div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1400px;"><span class="tip-icon">💡</span><span>The test <strong>names</strong> the fixture as a parameter; pytest runs it and <strong>injects</strong> the return value. That's dependency injection — no manual calls.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 yield: setup / teardown -->
+      <section class="slide s-full" data-screen-label="03 yield">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">yield — setup before, teardown after</div>
+        <h2 class="section-head">One function, both halves</h2>
+        <div style="display:flex;align-items:stretch;gap:0;max-width:1500px;border-radius:12px;overflow:hidden;border:1px solid var(--border);">
+          <div style="background:#1b5e20;padding:28px 36px;flex:1;">
+            <div style="color:#a5d6a7;font-size:20px;font-weight:700;letter-spacing:0.08em;margin-bottom:10px;">BEFORE yield</div>
+            <div style="color:#fff;font-size:26px;font-weight:700;">setup</div>
+            <div style="color:#c8e6c9;font-size:18px;margin-top:6px;font-family:ui-monospace,Consolas,monospace;">session = requests.Session()</div>
+          </div>
+          <div style="background:oklch(20% 0.12 265);padding:28px 36px;flex:1;border-left:2px solid var(--accent);border-right:2px solid var(--accent);">
+            <div style="color:#90caf9;font-size:20px;font-weight:700;letter-spacing:0.08em;margin-bottom:10px;">yield</div>
+            <div style="color:#fff;font-size:26px;font-weight:700;">the test runs</div>
+            <div style="color:#bbdefb;font-size:18px;margin-top:6px;font-family:ui-monospace,Consolas,monospace;">yield session</div>
+          </div>
+          <div style="background:#4a148c;padding:28px 36px;flex:1;">
+            <div style="color:#ce93d8;font-size:20px;font-weight:700;letter-spacing:0.08em;margin-bottom:10px;">AFTER yield</div>
+            <div style="color:#fff;font-size:26px;font-weight:700;">teardown</div>
+            <div style="color:#e1bee7;font-size:18px;margin-top:6px;font-family:ui-monospace,Consolas,monospace;">session.close()</div>
+          </div>
+        </div>
+        <div class="step-tip" style="margin-top:32px;max-width:1400px;"><span class="tip-icon">🛡️</span><span>Teardown runs <strong>even if the test fails</strong> — it replaces <code style="font-family:ui-monospace,Consolas,monospace;">try/finally</code> for cleanup.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Scope ladder -->
+      <section class="slide s-full" data-screen-label="04 Scope">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Scope — isolation vs speed</div>
+        <h2 class="section-head">How often a fixture runs</h2>
+        <div style="display:flex;flex-direction:column;gap:14px;max-width:1500px;">
+          <div class="spec-row"><span class="key">scope="function"</span><span class="val">once per test · the default · most isolated</span></div>
+          <div class="spec-row"><span class="key">scope="class"</span><span class="val">once per test class</span></div>
+          <div class="spec-row"><span class="key">scope="module"</span><span class="val">once per .py file</span></div>
+          <div class="spec-row"><span class="key">scope="session"</span><span class="val">once per whole run · fastest · shared state</span></div>
+        </div>
+        <div class="step-tip" style="margin-top:28px;max-width:1400px;"><span class="tip-icon">⚖️</span><span>Use the <strong>narrowest</strong> scope that's correct. Widen only for read-only or safe-to-share setup (like <code style="font-family:ui-monospace,Consolas,monospace;">base_url</code>).</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 parametrize fan-out -->
+      <section class="slide s-step" data-screen-label="05 Parametrize" style="gap:60px;padding:60px 90px;align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">One test, many inputs</div>
+
+        <div>
+          <div class="code-block" style="font-size:18px;">
+            <div><span style="color:#d4d4d4;">@pytest.mark.parametrize(</span></div>
+            <div style="margin-left:20px;color:#ce9178;">"category",</div>
+            <div style="margin-left:20px;color:#d4d4d4;">[<span style="color:#ce9178;">"electronics"</span>, <span style="color:#ce9178;">"accessories"</span>, <span style="color:#ce9178;">"furniture"</span>],</div>
+            <div><span style="color:#d4d4d4;">)</span></div>
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_category</span>(category):</div>
+            <div style="margin-left:28px;color:#6a9955;"># runs once per row</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="t-dots"><span style="background:#ff5f57;"></span><span style="background:#febc2e;"></span><span style="background:#28c840;"></span></div>
+              <span class="t-title">pytest -v</span>
+            </div>
+            <div class="terminal-body" style="font-size:16px;">
+              <div><span style="color:#4caf50;">test_category[electronics] PASSED</span></div>
+              <div><span style="color:#4caf50;">test_category[accessories] PASSED</span></div>
+              <div><span style="color:#4caf50;">test_category[furniture] PASSED</span></div>
+            </div>
+          </div>
+          <div style="margin-top:18px;font-size:21px;color:oklch(74% 0.04 255);">One function → three independent results. Add a case = add a row. Name them with <code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">ids=</code>.</div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🧩</div>
+        <h2 class="done-head">Setup, <span class="grad-text">shared &amp; clean</span></h2>
+        <p class="done-sub">Fixtures inject setup · parametrize covers the table · conftest.py shares both</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">📁</div>
+            <div class="nc-title">conftest.py</div>
+            <div class="nc-desc">Shared base_url / api / reset_db — found automatically, no import</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🏷️</div>
+            <div class="nc-title">Markers</div>
+            <div class="nc-desc">Tag tests (smoke/api) and select with -m; skip / xfail built in</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Module 3</div>
+            <div class="nc-desc">API testing with requests — every HTTP verb against the app</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>
