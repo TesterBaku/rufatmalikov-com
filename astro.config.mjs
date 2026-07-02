@@ -186,6 +186,7 @@ export default defineConfig({
 						{ label: '3 — API testing with requests', link: '/python-sdet/module-3/' },
 						{ label: '4 — Negative & validation testing', link: '/python-sdet/module-4/' },
 						{ label: '5 — Test data setup & teardown', link: '/python-sdet/module-5/' },
+						{ label: '6 — UI automation with Playwright', link: '/python-sdet/module-6/' },
 					],
 				},
 				{

@@ -1,0 +1,249 @@
+---
+title: "Module 6: UI automation with Playwright"
+description: "Drive a real browser with Playwright for Python: the page fixture, locators (get_by_test_id/role/label), actions, auto-waiting and web-first assertions, a full login flow, and seeding data via the API before a UI test — against TestMarket Lab."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+Modules 1–5 tested the API. Now we drive the **browser** — clicking, typing, and asserting what
+a real user sees — with **Playwright for Python**. You'll meet the `page` fixture, write
+**locators** against the app's `data-testid` hooks, perform **actions**, lean on Playwright's
+**auto-waiting** and web-first assertions, and finish with a real **login flow** — seeding data
+through the API (Module 5) so the UI test starts from a known state.
+
+Keep TestMarket Lab running at `http://localhost:3000` and your `.venv` active.
+
+<Video title="Module 6: UI automation with Playwright" />
+
+---
+
+## Install Playwright
+
+Playwright for Python is a separate install from `pytest`/`requests`, plus a one-time browser
+download:
+
+<Steps>
+
+1. **Install the pytest plugin** (with the venv active):
+
+   ```bash
+   pip install pytest-playwright
+   ```
+
+2. **Download the browser** (Chromium is enough for this course):
+
+   ```bash
+   playwright install chromium
+   ```
+
+3. **Pin it** so CI and teammates get the same setup:
+
+   ```bash
+   pip freeze > requirements.txt
+   ```
+
+</Steps>
+
+`pytest-playwright` gives every test a ready-to-use **`page`** fixture — a fresh browser tab,
+opened and closed for you. Tests run **headless** (no visible window) by default; add
+`--headed` to watch, or `--slowmo 500` to slow it down while debugging.
+
+**Remember:** `pip install pytest-playwright` + `playwright install chromium`, then request the
+**`page`** fixture. Headless by default; `--headed`/`--slowmo` to watch.
+
+---
+
+## Your first browser test
+
+Navigate with `page.goto(...)` and assert with `expect(...)`. Playwright's `expect` is
+**web-first**: it automatically waits and retries until the assertion passes or times out.
+
+```python
+# tests/test_first_browser.py
+import re
+from playwright.sync_api import expect
+
+
+def test_products_page_loads(page, base_url):
+    page.goto(f"{base_url}/products")
+    expect(page).to_have_title(re.compile("TestMarket Lab"))
+    expect(page.get_by_test_id("product-card").first).to_be_visible()
+```
+
+`base_url` is the fixture from your Module 2 `conftest.py`; `page` comes from
+`pytest-playwright`. No `browser` setup, no teardown — the fixture handles it.
+
+**Remember:** `page.goto(url)` navigates; `expect(page)` / `expect(locator)` assert with
+automatic waiting. A test just needs the `page` fixture — the browser tab is managed for you.
+
+---
+
+## Locators: how you find elements
+
+A **locator** describes an element; Playwright resolves it *when you act*, so it always targets
+the current DOM. Prefer locators tied to meaning or test hooks over brittle CSS. TestMarket Lab
+ships `data-testid` attributes for exactly this:
+
+```python
+page.get_by_test_id("login-submit")     # data-testid="login-submit"
+page.get_by_test_id("product-card")     # every product card
+page.get_by_role("button", name="Log In")   # by ARIA role + accessible name
+page.get_by_label("Email")              # the input labelled "Email"
+page.get_by_text("Wireless Mouse")      # by visible text
+```
+
+`get_by_test_id` is the most robust (a test hook that survives restyling); `get_by_role` and
+`get_by_label` double as accessibility checks; `get_by_text` is handy but the most fragile.
+
+**Remember:** locate by intent — `get_by_test_id` (test hooks), `get_by_role`/`get_by_label`
+(also a11y), `get_by_text` (last resort). Locators are lazy: they resolve when you act, so they
+never go stale.
+
+---
+
+## Actions
+
+Actions do what a user does — and each **auto-waits** for the element to be ready (visible,
+enabled) before acting. No `sleep`:
+
+```python
+page.goto(f"{base_url}/auth/login")           # navigate
+page.get_by_label("Email").fill("customer@test.io")     # type
+page.get_by_label("Password").fill("customer123")
+page.get_by_test_id("login-submit").click()             # click
+```
+
+Other everyday actions: `.check()` / `.uncheck()` (checkboxes), `.select_option(...)`
+(dropdowns), `.press("Enter")` (keys), `.hover()`.
+
+**Remember:** `.fill()`, `.click()`, `.select_option()`, `.check()`, `.press()` each auto-wait
+for the element to be actionable first — so you never sprinkle `sleep()` to "let the page catch
+up."
+
+---
+
+## Auto-waiting & web-first assertions
+
+The #1 source of flaky UI tests is racing the page. Playwright removes it two ways: **actions**
+wait for elements to be actionable, and **`expect`** assertions **retry** for a few seconds
+until true. So you assert the *end state* and let Playwright wait for it:
+
+```python
+# tests/test_auto_wait.py
+import requests
+from playwright.sync_api import expect
+
+
+def test_search_filters_the_list(page, base_url):
+    requests.post(f"{base_url}/api/reset")        # known seed, so the count is deterministic
+    page.goto(f"{base_url}/products")
+    page.get_by_test_id("search-input").fill("keyboard")
+    page.get_by_test_id("apply-filters").click()
+
+    # no sleep — expect retries until the filtered list has settled
+    expect(page.get_by_test_id("product-card")).to_have_count(1)
+    expect(page.get_by_text("Mechanical Keyboard")).to_be_visible()
+```
+
+Common web-first assertions: `to_be_visible()` / `not_to_be_visible()`, `to_have_text(...)`, `to_have_count(n)`,
+`to_have_value(...)`, `to_be_enabled()`, and on the page `expect(page).to_have_url(...)` /
+`to_have_title(...)`.
+
+**Remember:** never `sleep`. Actions auto-wait to *act*; `expect(...)` auto-retries to *assert*.
+Write the expected end state and let Playwright wait for it — that's what kills flakiness.
+
+---
+
+## A login flow
+
+Put actions and assertions together to test signing in. After a valid login, TestMarket Lab
+redirects home, shows a success flash, and the header swaps Login for Logout:
+
+```python
+# tests/test_login_ui.py
+from playwright.sync_api import expect
+
+
+def test_login_succeeds(page, base_url):
+    page.goto(f"{base_url}/auth/login")
+    page.get_by_label("Email").fill("customer@test.io")
+    page.get_by_label("Password").fill("customer123")
+    page.get_by_test_id("login-submit").click()
+
+    expect(page).to_have_url(f"{base_url}/")                       # redirected home
+    expect(page.get_by_test_id("flash-success")).to_contain_text("Logged in")
+    expect(page.get_by_test_id("nav-logout")).to_be_visible()     # now signed in
+```
+
+**Remember:** a UI flow is *navigate → act → assert the visible outcome*. Assert what the user
+would see (a success message, the logged-in nav) — not internal state.
+
+---
+
+## Seed via API, verify via UI
+
+UI setup is slow and brittle. The professional pattern (Module 5) is to **arrange through the
+API**, then **verify in the browser**. Reset to the 15-product seed with `requests`, then check
+the page renders all 15:
+
+```python
+# tests/test_seed_then_ui.py
+import requests
+from playwright.sync_api import expect
+
+
+def test_products_page_shows_the_seed(page, base_url):
+    requests.post(f"{base_url}/api/reset")            # arrange: known 15-product state (API)
+
+    page.goto(f"{base_url}/products")                 # verify: the UI renders them
+    expect(page.get_by_test_id("product-card")).to_have_count(15)
+```
+
+The count is reliable *because* the test reset first — without it, data left by other tests
+would change what the page shows. Fast API setup, real browser verification.
+
+**Remember:** seed state through the **API**, then assert the **UI** — the hybrid pattern gives
+fast, deterministic setup with real end-to-end coverage. A UI count/list test is only stable if
+its data is controlled first.
+
+---
+
+## Exercises
+
+Work in your `python-sdet` project with TestMarket Lab running and `pytest-playwright` installed.
+Run with `pytest -v` (add `--headed` to watch).
+
+### Exercise 1 — First navigation (5 min)
+
+Write a test that goes to `/products` and asserts the page title contains `TestMarket Lab` and
+at least one `product-card` is visible.
+
+### Exercise 2 — Locators tour (10 min)
+
+On `/auth/login`, locate the email input three ways — `get_by_label("Email")`,
+`get_by_role("textbox", name="Email")`, and `page.locator("#email")` — and assert each
+`to_be_visible()`. Note which you'd prefer and why.
+
+### Exercise 3 — Search filter (10 min)
+
+`POST /api/reset` for a known count, go to `/products`, type `keyboard` into the search box
+(`search-input`), click `apply-filters`, and assert exactly one `product-card` remains and
+"Mechanical Keyboard" is visible.
+
+### Exercise 4 — Login flow (15 min)
+
+Automate a valid login (`customer@test.io` / `customer123`). Assert the URL is the home page,
+the `flash-success` contains "Logged in", and `nav-logout` is visible. Then try a **wrong**
+password and assert `flash-error` appears instead.
+
+### Bonus — Seed then verify
+
+`POST /api/reset`, then load `/products` and assert exactly 15 `product-card`s. Change the reset
+to add a product first (via `POST /api/products`) and confirm the count becomes 16 — proving the
+UI reflects the API-seeded state.
+
+---
+
+In **Module 7** we tame growing UI tests with the **Page Object Model** — wrapping each page's
+locators and actions in a class so tests read like scenarios and selectors live in one place.
