@@ -64,10 +64,13 @@ python-sdet/
 ```
 
 ```ini
-# pytest.ini
+# pytest.ini  (extend the file from Module 0/2 — don't drop your markers)
 [pytest]
 testpaths = tests
-pythonpath = .            # so `pages` is importable from tests
+pythonpath = .            # NEW: so `pages` is importable from tests
+markers =                 # from Module 2 — keep these
+    smoke: a fast, critical subset to run first
+    api: tests that hit the REST API
 ```
 
 **Remember:** page objects live in a `pages/` package beside `tests/`; `pythonpath = .` in
@@ -105,7 +108,9 @@ class LoginPage:
 If the login selectors ever change, you edit them **here** — not in the tests.
 
 **Remember:** a page object wraps `page`, holds locators as attributes, and exposes user
-actions as methods. Return `self` from navigation/step methods so calls can chain.
+actions as methods. Return `self` from methods that keep you on the same page (like `goto`) so
+calls can chain; a method that navigates *away* returns the next page object (or nothing) —
+which is why `login()` here returns nothing.
 
 ---
 
@@ -185,12 +190,15 @@ Page objects compose — a scenario spanning two pages reads as a story:
 
 ```python
 # tests/test_login_then_browse.py
+import requests
 from playwright.sync_api import expect
 from pages.login_page import LoginPage
 from pages.products_page import ProductsPage
 
 
 def test_login_then_browse(page, base_url):
+    requests.post(f"{base_url}/api/reset")                      # known seed (Module 5/6 rule)
+
     LoginPage(page, base_url).goto().login("customer@test.io", "customer123")
     expect(page.get_by_test_id("nav-logout")).to_be_visible()   # signed in
 
@@ -198,8 +206,9 @@ def test_login_then_browse(page, base_url):
     expect(products.cards.first).to_be_visible()                # products render
 ```
 
-Every selector for both pages lives in `pages/` — the test is pure scenario. That separation is
-what keeps a large UI suite maintainable.
+Each page's **actions and their selectors** live in `pages/`, so the test reads as the
+scenario — with just a couple of locators inline for the outcomes it asserts (`nav-logout`,
+`cards`). That separation is what keeps a large UI suite maintainable.
 
 **Remember:** POM's payoff scales — selectors in `pages/`, scenarios in `tests/`. When the UI
 changes you fix one page object; when you write a new test you compose existing ones.
@@ -213,7 +222,7 @@ Work in your `python-sdet` project (with `pages/` and `pythonpath = .` set up). 
 
 ### Exercise 1 — Set up the layout (5 min)
 
-Create the `pages/` package (`__init__.py`) next to `tests/`, and add `pythonpath = .` to
+Add the `pages/` package (`__init__.py`) next to `tests/`, and set `pythonpath = .` in
 `pytest.ini`. Confirm a trivial `from pages... import` works from a test.
 
 ### Exercise 2 — `LoginPage` (15 min)
