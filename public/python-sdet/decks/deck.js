@@ -34,9 +34,10 @@
       }
       function onKey(e) {
         var t = e.target;
-        // Skip when a form field OR a nav button is focused, so the button's own
-        // Space/Enter activation works (and Space doesn't hijack it to go forward).
-        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON' || t.isContentEditable)) return;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        // When a nav button is focused, let its own Space/Enter activation run instead of
+        // Space advancing the deck — but still allow arrows/Home/End to navigate.
+        if (t && t.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
         if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(idx + 1); }
         else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(idx - 1); }
         else if (e.key === 'Home') { e.preventDefault(); go(0); }
