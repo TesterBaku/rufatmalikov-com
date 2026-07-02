@@ -161,18 +161,18 @@ product a unique name so they never collide:
 @pytest.fixture
 def make_product(reset_db, base_url, api):
     """Return a factory that makes products with unique names."""
-    made = []
+    count = 0
 
     def _make(**overrides):
+        nonlocal count
+        count += 1
         payload = {
-            "name": f"Widget {len(made) + 1}",   # unique per call
+            "name": f"Widget {count}",           # unique per call
             "price": 9.99,
             "category": "electronics",
         }
         payload.update(overrides)                # let callers override any field
-        product = api.post(f"{base_url}/api/products", json=payload).json()
-        made.append(product)
-        return product
+        return api.post(f"{base_url}/api/products", json=payload).json()
 
     return _make
 ```
@@ -199,8 +199,8 @@ resources. Generate unique values (names/ids) inside it so repeated calls don't 
 
 Because `reset_db` reseeds **before** each test, most suites don't need explicit teardown — the
 next test wipes the slate itself. If a suite *doesn't* reset, clean up what you made instead:
-`DELETE` the resource after `yield` (the pattern from Module 3), so the data doesn't leak into
-later tests.
+`DELETE` the resource after a `yield` (Module 2's yield-teardown, with Module 3's `DELETE`), so
+the data doesn't leak into later tests.
 
 **Remember:** reseeding *before* each test usually makes teardown unnecessary. Without a reset,
 tear down your own data (`DELETE` after `yield`) so it can't pollute other tests.
@@ -245,8 +245,9 @@ Work in your `python-sdet` project with TestMarket Lab running. Run with `pytest
 ### Exercise 1 — Prove isolation (10 min)
 
 Write two tests: the first adds a product; the second asserts `GET /api/products` returns
-exactly 15. Make them pass **in any order** by giving the adding test `reset_db` (or making
-reset `autouse`). Confirm removing the reset makes the second test flaky.
+exactly 15. Make them pass **in any order** by giving the **counting** test `reset_db` (so it
+always starts from the 15-product seed) — or by making reset `autouse`. Confirm that without
+the reset the counting test is flaky (it sees 16 if the adding test ran first).
 
 ### Exercise 2 — A `product` fixture (10 min)
 
