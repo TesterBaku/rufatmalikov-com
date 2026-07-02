@@ -73,9 +73,10 @@ markers =
     api: tests that hit the REST API
 ```
 
-The new line is `pythonpath = .` (it puts the project root on `sys.path`). Keep your existing
-`markers` — and don't put `#` comments at the end of a value line: pytest's ini parser doesn't
-strip inline comments, so they'd become part of the value.
+The new line is `pythonpath = .` (it puts the project root on `sys.path`; it needs **pytest ≥
+7.0**, which this course already uses). Keep your existing `markers` — and don't put `#`
+comments at the end of a value line: pytest's ini parser doesn't strip inline comments, so
+they'd become part of the value.
 
 **Remember:** page objects live in a `pages/` package beside `tests/`; `pythonpath = .` in
 `pytest.ini` puts the project root on `sys.path` so tests can `import pages`.
