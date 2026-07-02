@@ -251,31 +251,34 @@ crash) instead of a proper `409`/`400`. That's exactly the kind of bug negative 
 to surface.
 
 Don't delete the finding — **encode it** with `xfail` (Module 2), asserting the behavior you
-*want*. It stays green as a known issue, and the day the bug is fixed it flips to **XPASS**,
-reminding you to remove the marker:
+*want*, and mark it **`strict=True`**. It stays green as a known issue today; the day the bug
+is fixed the test **XPASSes and fails the run** — forcing you to delete the now-stale marker
+(a plain, non-strict `xfail` would let the fix slip by as a silent summary line):
 
 ```python
 # tests/test_known_bugs.py
 import pytest
-import requests
 
 
-@pytest.mark.xfail(reason="BUG: duplicate product name returns 500 instead of 409")
+# strict=True: when the bug is fixed, this XPASSes and FAILS the run, so the
+# stale marker can't linger. Keep the marker focused on the one buggy assertion.
+@pytest.mark.xfail(reason="BUG: duplicate product name returns 500 instead of 409", strict=True)
 def test_duplicate_product_name_should_conflict(reset_db, base_url, api):
     payload = {"name": "Repeat Item", "price": 9.99, "category": "electronics"}
-    first = api.post(f"{base_url}/api/products", json=payload)
-    assert first.status_code == 201                 # first one is fine
+    api.post(f"{base_url}/api/products", json=payload)   # arrange: this name now exists
 
     duplicate = api.post(f"{base_url}/api/products", json=payload)
-    assert duplicate.status_code == 409             # what SHOULD happen (today it's 500)
+    assert duplicate.status_code == 409                  # what SHOULD happen (today it's 500)
 ```
 
 This test **writes** (it adds a product), so it takes `reset_db` from your Module 2
-`conftest.py` to stay re-runnable.
+`conftest.py` to stay re-runnable. The arrange `POST` isn't asserted — only the duplicate is,
+so the `xfail` stays scoped to the actual bug and won't mask an unrelated regression.
 
-**Remember:** when you find a bug, capture it as an `xfail` test that asserts the *correct*
-behavior with a `reason`. It documents the defect, keeps the suite green, and auto-alerts you
-(XPASS) when it's fixed — far better than a comment or a deleted test.
+**Remember:** capture a known bug as a **`strict=True`** `xfail` test that asserts the
+*correct* behavior with a `reason`, keeping the marker on just the buggy assertion. It
+documents the defect, keeps the suite green today, and **fails loudly the moment the fix
+lands** — far better than a comment or a deleted test.
 
 ---
 
