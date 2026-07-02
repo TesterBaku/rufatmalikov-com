@@ -47,7 +47,8 @@ name: tests
 
 on:
   push:
-  pull_request:
+    branches: [main]      # pushes to main
+  pull_request:           # and every PR (feature branches run here, not twice)
 
 jobs:
   test:
@@ -60,6 +61,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"      # cache pip downloads between runs
 
       - name: Set up Node (for TestMarket Lab)
         uses: actions/setup-node@v4
@@ -82,9 +84,11 @@ jobs:
       - name: Wait for the app
         run: |
           for i in $(seq 1 30); do
-            curl -sf http://localhost:3000/api/products && break
+            curl -sf http://localhost:3000/api/products && exit 0
             sleep 1
           done
+          echo "TestMarket Lab did not start in time" >&2
+          exit 1
 
       - name: Run the tests
         run: pytest -ra --html=report.html --self-contained-html
@@ -104,17 +108,19 @@ jobs:
 
 ## Walking through the steps
 
-<div></div>
-
-- **`on: push` / `pull_request`** — run the job on every push and every PR.
+- **`on: push` (main) / `pull_request`** — run on pushes to `main` and on every PR. (Scoping
+  `push` to `main` avoids a feature-branch push *and* its PR both triggering a full run.)
 - **`actions/checkout@v4`** — clone *your* test repo into the runner.
 - **`setup-python@v5` / `setup-node@v4`** — install the two runtimes (Node is only there to run
-  TestMarket Lab).
-- **`pip install -r requirements.txt`** — the deps you pinned in Module 0 (`pytest`, `requests`,
-  `pytest-playwright`, `pytest-html`).
+  TestMarket Lab). `cache: "pip"` reuses downloaded wheels between runs.
+- **`pip install -r requirements.txt`** — your pinned deps. Make sure `requirements.txt` lists
+  *everything* you've installed — `pytest`/`requests` (Module 0), `pytest-playwright` (Module 6),
+  `pytest-html` (Module 9) — by re-running `pip freeze > requirements.txt` after each new install.
+  If `pytest-html` is missing, the `--html` step fails on CI.
 - **`playwright install --with-deps chromium`** — download the browser *and* its Linux system
   libraries (`--with-deps`), which the headless runner needs.
-- **Start TestMarket Lab** — clone it, `npm install`, and launch it in the background (`&`).
+- **Start TestMarket Lab** — clone it, `npm install`, and launch it in the background (`&`). (Clone
+  a pinned tag/commit if you want CI insulated from upstream changes to the app.)
 - **Wait for the app** — poll `/api/products` until it answers, so tests don't start before the
   server is up.
 - **Run the tests** — `pytest` with the report flags from Module 9.
@@ -131,13 +137,15 @@ details that trip people up.
 
 `npm start &` returns immediately — the server is still booting. If `pytest` runs before the app
 answers, every test fails with `Connection refused`. The loop polls until `/api/products`
-responds (or gives up after ~30s), so the suite starts against a ready app:
+responds (exiting `0`), or **fails the step** after ~30s so a server that never started is
+reported as such — instead of hiding behind a wall of connection errors in the test step:
 
 ```bash
 for i in $(seq 1 30); do
-  curl -sf http://localhost:3000/api/products && break   # -f: fail on non-2xx
+  curl -sf http://localhost:3000/api/products && exit 0   # -f: non-zero on HTTP 4xx/5xx
   sleep 1
 done
+echo "app did not start" >&2 && exit 1                     # timed out -> fail the step
 ```
 
 This is the CI version of "keep TestMarket Lab running in its own terminal" from Module 0 — the
