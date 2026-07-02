@@ -1,0 +1,202 @@
+---
+title: "Module 9: Reporting & suite structure"
+description: "Make a suite legible to a team: HTML reports with pytest-html, selecting and grouping tests with markers, organizing tests into folders with shared fixtures, and report-friendly flags — against TestMarket Lab."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+A suite you keep to yourself just needs to pass. A suite you hand to a **team** also needs to be
+**legible**: a shareable report of what ran, a way to run just the *smoke* subset, and a folder
+layout that scales past a dozen files. This module covers reporting with `pytest-html`, selecting
+tests with markers, and structuring a suite.
+
+Keep TestMarket Lab running at `http://localhost:3000` and your `.venv` active.
+
+<Video title="Module 9: Reporting & suite structure" />
+
+---
+
+## HTML reports with pytest-html
+
+`pytest`'s terminal output is fine for you; a **report file** is what you share with a team or
+attach to a CI run. `pytest-html` produces a single self-contained HTML file:
+
+<Steps>
+
+1. **Install it:**
+
+   ```bash
+   pip install pytest-html
+   ```
+
+2. **Run with a report:**
+
+   ```bash
+   pytest --html=report.html --self-contained-html
+   ```
+
+</Steps>
+
+`report.html` lists every test with its outcome, duration, and captured output — pass/fail at a
+glance, with the failing tests' tracebacks inline. `--self-contained-html` inlines the CSS/JS so
+the one file is emailable or uploadable as a CI artifact.
+
+**Remember:** `pip install pytest-html`, then `pytest --html=report.html --self-contained-html`
+for a single shareable report file — the artifact you attach to a CI run or send to a teammate.
+
+---
+
+## Select and group with markers
+
+Markers (Module 2) tag tests so you can run a **subset**. Register your marker names in
+`pytest.ini` (comments on their own lines — `pytest.ini` doesn't support inline `#` comments),
+then tag and select:
+
+```ini
+# pytest.ini
+[pytest]
+testpaths = tests
+markers =
+    smoke: a fast, critical subset to run first
+    api: tests that hit the REST API
+    ui: tests that drive the browser
+```
+
+```python
+import pytest
+
+
+@pytest.mark.smoke
+@pytest.mark.api
+def test_products_endpoint_up():
+    ...
+```
+
+```bash
+pytest -m smoke                 # only smoke tests
+pytest -m "api and not smoke"   # api tests that aren't smoke
+pytest -m ui                    # only browser tests
+```
+
+A `smoke` subset that runs in seconds is the standard "did we break anything critical?" gate —
+run it on every push, the full suite less often.
+
+**Remember:** register markers in `pytest.ini`, tag tests with `@pytest.mark.<name>`, and select
+with `-m` (which supports `and`/`or`/`not`). A fast `smoke` subset is your everyday sanity gate.
+
+---
+
+## Structuring the suite
+
+Past a handful of files, group tests by area and let each area share fixtures through its own
+`conftest.py`:
+
+```
+python-sdet/
+├── tests/
+│   ├── conftest.py          # shared fixtures (base_url, api, reset_db)
+│   ├── api/
+│   │   ├── conftest.py      # API-only fixtures
+│   │   └── test_products.py
+│   └── ui/
+│       ├── conftest.py      # UI-only fixtures
+│       └── test_login.py
+└── pytest.ini
+```
+
+pytest loads **every** `conftest.py` on the path to a test, so a fixture in `tests/conftest.py`
+is available everywhere, while one in `tests/ui/conftest.py` is scoped to UI tests. This keeps
+shared setup central and area-specific setup local.
+
+**Remember:** organize tests into per-area folders; put shared fixtures in the top `conftest.py`
+and area-specific fixtures in a nested one. pytest auto-discovers each `conftest.py` on the path
+to a test — no imports.
+
+---
+
+## Report-friendly flags
+
+A few flags make runs (and CI logs) far more legible:
+
+```bash
+pytest -ra                 # summary of all non-passing outcomes (skips, xfails, errors)
+pytest --tb=short          # compact tracebacks
+pytest --durations=10      # the 10 slowest tests — find what to speed up
+pytest -q                  # quiet: one char per test
+```
+
+`-ra` is especially valuable in CI: it surfaces every skip and `xfail` at the end, so a silently
+skipped test can't hide. `--durations` points you at the slow tests worth optimizing.
+
+**Remember:** `-ra` (surface skips/xfails/errors), `--tb=short` (compact failures), and
+`--durations=N` (slowest tests) turn a wall of output into a readable summary — set them in CI.
+
+---
+
+## Richer reports: Allure
+
+For a polished, historical dashboard (trends across runs, steps, attachments), **Allure** is the
+common upgrade: `pip install allure-pytest`, run `pytest --alluredir=allure-results`, then render
+with the separate Allure command-line tool. It's heavier (a Java-based CLI) than `pytest-html`,
+so reach for it when a team wants dashboards and history rather than a single file.
+
+**Remember:** `pytest-html` is the zero-friction single-file report; **Allure** adds dashboards,
+trends, and step detail at the cost of a separate CLI. Start with `pytest-html`; adopt Allure when
+the team needs history.
+
+---
+
+## Putting it together
+
+A CI-style command: run only the smoke subset, produce a shareable report, and summarize
+everything non-passing:
+
+```bash
+pytest -m smoke --html=smoke-report.html --self-contained-html -ra --tb=short
+```
+
+That single line is a realistic "gate" step — fast subset, an artifact to attach, and a clean
+summary of anything that didn't pass. Module 10 wires exactly this into GitHub Actions.
+
+**Remember:** a good gate command combines a marker (`-m smoke`), a report (`--html …
+--self-contained-html`), and a summary (`-ra`). Legible input and legible output are what make a
+suite a *team* asset.
+
+---
+
+## Exercises
+
+Work in your `python-sdet` project with TestMarket Lab running. Run with `pytest -v`.
+
+### Exercise 1 — Generate a report (5 min)
+
+`pip install pytest-html`, then run `pytest --html=report.html --self-contained-html`. Open
+`report.html` in a browser and find a test's duration and outcome.
+
+### Exercise 2 — A smoke subset (10 min)
+
+Register `smoke` in `pytest.ini`, tag two fast tests `@pytest.mark.smoke`, and confirm
+`pytest -m smoke` runs only those two. Then run `pytest -m "not smoke"` and confirm it runs the
+rest.
+
+### Exercise 3 — Reorganize (15 min)
+
+Move your API tests into `tests/api/` and any UI tests into `tests/ui/`, each with a
+`conftest.py`. Confirm the suite still passes and that a fixture in `tests/conftest.py` is usable
+from both areas.
+
+### Exercise 4 — Report-friendly run (5 min)
+
+Run `pytest -ra --durations=5`. Identify your slowest test and read the end-of-run summary of any
+skips/xfails.
+
+### Bonus — The gate command
+
+Assemble a single command that runs only `smoke`, writes a self-contained HTML report, and prints
+a non-passing summary. This is your Module 10 CI step in miniature.
+
+---
+
+In **Module 10** we put the suite in **CI** — a GitHub Actions workflow that installs the tools,
+starts TestMarket Lab, runs the tests on every push and pull request, and uploads the report.
