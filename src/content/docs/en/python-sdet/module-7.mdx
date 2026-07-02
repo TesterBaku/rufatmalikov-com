@@ -1,0 +1,244 @@
+---
+title: "Module 7: Page Object Model in Python"
+description: "Tame growing UI tests with the Page Object Model: wrap each page's locators and actions in a class so selectors live in one place and tests read like scenarios — Playwright for Python against TestMarket Lab."
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+The Module 6 tests worked, but imagine fifty of them: the same `get_by_label("Email")` and
+`get_by_test_id("login-submit")` copy-pasted everywhere. Change one selector and you edit
+dozens of tests. The **Page Object Model (POM)** fixes this: each page becomes a **class** that
+holds its locators and actions, so selectors live in *one* place and tests read like the
+scenario they describe.
+
+Keep TestMarket Lab running at `http://localhost:3000`, your `.venv` active, and
+`pytest-playwright` installed (Module 6).
+
+<Video title="Module 7: Page Object Model in Python" />
+
+---
+
+## The problem: selectors scattered across tests
+
+Two tests that both log in repeat the same three locators and the same steps:
+
+```python
+def test_a(page, base_url):
+    page.goto(f"{base_url}/auth/login")
+    page.get_by_label("Email").fill("customer@test.io")
+    page.get_by_label("Password").fill("customer123")
+    page.get_by_test_id("login-submit").click()
+    # ...
+
+def test_b(page, base_url):
+    page.goto(f"{base_url}/auth/login")               # same four lines again
+    page.get_by_label("Email").fill("customer@test.io")
+    page.get_by_label("Password").fill("customer123")
+    page.get_by_test_id("login-submit").click()
+    # ...
+```
+
+When the login form changes, you hunt down every copy. POM moves those locators and steps into
+a `LoginPage` class that every test reuses.
+
+**Remember:** duplicated locators/steps across tests are a maintenance trap — one UI change
+means many edits. A page object centralizes a page's selectors and actions so tests share them.
+
+---
+
+## Project layout
+
+Put page objects in a `pages/` package next to `tests/`, and tell pytest to add the project
+root to the import path so `from pages... import ...` works:
+
+```
+python-sdet/
+├── pages/
+│   ├── __init__.py
+│   ├── login_page.py
+│   └── products_page.py
+├── tests/
+│   ├── conftest.py
+│   └── test_*.py
+└── pytest.ini
+```
+
+```ini
+# pytest.ini
+[pytest]
+testpaths = tests
+pythonpath = .            # so `pages` is importable from tests
+```
+
+**Remember:** page objects live in a `pages/` package beside `tests/`; `pythonpath = .` in
+`pytest.ini` puts the project root on `sys.path` so tests can `import pages`.
+
+---
+
+## Your first page object
+
+A page object takes the Playwright `page`, stores the page's **locators** as attributes, and
+exposes **actions** as methods. Locators are lazy, so building them in `__init__` is fine — they
+resolve when used:
+
+```python
+# pages/login_page.py
+class LoginPage:
+    def __init__(self, page, base_url):
+        self.page = page
+        self.base_url = base_url
+        # locators — the page's selectors, in ONE place
+        self.email = page.get_by_label("Email")
+        self.password = page.get_by_label("Password")
+        self.submit = page.get_by_test_id("login-submit")
+
+    def goto(self):
+        self.page.goto(f"{self.base_url}/auth/login")
+        return self                     # return self so calls can chain
+
+    def login(self, email, password):
+        self.email.fill(email)
+        self.password.fill(password)
+        self.submit.click()
+```
+
+If the login selectors ever change, you edit them **here** — not in the tests.
+
+**Remember:** a page object wraps `page`, holds locators as attributes, and exposes user
+actions as methods. Return `self` from navigation/step methods so calls can chain.
+
+---
+
+## Using it in a test
+
+The test now reads like the scenario, with no raw selectors:
+
+```python
+# tests/test_login_pom.py
+from playwright.sync_api import expect
+from pages.login_page import LoginPage
+
+
+def test_login_with_page_object(page, base_url):
+    LoginPage(page, base_url).goto().login("customer@test.io", "customer123")
+    expect(page.get_by_test_id("nav-logout")).to_be_visible()
+```
+
+Compare that one line of intent to the four lines of locators it replaces. Assertions usually
+stay in the **test** (what you're verifying); the page object owns the **how** (finding and
+driving elements).
+
+**Remember:** tests call page-object methods (`login(...)`), not raw locators — they read as
+intent. Keep *assertions* in the test; keep *element interaction* in the page object.
+
+---
+
+## A second page object
+
+The same shape gives you a `ProductsPage`. Actions that lead somewhere return `self` (or another
+page object) so you can chain:
+
+```python
+# pages/products_page.py
+class ProductsPage:
+    def __init__(self, page, base_url):
+        self.page = page
+        self.base_url = base_url
+        self.search_input = page.get_by_test_id("search-input")
+        self.apply = page.get_by_test_id("apply-filters")
+        self.cards = page.get_by_test_id("product-card")   # a locator for all cards
+
+    def goto(self):
+        self.page.goto(f"{self.base_url}/products")
+        return self
+
+    def search(self, term):
+        self.search_input.fill(term)
+        self.apply.click()
+        return self
+```
+
+```python
+# tests/test_products_pom.py
+import requests
+from playwright.sync_api import expect
+from pages.products_page import ProductsPage
+
+
+def test_search_with_page_object(page, base_url):
+    requests.post(f"{base_url}/api/reset")             # known seed -> deterministic count
+    products = ProductsPage(page, base_url).goto().search("keyboard")
+    expect(products.cards).to_have_count(1)
+```
+
+Note `self.cards` is a **locator** exposed as an attribute — the test asserts on it directly
+(`expect(products.cards)`), while the *how* of finding cards stays in the page object.
+
+**Remember:** each page gets its own object with the same shape (locators + action methods).
+Exposing a key locator (like `cards`) lets tests assert on it without re-declaring the selector.
+
+---
+
+## Putting it together
+
+Page objects compose — a scenario spanning two pages reads as a story:
+
+```python
+# tests/test_login_then_browse.py
+from playwright.sync_api import expect
+from pages.login_page import LoginPage
+from pages.products_page import ProductsPage
+
+
+def test_login_then_browse(page, base_url):
+    LoginPage(page, base_url).goto().login("customer@test.io", "customer123")
+    expect(page.get_by_test_id("nav-logout")).to_be_visible()   # signed in
+
+    products = ProductsPage(page, base_url).goto()
+    expect(products.cards.first).to_be_visible()                # products render
+```
+
+Every selector for both pages lives in `pages/` — the test is pure scenario. That separation is
+what keeps a large UI suite maintainable.
+
+**Remember:** POM's payoff scales — selectors in `pages/`, scenarios in `tests/`. When the UI
+changes you fix one page object; when you write a new test you compose existing ones.
+
+---
+
+## Exercises
+
+Work in your `python-sdet` project (with `pages/` and `pythonpath = .` set up). Run with
+`pytest -v`.
+
+### Exercise 1 — Set up the layout (5 min)
+
+Create the `pages/` package (`__init__.py`) next to `tests/`, and add `pythonpath = .` to
+`pytest.ini`. Confirm a trivial `from pages... import` works from a test.
+
+### Exercise 2 — `LoginPage` (15 min)
+
+Build `pages/login_page.py` with `email`/`password`/`submit` locators, a `goto()` that returns
+`self`, and a `login(email, password)` method. Write a test that logs in and asserts
+`nav-logout` is visible.
+
+### Exercise 3 — `ProductsPage` (15 min)
+
+Build `pages/products_page.py` with a `goto()`, a `search(term)`, and a `cards` locator. Write a
+test that (after `POST /api/reset`) searches "keyboard" and asserts `cards` has count 1.
+
+### Exercise 4 — Compose (10 min)
+
+Write one test that uses **both** page objects: log in with `LoginPage`, then open
+`ProductsPage` and assert at least one card is visible.
+
+### Bonus — A negative login method
+
+Add a test that uses `LoginPage.login()` with a **wrong** password and asserts `flash-error` is
+visible. Did you need to change the page object at all? (You shouldn't — the same `login()`
+drives both paths.)
+
+---
+
+In **Module 8** we make tests **data-driven** — feeding page objects and API calls from tables
+and external files (CSV/JSON) with `parametrize`, so one test body covers many cases.
