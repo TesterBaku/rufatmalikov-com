@@ -109,7 +109,9 @@ jobs:
 ## Walking through the steps
 
 - **`on: push` (main) / `pull_request`** — run on pushes to `main` and on every PR. (Scoping
-  `push` to `main` avoids a feature-branch push *and* its PR both triggering a full run.)
+  `push` to `main` avoids a feature-branch push *and* its PR both triggering a full run — a
+  feature branch still gets CI as soon as you open its PR. Drop the `branches:` filter if you
+  want *every* branch push to run, too.)
 - **`actions/checkout@v4`** — clone *your* test repo into the runner.
 - **`setup-python@v5` / `setup-node@v4`** — install the two runtimes (Node is only there to run
   TestMarket Lab). `cache: "pip"` reuses downloaded wheels between runs.
@@ -145,7 +147,8 @@ for i in $(seq 1 30); do
   curl -sf http://localhost:3000/api/products && exit 0   # -f: non-zero on HTTP 4xx/5xx
   sleep 1
 done
-echo "app did not start" >&2 && exit 1                     # timed out -> fail the step
+echo "TestMarket Lab did not start in time" >&2           # timed out -> fail the step
+exit 1
 ```
 
 This is the CI version of "keep TestMarket Lab running in its own terminal" from Module 0 — the
