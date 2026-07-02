@@ -40,7 +40,8 @@
         else if (e.key === 'Home') { e.preventDefault(); go(0); }
         else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
       }
-      window.addEventListener('keydown', onKey, true);
+      // Bind once (document, capture phase). Binding to BOTH window and document
+      // fired onKey twice per keypress, so arrows advanced two slides at a time.
       document.addEventListener('keydown', onKey, true);
       if (prev) prev.addEventListener('click', function () { go(idx - 1); });
       if (next) next.addEventListener('click', function () { go(idx + 1); });
