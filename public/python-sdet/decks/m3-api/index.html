@@ -61,26 +61,10 @@
         <div class="kicker-label">Each verb, its success status</div>
         <h2 class="section-head">The four HTTP verbs</h2>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;max-width:1600px;">
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:30px;">
-            <div style="font-size:30px;font-weight:900;color:var(--accent);margin-bottom:10px;">GET</div>
-            <div style="font-size:40px;font-weight:900;color:#4caf50;">200</div>
-            <div style="color:var(--muted);font-size:19px;margin-top:8px;">read a resource</div>
-          </div>
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:30px;">
-            <div style="font-size:30px;font-weight:900;color:var(--accent);margin-bottom:10px;">POST</div>
-            <div style="font-size:40px;font-weight:900;color:#4caf50;">201</div>
-            <div style="color:var(--muted);font-size:19px;margin-top:8px;">made it; body has the new record</div>
-          </div>
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:30px;">
-            <div style="font-size:30px;font-weight:900;color:var(--accent);margin-bottom:10px;">PUT</div>
-            <div style="font-size:40px;font-weight:900;color:#4caf50;">200</div>
-            <div style="color:var(--muted);font-size:19px;margin-top:8px;">updated</div>
-          </div>
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:30px;">
-            <div style="font-size:30px;font-weight:900;color:var(--accent);margin-bottom:10px;">DELETE</div>
-            <div style="font-size:40px;font-weight:900;color:#4caf50;">200</div>
-            <div style="color:var(--muted);font-size:19px;margin-top:8px;">removed</div>
-          </div>
+          <div class="verb-card"><div class="name">GET</div><div class="stat">200</div><div class="desc">read a resource</div></div>
+          <div class="verb-card"><div class="name">POST</div><div class="stat">201</div><div class="desc">made it; body has the new record</div></div>
+          <div class="verb-card"><div class="name">PUT</div><div class="stat">200</div><div class="desc">updated</div></div>
+          <div class="verb-card"><div class="name">DELETE</div><div class="stat">200</div><div class="desc">removed</div></div>
         </div>
         <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">📌</span><span><code style="font-family:ui-monospace,Consolas,monospace;">requests</code> never raises on a 4xx — the status is just data you assert. <strong>Reads</strong> use plain requests; <strong>writes</strong> reseed with the <code style="font-family:ui-monospace,Consolas,monospace;">reset_db</code> fixture so re-runs stay clean.</span></div>
         <div class="brand-bar">
@@ -123,30 +107,15 @@
         <div class="kicker-label">The shape of a real API test</div>
         <h2 class="section-head">A full lifecycle, one test</h2>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;max-width:1650px;">
-          <div style="background:oklch(20% 0.12 265);border:2px solid var(--accent);border-radius:12px;padding:22px 24px;text-align:center;white-space:nowrap;">
-            <div style="font-size:22px;font-weight:800;color:#90caf9;">CREATE</div>
-            <div style="font-size:18px;color:#4caf50;font-family:ui-monospace,Consolas,monospace;margin-top:6px;">POST → 201</div>
-          </div>
-          <div style="color:#555;font-size:26px;">→</div>
-          <div style="background:oklch(20% 0.12 265);border:2px solid var(--accent);border-radius:12px;padding:22px 24px;text-align:center;white-space:nowrap;">
-            <div style="font-size:22px;font-weight:800;color:#90caf9;">READ</div>
-            <div style="font-size:18px;color:#4caf50;font-family:ui-monospace,Consolas,monospace;margin-top:6px;">GET → 200</div>
-          </div>
-          <div style="color:#555;font-size:26px;">→</div>
-          <div style="background:oklch(20% 0.12 265);border:2px solid var(--accent);border-radius:12px;padding:22px 24px;text-align:center;white-space:nowrap;">
-            <div style="font-size:22px;font-weight:800;color:#90caf9;">UPDATE</div>
-            <div style="font-size:18px;color:#4caf50;font-family:ui-monospace,Consolas,monospace;margin-top:6px;">PUT → 200</div>
-          </div>
-          <div style="color:#555;font-size:26px;">→</div>
-          <div style="background:oklch(20% 0.12 265);border:2px solid var(--accent);border-radius:12px;padding:22px 24px;text-align:center;white-space:nowrap;">
-            <div style="font-size:22px;font-weight:800;color:#90caf9;">DELETE</div>
-            <div style="font-size:18px;color:#4caf50;font-family:ui-monospace,Consolas,monospace;margin-top:6px;">DELETE → 200</div>
-          </div>
-          <div style="color:#555;font-size:26px;">→</div>
-          <div style="background:#2a0a0a;border:2px solid #f44336;border-radius:12px;padding:22px 24px;text-align:center;white-space:nowrap;">
-            <div style="font-size:22px;font-weight:800;color:#ef9a9a;">CONFIRM GONE</div>
-            <div style="font-size:18px;color:#f44336;font-family:ui-monospace,Consolas,monospace;margin-top:6px;">GET → 404</div>
-          </div>
+          <div class="crud-step"><div class="step-name">CREATE</div><div class="step-code">POST → 201</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="crud-step"><div class="step-name">READ</div><div class="step-code">GET → 200</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="crud-step"><div class="step-name">UPDATE</div><div class="step-code">PUT → 200</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="crud-step"><div class="step-name">DELETE</div><div class="step-code">DELETE → 200</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="crud-step gone"><div class="step-name">CONFIRM GONE</div><div class="step-code">GET → 404</div></div>
         </div>
         <div class="step-tip" style="margin-top:40px;max-width:1500px;"><span class="tip-icon">🔁</span><span>Every verb in one coherent test — and it cleans up after itself. Prove the effect (the follow-up <code style="font-family:ui-monospace,Consolas,monospace;">GET → 404</code>), not just the delete status.</span></div>
         <div class="brand-bar">

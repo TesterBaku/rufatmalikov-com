@@ -179,6 +179,20 @@
 .spec-row .key { font-family: ui-monospace, Consolas, monospace; color: var(--accent); font-size: 24px; font-weight: 700; min-width: 240px; }
 .spec-row .val { color: oklch(74% 0.04 255); font-size: 22px; }
 
+/* Verb/status cards (grid of verb -> success status) */
+.verb-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 30px; }
+.verb-card .name { font-size: 30px; font-weight: 900; color: var(--accent); margin-bottom: 10px; }
+.verb-card .stat { font-size: 40px; font-weight: 900; color: #4caf50; }
+.verb-card .desc { color: var(--muted); font-size: 19px; margin-top: 8px; }
+
+/* CRUD lifecycle step boxes (blue by default; .gone = red terminal state) */
+.crud-step { background: oklch(20% 0.12 265); border: 2px solid var(--accent); border-radius: 12px; padding: 22px 24px; text-align: center; white-space: nowrap; }
+.crud-step.gone { background: #2a0a0a; border-color: #f44336; }
+.crud-step .step-name { font-size: 22px; font-weight: 800; color: #90caf9; }
+.crud-step.gone .step-name { color: #ef9a9a; }
+.crud-step .step-code { font-size: 18px; color: #4caf50; font-family: ui-monospace, Consolas, monospace; margin-top: 6px; }
+.crud-step.gone .step-code { color: #f44336; }
+
 /* Step layout (grid; slides set their own columns inline where needed) */
 .s-step { display: grid; grid-template-columns: 1fr 1fr; height: 100%; }
 .step-tip {
