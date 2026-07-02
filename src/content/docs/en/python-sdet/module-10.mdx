@@ -1,0 +1,209 @@
+---
+title: "Module 10: CI with GitHub Actions"
+description: "Run your pytest suite automatically on every push and pull request with GitHub Actions: a workflow that sets up Python and Node, starts TestMarket Lab, runs the tests, and uploads the HTML report as an artifact."
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+Tests you have to *remember* to run are tests that eventually don't. **Continuous Integration
+(CI)** runs the whole suite automatically on every push and pull request, so a regression is
+caught before it merges — not after it ships. This module wires your pytest suite into **GitHub
+Actions**.
+
+:::tip[New to git push / branches / pull requests?]
+CI triggers on pushes and PRs, so it assumes you can commit and push to GitHub. If `git add` /
+`commit` / `push` or "pull request" are fuzzy, the **[Git & GitHub reference](/en/reference/git-github/)**
+covers the exact commands.
+:::
+
+<Video title="Module 10: CI with GitHub Actions" />
+
+---
+
+## What CI does for a test suite
+
+A CI workflow is a recipe GitHub runs on its own machines whenever you push. For a test suite it:
+
+- **runs every test on every change** — no "I forgot to run them,"
+- **blocks broken code** — a failed run marks the commit/PR red (and can *require* green to merge),
+- **produces a shareable report** — attached to the run for anyone to open.
+
+The payoff is a **required check**: a PR can't merge until the suite passes on CI's clean machine
+— not just "works on my laptop."
+
+**Remember:** CI runs the suite automatically on every push/PR, turns a failure into a visible
+red check, and can gate merges. It replaces "remember to run the tests" with "the tests always ran."
+
+---
+
+## The workflow file
+
+GitHub Actions reads YAML files from `.github/workflows/`. Here's a complete workflow for the
+`python-sdet` project — save it as `.github/workflows/tests.yml`:
+
+```yaml
+# .github/workflows/tests.yml
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the test project
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node (for TestMarket Lab)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright browser
+        run: playwright install --with-deps chromium
+
+      - name: Start TestMarket Lab
+        run: |
+          git clone https://github.com/TesterBaku/testmarket-lab
+          cd testmarket-lab
+          npm install
+          npm start &
+
+      - name: Wait for the app
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/api/products && break
+            sleep 1
+          done
+
+      - name: Run the tests
+        run: pytest -ra --html=report.html --self-contained-html
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: report.html
+```
+
+**Remember:** a workflow lives in `.github/workflows/*.yml` with a `name`, an `on:` trigger, and
+`jobs` made of `steps`. Steps are either `uses:` (a prebuilt action) or `run:` (shell commands).
+
+---
+
+## Walking through the steps
+
+<div></div>
+
+- **`on: push` / `pull_request`** — run the job on every push and every PR.
+- **`actions/checkout@v4`** — clone *your* test repo into the runner.
+- **`setup-python@v5` / `setup-node@v4`** — install the two runtimes (Node is only there to run
+  TestMarket Lab).
+- **`pip install -r requirements.txt`** — the deps you pinned in Module 0 (`pytest`, `requests`,
+  `pytest-playwright`, `pytest-html`).
+- **`playwright install --with-deps chromium`** — download the browser *and* its Linux system
+  libraries (`--with-deps`), which the headless runner needs.
+- **Start TestMarket Lab** — clone it, `npm install`, and launch it in the background (`&`).
+- **Wait for the app** — poll `/api/products` until it answers, so tests don't start before the
+  server is up.
+- **Run the tests** — `pytest` with the report flags from Module 9.
+- **Upload the report** — `if: always()` uploads `report.html` even when tests fail (that's
+  exactly when you want it).
+
+**Remember:** the shape is *check out → set up runtimes → install deps + browser → start the app
+and wait → run pytest → upload the report*. `--with-deps` and the wait-loop are the two CI-only
+details that trip people up.
+
+---
+
+## Why the wait-loop matters
+
+`npm start &` returns immediately — the server is still booting. If `pytest` runs before the app
+answers, every test fails with `Connection refused`. The loop polls until `/api/products`
+responds (or gives up after ~30s), so the suite starts against a ready app:
+
+```bash
+for i in $(seq 1 30); do
+  curl -sf http://localhost:3000/api/products && break   # -f: fail on non-2xx
+  sleep 1
+done
+```
+
+This is the CI version of "keep TestMarket Lab running in its own terminal" from Module 0 — the
+runner has one shell, so you background the app and wait for it.
+
+**Remember:** background a server with `&`, then **wait** for it to be ready before testing.
+Starting tests against a not-yet-listening server is the classic CI flake — poll a real endpoint,
+don't `sleep` a fixed guess.
+
+---
+
+## The report as an artifact
+
+`actions/upload-artifact@v4` attaches `report.html` to the workflow run — downloadable from the
+run's summary page. The `if: always()` is the key: without it, a failed `pytest` step ends the
+job and the upload is skipped, so you'd lose the report precisely when a test failed. With it, the
+report is always there to open.
+
+**Remember:** upload the HTML report as an artifact with `if: always()` so it survives a failing
+test run — the failing run is the one whose report you most need.
+
+---
+
+## Making it a required check
+
+Once the workflow runs green, make it mandatory: in the repo's **Settings → Branches**, add a
+branch-protection rule for `main` that **requires the `test` job to pass** before merging. Now no
+red PR can reach `main` — the suite is a real gate, not a suggestion.
+
+**Remember:** a workflow only *reports* until you make it a **required status check** in branch
+protection. That's the step that turns CI from informational into a merge gate.
+
+---
+
+## Exercises
+
+You'll need a GitHub repo for your `python-sdet` project and a committed `requirements.txt`
+(Module 0).
+
+### Exercise 1 — Add the workflow (10 min)
+
+Add `.github/workflows/tests.yml` from above, commit, and push. Open the repo's **Actions** tab
+and watch the run — confirm the steps execute in order and the job goes green.
+
+### Exercise 2 — Read the report artifact (5 min)
+
+From the finished run's summary page, download the `pytest-report` artifact and open
+`report.html`.
+
+### Exercise 3 — Prove it catches failures (10 min)
+
+Push a deliberately failing test on a branch, open a PR, and confirm the check goes **red** and
+the report artifact still uploads (thanks to `if: always()`). Then fix it and watch it go green.
+
+### Exercise 4 — Require the check (5 min)
+
+Add a branch-protection rule requiring the `test` job on `main`. Confirm a PR with a failing check
+can no longer be merged.
+
+### Bonus — Smoke on push, full on PR
+
+Split into two jobs (or use `if:` on the trigger): run only `-m smoke` on every push, and the
+full suite on pull requests. Fast feedback on pushes, thorough checks before merge.
+
+---
+
+In **Module 11** you'll bring it all together in a **capstone** — a small but complete API + UI
+suite against TestMarket Lab, with fixtures, page objects, data-driven cases, reporting, and this
+CI workflow.
