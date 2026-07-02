@@ -1,0 +1,255 @@
+---
+title: "Module 8: Data-driven tests"
+description: "Separate test data from test logic: drive one test body from tables and external files (JSON, CSV) with parametrize, generate readable ids, and load a login validation matrix from a file — against TestMarket Lab."
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+`parametrize` (Module 2) already runs one test over many rows. **Data-driven testing** takes the
+next step: move those rows *out of the code* into files (JSON, CSV) so the **data** and the
+**logic** evolve separately. New cases become new rows — no edits to the test body — and the
+same dataset can feed several tests.
+
+Keep TestMarket Lab running at `http://localhost:3000` and your `.venv` active.
+
+<Video title="Module 8: Data-driven tests" />
+
+---
+
+## Recap: an inline table
+
+You already know the inline form — a list of tuples in the decorator:
+
+```python
+# tests/test_inline.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+@pytest.mark.parametrize(
+    "email, password, expected",
+    [
+        ("customer@test.io", "customer123", 200),
+        ("customer@test.io", "wrong", 401),
+        ("", "", 400),
+    ],
+)
+def test_login(email, password, expected):
+    r = requests.post(f"{BASE_URL}/api/auth/login", json={"email": email, "password": password})
+    assert r.status_code == expected
+```
+
+That's perfect for a few cases. When the table grows — or a non-programmer should be able to add
+cases — move it to a file.
+
+**Remember:** an inline `parametrize` table is ideal for a handful of cases. Move to an external
+file when the data gets large, is shared across tests, or should be editable without touching code.
+
+---
+
+## Data from a JSON file
+
+Put the cases in a JSON file — `tests/data/login_cases.json` — load it **at module level** (the
+`parametrize` decorator runs at import time, so the data must exist then), and parametrize over
+the list (JSON has no comments, so the file is just the array):
+
+```json
+[
+  { "email": "customer@test.io", "password": "customer123", "expected": 200 },
+  { "email": "customer@test.io", "password": "wrong",       "expected": 401 },
+  { "email": "ghost@test.io",    "password": "whatever",    "expected": 401 },
+  { "email": "customer@test.io", "password": "",            "expected": 400 }
+]
+```
+
+```python
+# tests/test_login_json.py
+import json
+from pathlib import Path
+
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+CASES = json.loads((Path(__file__).parent / "data" / "login_cases.json").read_text())
+
+
+@pytest.mark.parametrize("case", CASES)
+def test_login_from_json(case):
+    r = requests.post(
+        f"{BASE_URL}/api/auth/login",
+        json={"email": case["email"], "password": case["password"]},
+    )
+    assert r.status_code == case["expected"]
+```
+
+`Path(__file__).parent` anchors the data path to the test file, so the test runs from any
+directory. Each JSON object is one case; the test body never changes when you add rows. (pytest
+auto-labels the cases `case0`, `case1`, … — the *Readable ids* section below makes those
+meaningful.)
+
+**Remember:** load external data at **module level** (parametrize runs at import). Anchor file
+paths with `Path(__file__).parent` so tests aren't tied to the working directory.
+
+---
+
+## Data from a CSV file
+
+CSV suits tabular cases a spreadsheet could produce — `tests/data/categories.csv`.
+`csv.DictReader` yields one dict per row, but every value is a **string**, so convert types
+yourself (the file is just the header row plus data — no comment line):
+
+```
+category,present
+electronics,true
+accessories,true
+furniture,true
+nonexistent,false
+```
+
+```python
+# tests/test_categories_csv.py
+import csv
+from pathlib import Path
+
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def load_rows(name):
+    with open(Path(__file__).parent / "data" / name, newline="") as f:
+        return list(csv.DictReader(f))
+
+
+ROWS = load_rows("categories.csv")
+
+
+@pytest.mark.parametrize("row", ROWS, ids=[r["category"] for r in ROWS])
+def test_category_presence(row):
+    products = requests.get(f"{BASE_URL}/api/products", params={"category": row["category"]}).json()
+    present = row["present"] == "true"          # CSV values are strings — convert!
+    assert (len(products) > 0) is present
+```
+
+That `present == "true"` line is the classic CSV gotcha: `"false"` is a non-empty string and
+therefore truthy, so you must compare explicitly rather than trust the raw value.
+
+**Remember:** `csv.DictReader` gives one dict per row with **all-string** values — convert types
+(`"true"` → `bool`, `"3"` → `int`) before asserting. Forgetting this is the #1 CSV bug.
+
+---
+
+## Readable ids from the data
+
+Long parametrize runs are unreadable if pytest labels each case with the raw dict. Pass `ids=`
+computed from the data so `pytest -v` shows meaningful names:
+
+```python
+@pytest.mark.parametrize(
+    "case",
+    CASES,
+    ids=[f"{c['email'] or 'empty'}->{c['expected']}" for c in CASES],
+)
+def test_login_labelled(case):
+    ...
+```
+
+```
+test_login_labelled[customer@test.io->200] PASSED
+test_login_labelled[customer@test.io->401] PASSED
+test_login_labelled[ghost@test.io->401] PASSED
+test_login_labelled[customer@test.io->400] PASSED
+```
+
+**Remember:** build `ids=` from each case's data so failures name themselves
+(`[customer@test.io->400]`) instead of showing an opaque dict — you see *which* case failed at a
+glance.
+
+---
+
+## Why separate data from logic
+
+Splitting the two pays off three ways:
+
+- **Scale** — 5 or 500 cases, the test body is identical; you only add rows.
+- **Ownership** — a manual QA or PM can add cases to a CSV/JSON without reading Python.
+- **Reuse** — one dataset can drive an API test *and* a UI test.
+
+The test becomes a single clear statement of *what* is checked; the file holds *which* inputs.
+
+**Remember:** data-driven tests separate **what** you check (the test body) from **which** inputs
+(the file). That's what lets coverage grow without the test code growing.
+
+---
+
+## Putting it together
+
+The login validation matrix from Module 4, now file-driven — add an edge case by adding a line
+to `login_cases.json`, nothing else:
+
+```python
+# tests/test_login_matrix_json.py
+import json
+from pathlib import Path
+
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+CASES = json.loads((Path(__file__).parent / "data" / "login_cases.json").read_text())
+
+
+@pytest.mark.parametrize("case", CASES, ids=[f"{c['email'] or 'empty'}->{c['expected']}" for c in CASES])
+def test_login_validation(case):
+    r = requests.post(
+        f"{BASE_URL}/api/auth/login",
+        json={"email": case["email"], "password": case["password"]},
+    )
+    assert r.status_code == case["expected"]
+```
+
+**Remember:** a file-driven validation matrix is the mature form of Module 4's negative testing —
+the same logic, with cases in a file anyone can extend and other tests can reuse.
+
+---
+
+## Exercises
+
+Work in your `python-sdet` project with TestMarket Lab running. Put data files under
+`tests/data/`. Run with `pytest -v`.
+
+### Exercise 1 — JSON-driven login (10 min)
+
+Make `tests/data/login_cases.json` with four cases (valid → 200, wrong password → 401, unknown
+email → 401, missing password → 400). Load it at module level and parametrize a login test over
+it.
+
+### Exercise 2 — CSV categories (10 min)
+
+Make `tests/data/categories.csv` with `category,present` rows. Parametrize a test that checks
+`GET /api/products?category=<category>` returns products only when `present` is true — remembering
+to convert the string `"true"`/`"false"`.
+
+### Exercise 3 — Readable ids (5 min)
+
+Add an `ids=` to either test so `pytest -v` shows names like `customer@test.io->200`. Introduce a
+failing row and confirm the report names exactly that case.
+
+### Exercise 4 — Add a case without touching code (5 min)
+
+Append a new row to your JSON/CSV (e.g. a whitespace email → 401 or 400 — check the app's actual
+behavior first) and re-run. Confirm the new case runs with **no change** to the test body.
+
+### Bonus — One dataset, two tests
+
+Point both an API test and (if you did Module 6/7) a UI login test at the *same*
+`login_cases.json`, proving one dataset can drive different layers.
+
+---
+
+In **Module 9** we make results legible — **reporting & suite structure**: `pytest-html`/Allure
+reports, organizing tests with markers, and shaping a suite you can hand to a team.
