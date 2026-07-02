@@ -188,6 +188,7 @@ export default defineConfig({
 						{ label: '5 — Test data setup & teardown', link: '/python-sdet/module-5/' },
 						{ label: '6 — UI automation with Playwright', link: '/python-sdet/module-6/' },
 						{ label: '7 — Page Object Model', link: '/python-sdet/module-7/' },
+						{ label: '8 — Data-driven tests', link: '/python-sdet/module-8/' },
 					],
 				},
 				{
