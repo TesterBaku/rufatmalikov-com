@@ -64,14 +64,18 @@ python-sdet/
 ```
 
 ```ini
-# pytest.ini  (extend the file from Module 0/2 — don't drop your markers)
+# pytest.ini — extend your Module 0/2 file: keep the markers, add pythonpath
 [pytest]
 testpaths = tests
-pythonpath = .            # NEW: so `pages` is importable from tests
-markers =                 # from Module 2 — keep these
+pythonpath = .
+markers =
     smoke: a fast, critical subset to run first
     api: tests that hit the REST API
 ```
+
+The new line is `pythonpath = .` (it puts the project root on `sys.path`). Keep your existing
+`markers` — and don't put `#` comments at the end of a value line: pytest's ini parser doesn't
+strip inline comments, so they'd become part of the value.
 
 **Remember:** page objects live in a `pages/` package beside `tests/`; `pythonpath = .` in
 `pytest.ini` puts the project root on `sys.path` so tests can `import pages`.
@@ -207,8 +211,8 @@ def test_login_then_browse(page, base_url):
 ```
 
 Each page's **actions and their selectors** live in `pages/`, so the test reads as the
-scenario — with just a couple of locators inline for the outcomes it asserts (`nav-logout`,
-`cards`). That separation is what keeps a large UI suite maintainable.
+scenario — the only locator typed inline is the `nav-logout` outcome check; `cards` comes from
+the `ProductsPage` object. That separation is what keeps a large UI suite maintainable.
 
 **Remember:** POM's payoff scales — selectors in `pages/`, scenarios in `tests/`. When the UI
 changes you fix one page object; when you write a new test you compose existing ones.
