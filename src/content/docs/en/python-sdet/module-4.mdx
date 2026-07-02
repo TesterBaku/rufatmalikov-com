@@ -1,0 +1,323 @@
+---
+title: "Module 4: Negative & validation testing"
+description: "Deliberately break things: trigger 400 (bad input), 401 (bad login), 404 (missing resource), and 409 (duplicate) against TestMarket Lab, assert the API fails the right way, and document a real bug with xfail."
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+Modules 1–3 tested the **happy path** — valid input, expected success. But the highest-value
+testing is often the opposite: send **bad** input and confirm the API rejects it *correctly*.
+A robust API answers bad input with the **right error status** and a helpful message — not a
+crash, not a silent success. In this module you'll deliberately trigger **`400`**, **`401`**,
+**`404`**, and **`409`**, assert the API fails the right way, and — when it *doesn't* — document
+the bug with `xfail`.
+
+Keep TestMarket Lab running at `http://localhost:3000` and your `.venv` active.
+
+:::tip[Fuzzy on status codes?]
+The **[HTTP status codes reference](/en/reference/http-status-codes/)** explains the `4xx`
+family — `400` vs `401` vs `403` vs `404` vs `409` — the exact codes this module asserts.
+:::
+
+<Video title="Module 4: Negative & validation testing" />
+
+---
+
+## Why negative testing matters
+
+Happy-path tests prove the feature works when everything is right. **Negative tests** prove it
+fails *safely* when something is wrong — and that's where real bugs hide. A user will eventually
+submit an empty form, a wrong password, or a duplicate email; your tests should pin down exactly
+what the API does when they do.
+
+Two things make a good negative test:
+
+1. **The right status code** — `400` for bad input, `401` for bad credentials, `404` for a
+   missing resource, `409` for a conflict. The wrong code (or a `500` crash) is itself a bug.
+2. **A useful error body** — a message that tells the caller *what* went wrong.
+
+**Remember:** negative testing asserts the system fails *correctly* — the right `4xx` status and
+a helpful message. Untested error paths are where bugs live.
+
+:::note[`requests` doesn't raise on `4xx`]
+A rejected request is still a normal response — `requests` returns it, it doesn't throw. You
+assert `response.status_code` like any other. (Also: a *rejected* write changes nothing, so the
+negative examples below need no `reset_db`.)
+:::
+
+---
+
+## 400 Bad Request — missing or invalid input
+
+`400` means "your request was malformed" — a required field is missing or a value is invalid.
+TestMarket Lab validates several endpoints:
+
+```python
+# tests/test_bad_input.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_login_missing_password():
+    response = requests.post(f"{BASE_URL}/api/auth/login", json={"email": "customer@test.io"})
+    assert response.status_code == 400
+
+
+def test_create_product_missing_price():
+    response = requests.post(f"{BASE_URL}/api/products", json={"name": "No Price"})
+    assert response.status_code == 400
+
+
+def test_register_password_too_short():
+    response = requests.post(
+        f"{BASE_URL}/api/auth/register",
+        json={"name": "Sam", "email": "sam@test.io", "password": "x"},   # < 6 chars
+    )
+    assert response.status_code == 400
+```
+
+Each of these would-be writes is **rejected**, so nothing is added — the tests are safe to
+re-run without resetting.
+
+**Remember:** `400` = malformed request (missing field, invalid value). It's the API's first
+line of defense; assert it wherever a field is required or constrained.
+
+---
+
+## 401 Unauthorized — bad credentials
+
+`401` means "I don't know who you are" — authentication failed. A wrong password and an
+unknown email both return `401` (deliberately the *same* response, so an attacker can't tell
+which emails exist):
+
+```python
+# tests/test_auth_negative.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_login_wrong_password():
+    response = requests.post(
+        f"{BASE_URL}/api/auth/login",
+        json={"email": "customer@test.io", "password": "not-my-password"},
+    )
+    assert response.status_code == 401
+
+
+def test_login_unknown_email():
+    response = requests.post(
+        f"{BASE_URL}/api/auth/login",
+        json={"email": "ghost@test.io", "password": "whatever"},
+    )
+    assert response.status_code == 401
+```
+
+**Remember:** `401` = authentication failed (bad or missing credentials). Note the security
+touch: wrong-password and unknown-email give the *identical* `401`, so the API never leaks which
+emails are registered.
+
+---
+
+## 404 Not Found — missing resource
+
+`404` means the thing you asked for doesn't exist. It applies to reads **and** writes against a
+missing id:
+
+```python
+# tests/test_not_found.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+MISSING_ID = 99999
+
+
+def test_get_missing_product():
+    assert requests.get(f"{BASE_URL}/api/products/{MISSING_ID}").status_code == 404
+
+
+def test_update_missing_product():
+    response = requests.put(f"{BASE_URL}/api/products/{MISSING_ID}", json={"price": 9.99})
+    assert response.status_code == 404
+
+
+def test_delete_missing_product():
+    assert requests.delete(f"{BASE_URL}/api/products/{MISSING_ID}").status_code == 404
+```
+
+**Remember:** `404` = the resource (by id or URL) doesn't exist — for `GET`, `PUT`, and
+`DELETE` alike. Use an id you know is absent (a huge number like `99999`).
+
+---
+
+## 409 Conflict — duplicate
+
+`409` means "this conflicts with what already exists." Registering an email that's already
+taken is the classic case:
+
+```python
+# tests/test_conflict.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_register_duplicate_email():
+    # customer@test.io is a seeded account, so registering it again conflicts
+    response = requests.post(
+        f"{BASE_URL}/api/auth/register",
+        json={"name": "Impostor", "email": "customer@test.io", "password": "secret123"},
+    )
+    assert response.status_code == 409
+```
+
+**Remember:** `409` = a conflict with existing state (a duplicate). It's distinct from `400`:
+the request is well-formed, it just clashes with a resource that already exists.
+
+---
+
+## Assert the error, not just the status
+
+The status code is the headline; the **body** is the detail. Assert both — but assert the
+message *loosely* (a key substring), so a harmless wording tweak doesn't break your test:
+
+```python
+# tests/test_error_body.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_error_body_is_helpful():
+    response = requests.post(f"{BASE_URL}/api/auth/login", json={})
+    assert response.status_code == 400
+
+    body = response.json()
+    assert "error" in body                       # the API returns an error field
+    assert "required" in body["error"].lower()   # …and it says what's wrong
+```
+
+**Remember:** assert the **status precisely** and the **message loosely** — check for a key
+word (`"required"`, `"password"`) rather than the exact string, so wording changes don't cause
+false failures.
+
+---
+
+## Putting it together: a validation matrix
+
+Negative cases are a natural fit for `parametrize` (Module 2) — one test, a table of
+bad-input rows, each with its expected status. This "validation matrix" is the shape of most
+real negative-test suites:
+
+```python
+# tests/test_login_matrix.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+@pytest.mark.parametrize(
+    "payload, expected_status",
+    [
+        ({"email": "customer@test.io", "password": "customer123"}, 200),  # valid (control)
+        ({"email": "customer@test.io", "password": "wrong"}, 401),        # bad password
+        ({"email": "ghost@test.io", "password": "whatever"}, 401),        # unknown email
+        ({"email": "customer@test.io"}, 400),                             # missing password
+        ({}, 400),                                                         # missing everything
+    ],
+    ids=["valid", "bad-password", "unknown-email", "missing-password", "empty"],
+)
+def test_login_validation(payload, expected_status):
+    response = requests.post(f"{BASE_URL}/api/auth/login", json=payload)
+    assert response.status_code == expected_status
+```
+
+Keep one **valid** row as a control — it proves the endpoint works, so a failing negative row
+is really about the *input*, not a broken endpoint.
+
+**Remember:** a validation matrix (`parametrize` of `(bad_input, expected_status)`) covers many
+failure modes in one readable test. Always include a valid control row.
+
+---
+
+## When the API fails *wrong*: document a bug with `xfail`
+
+Sometimes negative testing finds a real defect — the API doesn't fail *cleanly*. TestMarket Lab
+has one: posting a product whose name duplicates an existing one returns **`500`** (a server
+crash) instead of a proper `409`/`400`. That's exactly the kind of bug negative testing exists
+to surface.
+
+Don't delete the finding — **encode it** with `xfail` (Module 2), asserting the behavior you
+*want*. It stays green as a known issue, and the day the bug is fixed it flips to **XPASS**,
+reminding you to remove the marker:
+
+```python
+# tests/test_known_bugs.py
+import pytest
+import requests
+
+
+@pytest.mark.xfail(reason="BUG: duplicate product name returns 500 instead of 409")
+def test_duplicate_product_name_should_conflict(reset_db, base_url, api):
+    payload = {"name": "Repeat Item", "price": 9.99, "category": "electronics"}
+    first = api.post(f"{base_url}/api/products", json=payload)
+    assert first.status_code == 201                 # first one is fine
+
+    duplicate = api.post(f"{base_url}/api/products", json=payload)
+    assert duplicate.status_code == 409             # what SHOULD happen (today it's 500)
+```
+
+This test **writes** (it adds a product), so it takes `reset_db` from your Module 2
+`conftest.py` to stay re-runnable.
+
+**Remember:** when you find a bug, capture it as an `xfail` test that asserts the *correct*
+behavior with a `reason`. It documents the defect, keeps the suite green, and auto-alerts you
+(XPASS) when it's fixed — far better than a comment or a deleted test.
+
+---
+
+## Exercises
+
+Work in your `python-sdet` project with TestMarket Lab running. Run with `pytest -v`.
+
+### Exercise 1 — Missing-field 400s (10 min)
+
+Write tests that assert `400` for: `POST /api/auth/login` with no body `{}`, `POST /api/products`
+with only a `name`, and `POST /api/auth/register` with a missing `name`. Confirm each returns
+`400`.
+
+### Exercise 2 — The 401 pair (5 min)
+
+Assert that a wrong password **and** an unknown email both return `401` from
+`POST /api/auth/login` — and note they return the same status on purpose.
+
+### Exercise 3 — 404 across verbs (10 min)
+
+For a product id you know doesn't exist, assert `404` from `GET`, `PUT`, and `DELETE` on
+`/api/products/<id>`.
+
+### Exercise 4 — Assert the message (5 min)
+
+`POST /api/auth/register` with a 3-character password. Assert `400`, and that the error body's
+message mentions `"password"` (case-insensitive, substring — not the exact string).
+
+### Exercise 5 — A register validation matrix (15 min)
+
+Parametrize `POST /api/auth/register` over rows of `(payload, expected_status)`: a valid new
+signup (`201`), a duplicate email (`409`), a short password (`400`), and a missing field
+(`400`). Give each row a readable `id`. *(Tip: a valid signup writes — take `reset_db` so
+re-runs start clean.)*
+
+### Bonus — Find and xfail a bug
+
+Reproduce the duplicate-product-name `500` yourself, then write the `xfail` test that asserts
+the correct `409`. Run `pytest -rx` to see the "expected failure" reason in the summary.
+
+---
+
+In **Module 5** we go deep on **test data setup & teardown** — using `POST /api/reset` and
+arrange-via-API (`POST /api/products` / `POST /api/orders`) so every test controls its own
+starting state instead of depending on the seed.
