@@ -260,8 +260,6 @@ is fixed the test **XPASSes and fails the run** — forcing you to delete the no
 import pytest
 
 
-# strict=True: when the bug is fixed, this XPASSes and FAILS the run, so the
-# stale marker can't linger. Keep the marker focused on the one buggy assertion.
 @pytest.mark.xfail(reason="BUG: duplicate product name returns 500 instead of 409", strict=True)
 def test_duplicate_product_name_should_conflict(reset_db, base_url, api):
     payload = {"name": "Repeat Item", "price": 9.99, "category": "electronics"}
@@ -272,13 +270,13 @@ def test_duplicate_product_name_should_conflict(reset_db, base_url, api):
 ```
 
 This test **writes** (it adds a product), so it takes `reset_db` from your Module 2
-`conftest.py` to stay re-runnable. The arrange `POST` isn't asserted — only the duplicate is,
-so the `xfail` stays scoped to the actual bug and won't mask an unrelated regression.
+`conftest.py` to stay re-runnable. One caveat: `xfail` marks the **whole test**, so a failure
+*anywhere* in it counts as the expected failure — keep bug tests small and focused on the one
+defect, or a big one could quietly absorb an unrelated regression.
 
 **Remember:** capture a known bug as a **`strict=True`** `xfail` test that asserts the
-*correct* behavior with a `reason`, keeping the marker on just the buggy assertion. It
-documents the defect, keeps the suite green today, and **fails loudly the moment the fix
-lands** — far better than a comment or a deleted test.
+*correct* behavior with a `reason`. It documents the defect, keeps the suite green today, and
+**fails loudly the moment the fix lands** — far better than a comment or a deleted test.
 
 ---
 
