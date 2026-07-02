@@ -35,12 +35,16 @@
       function onKey(e) {
         var t = e.target;
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        // When a nav button is focused, let its own Space/Enter activation run instead of
+        // Space advancing the deck — but still allow arrows/Home/End to navigate.
+        if (t && t.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
         if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(idx + 1); }
         else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(idx - 1); }
         else if (e.key === 'Home') { e.preventDefault(); go(0); }
         else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
       }
-      window.addEventListener('keydown', onKey, true);
+      // Bind once (document, capture phase). Binding to BOTH window and document
+      // fired onKey twice per keypress, so arrows advanced two slides at a time.
       document.addEventListener('keydown', onKey, true);
       if (prev) prev.addEventListener('click', function () { go(idx - 1); });
       if (next) next.addEventListener('click', function () { go(idx + 1); });
