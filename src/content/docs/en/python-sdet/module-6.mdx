@@ -146,9 +146,6 @@ def test_search_filters_the_list(page, base_url):
     expect(page.get_by_text("Mechanical Keyboard")).to_be_visible()
 ```
 
-(Reset first because this asserts an exact count — the module's own rule from the section
-below. `expect` still auto-retries until the filtered list settles; you never `sleep`.)
-
 Common web-first assertions: `to_be_visible()` / `not_to_be_visible()`, `to_have_text(...)`, `to_have_count(n)`,
 `to_have_value(...)`, `to_be_enabled()`, and on the page `expect(page).to_have_url(...)` /
 `to_have_title(...)`.
