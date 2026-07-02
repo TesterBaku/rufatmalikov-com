@@ -66,7 +66,7 @@
           <div class="verb-card"><div class="name">PUT</div><div class="stat">200</div><div class="desc">updated</div></div>
           <div class="verb-card"><div class="name">DELETE</div><div class="stat">200</div><div class="desc">removed</div></div>
         </div>
-        <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">📌</span><span><code style="font-family:ui-monospace,Consolas,monospace;">requests</code> never raises on a 4xx — the status is just data you assert. <strong>Reads</strong> use plain requests; <strong>writes</strong> reseed with the <code style="font-family:ui-monospace,Consolas,monospace;">reset_db</code> fixture so re-runs stay clean.</span></div>
+        <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">📌</span><span><code class="code-inline">requests</code> never raises on a 4xx — the status is just data you assert. <strong>Reads</strong> use plain requests; <strong>writes</strong> reseed with the <code class="code-inline">reset_db</code> fixture so re-runs stay clean.</span></div>
         <div class="brand-bar">
           <div class="brand-dot"></div>
           <span class="brand-name"><strong>AI</strong> with Rufat</span>
@@ -92,7 +92,7 @@
           <div style="display:flex;flex-direction:column;gap:14px;">
             <div style="display:flex;align-items:center;gap:16px;"><span style="background:#1b5e20;border:2px solid #4caf50;border-radius:8px;padding:10px 20px;font-size:24px;font-weight:800;color:#fff;">201</span><span style="color:oklch(74% 0.04 255);font-size:22px;">Created</span></div>
             <div style="font-family:ui-monospace,Consolas,monospace;font-size:20px;color:#d4d4d4;background:oklch(12% 0.05 255);border-radius:8px;padding:16px 20px;">total: <span style="color:#4caf50;">59.98</span> <span style="color:#6a9955;"># 29.99 × 2, server-side</span></div>
-            <div style="color:oklch(74% 0.04 255);font-size:20px;"><code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">json=</code> also sets <code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">Content-Type</code> for you. The total is computed — assert it with <code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">pytest.approx</code>.</div>
+            <div style="color:oklch(74% 0.04 255);font-size:20px;"><code class="code-inline">json=</code> also sets <code class="code-inline">Content-Type</code> for you. The total is computed — assert it with <code class="code-inline">pytest.approx</code>.</div>
           </div>
         </div>
         <div class="brand-bar">
@@ -117,7 +117,7 @@
           <div class="pipe-arrow">→</div>
           <div class="crud-step gone"><div class="step-name">CONFIRM GONE</div><div class="step-code">GET → 404</div></div>
         </div>
-        <div class="step-tip" style="margin-top:40px;max-width:1500px;"><span class="tip-icon">🔁</span><span>Every verb in one coherent test — and it cleans up after itself. Prove the effect (the follow-up <code style="font-family:ui-monospace,Consolas,monospace;">GET → 404</code>), not just the delete status.</span></div>
+        <div class="step-tip" style="margin-top:40px;max-width:1500px;"><span class="tip-icon">🔁</span><span>Every verb in one coherent test — and it cleans up after itself. Prove the effect (the follow-up <code class="code-inline">GET → 404</code>), not just the delete status.</span></div>
         <div class="brand-bar">
           <div class="brand-dot"></div>
           <span class="brand-name"><strong>AI</strong> with Rufat</span>

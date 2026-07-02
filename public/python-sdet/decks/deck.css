@@ -233,6 +233,9 @@
 /* Code block */
 .code-block { background: oklch(10% 0.05 255); border: 1px solid oklch(22% 0.10 255); border-radius: 10px; padding: 28px 32px; font-family: ui-monospace, Consolas, monospace; font-size: 18px; line-height: 1.8; }
 
+/* Inline code (accent monospace) — for <code> inside prose/tips */
+.code-inline { font-family: ui-monospace, Consolas, monospace; color: var(--accent); }
+
 /* Full-width step variant */
 .s-full { display: flex; flex-direction: column; padding: 80px 120px; justify-content: center; height: 100%; }
 
