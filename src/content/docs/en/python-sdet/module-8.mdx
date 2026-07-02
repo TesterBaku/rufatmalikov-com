@@ -51,11 +51,11 @@ file when the data gets large, is shared across tests, or should be editable wit
 
 ## Data from a JSON file
 
-Put the cases in a JSON file, load it **at module level** (the `parametrize` decorator runs at
-import time, so the data must exist then), and parametrize over the list:
+Put the cases in a JSON file — `tests/data/login_cases.json` — load it **at module level** (the
+`parametrize` decorator runs at import time, so the data must exist then), and parametrize over
+the list (JSON has no comments, so the file is just the array):
 
 ```json
-// tests/data/login_cases.json
 [
   { "email": "customer@test.io", "password": "customer123", "expected": 200 },
   { "email": "customer@test.io", "password": "wrong",       "expected": 401 },
@@ -76,7 +76,7 @@ BASE_URL = "http://localhost:3000"
 CASES = json.loads((Path(__file__).parent / "data" / "login_cases.json").read_text())
 
 
-@pytest.mark.parametrize("case", CASES, ids=[c["email"] or "empty" for c in CASES])
+@pytest.mark.parametrize("case", CASES)
 def test_login_from_json(case):
     r = requests.post(
         f"{BASE_URL}/api/auth/login",
@@ -86,7 +86,9 @@ def test_login_from_json(case):
 ```
 
 `Path(__file__).parent` anchors the data path to the test file, so the test runs from any
-directory. Each JSON object is one case; the test body never changes when you add rows.
+directory. Each JSON object is one case; the test body never changes when you add rows. (pytest
+auto-labels the cases `case0`, `case1`, … — the *Readable ids* section below makes those
+meaningful.)
 
 **Remember:** load external data at **module level** (parametrize runs at import). Anchor file
 paths with `Path(__file__).parent` so tests aren't tied to the working directory.
@@ -95,11 +97,11 @@ paths with `Path(__file__).parent` so tests aren't tied to the working directory
 
 ## Data from a CSV file
 
-CSV suits tabular cases a spreadsheet could produce. `csv.DictReader` yields one dict per row —
-but every value is a **string**, so convert types yourself:
+CSV suits tabular cases a spreadsheet could produce — `tests/data/categories.csv`.
+`csv.DictReader` yields one dict per row, but every value is a **string**, so convert types
+yourself (the file is just the header row plus data — no comment line):
 
 ```
-# tests/data/categories.csv
 category,present
 electronics,true
 accessories,true
@@ -160,7 +162,7 @@ def test_login_labelled(case):
 test_login_labelled[customer@test.io->200] PASSED
 test_login_labelled[customer@test.io->401] PASSED
 test_login_labelled[ghost@test.io->401] PASSED
-test_login_labelled[empty->400] PASSED
+test_login_labelled[customer@test.io->400] PASSED
 ```
 
 **Remember:** build `ids=` from each case's data so failures name themselves
