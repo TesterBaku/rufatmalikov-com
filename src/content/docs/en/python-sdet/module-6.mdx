@@ -131,20 +131,23 @@ until true. So you assert the *end state* and let Playwright wait for it:
 
 ```python
 # tests/test_auto_wait.py
+import requests
 from playwright.sync_api import expect
 
 
 def test_search_filters_the_list(page, base_url):
+    requests.post(f"{base_url}/api/reset")        # known seed, so the count is deterministic
     page.goto(f"{base_url}/products")
     page.get_by_test_id("search-input").fill("keyboard")
     page.get_by_test_id("apply-filters").click()
 
-    # No sleep — expect retries until the filtered list has settled. Assert the filter's
-    # *effect* (a match shown, a non-match hidden), not an absolute count — so the test
-    # doesn't depend on exactly how many products exist.
+    # no sleep — expect retries until the filtered list has settled
+    expect(page.get_by_test_id("product-card")).to_have_count(1)
     expect(page.get_by_text("Mechanical Keyboard")).to_be_visible()
-    expect(page.get_by_text("Wireless Mouse")).not_to_be_visible()
 ```
+
+(Reset first because this asserts an exact count — the module's own rule from the section
+below. `expect` still auto-retries until the filtered list settles; you never `sleep`.)
 
 Common web-first assertions: `to_be_visible()` / `not_to_be_visible()`, `to_have_text(...)`, `to_have_count(n)`,
 `to_have_value(...)`, `to_be_enabled()`, and on the page `expect(page).to_have_url(...)` /
@@ -227,10 +230,9 @@ On `/auth/login`, locate the email input three ways — `get_by_label("Email")`,
 
 ### Exercise 3 — Search filter (10 min)
 
-Go to `/products`, type `keyboard` into the search box (`search-input`), click `apply-filters`,
-and assert "Mechanical Keyboard" is visible while a non-matching product like "Wireless Mouse"
-is not — testing the filter's *effect* without depending on the exact product count. (If you
-*do* want to assert an exact `to_have_count`, `POST /api/reset` first — see the next section.)
+`POST /api/reset` for a known count, go to `/products`, type `keyboard` into the search box
+(`search-input`), click `apply-filters`, and assert exactly one `product-card` remains and
+"Mechanical Keyboard" is visible.
 
 ### Exercise 4 — Login flow (15 min)
 
