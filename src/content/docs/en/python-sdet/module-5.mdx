@@ -1,0 +1,277 @@
+---
+title: "Module 5: Test data setup & teardown"
+description: "Give every test the exact data it needs and a known starting state: reset for a clean baseline, arrange via the API instead of the UI, and build data-making and factory fixtures — against TestMarket Lab."
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+A test is only trustworthy if you control the data it runs against. Two things break that
+control: tests that **depend on each other** (one leaves data that changes another's result),
+and setup done **through the UI** (slow and brittle). This module fixes both — reset to a known
+baseline, and **arrange test data through the API** with fixtures that build exactly what each
+test needs.
+
+Keep TestMarket Lab running at `http://localhost:3000` and your `.venv` active. This module
+builds directly on the fixtures from [Module 2](/en/python-sdet/module-2/) and the `POST`
+calls from [Module 3](/en/python-sdet/module-3/).
+
+<Video title="Module 5: Test data setup & teardown" />
+
+---
+
+## The problem: tests that lean on ambient state
+
+Suppose one test adds a product and a later test asserts "there are 15 products." Run them in
+that order and the second fails — not because of a bug, but because the first test **left data
+behind**. Tests that pass or fail depending on what ran before them are the classic flaky
+suite.
+
+The cure is **isolation**: every test starts from a known state and sets up its own data.
+
+**Remember:** a test that depends on another test's leftovers (or on the exact seed) is
+fragile. Each test should control its own starting state and its own data.
+
+---
+
+## A known baseline: reset
+
+You met `reset_db` in Module 2 — it `POST`s to `/api/reset`, reseeding the database to its
+15-product starting state. A test **requests** it to guarantee a clean slate:
+
+```python
+# tests/conftest.py
+import pytest
+import requests
+
+
+@pytest.fixture(scope="session")
+def base_url():
+    return "http://localhost:3000"
+
+
+@pytest.fixture
+def api(base_url):
+    session = requests.Session()
+    yield session
+    session.close()
+
+
+@pytest.fixture
+def reset_db(base_url):
+    requests.post(f"{base_url}/api/reset")
+    yield
+```
+
+If you want **every** test isolated without remembering to ask, make it `autouse=True` — pytest
+then runs it before each test automatically:
+
+```python
+@pytest.fixture(autouse=True)
+def reset_db(base_url):
+    requests.post(f"{base_url}/api/reset")
+    yield
+```
+
+The trade-off: `autouse` reseeds even for read-only tests (a little slower), but guarantees no
+test can ever see another's data. Opt-in is more surgical; `autouse` is safer by default —
+pick per suite.
+
+**Remember:** `reset` gives a known baseline. Request `reset_db` where you need isolation, or
+make it `autouse=True` to reseed before *every* test — trading a little speed for guaranteed
+independence.
+
+---
+
+## Arrange via the API, not the UI
+
+To test "an order shows the right total," you *could* click through the UI: log in, open a
+product, add to cart, check out. That's slow and breaks whenever the UI changes. The
+professional pattern is to **arrange through the API** — build the state directly with `POST`,
+then assert:
+
+```python
+# tests/test_arrange_via_api.py
+import pytest
+
+
+def test_order_total_via_api(reset_db, base_url, api):
+    # arrange: place an order straight through the API — no clicking
+    api.post(
+        f"{base_url}/api/orders",
+        json={"email": "customer@test.io", "items": [{"product_id": 1, "quantity": 2}]},
+    )
+
+    # assert: the order is there with the computed total (Wireless Mouse 29.99 x 2)
+    orders = api.get(f"{base_url}/api/orders").json()
+    assert any(o["total"] == pytest.approx(29.99 * 2) for o in orders)   # computed float -> approx
+```
+
+API setup is **fast** (milliseconds, not seconds) and **precise** — you build the exact state
+you want, nothing more. (Module 6 uses this to seed data for UI tests.)
+
+**Remember:** arrange test data through the **API**, not the UI — it's 10–50× faster and far
+less brittle. Set up state with `POST`, then assert. Save the UI for what you're actually
+testing.
+
+---
+
+## A data-building fixture
+
+When several tests need "a product to work with," move that setup into a fixture that **makes
+one and hands back its data**. Have it depend on `reset_db` so the fresh product's name can't
+clash with a previous run:
+
+```python
+# tests/conftest.py (add to it)
+@pytest.fixture
+def product(reset_db, base_url, api):
+    """Make a fresh product and give the test its data."""
+    created = api.post(
+        f"{base_url}/api/products",
+        json={"name": "Fixture Product", "price": 19.99, "category": "electronics"},
+    )
+    return created.json()
+```
+
+```python
+# tests/test_uses_product.py
+def test_new_product_is_listed(base_url, api, product):
+    listing = api.get(f"{base_url}/api/products").json()
+    assert product["id"] in [p["id"] for p in listing]
+```
+
+The test never asks for `reset_db` directly — requesting `product` pulls it in, because
+`product` depends on it. That dependency also **orders** them correctly: `reset_db` runs first,
+*then* the product is made.
+
+**Remember:** a data-building fixture makes the resource a test needs and returns its data.
+Depend on `reset_db` inside it so the reset always runs **before** the data is built (fixture
+order follows the dependency chain).
+
+---
+
+## Factory fixtures: make as much as you need
+
+A plain fixture makes **one** thing. When a test needs *several* — or wants to customize each —
+return a **factory**: a small function the test calls as many times as it likes. Give each
+product a unique name so they never collide:
+
+```python
+# tests/conftest.py (add to it)
+@pytest.fixture
+def make_product(reset_db, base_url, api):
+    """Return a factory that makes products with unique names."""
+    made = []
+
+    def _make(**overrides):
+        payload = {
+            "name": f"Widget {len(made) + 1}",   # unique per call
+            "price": 9.99,
+            "category": "electronics",
+        }
+        payload.update(overrides)                # let callers override any field
+        product = api.post(f"{base_url}/api/products", json=payload).json()
+        made.append(product)
+        return product
+
+    return _make
+```
+
+```python
+# tests/test_factory.py
+def test_factory_makes_distinct_products(make_product):
+    first = make_product()
+    second = make_product(price=49.99)
+
+    assert first["id"] != second["id"]
+    assert second["price"] == 49.99
+```
+
+`make_product` **returns a function**, so the test controls how many products exist and what
+they look like — the flexible cousin of a one-shot fixture.
+
+**Remember:** a **factory fixture** returns a function, letting one test build many (customized)
+resources. Generate unique values (names/ids) inside it so repeated calls don't collide.
+
+---
+
+## A note on teardown
+
+Because `reset_db` reseeds **before** each test, most suites don't need explicit teardown — the
+next test wipes the slate itself. If a suite *doesn't* reset, clean up what you made instead:
+`DELETE` the resource after `yield` (the pattern from Module 3), so the data doesn't leak into
+later tests.
+
+**Remember:** reseeding *before* each test usually makes teardown unnecessary. Without a reset,
+tear down your own data (`DELETE` after `yield`) so it can't pollute other tests.
+
+---
+
+## Putting it together
+
+Arrange a custom product with the factory, place an order for it through the API, and assert on
+the result — all setup via API, no UI:
+
+```python
+# tests/test_order_flow.py
+import pytest
+
+
+def test_order_uses_the_made_product(base_url, api, make_product):
+    widget = make_product(price=25.00)                      # arrange: a $25 product
+
+    api.post(                                               # arrange: order 2 of them
+        f"{base_url}/api/orders",
+        json={"email": "customer@test.io",
+              "items": [{"product_id": widget["id"], "quantity": 2}]},
+    )
+
+    orders = api.get(f"{base_url}/api/orders").json()        # assert: total is right
+    assert any(o["total"] == pytest.approx(50.00) for o in orders)
+```
+
+One test, fully in control: it makes its product, places its order, and checks the outcome —
+starting from a clean database and touching only the API.
+
+**Remember:** the pro pattern is **arrange (API) → act → assert**. Fixtures build the data,
+`reset` guarantees the baseline, and the test reads top-to-bottom as the scenario it verifies.
+
+---
+
+## Exercises
+
+Work in your `python-sdet` project with TestMarket Lab running. Run with `pytest -v`.
+
+### Exercise 1 — Prove isolation (10 min)
+
+Write two tests: the first adds a product; the second asserts `GET /api/products` returns
+exactly 15. Make them pass **in any order** by giving the adding test `reset_db` (or making
+reset `autouse`). Confirm removing the reset makes the second test flaky.
+
+### Exercise 2 — A `product` fixture (10 min)
+
+Add a `product` fixture to `conftest.py` that makes a product (depending on `reset_db`) and
+returns its JSON. Use it in a test that asserts the product's `id` appears in
+`GET /api/products`.
+
+### Exercise 3 — Arrange an order via the API (10 min)
+
+Without touching the UI, `POST` an order for `product_id` 1, quantity 3, then assert an order
+with `total == pytest.approx(29.99 * 3)` appears in `GET /api/orders`.
+
+### Exercise 4 — A `make_product` factory (15 min)
+
+Add a `make_product` factory fixture that makes products with unique names. Write a test that
+makes three products and asserts they have three distinct `id`s.
+
+### Bonus — Teardown without reset
+
+Write a fixture that makes a product and, **after `yield`**, `DELETE`s it — then assert (in the
+teardown's own follow-up, or a second test) that the product is gone. Compare it with the
+reset-based approach: which is simpler here, and why?
+
+---
+
+In **Module 6** we finally drive the **browser** with **Playwright for Python** — locators,
+actions, waits, and assertions — using this module's API-arrange trick to seed data fast before
+each UI test.
