@@ -20,6 +20,7 @@ Short, plain-language reference pages for the concepts the course leans on but d
 - **[Accessibility, ARIA & WCAG](/en/reference/accessibility/)** — the POUR principles, ARIA attributes, and the violations axe-core catches.
 - **[Command line & npm](/en/reference/command-line-npm/)** — the terminal, Node, `package.json`, `npm install`, and `npx` — the commands the course runs.
 - **[SQL basics](/en/reference/sql-basics/)** — `SELECT`, `WHERE`, `JOIN`, aggregates, and parameterized queries for reading a test database, grounded in TestMarket Lab's real schema.
+- **[Docker basics](/en/reference/docker/)** — images, containers, `docker run`, ports and env vars, Compose, and the GitHub Actions service container — how to spin up a real database for your tests.
 
 ## Where this fits
 
@@ -33,5 +34,6 @@ Each page backs up the module that leans on it hardest:
 - **Accessibility, ARIA & WCAG** → **[Module 11 — accessibility testing](/en/course/module-11/)**.
 - **Git & GitHub** → **[Module 12 — CI](/en/course/module-12/)**.
 - **SQL basics** → the **Database verification** modules coming to the Playwright and Python SDET courses.
+- **Docker basics** → those same **Database verification** modules and **[Module 12 — CI, Docker, reports](/en/course/module-12/)**.
 
 Read them whenever a term shows up that you'd like grounded properly — no prior backend or front-end knowledge assumed.

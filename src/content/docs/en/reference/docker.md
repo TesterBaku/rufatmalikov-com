@@ -1,0 +1,187 @@
+---
+title: Docker basics
+description: A plain-language reference to Docker for testers — images, containers, docker run, ports and env vars, Compose, and the GitHub Actions service container — grounded in the Postgres database the DB-verification modules spin up.
+sidebar:
+  order: 13
+---
+
+Sooner or later a testing job asks you to "spin up the database in Docker" or a CI file mentions a `services:` block, and it helps to know what that means. **Docker** packages a program together with everything it needs to run — the exact version, its libraries, its config — into a **container** that behaves the same on your laptop, a teammate's machine, and the CI server. No more "it works on mine."
+
+For a tester that solves a specific, recurring problem: your tests need a **real database** to run against, and you want a *fresh, identical* one every time — locally and in CI — without installing and configuring Postgres by hand on every machine. One command gives you exactly that. This page is a plain-language tour of the Docker a tester actually uses, grounded in the Postgres database the [Database verification](/en/python-sdet/) modules spin up.
+
+## What a container actually is
+
+A container is a running program plus its whole environment, isolated from the rest of your machine. Think of a shipping container: whatever's inside, the outside is a standard shape every crane and ship can handle. A Postgres container carries Postgres and its dependencies; your machine just has to run Docker, not install Postgres.
+
+Two habits worth adopting from the start:
+
+- **A container is disposable.** You start one, use it, throw it away, and start an identical one next time. That throwaway nature is exactly what makes tests repeatable.
+- **Nothing leaks onto your machine.** The database lives inside the container, not in your OS. Delete the container and it's gone — no leftover service running in the background.
+
+## Images vs containers
+
+These two words get mixed up constantly, and the distinction matters:
+
+- An **image** is the blueprint — a read-only package, e.g. `postgres:16-alpine`. You download it once.
+- A **container** is a running instance of an image. You can start many containers from one image.
+
+The `:16-alpine` part is the **tag** — the version. Pinning a tag (`postgres:16-alpine`, not bare `postgres`) means everyone — you, your team, CI — runs the *same* database version, so a test that passes locally isn't sunk by a version drift in CI. `alpine` just means a small, stripped-down base, so the download is lighter.
+
+```bash
+docker pull postgres:16-alpine   # download the image (Docker also does this automatically on first run)
+```
+
+## `docker run` — the anatomy
+
+This is the one command you'll type most. Here it is starting the exact database the DB modules use:
+
+```bash
+docker run -d --name testmarket-db \
+  -e POSTGRES_USER=testuser \
+  -e POSTGRES_PASSWORD=testpass \
+  -e POSTGRES_DB=testmarket \
+  -p 5432:5432 \
+  postgres:16-alpine
+```
+
+Reading it flag by flag:
+
+| Part | Means |
+|---|---|
+| `-d` | **Detached** — run in the background and give you your terminal back. |
+| `--name testmarket-db` | A friendly name so you can refer to it later (instead of a random id). |
+| `-e KEY=value` | An **environment variable** passed into the container. Postgres reads these to set up the user, password, and initial database. |
+| `-p 5432:5432` | **Publish a port** — map `host:container`. The left number is the port on *your* machine; the right is the port *inside* the container. Now `localhost:5432` reaches the database. |
+| `postgres:16-alpine` | The **image** to run (always last). |
+
+If port `5432` is already taken on your machine (an existing Postgres, say), just change the **left** side: `-p 55432:5432` keeps the container the same and reaches it at `localhost:55432`.
+
+:::caution[Credentials in `-e` are for throwaway test databases only]
+Passing a password with `-e POSTGRES_PASSWORD=…` is fine for a local, disposable test database. For anything real, credentials come from secrets, not the command line or a committed file — the same rule as any other password.
+:::
+
+## Talking to a running container
+
+Once it's up, a handful of commands cover almost everything:
+
+```bash
+docker ps                    # list running containers
+docker logs testmarket-db    # see its output (startup, errors)
+docker exec -it testmarket-db psql -U testuser -d testmarket   # open a shell/psql inside it
+docker stop testmarket-db    # stop it
+docker rm testmarket-db      # remove it (must be stopped, or use -f)
+```
+
+`docker ps` shows what's running and, crucially, the port mapping:
+
+```
+NAMES           IMAGE                STATUS         PORTS
+testmarket-db   postgres:16-alpine   Up 3 seconds   0.0.0.0:5432->5432/tcp
+```
+
+`docker logs` is your first stop when something won't connect — a healthy Postgres ends with `database system is ready to accept connections`. `docker exec` runs a command *inside* the container: handy for opening `psql` to poke at the data by hand, exactly like the [SQL basics](/en/reference/sql-basics/) reference shows.
+
+## Containers are disposable (and that's the point)
+
+Stop and remove a container and its data goes with it. For a **test** database that's a feature, not a bug — every run starts from an identical, empty state, so tests can't be polluted by leftovers from a previous run. It's the container-level version of the `reset` habit the courses already teach.
+
+When you *do* want data to survive a restart — a database you're developing against, not testing — mount a **volume**, which stores the files on your machine outside the container:
+
+```bash
+docker run -d --name testmarket-db \
+  -e POSTGRES_PASSWORD=testpass \
+  -p 5432:5432 \
+  -v testmarket-data:/var/lib/postgresql/data \
+  postgres:16-alpine
+```
+
+`-v name:/path` maps a named volume to the directory Postgres stores data in. Now `docker rm` the container and the data is still there for the next one. For test databases you usually *skip* the volume on purpose — you *want* the clean slate.
+
+## Many services at once: Docker Compose
+
+Real systems are more than one container — an app **and** its database, maybe a cache too. **Compose** describes them all in one `docker-compose.yml` file and starts them together with one command. Here's a two-service example: a Postgres database, and a one-shot `seed` step that waits for the database to be ready and then loads some data into it.
+
+```yaml
+# docker-compose.yml
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: testmarket
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d testmarket"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  seed:
+    image: postgres:16-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: testpass
+    command: >
+      psql -h db -U testuser -d testmarket
+      -c "CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, name TEXT);
+          INSERT INTO products (name) VALUES ('Wireless Mouse');
+          SELECT count(*) FROM products;"
+```
+
+```bash
+docker compose up      # start everything (add -d to detach)
+docker compose ps      # list this project's containers
+docker compose down    # stop and remove them (add -v to drop volumes too)
+```
+
+Three ideas earn their keep here, and all three show up in CI too:
+
+- **A service name is a hostname.** The `seed` step connects with `-h db` — inside a Compose network, each service is reachable by its name. No IP addresses.
+- **`healthcheck`** tells Docker how to know the database is genuinely *ready* (not just started) — here by running `pg_isready`.
+- **`depends_on: condition: service_healthy`** makes `seed` wait until `db` passes its healthcheck, so it never tries to connect too early. That start-order problem is the single most common cause of flaky database tests in CI.
+
+## Docker in CI
+
+The reason all of this matters to a tester: CI runs your tests on a clean machine that has no database — so CI starts one in a container for the run. **GitHub Actions** calls it a **service container**, and it's the same idea as `docker run`, written as YAML:
+
+```yaml
+# .github/workflows/tests.yml (excerpt)
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testmarket
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U testuser -d testmarket"
+          --health-interval 3s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      # ... install deps, then run the tests against localhost:5432
+```
+
+Compare it to the `docker run` above: same image, same `env` (the `-e` flags), same port, same healthcheck. Once you can read one, you can read the other. This is how the [CI module](/en/python-sdet/module-10/) gives every test run its own fresh database.
+
+## Using this in a test
+
+The payoff is small: a container gives your test a real database at a known address, and from there it's the SQL you already know.
+
+```bash
+# 1. start a throwaway database
+docker run -d --name testmarket-db -e POSTGRES_PASSWORD=testpass -p 5432:5432 postgres:16-alpine
+# 2. run your tests — they connect to localhost:5432
+# 3. tear it down
+docker rm -f testmarket-db
+```
+
+Connecting from a test — and the assertions you'd run once you're in — is the subject of the **Database verification** modules in the [Python SDET](/en/python-sdet/) and [Playwright](/en/course/) courses. The [SQL basics](/en/reference/sql-basics/) reference covers the queries; this page covers getting a database to point them at.
