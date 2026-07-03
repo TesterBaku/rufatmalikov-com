@@ -119,12 +119,11 @@ def test_order_total(reset_db, base_url, api):
 ```python
 # tests/api/test_negative.py
 import pytest
-import requests
 
 
 @pytest.mark.api
-def test_login_rejects_bad_password(base_url):
-    r = requests.post(
+def test_login_rejects_bad_password(base_url, api):
+    r = api.post(
         f"{base_url}/api/auth/login",
         json={"email": "customer@test.io", "password": "wrong"},
     )
@@ -198,15 +197,14 @@ import json
 from pathlib import Path
 
 import pytest
-import requests
 
 CASES = json.loads((Path(__file__).parent.parent / "data" / "login_cases.json").read_text())
 
 
 @pytest.mark.api
 @pytest.mark.parametrize("case", CASES, ids=[f"{c['email']}->{c['expected']}" for c in CASES])
-def test_login_matrix(case, base_url):
-    r = requests.post(
+def test_login_matrix(case, base_url, api):
+    r = api.post(
         f"{base_url}/api/auth/login",
         json={"email": case["email"], "password": case["password"]},
     )
