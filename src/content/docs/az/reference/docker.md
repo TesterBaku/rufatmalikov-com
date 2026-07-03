@@ -7,7 +7,7 @@ sidebar:
 
 Gec-tez bir test işi səndən "verilənlər bazasını Docker-də qaldırmağı" istəyəcək və ya bir CI faylında `services:` bloku görəcəksən — bunun nə demək olduğunu bilmək kömək edir. **Docker** bir proqramı işləməsi üçün lazım olan hər şeylə — dəqiq versiya, kitabxanaları, konfiqurasiyası — birlikdə bir **konteynerə** (container) qablaşdırır və bu konteyner sənin noutbukunda, komanda yoldaşının maşınında və CI serverində eyni cür davranır. Daha "mənimkində işləyir" yoxdur.
 
-Tester üçün bu, konkret və təkrarlanan problemi həll edir: testlərinin qarşısında işləmək üçün **real verilənlər bazası** lazımdır və hər dəfə — həm lokalda, həm CI-də — *təzə, eyni* birini istəyirsən, üstəlik hər maşında Postgres-i əllə quraşdırmadan. Bir əmr məhz bunu verir. Bu səhifə testerin əslində işlətdiyi Docker-in sadə dildə turudur və [Database verification](/az/python-sdet/) modullarının qaldırdığı Postgres verilənlər bazasına əsaslanır.
+Tester üçün bu, konkret və təkrarlanan problemi həll edir: testlərinin qarşısında işləmək üçün **real verilənlər bazası** lazımdır və hər dəfə — həm lokalda, həm CI-də — *təzə, eyni* birini istəyirsən, üstəlik hər maşında Postgres-i əllə quraşdırmadan. Bir əmr məhz bunu verir. Bu səhifə testerin əslində işlətdiyi Docker-in sadə dildə turudur və **Database verification** modullarının qaldırdığı Postgres verilənlər bazasına əsaslanır.
 
 ## Konteyner əslində nədir
 
@@ -170,7 +170,7 @@ jobs:
       # ... asılılıqları quraşdır, sonra testləri localhost:5432-yə qarşı işlət
 ```
 
-Onu yuxarıdakı `docker run` ilə müqayisə et: eyni image, eyni `env` (`-e` bayraqları), eyni port, eyni healthcheck. Birini oxuya bildikdə, digərini də oxuya bilərsən. [CI modulu](/az/python-sdet/module-10/) hər test işə salışına öz təzə verilənlər bazasını məhz belə verir.
+Onu yuxarıdakı `docker run` ilə müqayisə et: eyni image, eyni `env` (`-e` bayraqları), eyni port, eyni healthcheck. Birini oxuya bildikdə, digərini də oxuya bilərsən. [CI modulu](/az/course/module-12/) hər test işə salışına öz təzə verilənlər bazasını məhz belə verir.
 
 ## Bunu testdə istifadə etmək
 
@@ -184,4 +184,4 @@ docker run -d --name testmarket-db -e POSTGRES_PASSWORD=testpass -p 5432:5432 po
 docker rm -f testmarket-db
 ```
 
-Testdən qoşulmaq — və qoşulandan sonra işlədəcəyin yoxlamalar — [Python SDET](/az/python-sdet/) və [Playwright](/az/course/) kurslarındakı **Database verification** modullarının mövzusudur. [SQL əsasları](/az/reference/sql-basics/) istinadı sorğuları əhatə edir; bu səhifə isə onları yönəldəcəyin verilənlər bazasını əldə etməyi.
+Testdən qoşulmaq — və qoşulandan sonra işlədəcəyin yoxlamalar — Python SDET və [Playwright](/az/course/) kurslarındakı **Database verification** modullarının mövzusudur. [SQL əsasları](/az/reference/sql-basics/) istinadı sorğuları əhatə edir; bu səhifə isə onları yönəldəcəyin verilənlər bazasını əldə etməyi.

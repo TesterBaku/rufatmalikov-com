@@ -32,7 +32,7 @@ Each page backs up the module that leans on it hardest:
 - **APIs / HTTP / status codes** → **[Module 9 — API testing & networking](/en/course/module-9/)**.
 - **Cookies & sessions** → **[Module 10 — Authentication](/en/course/module-10/)**.
 - **Accessibility, ARIA & WCAG** → **[Module 11 — accessibility testing](/en/course/module-11/)**.
-- **Git & GitHub** → **[Module 12 — CI](/en/course/module-12/)**.
+- **Git & GitHub** → **[Module 12 — CI, Docker, reports](/en/course/module-12/)**.
 - **SQL basics** → the **Database verification** modules coming to the Playwright and Python SDET courses.
 - **Docker basics** → those same **Database verification** modules and **[Module 12 — CI, Docker, reports](/en/course/module-12/)**.
 

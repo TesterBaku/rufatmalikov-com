@@ -32,7 +32,7 @@ Hər səhifə ən çox istinad etdiyi modulu dəstəkləyir:
 - **API-lər / HTTP / status kodları** → **[Modul 9 — API testi və şəbəkə](/az/course/module-9/)**.
 - **Cookie-lər və sessiyalar** → **[Modul 10 — Autentifikasiya](/az/course/module-10/)**.
 - **Əlçatımlılıq, ARIA və WCAG** → **[Modul 11 — əlçatımlılıq testi](/az/course/module-11/)**.
-- **Git və GitHub** → **[Modul 12 — CI](/az/course/module-12/)**.
+- **Git və GitHub** → **[Modul 12 — CI, Docker, hesabatlar](/az/course/module-12/)**.
 - **SQL əsasları** → Playwright və Python SDET kurslarına gələn **Database verification** modulları.
 - **Docker əsasları** → həmin **Database verification** modulları və **[Modul 12 — CI, Docker, hesabatlar](/az/course/module-12/)**.
 
