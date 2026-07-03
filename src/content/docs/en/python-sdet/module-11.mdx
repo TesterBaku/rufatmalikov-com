@@ -1,0 +1,311 @@
+---
+title: "Module 11: Capstone — a full API + UI suite"
+description: "Bring the whole course together: a complete, professionally-structured pytest suite against TestMarket Lab — shared fixtures, API happy-path and negative tests, a Page Object UI flow, data-driven cases, an HTML report, and CI."
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+This is where it all comes together. You'll assemble a small but **complete** test suite against
+TestMarket Lab that uses everything from Modules 0–10: shared fixtures, API happy-path *and*
+negative tests, a Page-Object UI flow, data-driven cases, an HTML report, and a CI workflow.
+Treat this as the project you'd show an interviewer.
+
+Keep TestMarket Lab running at `http://localhost:3000`, your `.venv` active, and
+`pytest-playwright` + `pytest-html` installed.
+
+<Video title="Module 11: Capstone — a full API + UI suite" />
+
+---
+
+## The mission
+
+Build a suite that proves TestMarket Lab works, end to end:
+
+- **API happy path** — products list/read, an order with the right total *(Modules 3, 5)*
+- **API negative** — `400`/`401`/`404`/`409` on bad input *(Module 4)*
+- **UI flow** — log in through the browser with a page object *(Modules 6, 7)*
+- **Data-driven** — a login matrix from a file *(Module 8)*
+- **Structure & isolation** — fixtures, `reset_db`, per-area folders *(Modules 2, 5, 9)*
+- **Reporting & CI** — an HTML report, green on every push *(Modules 9, 10)*
+
+**Remember:** a professional suite is not one clever test — it's *coverage across layers*
+(API happy + negative, UI) with *structure* (fixtures, page objects, folders) and *automation*
+(report + CI). The capstone is that shape in miniature.
+
+---
+
+## Project structure
+
+Everything you've built, in one layout:
+
+```
+python-sdet/
+├── .github/workflows/tests.yml   # CI (Module 10)
+├── pages/
+│   ├── __init__.py
+│   └── login_page.py             # POM (Module 7)
+├── tests/
+│   ├── conftest.py               # base_url / api / reset_db (Modules 2, 5)
+│   ├── data/
+│   │   └── login_cases.json      # data-driven cases (Module 8)
+│   ├── api/
+│   │   ├── test_products.py      # happy path (Module 3)
+│   │   ├── test_orders.py        # arrange-via-API (Module 5)
+│   │   └── test_negative.py      # 4xx (Module 4)
+│   └── ui/
+│       └── test_login.py         # Playwright + POM (Modules 6, 7)
+├── pytest.ini                    # markers + pythonpath (Modules 2, 7, 9)
+└── requirements.txt              # pinned deps (Modules 0, 6, 9)
+```
+
+**Remember:** the layout *is* the design — shared setup in `conftest.py`, selectors in `pages/`,
+data in `data/`, tests grouped by area, and config/CI at the root. A reviewer can read the tree
+and know what the suite does.
+
+---
+
+## The shared conftest
+
+The fixtures every test leans on (from Modules 2 and 5):
+
+```python
+# tests/conftest.py
+import pytest
+import requests
+
+
+@pytest.fixture(scope="session")
+def base_url():
+    return "http://localhost:3000"
+
+
+@pytest.fixture
+def api(base_url):
+    session = requests.Session()
+    yield session
+    session.close()
+
+
+@pytest.fixture
+def reset_db(base_url):
+    requests.post(f"{base_url}/api/reset")
+    yield
+```
+
+---
+
+## API tests — happy path and negative
+
+A happy-path order test (arrange via API, assert the computed total) and a negative test
+(bad login → `401`):
+
+```python
+# tests/api/test_orders.py
+import pytest
+
+
+@pytest.mark.api
+def test_order_total(reset_db, base_url, api):
+    r = api.post(
+        f"{base_url}/api/orders",
+        json={"email": "customer@test.io", "items": [{"product_id": 1, "quantity": 2}]},
+    )
+    assert r.status_code == 201
+    assert r.json()["total"] == pytest.approx(29.99 * 2)
+```
+
+```python
+# tests/api/test_negative.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+@pytest.mark.api
+def test_login_rejects_bad_password():
+    r = requests.post(
+        f"{BASE_URL}/api/auth/login",
+        json={"email": "customer@test.io", "password": "wrong"},
+    )
+    assert r.status_code == 401
+```
+
+**Remember:** cover both directions — the happy path *and* the failure. A suite that only proves
+success misses where real bugs live.
+
+---
+
+## UI test with a page object
+
+The login flow, driven through `LoginPage` (Module 7):
+
+```python
+# pages/login_page.py
+class LoginPage:
+    def __init__(self, page, base_url):
+        self.page = page
+        self.base_url = base_url
+        self.email = page.get_by_label("Email")
+        self.password = page.get_by_label("Password")
+        self.submit = page.get_by_test_id("login-submit")
+
+    def goto(self):
+        self.page.goto(f"{self.base_url}/auth/login")
+        return self
+
+    def login(self, email, password):
+        self.email.fill(email)
+        self.password.fill(password)
+        self.submit.click()
+```
+
+```python
+# tests/ui/test_login.py
+import pytest
+from playwright.sync_api import expect
+
+from pages.login_page import LoginPage
+
+
+@pytest.mark.ui
+def test_login_flow(page, base_url):
+    LoginPage(page, base_url).goto().login("customer@test.io", "customer123")
+    expect(page.get_by_test_id("nav-logout")).to_be_visible()
+```
+
+**Remember:** the UI test is a *scenario* — the page object hides the selectors, and the test
+reads as "log in, then I'm signed in." That's the payoff of the POM structure.
+
+---
+
+## A data-driven slice
+
+The login validation matrix from a JSON file (Module 8) — `tests/data/login_cases.json`:
+
+```json
+[
+  { "email": "customer@test.io", "password": "customer123", "expected": 200 },
+  { "email": "customer@test.io", "password": "wrong",       "expected": 401 },
+  { "email": "ghost@test.io",    "password": "whatever",    "expected": 401 },
+  { "email": "customer@test.io", "password": "",            "expected": 400 }
+]
+```
+
+```python
+# tests/api/test_login_matrix.py
+import json
+from pathlib import Path
+
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+CASES = json.loads((Path(__file__).parent.parent / "data" / "login_cases.json").read_text())
+
+
+@pytest.mark.api
+@pytest.mark.parametrize("case", CASES, ids=[f"{c['email'] or 'empty'}->{c['expected']}" for c in CASES])
+def test_login_matrix(case):
+    r = requests.post(
+        f"{BASE_URL}/api/auth/login",
+        json={"email": case["email"], "password": case["password"]},
+    )
+    assert r.status_code == case["expected"]
+```
+
+Note the path: this test lives in `tests/api/`, so it reaches up two levels
+(`.parent.parent`) to `tests/data/`.
+
+**Remember:** one JSON file drives many cases; the path is anchored with `Path(__file__).parent`
+so it works from any directory — mind how many levels up `data/` is from the test.
+
+---
+
+## Wire it up
+
+The config that ties the suite together:
+
+```ini
+# pytest.ini
+[pytest]
+testpaths = tests
+pythonpath = .
+markers =
+    smoke: a fast, critical subset to run first
+    api: tests that hit the REST API
+    ui: tests that drive the browser
+```
+
+```
+# requirements.txt (pin everything you've installed)
+pytest
+requests
+pytest-playwright
+pytest-html
+```
+
+Regenerate `requirements.txt` any time with `pip freeze > requirements.txt`, and reuse the CI
+workflow from Module 10 unchanged — it already installs these, starts the app, and runs the suite.
+
+**Remember:** `pytest.ini` (markers + `pythonpath`), a complete `requirements.txt`, and the CI
+workflow are the connective tissue. Get them right once and every new test just drops into place.
+
+---
+
+## Run it
+
+```bash
+pytest -m api                                          # just the API layer
+pytest -m ui                                           # just the browser layer
+pytest -ra --html=report.html --self-contained-html    # everything, with a report
+```
+
+Push it to GitHub with the Module 10 workflow and the whole thing runs on every PR, report and
+all. That's a suite you can hand to a team — or a hiring manager.
+
+**Remember:** run a slice by marker while developing (`-m api`, `-m ui`), the whole suite with a
+report before you push, and let CI run it on every change. Fast feedback locally, full coverage
+in CI.
+
+---
+
+## Exercises
+
+Assemble the capstone in your `python-sdet` project. Run with `pytest -v`.
+
+### Exercise 1 — Build the structure (20 min)
+
+Create the folder layout above (`pages/`, `tests/api/`, `tests/ui/`, `tests/data/`, `pytest.ini`,
+`requirements.txt`). Move your existing tests into `tests/api/` and `tests/ui/`. Confirm
+`pytest` still collects and passes everything.
+
+### Exercise 2 — Fill each layer (30 min)
+
+Make sure you have at least: one API happy-path test, one API negative test, one data-driven
+matrix, and one UI flow — each with the right marker (`api`/`ui`, and `smoke` on the fastest).
+
+### Exercise 3 — Report and select (10 min)
+
+Run `pytest -m smoke --html=report.html --self-contained-html` and open the report. Then run
+`pytest -m "api and not ui"` and confirm only API tests run.
+
+### Exercise 4 — Put it in CI (15 min)
+
+Add the Module 10 workflow, push to GitHub, and confirm the suite runs green in Actions with the
+report uploaded as an artifact. Make it a required check.
+
+### Capstone challenge — Extend it
+
+Add a **product create → read → update → delete** UI or API lifecycle test, and a **negative UI**
+test (wrong password shows `flash-error`). Then point the whole suite at *your own* app by
+swapping `base_url` and the selectors — the structure carries over unchanged.
+
+---
+
+## You've finished Python for SDETs 🎉
+
+From `pip install pytest` to a CI-gated API + UI suite, you now have the toolkit real SDET roles
+use every day: pytest, `requests`, Playwright, fixtures, the Page Object Model, data-driven
+tests, reporting, and CI — all exercised against a real application. Take this capstone, extend
+it, and point it at your own projects. That suite is your portfolio piece.
