@@ -49,10 +49,10 @@
         <div class="kicker-label">Each failure, its status</div>
         <h2 class="section-head">The 4xx family</h2>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;max-width:1600px;">
-          <div class="verb-card"><div class="name">400</div><div class="desc" style="font-size:22px;color:#f8fafc;font-weight:700;margin-top:6px;">Bad Request</div><div class="desc">missing / invalid input</div></div>
-          <div class="verb-card"><div class="name">401</div><div class="desc" style="font-size:22px;color:#f8fafc;font-weight:700;margin-top:6px;">Unauthorized</div><div class="desc">bad credentials</div></div>
-          <div class="verb-card"><div class="name">404</div><div class="desc" style="font-size:22px;color:#f8fafc;font-weight:700;margin-top:6px;">Not Found</div><div class="desc">resource doesn't exist</div></div>
-          <div class="verb-card"><div class="name">409</div><div class="desc" style="font-size:22px;color:#f8fafc;font-weight:700;margin-top:6px;">Conflict</div><div class="desc">duplicate / clashes</div></div>
+          <div class="verb-card"><div class="name">400</div><div class="label">Bad Request</div><div class="desc">missing / invalid input</div></div>
+          <div class="verb-card"><div class="name">401</div><div class="label">Unauthorized</div><div class="desc">bad credentials</div></div>
+          <div class="verb-card"><div class="name">404</div><div class="label">Not Found</div><div class="desc">resource doesn't exist</div></div>
+          <div class="verb-card"><div class="name">409</div><div class="label">Conflict</div><div class="desc">duplicate / clashes</div></div>
         </div>
         <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">🔒</span><span>Security touch: wrong password <strong>and</strong> unknown email both return the same <code class="code-inline">401</code> — so the API never leaks which emails exist.</span></div>
         <div class="brand-bar">
