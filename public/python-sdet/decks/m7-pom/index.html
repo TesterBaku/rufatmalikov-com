@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module 7: Page Object Model — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Module 7 · Python for SDETs</div>
+        <h1 class="headline">Page Object<br><span class="grad-text">Model</span></h1>
+        <p class="subtitle">Hide selectors behind readable page classes — tests become scenarios</p>
+        <div class="pills">
+          <span class="pill">page classes</span>
+          <span class="pill">one place for selectors</span>
+          <span class="pill">pages/ package</span>
+          <span class="pill">pythonpath = .</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 The problem -->
+      <section class="slide s-full" data-screen-label="02 The problem">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Selectors copy-pasted everywhere</div>
+        <h2 class="section-head">Fifty tests, the same selectors — change one, edit them all</h2>
+        <div class="code-block" style="max-width:1200px;margin-top:16px;font-size:19px;">
+          <div style="color:#6a9955;"># in test_login.py, and test_checkout.py, and test_profile.py …</div>
+          <div>page.get_by_label(<span style="color:#ce9178;">"Email"</span>).fill(<span style="color:#ce9178;">"customer@test.io"</span>)</div>
+          <div>page.get_by_label(<span style="color:#ce9178;">"Password"</span>).fill(<span style="color:#ce9178;">"customer123"</span>)</div>
+          <div>page.get_by_test_id(<span style="color:#ce9178;">"login-submit"</span>).click()</div>
+        </div>
+        <div class="step-tip" style="margin-top:34px;max-width:1500px;"><span class="tip-icon">💥</span><span>When the login button's <code class="code-inline">data-testid</code> changes, you hunt it down in <strong>every</strong> test. The selectors belong in <em>one</em> place.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 A page object -->
+      <section class="slide s-step" data-screen-label="03 A page object">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">One class owns the page's selectors + actions</div>
+
+        <div>
+          <div class="code-block" style="font-size:17px;">
+            <div style="color:#6a9955;"># pages/login_page.py</div>
+            <div><span style="color:#569cd6;">class</span> <span style="color:#4ec9b0;">LoginPage</span>:</div>
+            <div style="margin-left:20px;"><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">__init__</span>(self, page, base_url):</div>
+            <div style="margin-left:40px;">self.email = page.get_by_label(<span style="color:#ce9178;">"Email"</span>)</div>
+            <div style="margin-left:40px;">self.submit = page.get_by_test_id(<span style="color:#ce9178;">"login-submit"</span>)</div>
+            <div style="height:0.5em;"></div>
+            <div style="margin-left:20px;"><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">login</span>(self, email, pw):</div>
+            <div style="margin-left:40px;">self.email.fill(email)</div>
+            <div style="margin-left:40px;">self.submit.click()</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">📦</span><span>Locators live in <code class="code-inline">__init__</code>; each user task (<code class="code-inline">login</code>, <code class="code-inline">search</code>) is a method. The selector appears <strong>once</strong>.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🔗</span><span>Return <code class="code-inline">self</code> from navigations like <code class="code-inline">goto()</code> so calls can chain: <code class="code-inline">LoginPage(...).goto().login(...)</code>.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 The test reads as a scenario -->
+      <section class="slide s-two-col" data-screen-label="04 Scenario" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">The test reads as a <span class="grad-text">scenario</span></div>
+        <div>
+          <div style="font-size:22px;font-weight:700;color:#ef9a9a;margin-bottom:14px;">Without a page object</div>
+          <div class="code-block" style="font-size:16px;">
+            <div>page.get_by_label(<span style="color:#ce9178;">"Email"</span>).fill(…)</div>
+            <div>page.get_by_label(<span style="color:#ce9178;">"Password"</span>).fill(…)</div>
+            <div>page.get_by_test_id(<span style="color:#ce9178;">"login-submit"</span>).click()</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:700;color:#4caf50;margin-bottom:14px;">With LoginPage</div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#d4d4d4;">(</div>
+            <div style="margin-left:20px;">LoginPage(page, base_url)</div>
+            <div style="margin-left:20px;">.goto()</div>
+            <div style="margin-left:20px;">.login(<span style="color:#ce9178;">"customer@test.io"</span>, <span style="color:#ce9178;">"customer123"</span>)</div>
+            <div style="color:#d4d4d4;">)</div>
+          </div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">📖</span><span>Reads like the intent — the <em>how</em> is hidden in the page class.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 Structure -->
+      <section class="slide s-two-col" data-screen-label="05 Structure" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Where page objects live</div>
+        <div>
+          <div class="code-block" style="font-size:18px;">
+            <div style="color:#d4d4d4;">python-sdet/</div>
+            <div style="color:#d4d4d4;">├── pages/</div>
+            <div style="margin-left:16px;color:#9cdcfe;">│   ├── __init__.py</div>
+            <div style="margin-left:16px;color:#9cdcfe;">│   └── login_page.py</div>
+            <div style="color:#d4d4d4;">├── tests/</div>
+            <div style="margin-left:16px;color:#9cdcfe;">│   └── test_login.py</div>
+            <div style="color:#d4d4d4;">└── pytest.ini</div>
+          </div>
+        </div>
+        <div>
+          <div class="code-block" style="font-size:18px;">
+            <div style="color:#6a9955;"># pytest.ini</div>
+            <div style="color:#d4d4d4;">[pytest]</div>
+            <div style="color:#d4d4d4;">testpaths = tests</div>
+            <div><span style="color:#9cdcfe;">pythonpath</span> = .</div>
+          </div>
+          <div class="step-tip" style="margin-top:22px;"><span class="tip-icon">🧭</span><span><code class="code-inline">pythonpath = .</code> (pytest ≥ 7) puts the project root on <code class="code-inline">sys.path</code> so <code class="code-inline">from pages… import …</code> resolves.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">📦</div>
+        <h2 class="done-head">Selectors in<br><span class="grad-text">one place</span></h2>
+        <p class="done-sub">Page classes hide the how, so tests read like scenarios and survive redesigns</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🧪</div>
+            <div class="nc-title">Practice</div>
+            <div class="nc-desc">Move your Module 6 login into a LoginPage and a ProductsPage</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🔗</div>
+            <div class="nc-title">Chain</div>
+            <div class="nc-desc">Return self from goto() so LoginPage(...).goto().login(...) reads cleanly</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Module 8</div>
+            <div class="nc-desc">Data-driven tests — one test body, many cases from a file</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>
