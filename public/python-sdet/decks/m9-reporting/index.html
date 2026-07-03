@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module 9: Reporting &amp; suite structure — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Module 9 · Python for SDETs</div>
+        <h1 class="headline">Reporting &amp;<br><span class="grad-text">suite structure</span></h1>
+        <p class="subtitle">Make a suite legible to a team — shareable reports, markers, folders</p>
+        <div class="pills">
+          <span class="pill">pytest-html</span>
+          <span class="pill">markers</span>
+          <span class="pill">conftest per area</span>
+          <span class="pill">the gate command</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 HTML reports -->
+      <section class="slide s-step" data-screen-label="02 HTML report">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">A single shareable <span class="grad-text">report file</span></div>
+
+        <div>
+          <div class="terminal">
+            <div class="terminal-bar"><div class="t-dots"><span style="background:#ff5f57;"></span><span style="background:#febc2e;"></span><span style="background:#28c840;"></span></div><span class="t-title">bash</span></div>
+            <div class="terminal-body">
+              <div><span style="color:#6a9955;"># install once, then re-pin</span></div>
+              <div>pip install pytest-html</div>
+              <div>pip freeze &gt; requirements.txt</div>
+              <div style="height:0.6em;"></div>
+              <div>pytest --html=report.html \</div>
+              <div style="margin-left:20px;">--self-contained-html</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">📄</span><span>Lists every test — outcome, duration, captured output, failing tracebacks inline.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">📎</span><span><code class="code-inline">--self-contained-html</code> inlines the CSS/JS, so the one file is emailable or uploadable as a CI artifact.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 Markers -->
+      <section class="slide s-two-col" data-screen-label="03 Markers" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Tag a subset, run just that subset</div>
+        <div>
+          <div class="code-block" style="font-size:17px;">
+            <div style="color:#6a9955;"># pytest.ini</div>
+            <div style="color:#d4d4d4;">[pytest]</div>
+            <div><span style="color:#9cdcfe;">markers</span> =</div>
+            <div style="margin-left:20px;">smoke: fast, critical subset</div>
+            <div style="margin-left:20px;">api: hits the REST API</div>
+            <div style="margin-left:20px;">ui: drives the browser</div>
+            <div style="height:0.6em;"></div>
+            <div style="color:#d4d4d4;">@pytest.mark.smoke</div>
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_products_up</span>(): …</div>
+          </div>
+        </div>
+        <div>
+          <div class="code-block" style="font-size:17px;">
+            <div>pytest -m smoke</div>
+            <div>pytest -m <span style="color:#ce9178;">"api and not smoke"</span></div>
+            <div>pytest -m ui</div>
+          </div>
+          <div class="step-tip" style="margin-top:22px;"><span class="tip-icon">🚦</span><span><code class="code-inline">-m</code> supports <code class="code-inline">and</code>/<code class="code-inline">or</code>/<code class="code-inline">not</code>. A seconds-long <strong>smoke</strong> subset is your everyday "did we break anything critical?" gate.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Suite structure -->
+      <section class="slide s-two-col" data-screen-label="04 Structure" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Group by area, share fixtures by <span class="grad-text">folder</span></div>
+        <div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#d4d4d4;">tests/</div>
+            <div style="margin-left:16px;">├── conftest.py <span style="color:#6a9955;"># shared</span></div>
+            <div style="margin-left:16px;">├── api/</div>
+            <div style="margin-left:32px;">│   ├── conftest.py</div>
+            <div style="margin-left:32px;">│   └── test_products.py</div>
+            <div style="margin-left:16px;">└── ui/</div>
+            <div style="margin-left:32px;">    ├── conftest.py</div>
+            <div style="margin-left:32px;">    └── test_login.py</div>
+          </div>
+        </div>
+        <div>
+          <div class="step-tip"><span class="tip-icon">🗂️</span><span>pytest loads <strong>every</strong> <code class="code-inline">conftest.py</code> on the path to a test — no imports.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🎯</span><span>Top <code class="code-inline">conftest.py</code> = shared fixtures (everywhere); a nested one = scoped to that area. Central shared, local specific.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 The gate command -->
+      <section class="slide s-full" data-screen-label="05 The gate">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Legible input, legible output</div>
+        <h2 class="section-head">One command: fast subset · artifact · clean summary</h2>
+        <div class="code-block" style="max-width:1400px;margin-top:8px;font-size:19px;">
+          <div>pytest -m smoke --html=smoke-report.html \</div>
+          <div style="margin-left:24px;">--self-contained-html -ra --tb=short</div>
+        </div>
+        <div class="pipe-row" style="max-width:1500px;margin-top:32px;">
+          <div class="pipe-chip blue">-m smoke <span style="opacity:.7;">fast subset</span></div>
+          <div class="pipe-chip">--html <span style="opacity:.7;">artifact</span></div>
+          <div class="pipe-chip green">-ra <span style="opacity:.7;">skips/xfails</span></div>
+          <div class="pipe-chip">--tb=short <span style="opacity:.7;">compact</span></div>
+        </div>
+        <div class="step-tip" style="margin-top:34px;max-width:1500px;"><span class="tip-icon">🧾</span><span>Also handy: <code class="code-inline">--durations=10</code> (slowest tests) and <code class="code-inline">-q</code> (one char per test). Module 10 wires this exact gate into GitHub Actions.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🧾</div>
+        <h2 class="done-head">A suite a<br><span class="grad-text">team</span> can read</h2>
+        <p class="done-sub">Shareable reports, a smoke gate, and a folder layout that scales past a dozen files</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">📄</div>
+            <div class="nc-title">Practice</div>
+            <div class="nc-desc">Generate report.html and find a test's duration and outcome</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🚦</div>
+            <div class="nc-title">Smoke gate</div>
+            <div class="nc-desc">Tag two fast tests and run only pytest -m smoke</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Module 10</div>
+            <div class="nc-desc">CI — run the suite on every push with GitHub Actions</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>
