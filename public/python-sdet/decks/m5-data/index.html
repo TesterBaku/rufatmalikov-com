@@ -85,7 +85,7 @@
             <div style="color:#d4d4d4;">).json()</div>
             <div style="height:0.7em;"></div>
             <div style="color:#6a9955;"># act + assert on what matters</div>
-            <div style="color:#d4d4d4;">assert order[<span style="color:#ce9178;">"total"</span>] == <span style="color:#b5cea8;">59.98</span></div>
+            <div style="color:#d4d4d4;">assert order[<span style="color:#ce9178;">"total"</span>] == <span style="color:#dcdcaa;">pytest.approx</span>(<span style="color:#b5cea8;">59.98</span>)</div>
           </div>
         </div>
         <div class="brand-bar">
@@ -102,18 +102,18 @@
         <div>
           <div class="code-block" style="font-size:17px;">
             <div style="color:#569cd6;">@pytest.fixture</div>
-            <div style="color:#dcdcaa;">def temp_user(api, base_url):</div>
+            <div style="color:#dcdcaa;">def temp_product(api, base_url):</div>
             <div style="margin-left:20px;color:#6a9955;"># setup</div>
-            <div style="margin-left:20px;">u = api.post(<span style="color:#ce9178;">…/users</span>).json()</div>
-            <div style="margin-left:20px;color:#c586c0;">yield u <span style="color:#6a9955;"># hand it to the test</span></div>
+            <div style="margin-left:20px;">p = api.post(<span style="color:#ce9178;">…/products</span>).json()</div>
+            <div style="margin-left:20px;color:#c586c0;">yield p <span style="color:#6a9955;"># hand it to the test</span></div>
             <div style="margin-left:20px;color:#6a9955;"># teardown — always runs</div>
-            <div style="margin-left:20px;">api.delete(<span style="color:#ce9178;">f"…/users/{u['id']}"</span>)</div>
+            <div style="margin-left:20px;">api.delete(<span style="color:#ce9178;">f"…/products/{p['id']}"</span>)</div>
           </div>
         </div>
 
         <div>
           <div class="step-tip"><span class="tip-icon">♻️</span><span>Code <strong>before</strong> <code class="code-inline">yield</code> is setup; code <strong>after</strong> is teardown — and it runs even if the test fails.</span></div>
-          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🏭</span><span>Need several? A <strong>factory fixture</strong> returns a <em>function</em> the test calls N times — each made item tracked and torn down.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🏭</span><span>Need several? A <strong>factory fixture</strong> returns a <em>function</em> the test calls N times — each with a unique name, and <code class="code-inline">reset_db</code> reseeds it all away after.</span></div>
         </div>
         <div class="brand-bar">
           <div class="brand-dot"></div>
@@ -136,7 +136,7 @@
           <div class="next-card">
             <div class="nc-icon">🏭</div>
             <div class="nc-title">Factory</div>
-            <div class="nc-desc">A fixture that makes N users and tears each one down</div>
+            <div class="nc-desc">A factory fixture that makes N products, each with a unique name</div>
           </div>
           <div class="next-card">
             <div class="nc-icon">➡️</div>
