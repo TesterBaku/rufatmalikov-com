@@ -48,8 +48,9 @@ attach to a CI run. `pytest-html` produces a single self-contained HTML file:
 glance, with the failing tests' tracebacks inline. `--self-contained-html` inlines the CSS/JS so
 the one file is emailable or uploadable as a CI artifact.
 
-**Remember:** `pip install pytest-html`, then `pytest --html=report.html --self-contained-html`
-for a single shareable report file — the artifact you attach to a CI run or send to a teammate.
+**Remember:** `pip install pytest-html`, re-pin with `pip freeze > requirements.txt` (so CI gets
+the plugin too), then `pytest --html=report.html --self-contained-html` for a single shareable
+report file — the artifact you attach to a CI run or send to a teammate.
 
 ---
 
