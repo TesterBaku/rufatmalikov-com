@@ -51,15 +51,22 @@
         <div class="full-heading">One class owns the page's selectors + actions</div>
 
         <div>
-          <div class="code-block" style="font-size:17px;">
+          <div class="code-block" style="font-size:16px;">
             <div style="color:#6a9955;"># pages/login_page.py</div>
             <div><span style="color:#569cd6;">class</span> <span style="color:#4ec9b0;">LoginPage</span>:</div>
             <div style="margin-left:20px;"><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">__init__</span>(self, page, base_url):</div>
+            <div style="margin-left:40px;">self.page, self.base_url = page, base_url</div>
             <div style="margin-left:40px;">self.email = page.get_by_label(<span style="color:#ce9178;">"Email"</span>)</div>
+            <div style="margin-left:40px;">self.password = page.get_by_label(<span style="color:#ce9178;">"Password"</span>)</div>
             <div style="margin-left:40px;">self.submit = page.get_by_test_id(<span style="color:#ce9178;">"login-submit"</span>)</div>
+            <div style="height:0.5em;"></div>
+            <div style="margin-left:20px;"><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">goto</span>(self):</div>
+            <div style="margin-left:40px;">self.page.goto(<span style="color:#569cd6;">f</span><span style="color:#ce9178;">"{self.base_url}/auth/login"</span>)</div>
+            <div style="margin-left:40px;"><span style="color:#569cd6;">return</span> self</div>
             <div style="height:0.5em;"></div>
             <div style="margin-left:20px;"><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">login</span>(self, email, pw):</div>
             <div style="margin-left:40px;">self.email.fill(email)</div>
+            <div style="margin-left:40px;">self.password.fill(pw)</div>
             <div style="margin-left:40px;">self.submit.click()</div>
           </div>
         </div>
