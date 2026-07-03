@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module 6: UI automation with Playwright — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Module 6 · Python for SDETs</div>
+        <h1 class="headline">UI automation<br>with <span class="grad-text">Playwright</span></h1>
+        <p class="subtitle">Drive a real browser — locate, act, and assert like a user would</p>
+        <div class="pills">
+          <span class="pill">page fixture</span>
+          <span class="pill">get_by_* locators</span>
+          <span class="pill">auto-waiting</span>
+          <span class="pill">web-first expect</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 The page fixture -->
+      <section class="slide s-step" data-screen-label="02 The page fixture">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">One fixture: <span class="grad-text">page</span></div>
+
+        <div>
+          <div class="code-block" style="font-size:19px;">
+            <div style="color:#6a9955;"># pip install pytest-playwright</div>
+            <div><span style="color:#569cd6;">import</span> re</div>
+            <div><span style="color:#569cd6;">from</span> playwright.sync_api <span style="color:#569cd6;">import</span> expect</div>
+            <div style="height:0.7em;"></div>
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_products_page</span>(<span style="color:#9cdcfe;">page</span>):</div>
+            <div style="margin-left:24px;">page.goto(<span style="color:#ce9178;">"http://localhost:3000/products"</span>)</div>
+            <div style="margin-left:24px;">expect(page).to_have_title(<span style="color:#dcdcaa;">re.compile</span>(<span style="color:#ce9178;">"TestMarket Lab"</span>))</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">🌐</span><span><code class="code-inline">pytest-playwright</code> hands every test a fresh <code class="code-inline">page</code> — a clean browser context, no setup or teardown to write.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🎬</span><span>Headless by default; add <code class="code-inline">--headed</code> to watch it drive, <code class="code-inline">--slowmo</code> to slow it down while debugging.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 Locators -->
+      <section class="slide s-full" data-screen-label="03 Locators">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Find elements the way a user sees them</div>
+        <h2 class="section-head">Locators: <span class="grad-text">get_by_*</span></h2>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;max-width:1640px;">
+          <div class="verb-card"><div class="name">test id</div><div class="label">get_by_test_id()</div><div class="desc">the <code class="code-inline">data-testid</code> hooks the app ships — most robust</div></div>
+          <div class="verb-card"><div class="name">role</div><div class="label">get_by_role()</div><div class="desc">buttons, links, headings — also an a11y check</div></div>
+          <div class="verb-card"><div class="name">label</div><div class="label">get_by_label()</div><div class="desc">form fields by their visible label</div></div>
+          <div class="verb-card"><div class="name">text</div><div class="label">get_by_text()</div><div class="desc">visible text — handy, but the most fragile</div></div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">🎯</span><span>Locate by <strong>intent</strong>: <code class="code-inline">get_by_test_id</code> is the most robust (a hook that survives restyling); <code class="code-inline">get_by_role</code> / <code class="code-inline">get_by_label</code> double as accessibility checks; <code class="code-inline">get_by_text</code> is the most fragile.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Actions + auto-waiting -->
+      <section class="slide s-full" data-screen-label="04 Auto-waiting">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">No manual sleeps</div>
+        <h2 class="section-head">Actions wait for the element — automatically</h2>
+        <div class="pipe-row" style="max-width:1640px;">
+          <div class="pipe-chip blue">locate the element</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">Playwright waits: visible &amp; enabled</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip green">then <span style="font-family:ui-monospace,Consolas,monospace;">.click()</span> / <span style="font-family:ui-monospace,Consolas,monospace;">.fill()</span></div>
+        </div>
+        <div class="code-block" style="max-width:1100px;margin-top:40px;font-size:19px;">
+          <div>page.get_by_label(<span style="color:#ce9178;">"Email"</span>).fill(<span style="color:#ce9178;">"customer@test.io"</span>)</div>
+          <div>page.get_by_test_id(<span style="color:#ce9178;">"login-submit"</span>).click()</div>
+        </div>
+        <div class="step-tip" style="margin-top:32px;max-width:1500px;"><span class="tip-icon">⏱️</span><span>Each action auto-waits up to the timeout for the element to be actionable — so <code class="code-inline">time.sleep()</code> is a smell, not a fix.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 Web-first assertions -->
+      <section class="slide s-step" data-screen-label="05 Web-first expect">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Assertions that <span class="grad-text">retry</span></div>
+
+        <div>
+          <div class="code-block" style="font-size:18px;">
+            <div><span style="color:#569cd6;">from</span> <span style="color:#d4d4d4;">playwright.sync_api</span> <span style="color:#569cd6;">import</span> <span style="color:#d4d4d4;">expect</span></div>
+            <div style="height:0.7em;"></div>
+            <div style="color:#6a9955;"># waits until it's visible, or fails</div>
+            <div>expect(</div>
+            <div style="margin-left:20px;">page.get_by_test_id(<span style="color:#ce9178;">"nav-logout"</span>)</div>
+            <div>).to_be_visible()</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">✅</span><span><code class="code-inline">expect(locator)</code> <strong>auto-retries</strong> until the condition holds or the timeout hits — no flake from asserting a millisecond too early.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🆚</span><span>Different from pytest's plain <code class="code-inline">assert</code>: a web-first <code class="code-inline">expect</code> polls the live page instead of checking once.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🎭</div>
+        <h2 class="done-head">Drive the<br><span class="grad-text">real browser</span></h2>
+        <p class="done-sub">Locate by role, act with auto-waiting, and assert with web-first expect</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🧪</div>
+            <div class="nc-title">Practice</div>
+            <div class="nc-desc">Log in through the UI and expect the logout button visible</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🎯</div>
+            <div class="nc-title">Locators</div>
+            <div class="nc-desc">Reach for get_by_role / get_by_label before CSS or XPath</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Module 7</div>
+            <div class="nc-desc">Page Object Model — hide selectors behind readable page classes</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>

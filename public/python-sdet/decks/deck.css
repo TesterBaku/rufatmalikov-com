@@ -195,7 +195,7 @@
 .crud-step.gone .step-code { color: #f44336; }
 
 /* Step layout (grid; slides set their own columns inline where needed) */
-.s-step { display: grid; grid-template-columns: 1fr 1fr; height: 100%; }
+.s-step { display: grid; grid-template-columns: 1fr 1fr; height: 100%; gap: 60px; padding: 60px 90px; align-items: center; }
 .step-tip {
   display: flex; align-items: flex-start; gap: 16px;
   padding: 20px 28px;
