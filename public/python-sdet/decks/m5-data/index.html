@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module 5: Test data setup & teardown — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Module 5 · Python for SDETs</div>
+        <h1 class="headline">Test data<br><span class="grad-text">setup &amp; teardown</span></h1>
+        <p class="subtitle">Every test starts from a state you control — and leaves no mess behind</p>
+        <div class="pills">
+          <span class="pill">reset baseline</span>
+          <span class="pill">arrange via API</span>
+          <span class="pill">yield teardown</span>
+          <span class="pill">factory fixtures</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 The problem: shared state -->
+      <section class="slide s-full" data-screen-label="02 Why isolation">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">The flakiness you can't reproduce</div>
+        <h2 class="section-head">Tests that share state fail in ways you can't reproduce</h2>
+        <div class="feature-cards" style="max-width:1500px;">
+          <div class="feature-card"><div class="feature-icon">🔀</div><div><h3>Order-dependent</h3><p>test B only passes if test A ran first — reorder and it breaks.</p></div></div>
+          <div class="feature-card"><div class="feature-icon">👻</div><div><h3>Leftover data</h3><p>yesterday's order or user lingers and skews today's assertion.</p></div></div>
+          <div class="feature-card"><div class="feature-icon">🎲</div><div><h3>Green then red</h3><p>the same test passes solo, fails in the suite — the classic flake.</p></div></div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">🎯</span><span>The fix: each test <strong>owns its state</strong> — start from a known baseline, set up exactly what it needs, clean up after.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 Reset to a known baseline -->
+      <section class="slide s-full" data-screen-label="03 Reset baseline">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Known slate, every time</div>
+        <h2 class="section-head">Reset to a known baseline</h2>
+        <div class="pipe-row" style="max-width:1600px;">
+          <div class="pipe-chip blue">POST <span style="font-family:ui-monospace,Consolas,monospace;">/api/reset</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip green">seed data restored ✅</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">your test runs on a clean slate</div>
+        </div>
+        <div class="code-block" style="max-width:1100px;margin-top:40px;font-size:19px;">
+          <div style="color:#569cd6;">@pytest.fixture</div>
+          <div style="color:#dcdcaa;">def reset_db(base_url):</div>
+          <div style="margin-left:22px;">requests.post(<span style="color:#ce9178;">f"{base_url}/api/reset"</span>)</div>
+          <div style="margin-left:22px;color:#c586c0;">yield <span style="color:#6a9955;"># test runs here, on fresh data</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Arrange via API, not UI -->
+      <section class="slide s-two-col" data-screen-label="04 Arrange via API" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Arrange via the API, not the UI</div>
+        <div>
+          <p style="font-size:24px;line-height:1.55;color:oklch(80% 0.03 255);">Need a logged-in user with an order? Don't <em>click</em> through signup → login → checkout. <strong>POST</strong> the data straight in — one fast, reliable call — then test the thing you actually care about.</p>
+          <div class="step-tip" style="margin-top:26px;"><span class="tip-icon">⚡</span><span>API setup is faster and far less flaky than driving the UI to build state.</span></div>
+        </div>
+        <div>
+          <div class="code-block" style="font-size:18px;">
+            <div style="color:#6a9955;"># arrange: one API call, not 6 UI clicks</div>
+            <div style="color:#d4d4d4;">order = api.post(</div>
+            <div style="margin-left:20px;color:#ce9178;">f"{base_url}/api/orders",</div>
+            <div style="margin-left:20px;">json={<span style="color:#ce9178;">"email"</span>: user, <span style="color:#ce9178;">"items"</span>: […]},</div>
+            <div style="color:#d4d4d4;">).json()</div>
+            <div style="height:0.7em;"></div>
+            <div style="color:#6a9955;"># act + assert on what matters</div>
+            <div style="color:#d4d4d4;">assert order[<span style="color:#ce9178;">"total"</span>] == <span style="color:#b5cea8;">59.98</span></div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 yield teardown + factory -->
+      <section class="slide s-step" data-screen-label="05 Teardown & factory" style="gap:56px;padding:60px 90px;align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Set up before <span class="grad-text">yield</span>, clean up after</div>
+
+        <div>
+          <div class="code-block" style="font-size:17px;">
+            <div style="color:#569cd6;">@pytest.fixture</div>
+            <div style="color:#dcdcaa;">def temp_user(api, base_url):</div>
+            <div style="margin-left:20px;color:#6a9955;"># setup</div>
+            <div style="margin-left:20px;">u = api.post(<span style="color:#ce9178;">…/users</span>).json()</div>
+            <div style="margin-left:20px;color:#c586c0;">yield u <span style="color:#6a9955;"># hand it to the test</span></div>
+            <div style="margin-left:20px;color:#6a9955;"># teardown — always runs</div>
+            <div style="margin-left:20px;">api.delete(<span style="color:#ce9178;">f"…/users/{u['id']}"</span>)</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">♻️</span><span>Code <strong>before</strong> <code class="code-inline">yield</code> is setup; code <strong>after</strong> is teardown — and it runs even if the test fails.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🏭</span><span>Need several? A <strong>factory fixture</strong> returns a <em>function</em> the test calls N times — each made item tracked and torn down.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">♻️</div>
+        <h2 class="done-head">Own your<br><span class="grad-text">test state</span></h2>
+        <p class="done-sub">Reset the baseline, arrange through the API, and let fixtures clean up</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🧪</div>
+            <div class="nc-title">Practice</div>
+            <div class="nc-desc">A reset_db fixture + arrange an order via the API and assert its total</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🏭</div>
+            <div class="nc-title">Factory</div>
+            <div class="nc-desc">A fixture that makes N users and tears each one down</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Module 6</div>
+            <div class="nc-desc">UI automation — drive the browser with Playwright for Python</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>
