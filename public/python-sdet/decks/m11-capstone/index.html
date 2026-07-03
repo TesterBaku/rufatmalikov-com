@@ -86,7 +86,7 @@
           <div>├── pytest.ini <span style="color:#6a9955;"># markers + pythonpath</span></div>
           <div>└── requirements.txt <span style="color:#6a9955;"># pinned deps</span></div>
         </div>
-        <div class="step-tip" style="margin-top:30px;max-width:1500px;"><span class="tip-icon">🗂️</span><span>Shared setup in <code class="code-inline">conftest.py</code>, selectors in <code class="code-inline">pages/</code>, data in <code class="code-inline">data/</code>, tests grouped by area, config + CI at the root.</span></div>
+        <div class="step-tip" style="margin-top:30px;max-width:1500px;"><span class="tip-icon">🗂️</span><span>Every folder has one job — so a new test has an obvious home, and onboarding is reading a tree instead of a wiki.</span></div>
         <div class="brand-bar">
           <div class="brand-dot"></div>
           <span class="brand-name"><strong>AI</strong> with Rufat</span>
@@ -98,7 +98,7 @@
         <div class="circuit-bg"></div>
         <div class="full-heading">Both directions, both <span class="grad-text">layers</span></div>
         <div>
-          <div style="font-size:20px;font-weight:700;color:var(--accent);margin-bottom:12px;">API — happy path + negative</div>
+          <div class="col-label" style="color:var(--accent);">API — happy path + negative</div>
           <div class="code-block" style="font-size:15px;">
             <div style="color:#d4d4d4;">@pytest.mark.api</div>
             <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_order_total</span>(reset_db, base_url, api):</div>
@@ -110,15 +110,15 @@
           </div>
         </div>
         <div>
-          <div style="font-size:20px;font-weight:700;color:#4caf50;margin-bottom:12px;">UI — a scenario via the page object</div>
+          <div class="col-label" style="color:#4caf50;">UI — a scenario via the page object</div>
           <div class="code-block" style="font-size:15px;">
             <div style="color:#d4d4d4;">@pytest.mark.ui</div>
             <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_login_flow</span>(page, base_url):</div>
-            <div style="margin-left:20px;">LoginPage(page, base_url).goto()</div>
-            <div style="margin-left:60px;">.login(<span style="color:#ce9178;">"customer@test.io"</span>, …)</div>
-            <div style="margin-left:20px;">expect(</div>
-            <div style="margin-left:40px;">page.get_by_test_id(<span style="color:#ce9178;">"nav-logout"</span>)</div>
-            <div style="margin-left:20px;">).to_be_visible()</div>
+            <div style="margin-left:20px;color:#d4d4d4;">(LoginPage(page, base_url)</div>
+            <div style="margin-left:60px;">.goto()</div>
+            <div style="margin-left:60px;">.login(<span style="color:#ce9178;">"customer@test.io"</span>, …))</div>
+            <div style="height:0.35em;"></div>
+            <div style="margin-left:20px;">expect(page.get_by_test_id(<span style="color:#ce9178;">"nav-logout"</span>)).to_be_visible()</div>
           </div>
         </div>
         <div class="brand-bar">

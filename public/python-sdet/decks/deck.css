@@ -237,6 +237,9 @@
 /* Inline code (accent monospace) — for <code> inside prose/tips */
 .code-inline { font-family: ui-monospace, Consolas, monospace; color: var(--accent); }
 
+/* Label above a code column (color set inline — it varies per column) */
+.col-label { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+
 /* Full-width step variant */
 .s-full { display: flex; flex-direction: column; padding: 80px 120px; justify-content: center; height: 100%; }
 
