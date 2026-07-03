@@ -28,14 +28,15 @@
       </section>
 
       <!-- 02 The page fixture -->
-      <section class="slide s-step" data-screen-label="02 The page fixture" style="gap:56px;padding:60px 90px;align-items:center;">
+      <section class="slide s-step" data-screen-label="02 The page fixture">
         <div class="circuit-bg"></div>
         <div class="full-heading">One fixture: <span class="grad-text">page</span></div>
 
         <div>
           <div class="code-block" style="font-size:19px;">
             <div style="color:#6a9955;"># pip install pytest-playwright</div>
-            <div style="color:#6a9955;"># playwright install chromium</div>
+            <div><span style="color:#569cd6;">import</span> re</div>
+            <div><span style="color:#569cd6;">from</span> playwright.sync_api <span style="color:#569cd6;">import</span> expect</div>
             <div style="height:0.7em;"></div>
             <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_products_page</span>(<span style="color:#9cdcfe;">page</span>):</div>
             <div style="margin-left:24px;">page.goto(<span style="color:#ce9178;">"http://localhost:3000/products"</span>)</div>
@@ -95,7 +96,7 @@
       </section>
 
       <!-- 05 Web-first assertions -->
-      <section class="slide s-step" data-screen-label="05 Web-first expect" style="gap:56px;padding:60px 90px;align-items:center;">
+      <section class="slide s-step" data-screen-label="05 Web-first expect">
         <div class="circuit-bg"></div>
         <div class="full-heading">Assertions that <span class="grad-text">retry</span></div>
 
