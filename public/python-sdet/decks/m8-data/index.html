@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module 8: Data-driven tests — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Module 8 · Python for SDETs</div>
+        <h1 class="headline">Data-driven<br><span class="grad-text">tests</span></h1>
+        <p class="subtitle">One test body, many cases — from a table, a JSON file, or a CSV</p>
+        <div class="pills">
+          <span class="pill">parametrize</span>
+          <span class="pill">JSON &amp; CSV</span>
+          <span class="pill">readable ids</span>
+          <span class="pill">data ≠ logic</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 The idea -->
+      <section class="slide s-full" data-screen-label="02 The idea">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Separate the cases from the code</div>
+        <h2 class="section-head">One test body, a table of cases</h2>
+        <div class="pipe-row" style="max-width:1640px;">
+          <div class="pipe-chip blue">a list of cases</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip"><span style="font-family:ui-monospace,Consolas,monospace;">@parametrize</span> over it</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip green">N independent, labeled tests</div>
+        </div>
+        <div class="step-tip" style="margin-top:40px;max-width:1500px;"><span class="tip-icon">🧩</span><span>Add a row, get a test — the body never changes. Each case runs (and fails) independently, so one bad input doesn't hide the rest.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 Data from a JSON file -->
+      <section class="slide s-two-col" data-screen-label="03 JSON file">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Data from a JSON file</div>
+        <div>
+          <div style="font-size:20px;font-weight:700;color:var(--accent);margin-bottom:12px;">tests/data/login_cases.json</div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#d4d4d4;">[</div>
+            <div style="margin-left:16px;">{ <span style="color:#9cdcfe;">"email"</span>: <span style="color:#ce9178;">"customer@test.io"</span>,</div>
+            <div style="margin-left:32px;"><span style="color:#9cdcfe;">"password"</span>: <span style="color:#ce9178;">"customer123"</span>, <span style="color:#9cdcfe;">"expected"</span>: <span style="color:#b5cea8;">200</span> },</div>
+            <div style="margin-left:16px;">{ <span style="color:#9cdcfe;">"email"</span>: <span style="color:#ce9178;">"ghost@test.io"</span>,</div>
+            <div style="margin-left:32px;"><span style="color:#9cdcfe;">"password"</span>: <span style="color:#ce9178;">"x"</span>, <span style="color:#9cdcfe;">"expected"</span>: <span style="color:#b5cea8;">401</span> }</div>
+            <div style="color:#d4d4d4;">]</div>
+          </div>
+        </div>
+        <div>
+          <div class="code-block" style="font-size:16px;">
+            <div>CASES = json.loads(</div>
+            <div style="margin-left:16px;">(Path(__file__).parent / <span style="color:#ce9178;">"data"</span></div>
+            <div style="margin-left:32px;">/ <span style="color:#ce9178;">"login_cases.json"</span>).read_text()</div>
+            <div>)</div>
+            <div style="height:0.5em;"></div>
+            <div style="color:#d4d4d4;">@pytest.mark.parametrize(<span style="color:#ce9178;">"case"</span>, CASES)</div>
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_login</span>(case): …</div>
+          </div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">📂</span><span>Load at <strong>module level</strong> — <code class="code-inline">parametrize</code> runs at import, so the data must exist by then. (JSON file = no <code class="code-inline">//</code> comments.)</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 CSV + type conversion -->
+      <section class="slide s-step" data-screen-label="04 CSV">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">CSV: every value is a <span class="grad-text">string</span></div>
+
+        <div>
+          <div class="code-block" style="font-size:17px;">
+            <div style="color:#6a9955;"># tests/data/categories.csv</div>
+            <div style="color:#d4d4d4;">category,present</div>
+            <div style="color:#d4d4d4;">electronics,true</div>
+            <div style="color:#d4d4d4;">nonexistent,false</div>
+            <div style="height:0.7em;"></div>
+            <div>rows = csv.DictReader(f)</div>
+            <div>present = row[<span style="color:#ce9178;">"present"</span>] == <span style="color:#ce9178;">"true"</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">🔤</span><span><code class="code-inline">csv.DictReader</code> yields one dict per row, but <strong>every value is a string</strong> — so <code class="code-inline">"false"</code> is truthy!</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🔁</span><span>Convert types yourself: compare <code class="code-inline">== "true"</code>, or wrap in <code class="code-inline">int(...)</code> — the reader won't do it for you.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 Readable ids -->
+      <section class="slide s-two-col" data-screen-label="05 Readable ids" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Give each case a <span class="grad-text">readable</span> name</div>
+        <div>
+          <div style="font-size:20px;font-weight:700;color:#ef9a9a;margin-bottom:12px;">No ids — opaque</div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#888;">test_login[case0]</div>
+            <div style="color:#888;">test_login[case1]</div>
+            <div style="color:#888;">test_login[case2]</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:20px;font-weight:700;color:#4caf50;margin-bottom:12px;">ids from the data</div>
+          <div class="code-block" style="font-size:15px;">
+            <div style="color:#d4d4d4;">ids=[<span style="color:#569cd6;">f</span><span style="color:#ce9178;">"{c['email']}-&gt;{c['expected']}"</span></div>
+            <div style="margin-left:36px;"><span style="color:#569cd6;">for</span> c <span style="color:#569cd6;">in</span> CASES]</div>
+          </div>
+          <div class="code-block" style="font-size:15px;margin-top:12px;">
+            <div style="color:#4caf50;">test_login[customer@test.io-&gt;200]</div>
+            <div style="color:#4caf50;">test_login[ghost@test.io-&gt;401]</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🧮</div>
+        <h2 class="done-head">Cases as<br><span class="grad-text">data</span></h2>
+        <p class="done-sub">One body, many rows — from JSON or CSV, each named so failures point at the case</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🧪</div>
+            <div class="nc-title">Practice</div>
+            <div class="nc-desc">A login matrix from JSON: valid→200, wrong→401, empty→400</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🔤</div>
+            <div class="nc-title">CSV types</div>
+            <div class="nc-desc">Read categories.csv and remember to convert the strings</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Module 9</div>
+            <div class="nc-desc">Reporting &amp; suite structure — HTML reports, markers, folders</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>
