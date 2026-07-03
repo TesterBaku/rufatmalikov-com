@@ -19,6 +19,7 @@ Kursun istinad etdiyi, amma sıfırdan izah etməyə dayanmadığı anlayışlar
 - **[Cookie-lər və sessiyalar](/az/reference/cookies-sessions/)** — brauzer necə sistemə daxil qalır, `HttpOnly` nə deməkdir və `storageState` ilə necə əlaqəlidir.
 - **[Əlçatımlılıq, ARIA və WCAG](/az/reference/accessibility/)** — POUR prinsipləri, ARIA atributları və axe-core-un tutduğu pozuntular.
 - **[Komanda sətri və npm](/az/reference/command-line-npm/)** — terminal, Node, `package.json`, `npm install` və `npx` — kursun işlətdiyi əmrlər.
+- **[SQL əsasları](/az/reference/sql-basics/)** — test verilənlər bazasını oxumaq üçün `SELECT`, `WHERE`, `JOIN`, aqreqatlar və parametrləşdirilmiş sorğular, TestMarket Lab-ın real sxeminə əsaslanır.
 
 ## Bu harada yerləşir
 
@@ -31,5 +32,6 @@ Hər səhifə ən çox istinad etdiyi modulu dəstəkləyir:
 - **Cookie-lər və sessiyalar** → **[Modul 10 — Autentifikasiya](/az/course/module-10/)**.
 - **Əlçatımlılıq, ARIA və WCAG** → **[Modul 11 — əlçatımlılıq testi](/az/course/module-11/)**.
 - **Git və GitHub** → **[Modul 12 — CI](/az/course/module-12/)**.
+- **SQL əsasları** → Playwright və Python SDET kurslarına gələn **Database verification** modulları.
 
 Düzgün əsaslandırmaq istədiyiniz bir termin ortaya çıxanda bunları oxuyun — heç bir əvvəlcədən backend və ya front-end biliyi tələb olunmur.
