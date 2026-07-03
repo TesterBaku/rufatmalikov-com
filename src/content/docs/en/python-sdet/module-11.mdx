@@ -51,7 +51,8 @@ python-sdet/
 │   ├── api/
 │   │   ├── test_products.py      # happy path (Module 3)
 │   │   ├── test_orders.py        # arrange-via-API (Module 5)
-│   │   └── test_negative.py      # 4xx (Module 4)
+│   │   ├── test_negative.py      # 4xx (Module 4)
+│   │   └── test_login_matrix.py  # data-driven (Module 8)
 │   └── ui/
 │       └── test_login.py         # Playwright + POM (Modules 6, 7)
 ├── pytest.ini                    # markers + pythonpath (Modules 2, 7, 9)
@@ -105,6 +106,7 @@ import pytest
 
 
 @pytest.mark.api
+@pytest.mark.smoke
 def test_order_total(reset_db, base_url, api):
     r = api.post(
         f"{base_url}/api/orders",
@@ -119,13 +121,11 @@ def test_order_total(reset_db, base_url, api):
 import pytest
 import requests
 
-BASE_URL = "http://localhost:3000"
-
 
 @pytest.mark.api
-def test_login_rejects_bad_password():
+def test_login_rejects_bad_password(base_url):
     r = requests.post(
-        f"{BASE_URL}/api/auth/login",
+        f"{base_url}/api/auth/login",
         json={"email": "customer@test.io", "password": "wrong"},
     )
     assert r.status_code == 401
@@ -200,15 +200,14 @@ from pathlib import Path
 import pytest
 import requests
 
-BASE_URL = "http://localhost:3000"
 CASES = json.loads((Path(__file__).parent.parent / "data" / "login_cases.json").read_text())
 
 
 @pytest.mark.api
-@pytest.mark.parametrize("case", CASES, ids=[f"{c['email'] or 'empty'}->{c['expected']}" for c in CASES])
-def test_login_matrix(case):
+@pytest.mark.parametrize("case", CASES, ids=[f"{c['email']}->{c['expected']}" for c in CASES])
+def test_login_matrix(case, base_url):
     r = requests.post(
-        f"{BASE_URL}/api/auth/login",
+        f"{base_url}/api/auth/login",
         json={"email": case["email"], "password": case["password"]},
     )
     assert r.status_code == case["expected"]
@@ -276,7 +275,7 @@ Assemble the capstone in your `python-sdet` project. Run with `pytest -v`.
 
 ### Exercise 1 — Build the structure (20 min)
 
-Create the folder layout above (`pages/`, `tests/api/`, `tests/ui/`, `tests/data/`, `pytest.ini`,
+Set up the folder layout above (`pages/`, `tests/api/`, `tests/ui/`, `tests/data/`, `pytest.ini`,
 `requirements.txt`). Move your existing tests into `tests/api/` and `tests/ui/`. Confirm
 `pytest` still collects and passes everything.
 
