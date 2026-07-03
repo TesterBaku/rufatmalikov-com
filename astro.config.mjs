@@ -191,6 +191,7 @@ export default defineConfig({
 						{ label: '8 — Data-driven tests', link: '/python-sdet/module-8/' },
 						{ label: '9 — Reporting & suite structure', link: '/python-sdet/module-9/' },
 						{ label: '10 — CI with GitHub Actions', link: '/python-sdet/module-10/' },
+						{ label: '11 — Capstone project', link: '/python-sdet/module-11/' },
 					],
 				},
 				{
