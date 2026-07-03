@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module 10: CI with GitHub Actions — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Module 10 · Python for SDETs</div>
+        <h1 class="headline">CI with<br><span class="grad-text">GitHub Actions</span></h1>
+        <p class="subtitle">The suite runs itself — on every push and pull request</p>
+        <div class="pills">
+          <span class="pill">tests.yml</span>
+          <span class="pill">start app &amp; wait</span>
+          <span class="pill">report artifact</span>
+          <span class="pill">required check</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 What CI does -->
+      <section class="slide s-full" data-screen-label="02 Why CI">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Tests you must remember to run eventually don't</div>
+        <h2 class="section-head">CI runs the suite for you — automatically</h2>
+        <div class="feature-cards" style="max-width:1560px;margin-top:16px;">
+          <div class="feature-card">
+            <div class="feature-icon">🔁</div>
+            <div><h3>Every change</h3><p>Runs every test on every push and PR — no "I forgot to run them."</p></div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🛑</div>
+            <div><h3>Blocks breakage</h3><p>A failure marks the commit/PR red — and can require green to merge.</p></div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📄</div>
+            <div><h3>Shareable report</h3><p>The HTML report is attached to the run for anyone to open.</p></div>
+          </div>
+        </div>
+        <div class="step-tip" style="margin-top:34px;max-width:1500px;"><span class="tip-icon">🚪</span><span>The payoff is a <strong>required check</strong>: a PR can't merge until the suite passes on CI's clean machine — not just "works on my laptop."</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 The workflow file -->
+      <section class="slide s-two-col" data-screen-label="03 Workflow file" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">One YAML file in <span class="grad-text">.github/workflows/</span></div>
+        <div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#6a9955;"># .github/workflows/tests.yml</div>
+            <div><span style="color:#9cdcfe;">name</span>: tests</div>
+            <div><span style="color:#9cdcfe;">on</span>:</div>
+            <div style="margin-left:16px;"><span style="color:#9cdcfe;">push</span>: { <span style="color:#9cdcfe;">branches</span>: [main] }</div>
+            <div style="margin-left:16px;"><span style="color:#9cdcfe;">pull_request</span>:</div>
+            <div><span style="color:#9cdcfe;">jobs</span>:</div>
+            <div style="margin-left:16px;"><span style="color:#9cdcfe;">test</span>:</div>
+            <div style="margin-left:32px;"><span style="color:#9cdcfe;">runs-on</span>: ubuntu-latest</div>
+            <div style="margin-left:32px;"><span style="color:#9cdcfe;">steps</span>: …</div>
+          </div>
+        </div>
+        <div>
+          <div class="step-tip"><span class="tip-icon">🧱</span><span>A <code class="code-inline">name</code>, an <code class="code-inline">on:</code> trigger, and <code class="code-inline">jobs</code> made of <code class="code-inline">steps</code>.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🔩</span><span>Each step is either <code class="code-inline">uses:</code> (a prebuilt action) or <code class="code-inline">run:</code> (shell commands). Scoping <code class="code-inline">push</code> to <code class="code-inline">main</code> stops a branch push <em>and</em> its PR both running.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 The pipeline of steps -->
+      <section class="slide s-full" data-screen-label="04 The steps">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">The shape of the job</div>
+        <h2 class="section-head">Check out → set up → start the app → test → upload</h2>
+        <div class="pipe-row" style="max-width:1720px;flex-wrap:wrap;gap:14px;">
+          <div class="pipe-chip blue">checkout</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">Python + Node</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">pip install + playwright</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">start app &amp; wait</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">pytest</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip green">upload report</div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1560px;"><span class="tip-icon">📌</span><span>Re-pin <code class="code-inline">requirements.txt</code> after every install (<code class="code-inline">pytest-html</code>, <code class="code-inline">pytest-playwright</code>) — a missing dep fails the <code class="code-inline">--html</code> step on CI.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 The two CI-only gotchas -->
+      <section class="slide s-step" data-screen-label="05 CI gotchas">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Two details that trip people up</div>
+
+        <div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#6a9955;"># background the app, then WAIT</div>
+            <div>npm start &amp;</div>
+            <div style="height:0.5em;"></div>
+            <div><span style="color:#c586c0;">for</span> i <span style="color:#c586c0;">in</span> $(seq 1 30); <span style="color:#c586c0;">do</span></div>
+            <div style="margin-left:20px;">curl -sf localhost:3000/api/products \</div>
+            <div style="margin-left:40px;">&amp;&amp; <span style="color:#c586c0;">exit</span> 0</div>
+            <div style="margin-left:20px;">sleep 1</div>
+            <div><span style="color:#c586c0;">done</span>; <span style="color:#c586c0;">exit</span> 1 <span style="color:#6a9955;"># never started</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">⏳</span><span><code class="code-inline">npm start &amp;</code> returns immediately — poll a real endpoint until it answers, don't <code class="code-inline">sleep</code> a fixed guess.</span></div>
+          <div class="step-tip" style="margin-top:16px;"><span class="tip-icon">🐧</span><span><code class="code-inline">playwright install --with-deps chromium</code> — the headless runner needs the Linux libs too.</span></div>
+          <div class="step-tip" style="margin-top:16px;"><span class="tip-icon">💾</span><span>Upload with <code class="code-inline">if: always()</code> — keep the report even when tests fail (that's when you want it).</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🤖</div>
+        <h2 class="done-head">The tests<br><span class="grad-text">always ran</span></h2>
+        <p class="done-sub">Every push checked on a clean machine, the report attached, merges gated on green</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">⚙️</div>
+            <div class="nc-title">Practice</div>
+            <div class="nc-desc">Add tests.yml, push, and watch the run go green in the Actions tab</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🚪</div>
+            <div class="nc-title">Require it</div>
+            <div class="nc-desc">Branch protection: require the test job so no red PR reaches main</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Module 11</div>
+            <div class="nc-desc">Capstone — a complete API + UI suite tying it all together</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>
