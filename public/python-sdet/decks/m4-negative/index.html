@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module 4: Negative & validation testing — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Module 4 · Python for SDETs</div>
+        <h1 class="headline">Negative &amp;<br><span class="grad-text">validation testing</span></h1>
+        <p class="subtitle">Break things on purpose — and assert the API fails the right way</p>
+        <div class="pills">
+          <span class="pill">400 / 401</span>
+          <span class="pill">404 / 409</span>
+          <span class="pill">validation matrix</span>
+          <span class="pill">xfail a bug</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 Why negative testing -->
+      <section class="slide s-full" data-screen-label="02 Why">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">The mindset</div>
+        <h2 class="section-head">Happy path proves it works. Negative tests prove it fails <em>safely</em>.</h2>
+        <div class="feature-cards" style="max-width:1500px;">
+          <div class="feature-card"><div class="feature-icon">🎯</div><div><h3>Right status</h3><p>400 / 401 / 404 / 409 for the right reason — a wrong code (or a 500 crash) is itself a bug.</p></div></div>
+          <div class="feature-card"><div class="feature-icon">💬</div><div><h3>Useful message</h3><p>the error body tells the caller <em>what</em> went wrong.</p></div></div>
+          <div class="feature-card"><div class="feature-icon">🐛</div><div><h3>Where bugs live</h3><p>untested error paths are exactly where real defects hide.</p></div></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 The 4xx family -->
+      <section class="slide s-full" data-screen-label="03 The 4xx family">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Each failure, its status</div>
+        <h2 class="section-head">The 4xx family</h2>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;max-width:1600px;">
+          <div class="verb-card"><div class="name">400</div><div class="label">Bad Request</div><div class="desc">missing / invalid input</div></div>
+          <div class="verb-card"><div class="name">401</div><div class="label">Unauthorized</div><div class="desc">bad credentials</div></div>
+          <div class="verb-card"><div class="name">404</div><div class="label">Not Found</div><div class="desc">resource doesn't exist</div></div>
+          <div class="verb-card"><div class="name">409</div><div class="label">Conflict</div><div class="desc">duplicate / clashes</div></div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">🔒</span><span>Security touch: wrong password <strong>and</strong> unknown email both return the same <code class="code-inline">401</code> — so the API never leaks which emails exist.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Validation matrix -->
+      <section class="slide s-step" data-screen-label="04 Validation Matrix" style="gap:60px;padding:60px 90px;align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">One test, a table of bad inputs</div>
+
+        <div>
+          <div class="code-block" style="font-size:17px;">
+            <div><span style="color:#d4d4d4;">@pytest.mark.parametrize(</span></div>
+            <div style="margin-left:18px;color:#ce9178;">"payload, expected",</div>
+            <div style="margin-left:18px;color:#d4d4d4;">[</div>
+            <div style="margin-left:34px;">(valid, <span style="color:#b5cea8;">200</span>), <span style="color:#6a9955;"># control</span></div>
+            <div style="margin-left:34px;">(bad_pw, <span style="color:#b5cea8;">401</span>),</div>
+            <div style="margin-left:34px;">(missing, <span style="color:#b5cea8;">400</span>),</div>
+            <div style="margin-left:18px;color:#d4d4d4;">])</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="t-dots"><span style="background:#ff5f57;"></span><span style="background:#febc2e;"></span><span style="background:#28c840;"></span></div>
+              <span class="t-title">pytest -v</span>
+            </div>
+            <div class="terminal-body" style="font-size:16px;">
+              <div style="color:#4caf50;">test_login[valid] PASSED</div>
+              <div style="color:#4caf50;">test_login[bad-password] PASSED</div>
+              <div style="color:#4caf50;">test_login[missing] PASSED</div>
+            </div>
+          </div>
+          <div style="margin-top:18px;font-size:21px;color:oklch(74% 0.04 255);">Keep one <strong>valid</strong> control row — a failing negative row is then about the <em>input</em>, not a broken endpoint.</div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 Document a bug with xfail -->
+      <section class="slide s-full" data-screen-label="05 xfail a bug">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">When the API fails <em>wrong</em></div>
+        <h2 class="section-head">Negative testing finds real bugs</h2>
+        <div class="pipe-row" style="max-width:1600px;">
+          <div class="pipe-chip" style="background:#2a0a0a;border:2px solid #f44336;color:#ef9a9a;">POST duplicate name → <strong style="color:#f44336;">500</strong> 💥</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip green">encode it: <span style="font-family:ui-monospace,Consolas,monospace;">@xfail(strict=True)</span> asserting <strong>409</strong></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip blue">XFAIL today · <strong>XPASS+fail</strong> when fixed</div>
+        </div>
+        <div class="step-tip" style="margin-top:40px;max-width:1500px;"><span class="tip-icon">🏷️</span><span>A <code class="code-inline">strict=True</code> <code class="code-inline">xfail</code> documents a known bug, keeps the suite green today, and <strong>fails loudly the moment it's fixed</strong> — so the stale marker can't linger.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🛡️</div>
+        <h2 class="done-head">Fail the<br><span class="grad-text">right way</span></h2>
+        <p class="done-sub">Assert the status precisely, the message loosely — and file the crashes</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🧪</div>
+            <div class="nc-title">Practice</div>
+            <div class="nc-desc">Trigger 400 / 401 / 404 / 409 and assert each</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🏷️</div>
+            <div class="nc-title">xfail</div>
+            <div class="nc-desc">Capture the dup-name 500 with a strict xfail asserting 409</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Module 5</div>
+            <div class="nc-desc">Test data setup &amp; teardown — control every test's state</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>

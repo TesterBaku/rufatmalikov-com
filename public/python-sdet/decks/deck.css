@@ -183,6 +183,7 @@
 .verb-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 30px; }
 .verb-card .name { font-size: 30px; font-weight: 900; color: var(--accent); margin-bottom: 10px; }
 .verb-card .stat { font-size: 40px; font-weight: 900; color: #4caf50; }
+.verb-card .label { font-size: 22px; font-weight: 700; color: #f8fafc; margin-top: 6px; }
 .verb-card .desc { color: var(--muted); font-size: 19px; margin-top: 8px; }
 
 /* CRUD lifecycle step boxes (blue by default; .gone = red terminal state) */
