@@ -51,7 +51,7 @@
         <div class="circuit-bg"></div>
         <div class="full-heading">Data from a JSON file</div>
         <div>
-          <div style="font-size:20px;font-weight:700;color:var(--accent);margin-bottom:12px;">tests/data/login_cases.json</div>
+          <div class="col-label" style="color:var(--accent);">tests/data/login_cases.json</div>
           <div class="code-block" style="font-size:16px;">
             <div style="color:#d4d4d4;">[</div>
             <div style="margin-left:16px;">{ <span style="color:#9cdcfe;">"email"</span>: <span style="color:#ce9178;">"customer@test.io"</span>,</div>
@@ -111,7 +111,7 @@
         <div class="circuit-bg"></div>
         <div class="full-heading">Give each case a <span class="grad-text">readable</span> name</div>
         <div>
-          <div style="font-size:20px;font-weight:700;color:#ef9a9a;margin-bottom:12px;">No ids — opaque</div>
+          <div class="col-label" style="color:#ef9a9a;">No ids — opaque</div>
           <div class="code-block" style="font-size:16px;">
             <div style="color:#888;">test_login[case0]</div>
             <div style="color:#888;">test_login[case1]</div>
@@ -119,7 +119,7 @@
           </div>
         </div>
         <div>
-          <div style="font-size:20px;font-weight:700;color:#4caf50;margin-bottom:12px;">ids from the data</div>
+          <div class="col-label" style="color:#4caf50;">ids from the data</div>
           <div class="code-block" style="font-size:15px;">
             <div style="color:#d4d4d4;">ids=[<span style="color:#569cd6;">f</span><span style="color:#ce9178;">"{c['email']}-&gt;{c['expected']}"</span></div>
             <div style="margin-left:36px;"><span style="color:#569cd6;">for</span> c <span style="color:#569cd6;">in</span> CASES]</div>

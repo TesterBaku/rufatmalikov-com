@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module 11: Capstone — a full API + UI suite — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Module 11 · Python for SDETs</div>
+        <h1 class="headline">Capstone: a full<br><span class="grad-text">API + UI suite</span></h1>
+        <p class="subtitle">Everything from Modules 0–10, assembled into the project you'd show an interviewer</p>
+        <div class="pills">
+          <span class="pill">fixtures</span>
+          <span class="pill">API + UI</span>
+          <span class="pill">data-driven</span>
+          <span class="pill">report + CI</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 The mission -->
+      <section class="slide s-two-col" data-screen-label="02 The mission" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Coverage across <span class="grad-text">layers</span>, not one clever test</div>
+        <div>
+          <div class="feature-cards">
+            <div class="feature-card">
+              <div class="feature-icon">✅</div>
+              <div><h3>API happy path</h3><p>Products list/read + an order with the right total <em>(M3, M5)</em></p></div>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">🚫</div>
+              <div><h3>API negative</h3><p>400 / 401 / 404 / 409 on bad input <em>(M4)</em></p></div>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">🖱️</div>
+              <div><h3>UI flow</h3><p>Log in through the browser with a page object <em>(M6, M7)</em></p></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="feature-cards">
+            <div class="feature-card">
+              <div class="feature-icon">🗃️</div>
+              <div><h3>Data-driven</h3><p>A login matrix from a JSON file <em>(M8)</em></p></div>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">🧱</div>
+              <div><h3>Structure &amp; isolation</h3><p>Fixtures, <code class="code-inline">reset_db</code>, per-area folders <em>(M2, M5, M9)</em></p></div>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">🤖</div>
+              <div><h3>Reporting &amp; CI</h3><p>An HTML report, green on every push <em>(M9, M10)</em></p></div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 The structure -->
+      <section class="slide s-full" data-screen-label="03 Structure">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">The layout is the design</div>
+        <h2 class="section-head">A reviewer can read the tree and know what it does</h2>
+        <div class="code-block" style="max-width:1120px;margin-top:8px;font-size:17px;text-align:left;">
+          <div style="color:#d4d4d4;">python-sdet/</div>
+          <div>├── .github/workflows/tests.yml <span style="color:#6a9955;"># CI (M10)</span></div>
+          <div>├── pages/login_page.py <span style="color:#6a9955;"># POM (M7)</span></div>
+          <div>├── tests/</div>
+          <div style="margin-left:16px;">│   ├── conftest.py <span style="color:#6a9955;"># base_url / api / reset_db</span></div>
+          <div style="margin-left:16px;">│   ├── data/login_cases.json <span style="color:#6a9955;"># data-driven (M8)</span></div>
+          <div style="margin-left:16px;">│   ├── api/  test_products · test_orders · test_negative · test_login_matrix</div>
+          <div style="margin-left:16px;">│   └── ui/   test_login <span style="color:#6a9955;"># Playwright + POM (M6, M7)</span></div>
+          <div>├── pytest.ini <span style="color:#6a9955;"># markers + pythonpath</span></div>
+          <div>└── requirements.txt <span style="color:#6a9955;"># pinned deps</span></div>
+        </div>
+        <div class="step-tip" style="margin-top:30px;max-width:1500px;"><span class="tip-icon">🗂️</span><span>Every folder has one job — so a new test has an obvious home, and onboarding is reading a tree instead of a wiki.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Coverage across layers -->
+      <section class="slide s-two-col" data-screen-label="04 API + UI" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Both directions, both <span class="grad-text">layers</span></div>
+        <div>
+          <div class="col-label" style="color:var(--accent);">API — happy path + negative</div>
+          <div class="code-block" style="font-size:15px;">
+            <div style="color:#d4d4d4;">@pytest.mark.api</div>
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_order_total</span>(reset_db, base_url, api):</div>
+            <div style="margin-left:20px;">r = api.post(<span style="color:#ce9178;">f"{base_url}/api/orders"</span>, …)</div>
+            <div style="margin-left:20px;"><span style="color:#c586c0;">assert</span> r.status_code == <span style="color:#b5cea8;">201</span></div>
+            <div style="margin-left:20px;"><span style="color:#c586c0;">assert</span> r.json()[<span style="color:#ce9178;">"total"</span>] == pytest.approx(<span style="color:#b5cea8;">29.99</span>*<span style="color:#b5cea8;">2</span>)</div>
+            <div style="height:0.4em;"></div>
+            <div style="color:#888;"># bad password -&gt; 401</div>
+          </div>
+        </div>
+        <div>
+          <div class="col-label" style="color:#4caf50;">UI — a scenario via the page object</div>
+          <div class="code-block" style="font-size:15px;">
+            <div style="color:#d4d4d4;">@pytest.mark.ui</div>
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_login_flow</span>(page, base_url):</div>
+            <div style="margin-left:20px;color:#d4d4d4;">(LoginPage(page, base_url)</div>
+            <div style="margin-left:60px;">.goto()</div>
+            <div style="margin-left:60px;">.login(<span style="color:#ce9178;">"customer@test.io"</span>, …))</div>
+            <div style="height:0.35em;"></div>
+            <div style="margin-left:20px;">expect(page.get_by_test_id(<span style="color:#ce9178;">"nav-logout"</span>)).to_be_visible()</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 Run it -->
+      <section class="slide s-step" data-screen-label="05 Run it">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Slice by marker, full suite with a <span class="grad-text">report</span></div>
+
+        <div>
+          <div class="terminal">
+            <div class="terminal-bar"><div class="t-dots"><span style="background:#ff5f57;"></span><span style="background:#febc2e;"></span><span style="background:#28c840;"></span></div><span class="t-title">bash</span></div>
+            <div class="terminal-body">
+              <div>pytest -m api <span style="color:#6a9955;"># just the API layer</span></div>
+              <div>pytest -m ui <span style="color:#6a9955;"># just the browser</span></div>
+              <div style="height:0.5em;"></div>
+              <div>pytest -ra --html=report.html \</div>
+              <div style="margin-left:20px;">--self-contained-html</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">⚡</span><span>Fast feedback locally by marker while developing; the whole suite with a report before you push.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🚀</span><span>Push with the Module 10 workflow and CI runs it all on every PR — report and all. A suite you can hand to a team, or a hiring manager.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🎉</div>
+        <h2 class="done-head">You've finished<br><span class="grad-text">Python for SDETs</span></h2>
+        <p class="done-sub">From <code class="code-inline">pip install pytest</code> to a CI-gated API + UI suite — the toolkit real SDET roles use every day</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🧰</div>
+            <div class="nc-title">You can now</div>
+            <div class="nc-desc">pytest, requests, Playwright, fixtures, POM, data-driven, reporting, CI</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🧩</div>
+            <div class="nc-title">Extend it</div>
+            <div class="nc-desc">Add a CRUD lifecycle + a negative UI test, then point it at your own app</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">💼</div>
+            <div class="nc-title">Your portfolio</div>
+            <div class="nc-desc">This capstone is the project to show a hiring manager</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>
