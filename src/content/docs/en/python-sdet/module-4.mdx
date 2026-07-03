@@ -4,6 +4,7 @@ description: "Deliberately break things: trigger 400 (bad input), 401 (bad login
 ---
 
 import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
 
 Modules 1–3 tested the **happy path** — valid input, expected success. But the highest-value
 testing is often the opposite: send **bad** input and confirm the API rejects it *correctly*.
@@ -20,6 +21,8 @@ family — `400` vs `401` vs `403` vs `404` vs `409` — the exact codes this mo
 :::
 
 <Video title="Module 4: Negative & validation testing" />
+
+<Deck href="/python-sdet/decks/m4-negative/" title="Module 4: negative testing at a glance — slide guide" locale="en" />
 
 ---
 
