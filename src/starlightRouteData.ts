@@ -25,11 +25,11 @@ export const onRequest = defineRouteMiddleware((context) => {
 	// don't touch dozens of MDX files. (The standalone /resume page is not a
 	// Starlight route and sets its own tags.)
 	{
-		// Both the Tier 1 Python course (/python/) and Tier 2 "Python for SDETs"
-		// (/python-sdet/) share the Python OG card. A dedicated python-sdet card is
-		// future polish; until then the python-course card beats the generic default.
+		// Tier 2 "Python for SDETs" (/python-sdet/) has its own OG card; Tier 1
+		// (/python/) shares the general Python course card; everything else gets the
+		// brand default. All three are 1200×630 (public/og/*.png).
 		const isPython = pathname.includes('/python/') || isPythonSdet;
-		const file = isPython ? '/og/python-course.png' : '/og/default.png';
+		const file = isPythonSdet ? '/og/python-sdet.png' : isPython ? '/og/python-course.png' : '/og/default.png';
 		const img = new URL(file, context.site ?? context.url).href;
 		// Tier 2 is EN-only, so its alt stays English even on /az/ fallback pages;
 		// Tier 1 is bilingual and gets a locale-specific alt.
