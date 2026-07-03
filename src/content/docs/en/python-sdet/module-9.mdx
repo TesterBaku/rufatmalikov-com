@@ -30,7 +30,13 @@ attach to a CI run. `pytest-html` produces a single self-contained HTML file:
    pip install pytest-html
    ```
 
-2. **Run with a report:**
+2. **Re-pin your dependencies** (so CI and teammates get `pytest-html` too):
+
+   ```bash
+   pip freeze > requirements.txt
+   ```
+
+3. **Run with a report:**
 
    ```bash
    pytest --html=report.html --self-contained-html
