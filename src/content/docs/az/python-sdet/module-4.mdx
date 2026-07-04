@@ -1,0 +1,323 @@
+---
+title: "Modul 4: Neqativ və validasiya testi"
+description: "Qəsdən şeyləri sındır: TestMarket Lab-a qarşı 400 (səhv giriş), 401 (səhv login), 404 (çatışmayan resurs) və 409 (təkrar) tətiklə, API-nin düzgün cür uğursuz olduğunu assert et və xfail ilə real bir baqı sənədləşdir."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+
+1–3-cü modullar **uğurlu yolu** test etdi — düzgün giriş, gözlənilən uğur. Amma ən yüksək dəyərli
+test çox vaxt əksidir: **səhv** giriş göndər və API-nin onu *düzgün* rədd etdiyini təsdiqlə. Möhkəm
+API səhv girişə **düzgün xəta statusu** və faydalı mesajla cavab verir — çökmə yox, səssiz uğur yox.
+Bu modulda qəsdən **`400`**, **`401`**, **`404`** və **`409`** tətikləyəcək, API-nin düzgün cür
+uğursuz olduğunu assert edəcək və — *olmayanda* — baqı `xfail` ilə sənədləşdirəcəksən.
+
+TestMarket Lab-ı `http://localhost:3000`-də işlək və `.venv`-ini aktiv saxla.
+
+:::tip[Status kodlarında qeyri-müəyyənsən?]
+**[HTTP status kodları istinadı](/az/reference/http-status-codes/)** `4xx` ailəsini izah edir —
+`400` vs `401` vs `403` vs `404` vs `409` — bu modulun assert etdiyi dəqiq kodlar.
+:::
+
+<Video title="Modul 4: Neqativ və validasiya testi" />
+
+<Deck href="/python-sdet/decks/m4-negative-az/" title="Modul 4: neqativ testə qısa baxış — slayd təlimatı" />
+
+---
+
+## Neqativ test niyə vacibdir
+
+Uğurlu-yol testləri hər şey düzgün olanda funksiyanın işlədiyini sübut edir. **Neqativ testlər** isə
+bir şey səhv olanda onun *təhlükəsiz* uğursuz olduğunu sübut edir — və əsl baqlar məhz orada
+gizlənir. İstifadəçi gec-tez boş forma, səhv parol və ya təkrar email göndərəcək; testlərin onlar bunu
+edəndə API-nin nə etdiyini dəqiq müəyyənləşdirməlidir.
+
+Yaxşı neqativ testi iki şey edir:
+
+1. **Düzgün status kodu** — səhv giriş üçün `400`, səhv kimlik məlumatları üçün `401`, çatışmayan
+   resurs üçün `404`, konflikt üçün `409`. Səhv kod (və ya `500` çökmə) özü baqdır.
+2. **Faydalı xəta gövdəsi** — çağırana *nəyin* səhv getdiyini deyən mesaj.
+
+**Yadda saxla:** neqativ test sistemin *düzgün* uğursuz olduğunu assert edir — düzgün `4xx` statusu və
+faydalı mesaj. Test edilməmiş xəta yolları baqların yaşadığı yerdir.
+
+:::note[`requests` `4xx`-də xəta atmır]
+Rədd edilmiş sorğu hələ də normal cavabdır — `requests` onu qaytarır, atmır. Onu istənilən başqası
+kimi `response.status_code` ilə assert edirsən. (Həmçinin: *rədd edilmiş* yazma heç nəyi dəyişmir, ona
+görə aşağıdakı neqativ nümunələrə `reset_db` lazım deyil.)
+:::
+
+---
+
+## 400 Bad Request — çatışmayan və ya yararsız giriş
+
+`400` "sorğun səhv formalaşdırılıb" deməkdir — tələb olunan sahə çatışmır və ya dəyər yararsızdır.
+TestMarket Lab bir neçə endpoint-i validasiya edir:
+
+```python
+# tests/test_bad_input.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_login_missing_password():
+    response = requests.post(f"{BASE_URL}/api/auth/login", json={"email": "customer@test.io"})
+    assert response.status_code == 400
+
+
+def test_create_product_missing_price():
+    response = requests.post(f"{BASE_URL}/api/products", json={"name": "No Price"})
+    assert response.status_code == 400
+
+
+def test_register_password_too_short():
+    response = requests.post(
+        f"{BASE_URL}/api/auth/register",
+        json={"name": "Sam", "email": "sam@test.io", "password": "x"},   # < 6 chars
+    )
+    assert response.status_code == 400
+```
+
+Bu potensial yazmaların hər biri **rədd edilir**, ona görə heç nə əlavə olunmur — testlər sıfırlamadan
+təkrar işlədilməyə təhlükəsizdir.
+
+**Yadda saxla:** `400` = səhv formalaşdırılmış sorğu (çatışmayan sahə, yararsız dəyər). Bu, API-nin
+ilk müdafiə xəttidir; sahə tələb olunan və ya məhdudlaşdırılan hər yerdə onu assert et.
+
+---
+
+## 401 Unauthorized — səhv kimlik məlumatları
+
+`401` "səni tanımıram" deməkdir — autentifikasiya uğursuz oldu. Səhv parol və naməlum email hər ikisi
+`401` qaytarır (qəsdən *eyni* cavab, beləcə hücumçu hansı email-lərin mövcud olduğunu deyə bilməsin):
+
+```python
+# tests/test_auth_negative.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_login_wrong_password():
+    response = requests.post(
+        f"{BASE_URL}/api/auth/login",
+        json={"email": "customer@test.io", "password": "not-my-password"},
+    )
+    assert response.status_code == 401
+
+
+def test_login_unknown_email():
+    response = requests.post(
+        f"{BASE_URL}/api/auth/login",
+        json={"email": "ghost@test.io", "password": "whatever"},
+    )
+    assert response.status_code == 401
+```
+
+**Yadda saxla:** `401` = autentifikasiya uğursuz oldu (səhv və ya çatışmayan kimlik məlumatları). Təhlükəsizlik
+toxunuşuna diqqət et: səhv-parol və naməlum-email *eyni* `401` verir, ona görə API hansı email-lərin qeydiyyatlı
+olduğunu heç vaxt sızdırmır.
+
+---
+
+## 404 Not Found — çatışmayan resurs
+
+`404` istədiyin şeyin mövcud olmadığı deməkdir. O, çatışmayan id-yə qarşı oxumalara **və** yazmalara
+aiddir:
+
+```python
+# tests/test_not_found.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+MISSING_ID = 99999
+
+
+def test_get_missing_product():
+    assert requests.get(f"{BASE_URL}/api/products/{MISSING_ID}").status_code == 404
+
+
+def test_update_missing_product():
+    response = requests.put(f"{BASE_URL}/api/products/{MISSING_ID}", json={"price": 9.99})
+    assert response.status_code == 404
+
+
+def test_delete_missing_product():
+    assert requests.delete(f"{BASE_URL}/api/products/{MISSING_ID}").status_code == 404
+```
+
+**Yadda saxla:** `404` = resurs (id və ya URL ilə) mövcud deyil — `GET`, `PUT` və `DELETE` üçün eyni
+cür. Yəqin ki, olmayan bir id işlət (`99999` kimi böyük rəqəm).
+
+---
+
+## 409 Conflict — təkrar
+
+`409` "bu, artıq mövcud olanla konflikt edir" deməkdir. Artıq tutulmuş email-i qeydiyyatdan keçirmək
+klassik haldır:
+
+```python
+# tests/test_conflict.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_register_duplicate_email():
+    # customer@test.io is a seeded account, so registering it again conflicts
+    response = requests.post(
+        f"{BASE_URL}/api/auth/register",
+        json={"name": "Impostor", "email": "customer@test.io", "password": "secret123"},
+    )
+    assert response.status_code == 409
+```
+
+**Yadda saxla:** `409` = mövcud vəziyyətlə konflikt (təkrar). O, `400`-dən fərqlidir: sorğu düzgün
+formalaşdırılıb, sadəcə artıq mövcud olan resursla toqquşur.
+
+---
+
+## Yalnız statusu yox, xətanı assert et
+
+Status kodu başlıqdır; **gövdə** təfərrüatdır. Hər ikisini assert et — amma mesajı *sərbəst* assert et
+(açar alt-sətir), beləcə zərərsiz ifadə dəyişikliyi testini sındırmasın:
+
+```python
+# tests/test_error_body.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_error_body_is_helpful():
+    response = requests.post(f"{BASE_URL}/api/auth/login", json={})
+    assert response.status_code == 400
+
+    body = response.json()
+    assert "error" in body                       # the API returns an error field
+    assert "required" in body["error"].lower()   # …and it says what's wrong
+```
+
+**Yadda saxla:** **statusu dəqiq** və **mesajı sərbəst** assert et — dəqiq sətir əvəzinə açar sözü
+(`"required"`, `"password"`) yoxla, beləcə ifadə dəyişiklikləri yalan uğursuzluqlara səbəb olmasın.
+
+---
+
+## Birləşdirmək: validasiya matrisi
+
+Neqativ hallar `parametrize` (Modul 2) üçün təbii uyğunluqdur — bir test, səhv-giriş sətirləri
+cədvəli, hər biri gözlənilən statusu ilə. Bu "validasiya matrisi" əksər real neqativ-test dəstlərinin
+formasıdır:
+
+```python
+# tests/test_login_matrix.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+@pytest.mark.parametrize(
+    "payload, expected_status",
+    [
+        ({"email": "customer@test.io", "password": "customer123"}, 200),  # valid (control)
+        ({"email": "customer@test.io", "password": "wrong"}, 401),        # bad password
+        ({"email": "ghost@test.io", "password": "whatever"}, 401),        # unknown email
+        ({"email": "customer@test.io"}, 400),                             # missing password
+        ({}, 400),                                                         # missing everything
+    ],
+    ids=["valid", "bad-password", "unknown-email", "missing-password", "empty"],
+)
+def test_login_validation(payload, expected_status):
+    response = requests.post(f"{BASE_URL}/api/auth/login", json=payload)
+    assert response.status_code == expected_status
+```
+
+Bir **valid** sətri kontrol kimi saxla — o, endpoint-in işlədiyini sübut edir, beləcə uğursuz olan
+neqativ sətir həqiqətən *giriş* haqqındadır, sınmış endpoint haqqında yox.
+
+**Yadda saxla:** validasiya matrisi (`(bad_input, expected_status)`-in `parametrize`-i) bir oxunaqlı
+testdə çoxlu uğursuzluq rejimini əhatə edir. Həmişə bir valid kontrol sətri daxil et.
+
+---
+
+## API *səhv* uğursuz olanda: `xfail` ilə bir baq sənədləşdir
+
+Bəzən neqativ test real bir defekt tapır — API *təmiz* uğursuz olmur. TestMarket Lab-da biri var:
+mövcud olanın adını təkrarlayan bir məhsul post etmək düzgün `409`/`400` əvəzinə **`500`** (server
+çökməsi) qaytarır. Bu, məhz neqativ testin üzə çıxarmaq üçün mövcud olduğu baq növüdür.
+
+Tapıntını silmə — onu `xfail` (Modul 2) ilə **kodla**, *istədiyin* davranışı assert edərək və onu
+**`strict=True`** işarələ. O, bu gün məlum problem kimi yaşıl qalır; baq düzələn gün test **XPASS
+olur və işə salışı uğursuz edir** — səni indi köhnəlmiş marker-i silməyə məcbur edir (sadə,
+qeyri-strict `xfail` düzəlişin səssiz xülasə sətri kimi keçməsinə imkan verərdi):
+
+```python
+# tests/test_known_bugs.py
+import pytest
+
+
+@pytest.mark.xfail(reason="BUG: duplicate product name returns 500 instead of 409", strict=True)
+def test_duplicate_product_name_should_conflict(reset_db, base_url, api):
+    payload = {"name": "Repeat Item", "price": 9.99, "category": "electronics"}
+    api.post(f"{base_url}/api/products", json=payload)   # arrange: this name now exists
+
+    duplicate = api.post(f"{base_url}/api/products", json=payload)
+    assert duplicate.status_code == 409                  # what SHOULD happen (today it's 500)
+```
+
+Bu test **yazır** (məhsul əlavə edir), ona görə təkrar-işlədilə bilən qalmaq üçün Modul 2
+`conftest.py`-dən `reset_db` alır. Bir xəbərdarlıq: `xfail` **bütün testi** işarələyir, ona görə onun
+*istənilən yerində* uğursuzluq gözlənilən uğursuzluq kimi sayılır — baq testlərini kiçik və bir
+defektə fokuslanmış saxla, yoxsa böyük bir test səssizcə əlaqəsiz reqressiyanı udabilər.
+
+**Yadda saxla:** məlum baqı `reason` ilə *düzgün* davranışı assert edən **`strict=True`** `xfail`
+testi kimi tut. O, defekti sənədləşdirir, dəsti bu gün yaşıl saxlayır və **düzəliş gələn an ucadan
+uğursuz olur** — şərh və ya silinmiş testdən çox-çox yaxşı.
+
+---
+
+## Tapşırıqlar
+
+TestMarket Lab işlək olarkən `python-sdet` layihəndə işlə. `pytest -v` ilə işlət.
+
+### Tapşırıq 1 — Çatışmayan-sahə 400-ləri (10 dəq)
+
+Bunlar üçün `400` assert edən testlər yaz: gövdəsiz `{}` ilə `POST /api/auth/login`, yalnız `name` ilə
+`POST /api/products` və çatışmayan `name` ilə `POST /api/auth/register`. Hər birinin `400` qaytardığını
+təsdiqlə.
+
+### Tapşırıq 2 — 401 cütü (5 dəq)
+
+Səhv parolun **və** naməlum email-in hər ikisinin `POST /api/auth/login`-dən `401` qaytardığını assert
+et — və onların qəsdən eyni statusu qaytardığını qeyd et.
+
+### Tapşırıq 3 — Fellər boyunca 404 (10 dəq)
+
+Mövcud olmadığını bildiyin bir məhsul id-si üçün `/api/products/<id>`-də `GET`, `PUT` və `DELETE`-dən
+`404` assert et.
+
+### Tapşırıq 4 — Mesajı assert et (5 dəq)
+
+3 simvolluq parolla `POST /api/auth/register`. `400` və xəta gövdəsinin mesajının `"password"`-u
+qeyd etdiyini assert et (böyük-kiçik hərfə həssas deyil, alt-sətir — dəqiq sətir yox).
+
+### Tapşırıq 5 — Qeydiyyat validasiya matrisi (15 dəq)
+
+`(payload, expected_status)` sətirləri üzərində `POST /api/auth/register`-i parametrizə et: valid yeni
+qeydiyyat (`201`), təkrar email (`409`), qısa parol (`400`) və çatışmayan sahə (`400`). Hər sətrə
+oxunaqlı `id` ver. *(İpucu: valid qeydiyyat yazır — təkrar işə salışların təmiz başlaması üçün
+`reset_db` al.)*
+
+### Bonus — Bir baq tap və xfail et
+
+Təkrar-məhsul-adı `500`-ünü özün təkrar yarat, sonra düzgün `409`-u assert edən `xfail` testini yaz.
+Xülasədə "expected failure" səbəbini görmək üçün `pytest -rx` işlət.
+
+---
+
+**Modul 5**-də **test datası quraşdırma və söküşünə** dərindən gedirik — `POST /api/reset` və
+API-vasitəsilə-hazırlama (`POST /api/products` / `POST /api/orders`) işlədərək, beləcə hər test seed-dən
+asılı olmaq əvəzinə öz başlanğıc vəziyyətini idarə edir.
