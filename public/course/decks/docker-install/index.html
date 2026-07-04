@@ -10,6 +10,7 @@
        Deck framework — DO NOT EDIT the rules in this <style> block.
        =========================================================== */
     :root {
+      /* SLOT: theme tokens — AI with Rufat brand */
       --bg:      oklch(9% 0.06 255);
       --fg:      oklch(97% 0.006 255);
       --muted:   oklch(52% 0.05 255);
@@ -30,7 +31,11 @@
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
-    .deck-shell { position: fixed; inset: 0; overflow: hidden; }
+    .deck-shell {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
     .deck-stage {
       width: 1920px;
       height: 1080px;
@@ -39,7 +44,11 @@
       transform-origin: top left;
       box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
     }
-    .slide { position: absolute; inset: 0; overflow: hidden; }
+    .slide {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
     .slide:not(.active) { display: none !important; }
     :where(.slide.active) { display: flex; flex-direction: column; }
     .deck-counter {
@@ -76,7 +85,10 @@
     }
     .deck-counter button:hover { background: rgba(255, 255, 255, 0.12); }
     .deck-counter button[disabled] { opacity: 0.3; cursor: default; }
-    .deck-counter .deck-count { padding: 0 14px; letter-spacing: 0.22em; }
+    .deck-counter .deck-count {
+      padding: 0 14px;
+      letter-spacing: 0.22em;
+    }
     .deck-counter .deck-count .total { color: rgba(255, 255, 255, 0.5); }
     .deck-hint {
       position: fixed;
@@ -91,10 +103,33 @@
     }
     @media print {
       @page { size: 1920px 1080px; margin: 0; }
-      html, body { width: 1920px !important; height: auto !important; overflow: visible !important; background: #fff !important; }
-      .deck-shell { position: static !important; display: block !important; inset: auto !important; }
-      .deck-stage { width: 1920px !important; height: auto !important; transform: none !important; box-shadow: none !important; position: static !important; }
-      .slide { display: flex !important; position: relative !important; inset: auto !important; width: 1920px !important; height: 1080px !important; page-break-after: always; break-after: page; }
+      html, body {
+        width: 1920px !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
+      }
+      .deck-shell {
+        position: static !important;
+        display: block !important;
+        inset: auto !important;
+      }
+      .deck-stage {
+        width: 1920px !important;
+        height: auto !important;
+        transform: none !important;
+        box-shadow: none !important;
+        position: static !important;
+      }
+      .slide {
+        display: flex !important;
+        position: relative !important;
+        inset: auto !important;
+        width: 1920px !important;
+        height: 1080px !important;
+        page-break-after: always;
+        break-after: page;
+      }
       .slide:last-child { page-break-after: auto; break-after: auto; }
       .deck-counter, .deck-hint { display: none !important; }
     }
@@ -187,7 +222,6 @@
     .win-back-btn { display: inline-flex; align-items: center; padding: 9px 22px; border: 1px solid #bbb; color: #555; border-radius: 4px; font-size: 14px; }
     .win-btn-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
     .chk-on { width: 18px; height: 18px; border-radius: 3px; background: #2496ed; border: 2px solid #2496ed; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0; }
-    .chk-off { width: 18px; height: 18px; border-radius: 3px; border: 2px solid #bbb; background: #fff; flex-shrink: 0; }
     .chk-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-size: 15px; color: #222; }
     .setup-progress-track { background: #e0e0e0; border-radius: 4px; height: 20px; overflow: hidden; margin: 14px 0; }
     .setup-progress-fill { height: 100%; background: #2496ed; border-radius: 4px; width: 72%; }
