@@ -2,7 +2,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
-import { PYTHON_SDET, isAzReady } from './src/courses.mjs';
+import { PYTHON_SDET, PYTHON_SDET_MODULES, sdetLink, isAzReady } from './src/courses.mjs';
 
 // https://astro.build/config
 export default defineConfig({
@@ -171,30 +171,20 @@ export default defineConfig({
 					],
 				},
 				{
-					// Tier 2 Python course — English-only (net-new). Explicit module links
-					// like the Playwright Course group above; links are added per increment
-					// as modules ship, so the nav never points at unauthored pages. The
-					// route middleware (src/starlightRouteData.ts) prunes this group from
-					// non-EN sidebars and noindexes the Starlight locale-fallback pages.
-					// Label comes from the shared PYTHON_SDET constant so the middleware's
-					// label-based prune can't drift from it.
+					// Tier 2 "Python for SDETs" — the sidebar (EN + AZ labels) is GENERATED
+					// from PYTHON_SDET_MODULES (src/courses.mjs), the single source that also
+					// derives which pages are AZ-translated. The group label comes from the
+					// shared PYTHON_SDET constant so the middleware's label-based prune can't
+					// drift; the middleware (src/starlightRouteData.ts) filters this group to
+					// AZ-ready modules on non-EN routes and noindexes untranslated fallbacks.
 					label: PYTHON_SDET.groupLabel,
-					items: [
-						{ label: 'Overview', translations: { az: 'İcmal' }, link: '/python-sdet/' },
-						{ label: '0 — Setup & first test', translations: { az: '0 — Quraşdırma və ilk test' }, link: '/python-sdet/module-0/' },
-						{ label: '1 — pytest fundamentals', link: '/python-sdet/module-1/' },
-						{ label: '2 — Fixtures & parametrize', link: '/python-sdet/module-2/' },
-						{ label: '3 — API testing with requests', link: '/python-sdet/module-3/' },
-						{ label: '4 — Negative & validation testing', link: '/python-sdet/module-4/' },
-						{ label: '5 — Test data setup & teardown', link: '/python-sdet/module-5/' },
-						{ label: '6 — UI automation with Playwright', link: '/python-sdet/module-6/' },
-						{ label: '7 — Page Object Model', link: '/python-sdet/module-7/' },
-						{ label: '8 — Data-driven tests', link: '/python-sdet/module-8/' },
-						{ label: '9 — Reporting & suite structure', link: '/python-sdet/module-9/' },
-						{ label: '10 — CI with GitHub Actions', link: '/python-sdet/module-10/' },
-						{ label: '11 — Capstone project', link: '/python-sdet/module-11/' },
-						{ label: '12 — Database verification', link: '/python-sdet/module-12/' },
-					],
+					// Generated from the single PYTHON_SDET_MODULES list (src/courses.mjs)
+					// so an AZ label and the page's AZ-ready status can't drift apart.
+					items: PYTHON_SDET_MODULES.map((m) => ({
+						label: m.label,
+						...(m.az ? { translations: { az: m.az } } : {}),
+						link: sdetLink(m.slug),
+					})),
 				},
 				{
 					label: 'BrauzerLab',
