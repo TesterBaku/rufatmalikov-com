@@ -1,0 +1,321 @@
+---
+title: "Modul 0: Quraşdırma və ilk test"
+description: "Əsl Python test alətlərini qur — venv, pip, pytest və requests — TestMarket Lab-ı klonlayıb işə sal və bütün stack-in işlədiyini sübut edən ilk testi yaz."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+**Python for SDETs**-ə xoş gəldin. Bu ilk modul maşınını hazırlayır və real bir tətbiqə qarşı
+keçən əsl bir testlə bitir. Sonunda Python, virtual mühit, `pytest` və `requests` quraşdırılmış,
+**TestMarket Lab** lokalda işlək və bütün alət zəncirinin başdan-sona işlədiyini sübut edən
+yaşıl bir testin olacaq.
+
+:::note[Python Fundamentals-dan gəlirsən?]
+[Python Fundamentals](/az/python/) tamamilə brauzerində işləyir — quraşdırılacaq heç nə yoxdur. Bu
+kurs fərqlidir: əsl avtomatlaşdırma işi terminalda baş verir, ona görə burada Python-u və alətləri
+lokalda quraşdırırsan və testləri özün işlədirsən. Bu, hər SDET işinin işlətdiyi quraşdırmadır.
+:::
+
+:::tip[Terminal sənə yenidir?]
+Bu modul əmrləri **terminalda** işlədir — alətlərini qurmaq üçün `python --version` və `pip install`,
+sonra məşq tətbiqini işə salmaq üçün `npm install` / `npm start`. Terminal yeni ərazidirsə,
+**[Komanda sətri və npm istinadı](/az/reference/command-line-npm/)** əsasları əhatə edir: terminal
+nədir, ətrafda hərəkət üçün `cd`/`ls` və `npm install` / `npm start` nə edir. (Python-a xas əmrlər —
+`venv`, `pip` — aşağıda addım-addım izah olunur.)
+:::
+
+<Video title="Modul 0: Quraşdırma və ilk test" />
+
+---
+
+## Nə quraşdıracaqsan
+
+Dörd şey, sıra ilə:
+
+1. **Python 3** — dil (yəqin ki Fundamentals-dan onsuz da var; yoxlayacağıq).
+2. **Virtual mühit (`venv`)** — layihə üçün təcrid olunmuş paket dəsti.
+3. **`pytest`** — Python testi üçün de-fakto standart olan test icraçısı.
+4. **`requests`** — tətbiqin REST API-sini çağırmaq üçün işlədəcəyimiz kitabxana.
+
+Python üçün Playwright sonra, Modul 6-da gəlir — onu hələ quraşdırmağa ehtiyac yoxdur.
+
+**Yadda saxla:** bu kursun alət zənciri **Python + venv + pytest + requests**-dir.
+
+---
+
+## Python-u quraşdır və yoxla
+
+Sənə **Python 3.9 və ya daha yeni** lazımdır.
+
+<Steps>
+
+1. **Onsuz da nəyin olduğunu yoxla.** Terminal aç və işlət:
+
+   ```bash
+   python --version
+   ```
+
+   `Python 3.9.x` və ya daha yüksək görürsənsə, hazırsan — növbəti bölməyə keç. Bəzi
+   sistemlərdə əmr `python3`-dür:
+
+   ```bash
+   python3 --version
+   ```
+
+2. **Yoxdursa quraşdır.** Quraşdırıcını
+   [python.org/downloads](https://www.python.org/downloads/)-dan endir və işə sal.
+
+   :::caution[Windows: "Add Python to PATH"-ı işarələ]
+   Windows quraşdırıcısının ilk ekranında Install-a klik etməzdən əvvəl **"Add python.exe to PATH"**-ı
+   işarələ. Onsuz `python` əmri terminalında tapılmayacaq.
+   :::
+
+3. **`pip`-i yoxla** (Python-un paket quraşdırıcısı — Python ilə birlikdə gəlir):
+
+   ```bash
+   pip --version
+   ```
+
+   `pip` tapılmırsa, əvəzinə `python -m pip --version` sına.
+
+</Steps>
+
+:::note[`python` vs `python3` / `pip` vs `pip3`]
+macOS və Linux-da əmrlər çox vaxt `python3` və `pip3`-dür. Windows-da adətən `python` və `pip`-dir.
+Sistemin tanıdığını işlət — kursun qalanı `python` və `pip` yazır.
+:::
+
+**Yadda saxla:** davam etməzdən əvvəl `python --version` (≥ 3.9) və `pip --version`-i təsdiqlə —
+korlanmış Python quraşdırma ağrısının #1 səbəbidir.
+
+---
+
+## Layihə və virtual mühit yarat
+
+**Virtual mühit** bir layihəyə aid olan Python-un paket sahəsinin şəxsi nüsxəsidir. Ora quraşdırmaq
+bu kursun paketlərini maşınındakı hər şeydən ayrı saxlayır — versiya toqquşması yoxdur və bir qovluğu
+silərək bütün şeyi silə bilərsən.
+
+<Steps>
+
+1. **Layihə qovluğunu yarat:**
+
+   ```bash
+   mkdir python-sdet
+   cd python-sdet
+   ```
+
+2. **Virtual mühiti qur** (ikinci `venv` qovluq adıdır — `.venv` geniş yayılmış
+   konvensiyadır):
+
+   ```bash
+   python -m venv .venv
+   ```
+
+3. **Onu aktivləşdir.** Bu, insanların unutduğu addımdır — quraşdırmaq və ya işlətməkdən əvvəl
+   *hər yeni terminalda* venv-i aktivləşdirməlisən:
+
+   ```bash
+   # Windows (PowerShell)
+   .venv\Scripts\Activate.ps1
+
+   # Windows (cmd)
+   .venv\Scripts\activate.bat
+
+   # macOS / Linux (bash, zsh)
+   source .venv/bin/activate
+   ```
+
+   Aktiv olduqda, prompt-un əvvəlində `(.venv)` göstərilir.
+
+</Steps>
+
+:::caution[Windows PowerShell: "running scripts is disabled"]
+Aktivləşdirmə icra-siyasəti (execution-policy) xətası ilə alınmırsa, istifadəçin üçün lokal
+skriptlərə bir dəfə icazə ver:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+Sonra aktivləşdirmə əmrini yenidən işlət.
+:::
+
+Mühitdən sonra çıxmaq üçün `deactivate` işlət.
+
+**Yadda saxla:** `venv` bir layihənin paketlərini təcrid edir. **Bir dəfə qur** (`python -m venv
+.venv`), **hər yeni terminalda aktivləşdir** — `(.venv)` prefiksi onun açıq olduğunu deyir.
+
+---
+
+## pytest və requests-i quraşdır
+
+venv **aktiv** olarkən iki kitabxananı quraşdır:
+
+```bash
+pip install pytest requests
+```
+
+Quraşdırdığını qeyd et ki, hər kəs (o cümlədən gələcək sən, ya da CI) onu təkrar yarada bilsin:
+
+```bash
+pip freeze > requirements.txt
+```
+
+`requirements.txt` indi dəqiq versiyaları siyahılayır. Sonra təzə maşın mühiti
+`pip install -r requirements.txt` ilə yenidən qurur.
+
+pytest-in path-da olduğunun tez yoxlanışı:
+
+```bash
+pytest --version
+```
+
+**Yadda saxla:** **aktiv** venv-ə quraşdır, sonra versiyaları bərkitmək üçün
+`pip freeze > requirements.txt` — həmin fayl CI-nin və komanda yoldaşlarının eyni quraşdırmanı
+almasının yoludur.
+
+---
+
+## Layihə quruluşu
+
+Təmiz bir test layihəsi kiçik başlayır. Bir `tests/` qovluğu yarat — pytest testləri orada aşkarlayır:
+
+```
+python-sdet/
+├── .venv/                # virtual mühit (bunu commit etmə)
+├── tests/
+│   └── test_smoke.py     # testlərin burada yaşayır
+├── requirements.txt      # bərkidilmiş asılılıqlar
+└── pytest.ini            # pytest konfiqurasiyası (opsional, aşağıda əlavə olunur)
+```
+
+Layihə kökünü işarələmək və pytest-i `tests/` qovluğuna yönəltmək üçün kiçik bir `pytest.ini` əlavə et
+ki, çılpaq `pytest` (layihə kökündən işlədilib) yolu adlandırmadan onları aşkarlasın:
+
+```ini
+# pytest.ini
+[pytest]
+# Where pytest looks for tests
+testpaths = tests
+```
+
+:::tip[git işlədirsən? venv-i ignore et]
+Bu qovluq git repozitoriyasıdırsa, `.venv/` və `__pycache__/` olan bir `.gitignore` əlavə et ki,
+mühiti və ya Python-un keşlərini heç vaxt commit etməyəsən. git sənə yenidir?
+[Git və GitHub istinadına](/az/reference/git-github/) bax.
+:::
+
+**Yadda saxla:** testləri `tests/`-də saxla, asılılıqları `requirements.txt`-də bərkit və `.venv/`-i
+versiya nəzarətindən kənarda saxla.
+
+---
+
+## Məşq tətbiqini al: TestMarket Lab
+
+Bu kursdakı hər test **TestMarket Lab**-a qarşı işləyir — REST API və veb UI-si olan kiçik, real
+mağaza. Bu, sənin `python-sdet` qovluğundan **ayrı bir layihədir**: tətbiq bir terminalda işləyir,
+testlərin başqasında.
+
+Onu işlətmək üçün [Node.js](https://nodejs.org) quraşdırılmış olmalıdır (**LTS** versiya). Sonra,
+`python-sdet`-dən *kənar* bir qovluqda:
+
+```bash
+git clone https://github.com/TesterBaku/testmarket-lab
+cd testmarket-lab
+npm install
+npm start
+```
+
+Onu işlək saxla və [http://localhost:3000](http://localhost:3000)-i aç — TestMarket mağazasını
+görməlisən. API-nin də cavab verdiyini təsdiqlə, brauzerdə və ya başqa terminalda:
+
+```bash
+# In a new terminal
+curl http://localhost:3000/api/products
+```
+
+Geriyə məhsulların JSON massivini almalısan.
+
+:::tip[Verilənləri istənilən vaxt sıfırla]
+TestMarket Lab kiçik lokal verilənlər bazası işlədir. Onu başlanğıc vəziyyətinə qaytarmaq üçün, işlək
+olarkən `/api/reset`-ə `POST` göndər (bunu sonrakı modulda avtomatlaşdıracağıq). Demo hesablar:
+`customer@test.io` / `customer123` və `admin@test.io` / `admin123`.
+:::
+
+**Yadda saxla:** tətbiq **öz terminalında** `http://localhost:3000`-də işləyir; işləyərkən onu işlək
+saxla. `/api/reset` verilənləri məlum başlanğıc vəziyyətinə qaytarır.
+
+---
+
+## İlk testin
+
+Bütün stack-in işlədiyini sübut etmə vaxtıdır. `python-sdet` layihəndə, venv aktiv və TestMarket Lab
+işlək olarkən, bunu `tests/test_smoke.py`-a qoy:
+
+```python
+# tests/test_smoke.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_products_endpoint_is_up():
+    response = requests.get(f"{BASE_URL}/api/products")
+
+    # The request succeeded
+    assert response.status_code == 200
+
+    # The body is a JSON array with products in it
+    products = response.json()
+    assert isinstance(products, list)
+    assert len(products) > 0
+```
+
+Onu `python-sdet` qovluğundan işlət:
+
+```bash
+pytest
+```
+
+Buna bənzər bir şey görməlisən:
+
+```
+========================= test session starts =========================
+collected 1 item
+
+tests/test_smoke.py .                                            [100%]
+
+========================== 1 passed in 0.05s ==========================
+```
+
+Fayl adından sonrakı o tək nöqtə sənin keçən testindir. 🎉
+
+Əvəzinə `Connection refused` görürsənsə, tətbiq işləmir — TestMarket Lab-ı öz terminalında işə sal
+və yenidən sına. pytest **"no tests ran"** bildirirsə, faylın `test_smoke.py` adlandığını (`test_`
+prefiksi vacibdir) və funksiyanın `test_` ilə başladığını yoxla. Bu adların niyə vacib olduğunu
+Modul 1-də dəqiq açacağıq.
+
+**Yadda saxla:** keçən bir API smoke testi (`200` + boş olmayan list) bütün alət zəncirinin — Python,
+venv, pytest, requests və işləyən tətbiqin — düzgün qoşulduğunu sübut edir.
+
+---
+
+## Əsas nəticələr
+
+- Bu kurs brauzer icraçısını yox, **əsl lokal quraşdırmanı** işlədir — işin işlədiyi yol.
+- Alət zənciri **Python + venv + pytest + requests**-dir (Playwright Modul 6-da gəlir).
+- **venv** paketləri təcrid edir: bir dəfə qur, **hər yeni terminalda aktivləşdir**, ora quraşdır və
+  versiyaları bərkitmək üçün `pip freeze > requirements.txt`.
+- **TestMarket Lab** öz terminalında `http://localhost:3000`-də işləyir və hər testin hədəflədiyi şeydir.
+- pytest `test_*.py` adlı faylları və `test_*` adlı funksiyaları aşkarlayır; keçən bir API smoke testi
+  stack-i başdan-sona təsdiqləyir.
+
+**Yoxlama siyahısı — indi bunlar olmalıdır:** Python ≥ 3.9 yoxlanıb; aktiv `.venv` olan bir
+`python-sdet` layihəsi; `pytest` və `requests` quraşdırılıb və `requirements.txt`-də bərkidilib;
+TestMarket Lab klonlanıb və `http://localhost:3000`-də işlək; və `tests/test_smoke.py` keçir.
+
+**[Modul 1](/az/python-sdet/module-1/)**-də pytest-in özünə dərindən gedirik — testlərin necə
+aşkarlandığı, `assert`-in sənə necə oxunaqlı uğursuzluqlar verdiyi və istədiyin testləri dəqiq necə
+işlətmək.
