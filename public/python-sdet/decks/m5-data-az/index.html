@@ -19,7 +19,7 @@
           <span class="pill">reset baza</span>
           <span class="pill">API vasitəsilə hazırla</span>
           <span class="pill">yield söküş</span>
-          <span class="pill">zavod fixture-ləri</span>
+          <span class="pill">factory fixture-ləri</span>
         </div>
         <div class="brand-bar">
           <div class="brand-dot"></div>
@@ -73,7 +73,7 @@
         <div class="circuit-bg"></div>
         <div class="full-heading">UI yox, API vasitəsilə hazırla</div>
         <div>
-          <p style="font-size:24px;line-height:1.55;color:oklch(80% 0.03 255);">Sifarişi olan daxil olmuş istifadəçi lazımdır? Qeydiyyat → login → checkout boyunca <em>kliklə</em>mə. Verilləni birbaşa <strong>POST</strong> et — bir sürətli, etibarlı çağırış — sonra əslində maraqlandığın şeyi test et.</p>
+          <p style="font-size:24px;line-height:1.55;color:oklch(80% 0.03 255);">Sifarişi olan daxil olmuş istifadəçi lazımdır? Qeydiyyat → login → checkout boyunca <em>kliklə</em>mə. Veriləni birbaşa <strong>POST</strong> et — bir sürətli, etibarlı çağırış — sonra əslində maraqlandığın şeyi test et.</p>
           <div class="step-tip" style="margin-top:26px;"><span class="tip-icon">⚡</span><span>API quraşdırması vəziyyəti qurmaq üçün UI-ni idarə etməkdən daha sürətli və qat-qat az flaky-dir.</span></div>
         </div>
         <div>
@@ -113,7 +113,7 @@
 
         <div>
           <div class="step-tip"><span class="tip-icon">♻️</span><span><code class="code-inline">yield</code>-dən <strong>əvvəlki</strong> kod quraşdırmadır; <strong>sonrakı</strong> kod söküşdür — və test uğursuz olsa belə işləyir.</span></div>
-          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🏭</span><span>Bir neçəsi lazımdır? <strong>Zavod fixture-i</strong> testin N dəfə çağırdığı bir <em>funksiya</em> qaytarır — hər biri unikal adla, və <code class="code-inline">reset_db</code> sonra hamısını yenidən səpərək aparır.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🏭</span><span>Bir neçəsi lazımdır? <strong>Factory fixture-i</strong> testin N dəfə çağırdığı bir <em>funksiya</em> qaytarır — hər biri unikal adla, və <code class="code-inline">reset_db</code> sonra hamısını yenidən səpərək aparır.</span></div>
         </div>
         <div class="brand-bar">
           <div class="brand-dot"></div>
@@ -135,8 +135,8 @@
           </div>
           <div class="next-card">
             <div class="nc-icon">🏭</div>
-            <div class="nc-title">Zavod</div>
-            <div class="nc-desc">N məhsul quran zavod fixture-i, hər biri unikal adla</div>
+            <div class="nc-title">Factory</div>
+            <div class="nc-desc">N məhsul quran factory fixture-i, hər biri unikal adla</div>
           </div>
           <div class="next-card">
             <div class="nc-icon">➡️</div>

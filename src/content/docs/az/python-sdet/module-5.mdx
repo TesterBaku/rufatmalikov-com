@@ -1,6 +1,6 @@
 ---
 title: "Modul 5: Test datası quraşdırma və söküş"
-description: "Hər testə ehtiyacı olan dəqiq verilənləri və məlum başlanğıc vəziyyəti ver: təmiz baza üçün reset, UI əvəzinə API vasitəsilə hazırla və verilən-quran və zavod fixture-ləri qur — TestMarket Lab-a qarşı."
+description: "Hər testə ehtiyacı olan dəqiq verilənləri və məlum başlanğıc vəziyyəti ver: təmiz baza üçün reset, UI əvəzinə API vasitəsilə hazırla və verilən-quran və factory fixture-ləri qur — TestMarket Lab-a qarşı."
 ---
 
 import Video from '../../../../components/course/Video.astro';
@@ -153,10 +153,10 @@ işləsin (fixture sırası asılılıq zəncirini izləyir).
 
 ---
 
-## Zavod fixture-ləri: lazım olduğu qədər yarat
+## Factory fixture-ləri: lazım olduğu qədər yarat
 
 Sadə fixture **bir** şey qurur. Test *bir neçə*yə ehtiyac duyanda — və ya hər birini fərdiləşdirmək
-istəyəndə — bir **zavod** qaytar: testin istədiyi qədər çağırdığı kiçik funksiya. Hər məhsula unikal
+istəyəndə — bir **factory** qaytar: testin istədiyi qədər çağırdığı kiçik funksiya. Hər məhsula unikal
 ad ver ki, heç vaxt toqquşmasınlar:
 
 ```python
@@ -191,9 +191,9 @@ def test_factory_makes_distinct_products(make_product):
 ```
 
 `make_product` **funksiya qaytarır**, ona görə test neçə məhsulun mövcud olduğunu və onların necə
-göründüyünü idarə edir — birdəfəlik fixture-in çevik əmisi oğlu.
+göründüyünü idarə edir — birdəfəlik fixture-in çevik variantı.
 
-**Yadda saxla:** **zavod fixture-i** funksiya qaytarır, bir testə çoxlu (fərdiləşdirilmiş) resurs
+**Yadda saxla:** **factory fixture-i** funksiya qaytarır, bir testə çoxlu (fərdiləşdirilmiş) resurs
 qurmağa imkan verir. Onun içində unikal dəyərlər (adlar/id-lər) yarat ki, təkrar çağırışlar
 toqquşmasın.
 
@@ -213,7 +213,7 @@ verilənini sök (`yield`-dən sonra `DELETE`) ki, o, başqa testləri korlaya b
 
 ## Birləşdirmək
 
-Zavodla fərdi məhsul hazırla, ona görə API vasitəsilə sifariş ver və nəticəni assert et — bütün
+Factory ilə fərdi məhsul hazırla, onun üçün API vasitəsilə sifariş ver və nəticəni assert et — bütün
 quraşdırma API ilə, UI yox:
 
 ```python
@@ -237,8 +237,8 @@ def test_order_uses_the_made_product(base_url, api, make_product):
 Bir test, tam idarədə: öz məhsulunu qurur, öz sifarişini verir və nəticəni yoxlayır — təmiz
 verilənlər bazasından başlayaraq və yalnız API-yə toxunaraq.
 
-**Yadda saxla:** peşəkar şablon **hazırla (API) → icra et → assert et**-dir. Fixture-lər verilləni
-qurur, `reset` bazanı zəmanətləyir və test yoxladığı ssenari kimi yuxarıdan-aşağı oxunur.
+**Yadda saxla:** peşəkar şablon **hazırla (API) → icra et → assert et**-dir. Fixture-lər veriləni
+qurur, `reset` bazanı təmin edir və test yoxladığı ssenari kimi yuxarıdan-aşağı oxunur.
 
 ---
 
@@ -264,9 +264,9 @@ işlət.
 UI-yə toxunmadan, `product_id` 1, miqdar 3 üçün bir sifariş `POST` et, sonra `total ==
 pytest.approx(29.99 * 3)` olan bir sifarişin `GET /api/orders`-da göründüyünü assert et.
 
-### Tapşırıq 4 — `make_product` zavodu (15 dəq)
+### Tapşırıq 4 — `make_product` factory-si (15 dəq)
 
-Unikal adlarla məhsullar quran bir `make_product` zavod fixture-i əlavə et. Üç məhsul quran və onların
+Unikal adlarla məhsullar quran bir `make_product` factory fixture-i əlavə et. Üç məhsul quran və onların
 üç fərqli `id`-si olduğunu assert edən bir test yaz.
 
 ### Bonus — Reset-siz söküş
@@ -278,5 +278,5 @@ müqayisə et: burada hansı daha sadədir və niyə?
 ---
 
 **Modul 6**-da nəhayət **Python üçün Playwright** ilə **brauzeri** idarə edirik — lokatorlar,
-əməliyyatlar, gözləmələr və assert-lər — hər UI testindən əvvəl verilləni tez səpmək üçün bu modulun
+əməliyyatlar, gözləmələr və assert-lər — hər UI testindən əvvəl veriləni tez səpmək üçün bu modulun
 API-hazırlama fəndini işlədərək.
