@@ -1,0 +1,282 @@
+---
+title: "Modul 5: Test datası quraşdırma və söküş"
+description: "Hər testə ehtiyacı olan dəqiq verilənləri və məlum başlanğıc vəziyyəti ver: təmiz baza üçün reset, UI əvəzinə API vasitəsilə hazırla və verilən-quran və factory fixture-ləri qur — TestMarket Lab-a qarşı."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+
+Test yalnız işlədiyi verilənləri idarə etdikdə etibarlıdır. İki şey o idarəni pozur:
+**bir-birindən asılı** testlər (biri başqasının nəticəsini dəyişən verilən qoyur) və **UI
+vasitəsilə** edilən quraşdırma (yavaş və kövrək). Bu modul hər ikisini düzəldir — məlum bazaya
+reset et və hər testin dəqiq ehtiyacını quran fixture-lərlə **test datasını API vasitəsilə
+hazırla**.
+
+TestMarket Lab-ı `http://localhost:3000`-də işlək və `.venv`-ini aktiv saxla. Bu modul birbaşa
+[Modul 2](/az/python-sdet/module-2/)-dəki fixture-lər və [Modul 3](/az/python-sdet/module-3/)-dəki
+`POST` çağırışları üzərində qurulur.
+
+<Video title="Modul 5: Test datası quraşdırma və söküş" />
+
+<Deck href="/python-sdet/decks/m5-data-az/" title="Modul 5: test datası quraşdırma və söküşünə qısa baxış — slayd təlimatı" />
+
+---
+
+## Problem: ətraf vəziyyətə söykənən testlər
+
+Tutaq ki, bir test məhsul əlavə edir və sonrakı test "15 məhsul var" assert edir. Onları bu sıra
+ilə işlət və ikincisi uğursuz olur — baq ucbatından yox, birinci test **verilən qoyduğu** üçün.
+Onlardan əvvəl nəyin işlədiyindən asılı olaraq keçən və ya uğursuz olan testlər klassik flaky
+dəstdir.
+
+Müalicə **təcriddir**: hər test məlum vəziyyətdən başlayır və öz verilənini qurur.
+
+**Yadda saxla:** başqa testin qalıqlarından (və ya dəqiq seed-dən) asılı olan test kövrəkdir. Hər
+test öz başlanğıc vəziyyətini və öz verilənini idarə etməlidir.
+
+---
+
+## Məlum baza: reset
+
+`reset_db` ilə Modul 2-də tanış oldun — o, `/api/reset`-ə `POST` edir, verilənlər bazasını
+15-məhsullu başlanğıc vəziyyətinə yenidən səpir. Test təmiz vərəqə təmin etmək üçün onu
+**istəyir**:
+
+```python
+# tests/conftest.py
+import pytest
+import requests
+
+
+@pytest.fixture(scope="session")
+def base_url():
+    return "http://localhost:3000"
+
+
+@pytest.fixture
+def api(base_url):
+    session = requests.Session()
+    yield session
+    session.close()
+
+
+@pytest.fixture
+def reset_db(base_url):
+    requests.post(f"{base_url}/api/reset")
+    yield
+```
+
+**Hər** testi istəməyi xatırlamadan təcrid etmək istəsən, onu `autouse=True` et — pytest onda hər
+testdən əvvəl onu avtomatik işlədir:
+
+```python
+@pytest.fixture(autouse=True)
+def reset_db(base_url):
+    requests.post(f"{base_url}/api/reset")
+    yield
+```
+
+Güzəşt: `autouse` yalnız-oxu testlər üçün də yenidən səpir (bir az yavaş), amma heç bir testin
+başqasının verilənini görə bilməməsini təmin edir. Opt-in daha cərrahidir; `autouse` standart
+olaraq daha təhlükəsizdir — dəst başına seç.
+
+**Yadda saxla:** `reset` məlum baza verir. Təcrid lazım olan yerdə `reset_db` istə, və ya *hər*
+testdən əvvəl yenidən səpmək üçün onu `autouse=True` et — bir az sürəti zəmanətli müstəqilliyə
+dəyişərək.
+
+---
+
+## UI yox, API vasitəsilə hazırla
+
+"Sifariş düzgün total göstərir"i test etmək üçün UI-dən klikləyə *bilərsən*: daxil ol, məhsul aç,
+səbətə əlavə et, checkout et. Bu, yavaşdır və UI dəyişdikcə sınır. Peşəkar şablon **API vasitəsilə
+hazırlamaqdır** — vəziyyəti birbaşa `POST` ilə qur, sonra assert et:
+
+```python
+# tests/test_arrange_via_api.py
+import pytest
+
+
+def test_order_total_via_api(reset_db, base_url, api):
+    # arrange: place an order straight through the API — no clicking
+    api.post(
+        f"{base_url}/api/orders",
+        json={"email": "customer@test.io", "items": [{"product_id": 1, "quantity": 2}]},
+    )
+
+    # assert: the order is there with the computed total (Wireless Mouse 29.99 x 2)
+    orders = api.get(f"{base_url}/api/orders").json()
+    assert any(o["total"] == pytest.approx(29.99 * 2) for o in orders)   # computed float -> approx
+```
+
+API quraşdırması **sürətlidir** (saniyələr yox, millisaniyələr) və **dəqiqdir** — istədiyin dəqiq
+vəziyyəti qurursan, artıq heç nə yox. (Modul 6 bunu UI testləri üçün verilən səpməkdə işlədir.)
+
+**Yadda saxla:** test datasını UI yox, **API** vasitəsilə hazırla — o, 10–50× sürətlidir və
+qat-qat az kövrəkdir. Vəziyyəti `POST` ilə qur, sonra assert et. UI-ni əslində test etdiyin şey
+üçün saxla.
+
+---
+
+## Verilən-quran fixture
+
+Bir neçə test "işləmək üçün bir məhsul" istəyəndə, o quraşdırmanı **birini quran və onun verilənini
+geri qaytaran** fixture-ə köçür. Onu `reset_db`-dən asılı et ki, təzə məhsulun adı əvvəlki icra ilə
+toqquşa bilməsin:
+
+```python
+# tests/conftest.py (add to it)
+@pytest.fixture
+def product(reset_db, base_url, api):
+    """Make a fresh product and give the test its data."""
+    created = api.post(
+        f"{base_url}/api/products",
+        json={"name": "Fixture Product", "price": 19.99, "category": "electronics"},
+    )
+    return created.json()
+```
+
+```python
+# tests/test_uses_product.py
+def test_new_product_is_listed(base_url, api, product):
+    listing = api.get(f"{base_url}/api/products").json()
+    assert product["id"] in [p["id"] for p in listing]
+```
+
+Test heç vaxt `reset_db`-ni birbaşa istəmir — `product`-u istəmək onu içəri çəkir, çünki `product`
+ondan asılıdır. O asılılıq həm də onları düzgün **sıralayır**: `reset_db` əvvəlcə işləyir, *sonra*
+məhsul qurulur.
+
+**Yadda saxla:** verilən-quran fixture testin ehtiyac duyduğu resursu qurur və onun verilənini
+qaytarır. Onun içində `reset_db`-dən asılı ol ki, reset həmişə verilən qurulmazdan **əvvəl**
+işləsin (fixture sırası asılılıq zəncirini izləyir).
+
+---
+
+## Factory fixture-ləri: lazım olduğu qədər yarat
+
+Sadə fixture **bir** şey qurur. Test *bir neçə*yə ehtiyac duyanda — və ya hər birini fərdiləşdirmək
+istəyəndə — bir **factory** qaytar: testin istədiyi qədər çağırdığı kiçik funksiya. Hər məhsula unikal
+ad ver ki, heç vaxt toqquşmasınlar:
+
+```python
+# tests/conftest.py (add to it)
+@pytest.fixture
+def make_product(reset_db, base_url, api):
+    """Return a factory that makes products with unique names."""
+    count = 0
+
+    def _make(**overrides):
+        nonlocal count
+        count += 1
+        payload = {
+            "name": f"Widget {count}",           # unique per call
+            "price": 9.99,
+            "category": "electronics",
+        }
+        payload.update(overrides)                # let callers override any field
+        return api.post(f"{base_url}/api/products", json=payload).json()
+
+    return _make
+```
+
+```python
+# tests/test_factory.py
+def test_factory_makes_distinct_products(make_product):
+    first = make_product()
+    second = make_product(price=49.99)
+
+    assert first["id"] != second["id"]
+    assert second["price"] == 49.99
+```
+
+`make_product` **funksiya qaytarır**, ona görə test neçə məhsulun mövcud olduğunu və onların necə
+göründüyünü idarə edir — birdəfəlik fixture-in çevik variantı.
+
+**Yadda saxla:** **factory fixture-i** funksiya qaytarır, bir testə çoxlu (fərdiləşdirilmiş) resurs
+qurmağa imkan verir. Onun içində unikal dəyərlər (adlar/id-lər) yarat ki, təkrar çağırışlar
+toqquşmasın.
+
+---
+
+## Söküş haqqında qeyd
+
+`reset_db` hər testdən **əvvəl** yenidən səpdiyi üçün, əksər dəstlərə açıq söküş lazım deyil —
+növbəti test vərəqəni özü silir. Dəst *reset etmirsə*, əvəzinə qurduğunu təmizlə: resursu `yield`-dən
+sonra `DELETE` et (Modul 2-nin yield-söküşü, Modul 3-ün `DELETE`-i ilə) ki, verilən sonrakı testlərə
+sızmasın.
+
+**Yadda saxla:** hər testdən *əvvəl* yenidən səpmək adətən söküşü lazımsız edir. Reset olmadan öz
+verilənini sök (`yield`-dən sonra `DELETE`) ki, o, başqa testləri korlaya bilməsin.
+
+---
+
+## Birləşdirmək
+
+Factory ilə fərdi məhsul hazırla, onun üçün API vasitəsilə sifariş ver və nəticəni assert et — bütün
+quraşdırma API ilə, UI yox:
+
+```python
+# tests/test_order_flow.py
+import pytest
+
+
+def test_order_uses_the_made_product(base_url, api, make_product):
+    widget = make_product(price=25.00)                      # arrange: a $25 product
+
+    api.post(                                               # arrange: order 2 of them
+        f"{base_url}/api/orders",
+        json={"email": "customer@test.io",
+              "items": [{"product_id": widget["id"], "quantity": 2}]},
+    )
+
+    orders = api.get(f"{base_url}/api/orders").json()        # assert: total is right
+    assert any(o["total"] == pytest.approx(50.00) for o in orders)
+```
+
+Bir test, tam idarədə: öz məhsulunu qurur, öz sifarişini verir və nəticəni yoxlayır — təmiz
+verilənlər bazasından başlayaraq və yalnız API-yə toxunaraq.
+
+**Yadda saxla:** peşəkar şablon **hazırla (API) → icra et → assert et**-dir. Fixture-lər veriləni
+qurur, `reset` bazanı təmin edir və test yoxladığı ssenari kimi yuxarıdan-aşağı oxunur.
+
+---
+
+## Tapşırıqlar
+
+TestMarket Lab işlək olarkən `python-sdet` layihəndə işlə. `pytest -v` ilə işlət.
+
+### Tapşırıq 1 — Təcridi sübut et (10 dəq)
+
+İki test yaz: birincisi məhsul əlavə edir; ikincisi `GET /api/products`-un dəqiq 15 qaytardığını
+assert edir. **Sayan** testə `reset_db` verərək (beləcə həmişə 15-məhsullu seed-dən başlayır) — və
+ya reset-i `autouse` edərək — onları **istənilən sıra ilə** keçdir. Reset olmadan sayan testin flaky
+olduğunu təsdiqlə (əlavə edən test əvvəl işləyibsə, 16 görür).
+
+### Tapşırıq 2 — `product` fixture-i (10 dəq)
+
+`conftest.py`-ə (`reset_db`-dən asılı olan) məhsul quran və onun JSON-unu qaytaran bir `product`
+fixture-i əlavə et. Onu məhsulun `id`-sinin `GET /api/products`-da göründüyünü assert edən bir testdə
+işlət.
+
+### Tapşırıq 3 — API vasitəsilə sifariş hazırla (10 dəq)
+
+UI-yə toxunmadan, `product_id` 1, miqdar 3 üçün bir sifariş `POST` et, sonra `total ==
+pytest.approx(29.99 * 3)` olan bir sifarişin `GET /api/orders`-da göründüyünü assert et.
+
+### Tapşırıq 4 — `make_product` factory-si (15 dəq)
+
+Unikal adlarla məhsullar quran bir `make_product` factory fixture-i əlavə et. Üç məhsul quran və onların
+üç fərqli `id`-si olduğunu assert edən bir test yaz.
+
+### Bonus — Reset-siz söküş
+
+Bir məhsul quran və **`yield`-dən sonra** onu `DELETE` edən bir fixture yaz — sonra (söküşün öz
+sonrakı yoxlamasında və ya ikinci testdə) məhsulun getdiyini assert et. Onu reset-əsaslı yanaşma ilə
+müqayisə et: burada hansı daha sadədir və niyə?
+
+---
+
+**Modul 6**-da nəhayət **Python üçün Playwright** ilə **brauzeri** idarə edirik — lokatorlar,
+əməliyyatlar, gözləmələr və assert-lər — hər UI testindən əvvəl veriləni tez səpmək üçün bu modulun
+API-hazırlama fəndini işlədərək.

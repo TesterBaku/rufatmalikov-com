@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Modul 5: Test datası quraşdırma və söküş — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Modul 5 · Python for SDETs</div>
+        <h1 class="headline">Test datası<br><span class="grad-text">quraşdırma &amp; söküş</span></h1>
+        <p class="subtitle">Hər test idarə etdiyin vəziyyətdən başlayır — və heç bir dağınıqlıq qoymur</p>
+        <div class="pills">
+          <span class="pill">reset baza</span>
+          <span class="pill">API vasitəsilə hazırla</span>
+          <span class="pill">yield söküş</span>
+          <span class="pill">factory fixture-ləri</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 The problem: shared state -->
+      <section class="slide s-full" data-screen-label="02 Why isolation">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Təkrar yarada bilmədiyin flakylik</div>
+        <h2 class="section-head">Vəziyyəti bölüşən testlər təkrar yarada bilmədiyin cür uğursuz olur</h2>
+        <div class="feature-cards" style="max-width:1500px;">
+          <div class="feature-card"><div class="feature-icon">🔀</div><div><h3>Sıradan-asılı</h3><p>test B yalnız test A əvvəl işləyibsə keçir — yenidən sırala və o sınır.</p></div></div>
+          <div class="feature-card"><div class="feature-icon">👻</div><div><h3>Qalıq verilən</h3><p>dünənki sifariş və ya istifadəçi qalır və bugünkü assert-i əyir.</p></div></div>
+          <div class="feature-card"><div class="feature-icon">🎲</div><div><h3>Yaşıl, sonra qırmızı</h3><p>eyni test tək keçir, dəstdə uğursuz olur — klassik flake.</p></div></div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">🎯</span><span>Düzəliş: hər test <strong>öz vəziyyətinə sahibdir</strong> — məlum bazadan başla, dəqiq ehtiyacını qur, sonra təmizlə.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 Reset to a known baseline -->
+      <section class="slide s-full" data-screen-label="03 Reset baseline">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Məlum vərəqə, hər dəfə</div>
+        <h2 class="section-head">Məlum bazaya reset et</h2>
+        <div class="pipe-row" style="max-width:1600px;">
+          <div class="pipe-chip blue">POST <span style="font-family:ui-monospace,Consolas,monospace;">/api/reset</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip green">seed verilən bərpa olundu ✅</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">testin təmiz vərəqədə işləyir</div>
+        </div>
+        <div class="code-block" style="max-width:1100px;margin-top:40px;font-size:19px;">
+          <div style="color:#569cd6;">@pytest.fixture</div>
+          <div style="color:#dcdcaa;">def reset_db(base_url):</div>
+          <div style="margin-left:22px;">requests.post(<span style="color:#ce9178;">f"{base_url}/api/reset"</span>)</div>
+          <div style="margin-left:22px;color:#c586c0;">yield <span style="color:#6a9955;"># test runs here, on fresh data</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Arrange via API, not UI -->
+      <section class="slide s-two-col" data-screen-label="04 Arrange via API" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">UI yox, API vasitəsilə hazırla</div>
+        <div>
+          <p style="font-size:24px;line-height:1.55;color:oklch(80% 0.03 255);">Sifarişi olan daxil olmuş istifadəçi lazımdır? Qeydiyyat → login → checkout boyunca <em>kliklə</em>mə. Veriləni birbaşa <strong>POST</strong> et — bir sürətli, etibarlı çağırış — sonra əslində maraqlandığın şeyi test et.</p>
+          <div class="step-tip" style="margin-top:26px;"><span class="tip-icon">⚡</span><span>API quraşdırması vəziyyəti qurmaq üçün UI-ni idarə etməkdən daha sürətli və qat-qat az flaky-dir.</span></div>
+        </div>
+        <div>
+          <div class="code-block" style="font-size:18px;">
+            <div style="color:#6a9955;"># arrange: one API call, not 6 UI clicks</div>
+            <div style="color:#d4d4d4;">order = api.post(</div>
+            <div style="margin-left:20px;color:#ce9178;">f"{base_url}/api/orders",</div>
+            <div style="margin-left:20px;">json={<span style="color:#ce9178;">"email"</span>: user, <span style="color:#ce9178;">"items"</span>: […]},</div>
+            <div style="color:#d4d4d4;">).json()</div>
+            <div style="height:0.7em;"></div>
+            <div style="color:#6a9955;"># act + assert on what matters</div>
+            <div style="color:#d4d4d4;">assert order[<span style="color:#ce9178;">"total"</span>] == <span style="color:#dcdcaa;">pytest.approx</span>(<span style="color:#b5cea8;">59.98</span>)</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 yield teardown + factory -->
+      <section class="slide s-step" data-screen-label="05 Teardown & factory" style="gap:56px;padding:60px 90px;align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading"><span class="grad-text">yield</span>-dən əvvəl qur, sonra təmizlə</div>
+
+        <div>
+          <div class="code-block" style="font-size:17px;">
+            <div style="color:#569cd6;">@pytest.fixture</div>
+            <div style="color:#dcdcaa;">def temp_product(api, base_url):</div>
+            <div style="margin-left:20px;color:#6a9955;"># setup</div>
+            <div style="margin-left:20px;">p = api.post(<span style="color:#ce9178;">…/products</span>).json()</div>
+            <div style="margin-left:20px;color:#c586c0;">yield p <span style="color:#6a9955;"># hand it to the test</span></div>
+            <div style="margin-left:20px;color:#6a9955;"># teardown — always runs</div>
+            <div style="margin-left:20px;">api.delete(<span style="color:#ce9178;">f"…/products/{p['id']}"</span>)</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">♻️</span><span><code class="code-inline">yield</code>-dən <strong>əvvəlki</strong> kod quraşdırmadır; <strong>sonrakı</strong> kod söküşdür — və test uğursuz olsa belə işləyir.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🏭</span><span>Bir neçəsi lazımdır? <strong>Factory fixture-i</strong> testin N dəfə çağırdığı bir <em>funksiya</em> qaytarır — hər biri unikal adla, və <code class="code-inline">reset_db</code> sonra hamısını yenidən səpərək aparır.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">♻️</div>
+        <h2 class="done-head">Test vəziyyətinə<br><span class="grad-text">sahib ol</span></h2>
+        <p class="done-sub">Bazanı reset et, API vasitəsilə hazırla və fixture-lərin təmizləməsinə imkan ver</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🧪</div>
+            <div class="nc-title">Məşq</div>
+            <div class="nc-desc">reset_db fixture-i + API vasitəsilə sifariş hazırla və totalını assert et</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🏭</div>
+            <div class="nc-title">Factory</div>
+            <div class="nc-desc">N məhsul quran factory fixture-i, hər biri unikal adla</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Modul 6</div>
+            <div class="nc-desc">UI avtomatlaşdırma — Python üçün Playwright ilə brauzeri idarə et</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>
