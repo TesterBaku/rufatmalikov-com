@@ -111,6 +111,7 @@ test('order persists to the database', async ({ request, db }) => {
   const order = db
     .prepare('SELECT status, total FROM orders WHERE id = ?')
     .get(orderId);
+  expect(order).toBeDefined();              // the row exists at all — it saved
   expect(order.status).toBe('pending');
   expect(order.total).toBeCloseTo(59.98);   // Wireless Mouse 29.99 x 2
 
@@ -198,6 +199,7 @@ const { rows } = await client.query(
 );
 await client.end();
 
+expect(rows).toHaveLength(1);                            // the order row exists
 expect(rows[0].status).toBe('pending');
 expect(parseFloat(rows[0].total)).toBeCloseTo(59.98);   // pg returns NUMERIC as a string
 ```
