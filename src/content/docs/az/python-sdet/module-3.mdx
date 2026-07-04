@@ -52,7 +52,7 @@ def test_response_anatomy():
 - `.status_code` — tam status (200, 201, 404 …).
 - `.ok` — 400-dən aşağı istənilən status üçün `True`; tez "geniş mənada uğurlu oldumu?" yoxlaması.
 - `.headers` — cavab başlıqlarının böyük-kiçik hərfə həssas olmayan lüğəti.
-- `.json()` — gövdəni ayrıştırır və sənə Python `dict` və ya `list` verir. (Xam sətir lazım olsa,
+- `.json()` — gövdəni ayrışdırır və sənə Python `dict` və ya `list` verir. (Xam sətir lazım olsa,
   `.text` verir.)
 
 **Yadda saxla:** `requests` cavabı `.status_code`, `.ok`, `.headers` və `.json()`-u açır. Əksər API
@@ -369,5 +369,5 @@ ayır, sonra təkrarı azaltmaq üçün onu hər iki testdə işlət. *(Modul 5-
 ---
 
 **Modul 4**-də **neqativ və validasiya testinə** fokuslanırıq — qəsdən `400` (çatışmayan sahələr),
-`401` (səhv login), `404` (çatışmayan resurs) və `409` (təkrar qeydiyyat) tetikləyib API-nin *düzgün*
+`401` (səhv login), `404` (çatışmayan resurs) və `409` (təkrar qeydiyyat) tətikləyib API-nin *düzgün*
 cür uğursuz olduğunu assert etmək.
