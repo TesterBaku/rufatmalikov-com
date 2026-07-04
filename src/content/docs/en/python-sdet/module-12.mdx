@@ -1,0 +1,232 @@
+---
+title: "Module 12: Database verification"
+description: "The senior move on top of the capstone: verify the persisted side effect. Read TestMarket Lab's database from a pytest test with Python's stdlib sqlite3 — a read-only connection, parameterized queries, and a JOIN that proves an order really saved — then see the same pattern against a Dockerized Postgres."
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+You finished the capstone — so this module is the senior move that sits on top of everything you built. Every test so far trusts what the app *reports*: a `201`, a response body, a green page. This one checks what the app **persisted** — after you place an order, is there really a row in the database with the right total and the right line items? *"The API said success — but did it save correctly?"* Answering that is the maturity leap, and in Python it costs almost nothing: the database driver you need, `sqlite3`, is in the standard library.
+
+Keep TestMarket Lab running at `http://localhost:3000` and your `.venv` active. This module builds directly on the API calls from [Module 3](/en/python-sdet/module-3/) and the `reset_db` / arrange-via-API fixtures from [Module 5](/en/python-sdet/module-5/). If SQL is new, read the [SQL basics](/en/reference/sql-basics/) reference first — this module is the Python side of the same idea.
+
+<Video title="Module 12: Database verification" />
+
+---
+
+## The side effect a `201` doesn't prove
+
+A `POST /api/orders` that returns `201` and an order body tells you the app *accepted* the request. It doesn't, by itself, tell you the order was written correctly — the right total computed, the right line items stored, nothing dropped. The response is the app's **word**; the database row is the **record**.
+
+Most of the time the public API is the right place to verify — if `GET /api/orders` returns the truth you need, use it (that's what Module 5 did). You drop down to the database for the cases the API *won't* tell you: an internal column no endpoint returns, or a persisted effect with no matching `GET`. Reading the database couples your test to the schema, so reach for it deliberately — and keep it **read-only**.
+
+**Remember:** verifying against the database proves the *persisted side effect*, not just the response. Prefer the public API when it exposes the same truth; drop to the DB for what the API hides. Either way — read to verify, don't write.
+
+---
+
+## Connecting with `sqlite3` (nothing to install)
+
+TestMarket Lab stores everything in one SQLite file — `data/testmarket.db`. Python's stdlib `sqlite3` opens it directly. Two touches make a verification connection safe and pleasant:
+
+- **Open it read-only** with a `file:…?mode=ro` URI. A verification connection has no business writing to the app's database — read-only makes that impossible, so a stray query can never corrupt the data the app owns.
+- **Set `row_factory = sqlite3.Row`** so you read columns by name (`row["total"]`) instead of by position.
+
+```python
+import sqlite3
+from pathlib import Path
+
+# Point this at your TestMarket Lab clone's database file.
+DB_PATH = Path(r"C:/code/testmarket-lab/data/testmarket.db")
+
+con = sqlite3.connect(f"file:{DB_PATH.as_posix()}?mode=ro", uri=True)
+con.row_factory = sqlite3.Row
+
+row = con.execute(
+    "SELECT id, name, stock FROM products WHERE slug = ?",
+    ("wireless-mouse",),
+).fetchone()
+print(row["id"], row["name"], row["stock"])   # -> 1 Wireless Mouse 50  (on a freshly seeded DB)
+
+con.close()
+```
+
+Note the `?` placeholder and the `("wireless-mouse",)` tuple — the value goes in as a **parameter**, never pasted into the SQL string. That's the one non-negotiable habit, exactly as the [SQL basics](/en/reference/sql-basics/) reference explains.
+
+**Remember:** `sqlite3` is stdlib — zero install. Open the app's database **read-only** (`mode=ro`) so a test can only ever read, set `row_factory = sqlite3.Row` for by-name access, and always pass values as `?` parameters.
+
+---
+
+## A `db` fixture
+
+Wrap that connection in a fixture so every test gets a fresh read-only handle and it's closed automatically:
+
+```python
+# tests/conftest.py (add to it)
+import sqlite3
+from pathlib import Path
+
+import pytest
+
+# Point this at your TestMarket Lab clone's database file.
+DB_PATH = Path(r"C:/code/testmarket-lab/data/testmarket.db")
+
+
+@pytest.fixture
+def db():
+    con = sqlite3.connect(f"file:{DB_PATH.as_posix()}?mode=ro", uri=True)
+    con.row_factory = sqlite3.Row
+    yield con
+    con.close()
+```
+
+A test that wants to check the database just asks for `db`, alongside the `api` and `reset_db` fixtures it already knows from Modules 2 and 5.
+
+**Remember:** a `db` fixture yields a read-only connection and closes it after `yield` — the same setup/teardown shape as the `api` fixture, so database checks drop into your existing suite with no ceremony.
+
+---
+
+## Verify an order end to end
+
+Here's the payoff, and the pattern you'll reuse everywhere: **arrange and act through the API, then assert against the database.** Place an order with `api`, then prove it persisted — the `orders` row, and its `order_items` children via a JOIN:
+
+```python
+# tests/test_db_order.py
+import pytest
+
+
+def test_order_persists_to_the_database(reset_db, base_url, api, db):
+    # act: place an order through the API
+    r = api.post(
+        f"{base_url}/api/orders",
+        json={"email": "customer@test.io", "items": [{"product_id": 1, "quantity": 2}]},
+    )
+    assert r.status_code == 201
+    order_id = r.json()["id"]
+
+    # assert: the order row was persisted with the right status and total
+    order = db.execute(
+        "SELECT status, total FROM orders WHERE id = ?", (order_id,)
+    ).fetchone()
+    assert order["status"] == "pending"
+    assert order["total"] == pytest.approx(59.98)      # Wireless Mouse 29.99 x 2
+
+    # assert: the line items were persisted (JOIN orders -> order_items)
+    items = db.execute(
+        """SELECT oi.product_id, oi.quantity
+           FROM orders o
+           JOIN order_items oi ON oi.order_id = o.id
+           WHERE o.id = ?""",
+        (order_id,),
+    ).fetchall()
+    assert [(i["product_id"], i["quantity"]) for i in items] == [(1, 2)]
+```
+
+`reset_db` reseeds first, so the ids are predictable and the test is isolated. The API computes and stores the total; you assert it *persisted*, not just that it was returned. The read-only `db` connection sees the order the app just committed — WAL and all — because it opens the same file the app writes to.
+
+**Remember:** the shape is **arrange/act via API → assert via DB**. A `201` says *accepted*; the `orders` row says *saved*, and the `order_items` JOIN says *saved correctly*. Verifying the children, not just the parent, is what catches a half-written order.
+
+:::note[`total` is a stored value — don't recompute it]
+`orders.total` is a column the app *wrote* at checkout, and `order_items.price` is the price *snapshotted* then. They aren't recalculated on read. Assert `total` against what you expect the app to have saved (here, `29.99 × 2`), not against a live sum of the current item rows — the same caution the [SQL basics](/en/reference/sql-basics/) reference raises.
+:::
+
+---
+
+## Reading what the API hides
+
+The database earns its keep when it shows you something no endpoint will. TestMarket Lab never returns a user's password (rightly) — so the only way to verify the app **hashes** credentials instead of storing them in plain text is to look:
+
+```python
+# tests/test_db_security.py
+def test_password_is_stored_hashed(db):
+    row = db.execute(
+        "SELECT password FROM users WHERE email = ?", ("customer@test.io",)
+    ).fetchone()
+    stored = row["password"]
+
+    assert stored != "customer123"      # never the plain-text password
+    assert stored.startswith("$2")      # a bcrypt hash
+    assert len(stored) == 60            # bcrypt hashes are 60 chars
+```
+
+That's a real security assertion you *cannot* make through the API, because the API — correctly — never hands the password back. This is the whole argument for database verification in one test: some truths only live in the schema.
+
+**Remember:** drop to the database for what the API deliberately withholds. "Is the password stored hashed, not plain text?" is unanswerable from the outside and one `SELECT` away from the inside.
+
+---
+
+## Keep it read-mostly
+
+Notice every test above **arranges through the API** and only **reads** the database. That's deliberate, and it's the same discipline Module 5 taught: writes go through the app (so its rules, computed columns, and constraints all run), and the database is your *verification* layer, not a back door for setup. The read-only connection enforces it — you literally can't write through `db`. Combined with `reset_db` for a clean baseline, you get isolation without ever touching the app's data by hand.
+
+**Remember:** arrange with the API, verify with the DB, and keep the verification connection read-only. Writing test data straight into the app's database skips its logic and drifts from real behavior — let the app own its writes.
+
+---
+
+## Appendix — from SQLite to production-grade databases
+
+TestMarket Lab uses SQLite because it's a single file with zero setup — perfect for learning. Real jobs run **client-server** databases: Postgres, MySQL, SQL Server. The reassuring part is how little changes. The pattern is identical — **connect → parameterized query → assert → close** — and the SQL you wrote (`SELECT`, `WHERE`, `JOIN`) is standard. Only the driver and the connection setup differ.
+
+| | SQLite (this course) | Postgres | MySQL |
+|---|---|---|---|
+| Python driver | `sqlite3` (stdlib) | `psycopg` | `PyMySQL` |
+| Connect with | a file path | a connection string (host, port, user, password, db) | same |
+| Placeholder | `?` | `%s` | `%s` |
+
+Here is the **order-row check from above**, rewritten against Postgres with `psycopg` (`pip install "psycopg[binary]"`). The query and the logic carry over unchanged — only the driver, the placeholder (`%s` not `?`), and reading a `NUMERIC` back as a `Decimal` differ:
+
+```python
+import os
+import psycopg
+import pytest
+
+# Credentials come from the environment, never hard-coded.
+DSN = os.environ["DATABASE_URL"]   # e.g. postgresql://testuser:testpass@localhost:5432/testmarket
+
+with psycopg.connect(DSN) as con:
+    with con.cursor() as cur:
+        cur.execute(
+            "SELECT status, total FROM orders WHERE id = %s",   # %s, not ?
+            (order_id,),
+        )
+        row = cur.fetchone()
+
+assert row[0] == "pending"
+assert float(row[1]) == pytest.approx(59.98)   # NUMERIC comes back as Decimal
+```
+
+Two small gotchas the switch introduces: placeholders are `%s` (not `?`), and a `NUMERIC` column arrives as a Python `Decimal`, so compare with `float(...)` or another `Decimal`.
+
+Where does the Postgres come from? A **container** — one `docker run` locally, and a **service container** in CI. Both are covered in the [Docker basics](/en/reference/docker/) reference: it shows the exact `docker run postgres` command, a `docker-compose.yml`, and the GitHub Actions `services: postgres:` block that gives every test run its own fresh database. Point `DATABASE_URL` at that container and the test above runs unchanged.
+
+**Remember:** production swaps the driver and the connection string, not the *idea*. `sqlite3 → psycopg`, file path → connection string, `?` → `%s` — the connect/parameterize/assert/close pattern and your SQL carry over intact. When a job says "SQL / DB testing," this is it, and you already know it.
+
+---
+
+## Exercises
+
+Work in your `python-sdet` project with TestMarket Lab running. Run with `pytest -v`. Point `DB_PATH` at your clone's `data/testmarket.db`.
+
+### Exercise 1 — A read-only `db` fixture (10 min)
+
+Add the `db` fixture to `conftest.py`. Write a test that reads `Wireless Mouse` by its slug (`wireless-mouse`) and asserts `stock == 50`. Then prove it's read-only: try an `INSERT` through `db` and confirm it raises `sqlite3.OperationalError`.
+
+### Exercise 2 — Verify an order persisted (15 min)
+
+Reproduce `test_order_persists_to_the_database`: `POST` an order (product 1, quantity 2), then assert the `orders` row has `status == "pending"` and `total == pytest.approx(59.98)`, and that the JOIN to `order_items` yields exactly `[(1, 2)]`.
+
+### Exercise 3 — Reach what the API hides (10 min)
+
+Write `test_password_is_stored_hashed`: query `users` for `customer@test.io` and assert the stored password is a bcrypt hash (`startswith("$2")`, length 60) and is *not* the plain-text `customer123`.
+
+### Exercise 4 — Count the line items (10 min)
+
+`POST` an order with two different products, then use a single `SELECT COUNT(*) … WHERE order_id = ?` against `order_items` to assert exactly two lines were stored. Compare it with fetching the rows and counting in Python — which reads better?
+
+### Challenge — Take it to Postgres
+
+Follow the [Docker basics](/en/reference/docker/) reference to start a Postgres container, set `DATABASE_URL`, and run the appendix's `psycopg` check against it. Confirm the only changes from your SQLite test are the connection and the `?` → `%s` placeholder.
+
+---
+
+## Where this leaves you
+
+You can now verify the layer the UI and the API sit on top of: the persisted truth. That's a skill most automation courses skip and most SDET interviews probe — "how do you know it actually saved?" You answer with a read-only connection, a parameterized query, and a JOIN — in SQLite today, in Postgres on the job, with the same four steps. Bolt this onto your capstone suite and you've covered the full stack of a test: response, UI, *and* record.
