@@ -1,0 +1,259 @@
+---
+title: "Modul 6: Playwright ilə UI avtomatlaşdırma"
+description: "Python üçün Playwright ilə real brauzeri idarə et: page fixture, lokatorlar (get_by_test_id/role/label), əməliyyatlar, avtomatik gözləmə və web-first assert-lər, tam login axını və UI testindən əvvəl API vasitəsilə verilən səpmək — TestMarket Lab-a qarşı."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+1–5-ci modullar API-ni test etdi. İndi **brauzeri** idarə edirik — kliklə, yaz və real
+istifadəçinin gördüyünü assert et — **Python üçün Playwright** ilə. `page` fixture-i ilə tanış
+olacaq, tətbiqin `data-testid` qarmaqlarına qarşı **lokatorlar** yazacaq, **əməliyyatlar** icra
+edəcək, Playwright-in **avtomatik gözləməsinə** və web-first assert-lərinə söykənəcək və real bir
+**login axını** ilə bitirəcəksən — UI testi məlum vəziyyətdən başlasın deyə API vasitəsilə (Modul 5)
+verilən səpərək.
+
+TestMarket Lab-ı `http://localhost:3000`-də işlək və `.venv`-ini aktiv saxla.
+
+<Video title="Modul 6: Playwright ilə UI avtomatlaşdırma" />
+
+<Deck href="/python-sdet/decks/m6-playwright-az/" title="Modul 6: Playwright UI avtomatlaşdırmasına qısa baxış — slayd təlimatı" />
+
+---
+
+## Playwright quraşdır
+
+Python üçün Playwright `pytest`/`requests`-dən ayrı quraşdırmadır, üstəgəl birdəfəlik brauzer
+endirməsi:
+
+<Steps>
+
+1. **pytest plaginini quraşdır** (venv aktiv olarkən):
+
+   ```bash
+   pip install pytest-playwright
+   ```
+
+2. **Brauzeri endir** (bu kurs üçün Chromium kifayətdir):
+
+   ```bash
+   playwright install chromium
+   ```
+
+3. **Onu bərkit** ki, CI və komanda yoldaşların eyni quraşdırmanı alsın:
+
+   ```bash
+   pip freeze > requirements.txt
+   ```
+
+</Steps>
+
+`pytest-playwright` hər testə istifadəyə-hazır bir **`page`** fixture-i verir — sənin üçün açılıb
+bağlanan təzə brauzer tab-ı. Testlər standart olaraq **headless** (görünən pəncərə yox) işləyir;
+izləmək üçün `--headed`, debaq edərkən yavaşlatmaq üçün `--slowmo 500` əlavə et.
+
+**Yadda saxla:** `pip install pytest-playwright` + `playwright install chromium`, sonra **`page`**
+fixture-ini istə. Standart olaraq headless; izləmək üçün `--headed`/`--slowmo`.
+
+---
+
+## İlk brauzer testin
+
+`page.goto(...)` ilə naviqasiya et və `expect(...)` ilə assert et. Playwright-in `expect`-i
+**web-first**-dir: assert keçənə və ya vaxtı bitənə qədər avtomatik gözləyir və təkrar cəhd edir.
+
+```python
+# tests/test_first_browser.py
+import re
+from playwright.sync_api import expect
+
+
+def test_products_page_loads(page, base_url):
+    page.goto(f"{base_url}/products")
+    expect(page).to_have_title(re.compile("TestMarket Lab"))
+    expect(page.get_by_test_id("product-card").first).to_be_visible()
+```
+
+`base_url` sənin Modul 2 `conftest.py`-dəki fixture-dir; `page` `pytest-playwright`-dən gəlir.
+`browser` quraşdırması yox, söküş yox — fixture bunu idarə edir.
+
+**Yadda saxla:** `page.goto(url)` naviqasiya edir; `expect(page)` / `expect(locator)` avtomatik
+gözləmə ilə assert edir. Testə sadəcə `page` fixture-i lazımdır — brauzer tab-ı sənin üçün idarə
+olunur.
+
+---
+
+## Lokatorlar: elementləri necə tapırsan
+
+**Lokator** bir elementi təsvir edir; Playwright onu *sən icra edəndə* həll edir, ona görə həmişə
+cari DOM-u hədəfləyir. Kövrək CSS əvəzinə mənaya və ya test qarmaqlarına bağlı lokatorlara üstünlük
+ver. TestMarket Lab məhz bunun üçün `data-testid` atributları göndərir:
+
+```python
+page.get_by_test_id("login-submit")     # data-testid="login-submit"
+page.get_by_test_id("product-card")     # every product card
+page.get_by_role("button", name="Log In")   # by ARIA role + accessible name
+page.get_by_label("Email")              # the input labelled "Email"
+page.get_by_text("Wireless Mouse")      # by visible text
+```
+
+`get_by_test_id` ən möhkəmdir (yenidən stilləndirməyə tab gətirən test qarmağı); `get_by_role` və
+`get_by_label` həm də əlçatımlılıq yoxlaması kimi işləyir; `get_by_text` əlverişlidir, amma ən
+kövrəkdir.
+
+**Yadda saxla:** niyyətə görə tap — `get_by_test_id` (test qarmaqları), `get_by_role`/`get_by_label`
+(həm də a11y), `get_by_text` (son çarə). Lokatorlar tənbəldir: sən icra edəndə həll olunurlar, ona
+görə heç vaxt köhnəlmirlər.
+
+---
+
+## Əməliyyatlar
+
+Əməliyyatlar istifadəçinin etdiyini edir — və hər biri icra etməzdən əvvəl elementin hazır olmasını
+(görünən, aktiv) **avtomatik gözləyir**. `sleep` yoxdur:
+
+```python
+page.goto(f"{base_url}/auth/login")           # navigate
+page.get_by_label("Email").fill("customer@test.io")     # type
+page.get_by_label("Password").fill("customer123")
+page.get_by_test_id("login-submit").click()             # click
+```
+
+Digər gündəlik əməliyyatlar: `.check()` / `.uncheck()` (checkbox-lar), `.select_option(...)`
+(dropdown-lar), `.press("Enter")` (düymələr), `.hover()`.
+
+**Yadda saxla:** `.fill()`, `.click()`, `.select_option()`, `.check()`, `.press()`-in hər biri
+əvvəlcə elementin əməliyyata yararlı olmasını avtomatik gözləyir — ona görə "səhifə çatsın deyə"
+heç vaxt `sleep()` səpmirsən.
+
+---
+
+## Avtomatik gözləmə & web-first assert-lər
+
+Flaky UI testlərinin #1 mənbəyi səhifə ilə yarışmaqdır. Playwright onu iki yolla aradan qaldırır:
+**əməliyyatlar** elementlərin yararlı olmasını gözləyir və **`expect`** assert-ləri doğru olana qədər
+bir neçə saniyə **təkrar cəhd edir**. Beləcə *son vəziyyəti* assert edirsən və Playwright-in onu
+gözləməsinə imkan verirsən:
+
+```python
+# tests/test_auto_wait.py
+import requests
+from playwright.sync_api import expect
+
+
+def test_search_filters_the_list(page, base_url):
+    requests.post(f"{base_url}/api/reset")        # known seed, so the count is deterministic
+    page.goto(f"{base_url}/products")
+    page.get_by_test_id("search-input").fill("keyboard")
+    page.get_by_test_id("apply-filters").click()
+
+    # no sleep — expect retries until the filtered list has settled
+    expect(page.get_by_test_id("product-card")).to_have_count(1)
+    expect(page.get_by_text("Mechanical Keyboard")).to_be_visible()
+```
+
+Ümumi web-first assert-lər: `to_be_visible()` / `not_to_be_visible()`, `to_have_text(...)`, `to_have_count(n)`,
+`to_have_value(...)`, `to_be_enabled()`, və səhifədə `expect(page).to_have_url(...)` /
+`to_have_title(...)`.
+
+**Yadda saxla:** heç vaxt `sleep` yox. Əməliyyatlar *icra etmək* üçün avtomatik gözləyir; `expect(...)`
+*assert etmək* üçün avtomatik təkrar cəhd edir. Gözlənilən son vəziyyəti yaz və Playwright-in onu
+gözləməsinə imkan ver — flakyliyi öldürən budur.
+
+---
+
+## Login axını
+
+Daxil olmağı test etmək üçün əməliyyatları və assert-ləri birləşdir. Valid login-dən sonra
+TestMarket Lab əsas səhifəyə yönləndirir, uğur flash-ı göstərir və başlıq Login-i Logout ilə əvəz
+edir:
+
+```python
+# tests/test_login_ui.py
+from playwright.sync_api import expect
+
+
+def test_login_succeeds(page, base_url):
+    page.goto(f"{base_url}/auth/login")
+    page.get_by_label("Email").fill("customer@test.io")
+    page.get_by_label("Password").fill("customer123")
+    page.get_by_test_id("login-submit").click()
+
+    expect(page).to_have_url(f"{base_url}/")                       # redirected home
+    expect(page.get_by_test_id("flash-success")).to_contain_text("Logged in")
+    expect(page.get_by_test_id("nav-logout")).to_be_visible()     # now signed in
+```
+
+**Yadda saxla:** UI axını *naviqasiya et → icra et → görünən nəticəni assert et*-dir. İstifadəçinin
+görəcəyini assert et (uğur mesajı, daxil-olmuş naviqasiya) — daxili vəziyyəti yox.
+
+---
+
+## API vasitəsilə səp, UI vasitəsilə yoxla
+
+UI quraşdırması yavaş və kövrəkdir. Peşəkar şablon (Modul 5) **API vasitəsilə hazırlamaq**, sonra
+**brauzerdə yoxlamaqdır**. `requests` ilə 15-məhsullu seed-ə reset et, sonra səhifənin hamısını 15-i
+göstərdiyini yoxla:
+
+```python
+# tests/test_seed_then_ui.py
+import requests
+from playwright.sync_api import expect
+
+
+def test_products_page_shows_the_seed(page, base_url):
+    requests.post(f"{base_url}/api/reset")            # arrange: known 15-product state (API)
+
+    page.goto(f"{base_url}/products")                 # verify: the UI renders them
+    expect(page.get_by_test_id("product-card")).to_have_count(15)
+```
+
+Say etibarlıdır, *çünki* test əvvəlcə reset etdi — onsuz başqa testlərin qoyduğu verilən səhifənin
+göstərdiyini dəyişərdi. Sürətli API quraşdırması, real brauzer yoxlaması.
+
+**Yadda saxla:** vəziyyəti **API** vasitəsilə səp, sonra **UI**-ni assert et — hibrid şablon sürətli,
+deterministik quraşdırma ilə real başdan-başa əhatə verir. UI say/siyahı testi yalnız veriləni əvvəl
+idarə olunubsa stabildir.
+
+---
+
+## Tapşırıqlar
+
+TestMarket Lab işlək və `pytest-playwright` quraşdırılmış olarkən `python-sdet` layihəndə işlə.
+`pytest -v` ilə işlət (izləmək üçün `--headed` əlavə et).
+
+### Tapşırıq 1 — İlk naviqasiya (5 dəq)
+
+`/products`-a gedən və səhifə başlığının `TestMarket Lab` daxil etdiyini və ən azı bir
+`product-card`-ın görünən olduğunu assert edən bir test yaz.
+
+### Tapşırıq 2 — Lokatorlar turu (10 dəq)
+
+`/auth/login`-də email input-unu üç yolla tap — `get_by_label("Email")`,
+`get_by_role("textbox", name="Email")` və `page.locator("#email")` — və hər birini `to_be_visible()`
+assert et. Hansına üstünlük verəcəyini və niyə qeyd et.
+
+### Tapşırıq 3 — Axtarış filtri (10 dəq)
+
+Məlum say üçün `POST /api/reset`, `/products`-a get, axtarış qutusuna (`search-input`) `keyboard` yaz,
+`apply-filters` klik et və dəqiq bir `product-card`-ın qaldığını və "Mechanical Keyboard"-un görünən
+olduğunu assert et.
+
+### Tapşırıq 4 — Login axını (15 dəq)
+
+Valid login-i (`customer@test.io` / `customer123`) avtomatlaşdır. URL-in əsas səhifə olduğunu,
+`flash-success`-in "Logged in" daxil etdiyini və `nav-logout`-un görünən olduğunu assert et. Sonra
+**səhv** parol sına və əvəzinə `flash-error`-un göründüyünü assert et.
+
+### Bonus — Səp, sonra yoxla
+
+`POST /api/reset`, sonra `/products`-u yüklə və dəqiq 15 `product-card` assert et. Reset-i əvvəlcə bir
+məhsul əlavə edəcək (via `POST /api/products`) şəkildə dəyiş və sayın 16 olduğunu təsdiqlə — UI-nin
+API-səpilmiş vəziyyəti əks etdirdiyini sübut edərək.
+
+---
+
+**Modul 7**-də böyüyən UI testlərini **Page Object Model** ilə ram edirik — hər səhifənin
+lokatorlarını və əməliyyatlarını bir sinifə büküb, beləcə testlər ssenari kimi oxunur və seçicilər bir
+yerdə yaşayır.
