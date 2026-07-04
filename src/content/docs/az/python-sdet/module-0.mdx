@@ -184,11 +184,11 @@ Təmiz bir test layihəsi kiçik başlayır. Bir `tests/` qovluğu yarat — pyt
 
 ```
 python-sdet/
-├── .venv/                # virtual mühit (bunu commit etmə)
+├── .venv/                # the virtual environment (don't commit this)
 ├── tests/
-│   └── test_smoke.py     # testlərin burada yaşayır
-├── requirements.txt      # bərkidilmiş asılılıqlar
-└── pytest.ini            # pytest konfiqurasiyası (opsional, aşağıda əlavə olunur)
+│   └── test_smoke.py     # your tests live here
+├── requirements.txt      # pinned dependencies
+└── pytest.ini            # pytest configuration (optional, added below)
 ```
 
 Layihə kökünü işarələmək və pytest-i `tests/` qovluğuna yönəltmək üçün kiçik bir `pytest.ini` əlavə et
