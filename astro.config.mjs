@@ -2,7 +2,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
-import { PYTHON_SDET } from './src/courses.mjs';
+import { PYTHON_SDET, isAzReady } from './src/courses.mjs';
 
 // https://astro.build/config
 export default defineConfig({
@@ -223,7 +223,7 @@ export default defineConfig({
 			filter: (page) =>
 				!page.includes('/python-demo') &&
 				(!(page.includes(PYTHON_SDET.segment) && !page.includes(PYTHON_SDET.enLanding)) ||
-					PYTHON_SDET.azReady.some((p) => page.endsWith(p))),
+					isAzReady(page)),
 		}),
 	],
 });

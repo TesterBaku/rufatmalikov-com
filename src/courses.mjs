@@ -13,10 +13,25 @@
 export const PYTHON_SDET = {
 	segment: '/python-sdet/',
 	enLanding: '/en/python-sdet/',
-	azLanding: '/az/python-sdet/',
 	groupLabel: 'Python for SDETs',
 	// AZ pathnames (trailing slash) that have a real Azerbaijani translation.
 	// Grow this list as each page is translated; everything else under
 	// /az/python-sdet/ is treated as an EN fallback (noindex, no sitemap, no AZ nav).
 	azReady: ['/az/python-sdet/'],
 };
+
+// Single predicate for "does this page have a real AZ translation?", used by every
+// call site (sitemap filter, noindex, Course JSON-LD, AZ sidebar) so they can never
+// disagree. Accepts a bare pathname, a full URL, or a sidebar href, and matches
+// PYTHON_SDET.azReady after normalizing away the scheme/host and the trailing slash.
+export function isAzReady(pathOrUrl) {
+	if (!pathOrUrl) return false;
+	let path = String(pathOrUrl);
+	const scheme = path.indexOf('://');
+	if (scheme !== -1) {
+		const slash = path.indexOf('/', scheme + 3);
+		path = slash === -1 ? '/' : path.slice(slash);
+	}
+	const norm = (p) => (p.endsWith('/') ? p : p + '/');
+	return PYTHON_SDET.azReady.some((entry) => norm(path) === norm(entry));
+}

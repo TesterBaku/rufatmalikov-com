@@ -1,5 +1,5 @@
 import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
-import { PYTHON_SDET } from './courses.mjs';
+import { PYTHON_SDET, isAzReady } from './courses.mjs';
 
 // The sidebar config is shared across locales, so per-locale adjustments (plus
 // OG images and JSON-LD) happen here at request time. Two locale-scoped courses
@@ -78,7 +78,7 @@ export const onRequest = defineRouteMiddleware((context) => {
 			path === '/az/python/' ||
 			path === '/en/python/' ||
 			path === PYTHON_SDET.enLanding ||
-			(path === PYTHON_SDET.azLanding && PYTHON_SDET.azReady.includes(path));
+			(isPythonSdet && path.endsWith(PYTHON_SDET.segment) && isAzReady(path));
 
 		if (isHome) {
 			ld({
@@ -117,7 +117,7 @@ export const onRequest = defineRouteMiddleware((context) => {
 	// index duplicate English content under e.g. /az/ (the sitemap already omits them;
 	// noindex is the signal that actually deindexes). Pages listed in PYTHON_SDET.azReady
 	// have a real AZ translation, so they are NOT fallbacks — leave them indexable.
-	if (route.lang !== 'en' && isPythonSdet && !PYTHON_SDET.azReady.includes(pathname)) {
+	if (route.lang !== 'en' && isPythonSdet && !isAzReady(pathname)) {
 		route.head.push({ tag: 'meta', attrs: { name: 'robots', content: 'noindex, follow' } });
 	}
 
@@ -133,13 +133,16 @@ export const onRequest = defineRouteMiddleware((context) => {
 			.filter((entry) => !(isEn && entry.type === 'group' && entry.label === 'Exam Helper'))
 			.map((entry) => {
 				if (entry.type !== 'group') return entry;
-				const group = { ...entry, entries: prune(entry.entries) };
+				// Non-EN: the Python-for-SDETs group shows only AZ-translated modules.
+				// Filter its (link) children directly — the group is leaf-only, so keep any
+				// non-link child untouched rather than dropping it via the type guard.
 				if (!isEn && entry.label === PYTHON_SDET.groupLabel) {
-					group.entries = group.entries.filter(
-						(child) => child.type === 'link' && PYTHON_SDET.azReady.some((p) => child.href.endsWith(p))
-					);
+					return {
+						...entry,
+						entries: entry.entries.filter((child) => (child.type === 'link' ? isAzReady(child.href) : true)),
+					};
 				}
-				return group;
+				return { ...entry, entries: prune(entry.entries) };
 			})
 			.filter((entry) => !(entry.type === 'group' && entry.entries.length === 0));
 
