@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Modul 6: Playwright ilə UI avtomatlaşdırma — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Modul 6 · Python for SDETs</div>
+        <h1 class="headline">UI avtomatlaşdırma<br><span class="grad-text">Playwright</span> ilə</h1>
+        <p class="subtitle">Real brauzeri idarə et — istifadəçi kimi tap, icra et və assert et</p>
+        <div class="pills">
+          <span class="pill">page fixture</span>
+          <span class="pill">get_by_* lokatorlar</span>
+          <span class="pill">avtomatik gözləmə</span>
+          <span class="pill">web-first expect</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 The page fixture -->
+      <section class="slide s-step" data-screen-label="02 The page fixture">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Bir fixture: <span class="grad-text">page</span></div>
+
+        <div>
+          <div class="code-block" style="font-size:19px;">
+            <div style="color:#6a9955;"># pip install pytest-playwright</div>
+            <div><span style="color:#569cd6;">import</span> re</div>
+            <div><span style="color:#569cd6;">from</span> playwright.sync_api <span style="color:#569cd6;">import</span> expect</div>
+            <div style="height:0.7em;"></div>
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_products_page</span>(<span style="color:#9cdcfe;">page</span>):</div>
+            <div style="margin-left:24px;">page.goto(<span style="color:#ce9178;">"http://localhost:3000/products"</span>)</div>
+            <div style="margin-left:24px;">expect(page).to_have_title(<span style="color:#dcdcaa;">re.compile</span>(<span style="color:#ce9178;">"TestMarket Lab"</span>))</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">🌐</span><span><code class="code-inline">pytest-playwright</code> hər testə təzə <code class="code-inline">page</code> verir — təmiz brauzer konteksti, yazılacaq quraşdırma və ya söküş yox.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🎬</span><span>Standart olaraq headless; idarə etməsini izləmək üçün <code class="code-inline">--headed</code>, debaq edərkən yavaşlatmaq üçün <code class="code-inline">--slowmo</code> əlavə et.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 Locators -->
+      <section class="slide s-full" data-screen-label="03 Locators">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Elementləri istifadəçinin gördüyü kimi tap</div>
+        <h2 class="section-head">Lokatorlar: <span class="grad-text">get_by_*</span></h2>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;max-width:1640px;">
+          <div class="verb-card"><div class="name">test id</div><div class="label">get_by_test_id()</div><div class="desc">tətbiqin göndərdiyi <code class="code-inline">data-testid</code> qarmaqları — ən möhkəm</div></div>
+          <div class="verb-card"><div class="name">role</div><div class="label">get_by_role()</div><div class="desc">düymələr, linklər, başlıqlar — həm də a11y yoxlaması</div></div>
+          <div class="verb-card"><div class="name">label</div><div class="label">get_by_label()</div><div class="desc">form sahələri görünən etiketinə görə</div></div>
+          <div class="verb-card"><div class="name">text</div><div class="label">get_by_text()</div><div class="desc">görünən mətn — əlverişli, amma ən kövrək</div></div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">🎯</span><span><strong>Niyyətə</strong> görə tap: <code class="code-inline">get_by_test_id</code> ən möhkəmdir (yenidən stilləndirməyə tab gətirən qarmaq); <code class="code-inline">get_by_role</code> / <code class="code-inline">get_by_label</code> əlçatımlılıq yoxlaması kimi də işləyir; <code class="code-inline">get_by_text</code> ən kövrəkdir.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Actions + auto-waiting -->
+      <section class="slide s-full" data-screen-label="04 Auto-waiting">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Əl ilə sleep yox</div>
+        <h2 class="section-head">Əməliyyatlar elementi avtomatik gözləyir</h2>
+        <div class="pipe-row" style="max-width:1640px;">
+          <div class="pipe-chip blue">elementi tap</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">Playwright gözləyir: görünən &amp; aktiv</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip green">sonra <span style="font-family:ui-monospace,Consolas,monospace;">.click()</span> / <span style="font-family:ui-monospace,Consolas,monospace;">.fill()</span></div>
+        </div>
+        <div class="code-block" style="max-width:1100px;margin-top:40px;font-size:19px;">
+          <div>page.get_by_label(<span style="color:#ce9178;">"Email"</span>).fill(<span style="color:#ce9178;">"customer@test.io"</span>)</div>
+          <div>page.get_by_test_id(<span style="color:#ce9178;">"login-submit"</span>).click()</div>
+        </div>
+        <div class="step-tip" style="margin-top:32px;max-width:1500px;"><span class="tip-icon">⏱️</span><span>Hər əməliyyat elementin əməliyyata yararlı olması üçün timeout-a qədər avtomatik gözləyir — ona görə <code class="code-inline">time.sleep()</code> bir qoxudur, düzəliş yox.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 Web-first assertions -->
+      <section class="slide s-step" data-screen-label="05 Web-first expect">
+        <div class="circuit-bg"></div>
+        <div class="full-heading"><span class="grad-text">Təkrar cəhd edən</span> assert-lər</div>
+
+        <div>
+          <div class="code-block" style="font-size:18px;">
+            <div><span style="color:#569cd6;">from</span> <span style="color:#d4d4d4;">playwright.sync_api</span> <span style="color:#569cd6;">import</span> <span style="color:#d4d4d4;">expect</span></div>
+            <div style="height:0.7em;"></div>
+            <div style="color:#6a9955;"># waits until it's visible, or fails</div>
+            <div>expect(</div>
+            <div style="margin-left:20px;">page.get_by_test_id(<span style="color:#ce9178;">"nav-logout"</span>)</div>
+            <div>).to_be_visible()</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">✅</span><span><code class="code-inline">expect(locator)</code> şərt doğru olana və ya timeout çatana qədər <strong>avtomatik təkrar cəhd edir</strong> — bir millisaniyə erkən assert etməkdən flake yox.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🆚</span><span>pytest-in sadə <code class="code-inline">assert</code>-indən fərqli: web-first <code class="code-inline">expect</code> bir dəfə yoxlamaq əvəzinə canlı səhifəni yoxlayır (poll).</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🎭</div>
+        <h2 class="done-head">Real brauzeri<br><span class="grad-text">idarə et</span></h2>
+        <p class="done-sub">Rola görə tap, avtomatik gözləmə ilə icra et və web-first expect ilə assert et</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🧪</div>
+            <div class="nc-title">Məşq</div>
+            <div class="nc-desc">UI vasitəsilə daxil ol və logout düyməsinin görünən olmasını gözlə (expect)</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🎯</div>
+            <div class="nc-title">Lokatorlar</div>
+            <div class="nc-desc">CSS və ya XPath-dan əvvəl get_by_role / get_by_label-ə müraciət et</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Modul 7</div>
+            <div class="nc-desc">Page Object Model — seçiciləri oxunaqlı səhifə siniflərinin arxasında gizlə</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>
