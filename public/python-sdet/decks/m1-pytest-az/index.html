@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Modul 1: pytest əsasları — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Modul 1 · Python for SDETs</div>
+        <h1 class="headline"><span class="grad-text">pytest</span><br>Əsasları</h1>
+        <p class="subtitle">Testlər necə tapılır, niyə sadə assert kifayətdir və istədiyini dəqiq işlətmək</p>
+        <div class="pills">
+          <span class="pill">aşkarlama</span>
+          <span class="pill">assert</span>
+          <span class="pill">-k / -x</span>
+          <span class="pill">raises / approx</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 Discovery -->
+      <section class="slide s-step" data-screen-label="02 Discovery" style="gap:60px;padding:60px 90px;align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">pytest nəyi toplayır</div>
+
+        <div>
+          <div class="code-block" style="font-size:19px;">
+            <div style="color:#6a9955;"># tests/test_demo.py</div>
+            <div style="height:0.6em;"></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="color:#4caf50;">✓</span><span><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_this_runs</span>():</span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="color:#f44336;">✗</span><span><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">helper_not_a_test</span>():</span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="color:#4caf50;">✓</span><span><span style="color:#569cd6;">class</span> <span style="color:#4ec9b0;">TestProducts</span>:</span></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-left:28px;"><span style="color:#4caf50;">✓</span><span><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_inside</span>(self):</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <div class="feature-card"><div class="feature-icon">📄</div><div><h3>Fayllar</h3><p><code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">test_*.py</code> və ya <code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">*_test.py</code></p></div></div>
+            <div class="feature-card"><div class="feature-icon">🔧</div><div><h3>Funksiyalar</h3><p><code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">test_</code> ilə başlayır</p></div></div>
+            <div class="feature-card"><div class="feature-icon">📦</div><div><h3>Siniflər</h3><p><code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">Test</code> ilə başlayır (<code style="font-family:ui-monospace,Consolas,monospace;color:var(--accent);">__init__</code> yox)</p></div></div>
+          </div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">💡</span><span>Şablondan kənar adlar <strong>səssizcə</strong> buraxılır — #1 "niyə heç bir test işləmədi?"</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 Plain assert -->
+      <section class="slide s-step" data-screen-label="03 Readable Failures" style="gap:60px;padding:60px 90px;align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Sadə <span class="grad-text" style="font-family:ui-monospace,Consolas,monospace;">assert</span> — və oxunaqlı uğursuzluq</div>
+
+        <div>
+          <div style="font-size:22px;font-weight:700;color:var(--accent);margin-bottom:14px;">tests/test_failure_demo.py</div>
+          <div class="code-block" style="font-size:19px;">
+            <div style="color:#6a9955;"># line 1</div>
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_intentional_failure</span>():</div>
+            <div style="margin-left:28px;color:#d4d4d4;">expected = <span style="color:#b5cea8;">5</span></div>
+            <div style="margin-left:28px;color:#d4d4d4;">actual = <span style="color:#b5cea8;">2 + 2</span></div>
+            <div style="margin-left:28px;"><span style="color:#c586c0;">assert</span> <span style="color:#d4d4d4;">actual == expected</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:22px;font-weight:700;color:#f44336;margin-bottom:14px;">pytest çıxışı</div>
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="t-dots"><span style="background:#ff5f57;"></span><span style="background:#febc2e;"></span><span style="background:#28c840;"></span></div>
+              <span class="t-title">python-sdet</span>
+            </div>
+            <div class="terminal-body" style="font-size:17px;background:#2a0a0a;">
+              <div style="color:#d4d4d4;">&gt; assert actual == expected</div>
+              <div style="color:#f44336;font-weight:700;">E assert 4 == 5</div>
+              <div style="margin-top:8px;color:#d4d4d4;">test_failure_demo.py:5: AssertionError</div>
+            </div>
+          </div>
+          <div style="margin-top:16px;font-size:21px;color:#4caf50;font-weight:600;">pytest <code style="font-family:ui-monospace,Consolas,monospace;">assert</code>-i <em>hər iki tərəfi</em> göstərmək üçün yenidən yazır — xüsusi metod yoxdur.</div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Flags -->
+      <section class="slide s-full" data-screen-label="04 Run What You Want">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Gündəlik bayraqlar</div>
+        <h2 class="section-head">İstədiyin testləri dəqiq işlət</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px 40px;max-width:1500px;font-family:ui-monospace,Consolas,monospace;">
+          <div style="display:flex;align-items:center;gap:18px;"><span style="color:var(--accent);font-size:24px;font-weight:700;min-width:170px;">pytest -v</span><span style="color:oklch(74% 0.04 255);font-size:22px;">test başına bir sətir</span></div>
+          <div style="display:flex;align-items:center;gap:18px;"><span style="color:var(--accent);font-size:24px;font-weight:700;min-width:170px;">pytest -q</span><span style="color:oklch(74% 0.04 255);font-size:22px;">sakit, yığcam çıxış</span></div>
+          <div style="display:flex;align-items:center;gap:18px;"><span style="color:var(--accent);font-size:24px;font-weight:700;min-width:170px;">pytest -x</span><span style="color:oklch(74% 0.04 255);font-size:22px;">ilk uğursuzluqda dayan</span></div>
+          <div style="display:flex;align-items:center;gap:18px;"><span style="color:var(--accent);font-size:24px;font-weight:700;min-width:170px;">pytest -k "expr"</span><span style="color:oklch(74% 0.04 255);font-size:22px;">ada görə süz (and/or/not)</span></div>
+          <div style="display:flex;align-items:center;gap:18px;grid-column:1/-1;"><span style="color:var(--accent);font-size:24px;font-weight:700;min-width:170px;white-space:nowrap;">pytest file.py::test_x</span><span style="color:oklch(74% 0.04 255);font-size:22px;">bir konkret testi işlət</span></div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1100px;"><span class="tip-icon">🔁</span><span>Gündəlik debaq dövrü: <code style="font-family:ui-monospace,Consolas,monospace;color:#fff;">pytest -x -k "the_thing_im_fixing"</code></span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 raises + approx -->
+      <section class="slide s-two-col" data-screen-label="05 Two Helpers">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Müraciət edəcəyin iki köməkçi</div>
+
+        <div>
+          <div style="font-size:30px;font-weight:800;color:var(--accent);margin-bottom:18px;">pytest.raises — xəta gözlə</div>
+          <div class="code-block" style="font-size:19px;">
+            <div><span style="color:#c586c0;">with</span> pytest.raises(<span style="color:#4ec9b0;">ValueError</span>):</div>
+            <div style="margin-left:28px;color:#d4d4d4;"><span style="color:#dcdcaa;">int</span>(<span style="color:#ce9178;">"not a number"</span>)</div>
+          </div>
+          <div style="margin-top:16px;font-size:20px;color:oklch(74% 0.04 255);line-height:1.5;">Yalnız blok həmin xətanı atarsa keçir — yararsız girişin rədd edildiyini belə yoxlayırsan.</div>
+        </div>
+
+        <div>
+          <div style="font-size:30px;font-weight:800;color:var(--accent);margin-bottom:18px;">pytest.approx — float-ları müqayisə et</div>
+          <div class="code-block" style="font-size:19px;">
+            <div><span style="color:#c586c0;">assert</span> <span style="color:#b5cea8;">0.1 + 0.2</span> == pytest.approx(<span style="color:#b5cea8;">0.3</span>)</div>
+            <div style="color:#6a9955;margin-top:6px;"># plain == 0.3 would FAIL</div>
+          </div>
+          <div style="margin-top:16px;font-size:20px;color:oklch(74% 0.04 255);line-height:1.5;">Floating-point riyaziyyatı dəqiq deyil — hesablanmış qiymətləri və ya cəmləri heç vaxt çılpaq <code style="font-family:ui-monospace,Consolas,monospace;">==</code> ilə müqayisə etmə.</div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">✅</div>
+        <h2 class="done-head">pytest,<br><span class="grad-text">sənin əlində</span></h2>
+        <p class="done-sub">Testləri tap, uğursuzluqları oxu, istədiyini dəqiq işlət</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Modul 2</div>
+            <div class="nc-desc">Fixtures &amp; parametrize — quraşdırmanı bölüş, bir testi çoxlu giriş üzərində işlət</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🧪</div>
+            <div class="nc-title">Məşq</div>
+            <div class="nc-desc">TestMarket Lab-a qarşı əsl məhsul-API yoxlamaları yaz</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🔁</div>
+            <div class="nc-title">Debaq dövrü</div>
+            <div class="nc-desc">pytest -x -k "name" — tez dayan, dar fokusla</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>

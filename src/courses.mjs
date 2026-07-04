@@ -15,7 +15,7 @@
 export const PYTHON_SDET_MODULES = [
 	{ slug: '', label: 'Overview', az: 'İcmal' },
 	{ slug: 'module-0', label: '0 — Setup & first test', az: '0 — Quraşdırma və ilk test' },
-	{ slug: 'module-1', label: '1 — pytest fundamentals', az: null },
+	{ slug: 'module-1', label: '1 — pytest fundamentals', az: '1 — pytest əsasları' },
 	{ slug: 'module-2', label: '2 — Fixtures & parametrize', az: null },
 	{ slug: 'module-3', label: '3 — API testing with requests', az: null },
 	{ slug: 'module-4', label: '4 — Negative & validation testing', az: null },
