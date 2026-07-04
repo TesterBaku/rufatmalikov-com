@@ -1,0 +1,541 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How to Install Docker on Windows — AI with Rufat</title>
+  <style>
+    /* ===========================================================
+       Deck framework — DO NOT EDIT the rules in this <style> block.
+       =========================================================== */
+    :root {
+      /* SLOT: theme tokens — AI with Rufat brand */
+      --bg:      oklch(9% 0.06 255);
+      --fg:      oklch(97% 0.006 255);
+      --muted:   oklch(52% 0.05 255);
+      --accent:  oklch(72% 0.23 210);
+      --accent2: oklch(58% 0.28 265);
+      --surface: oklch(14% 0.08 255);
+      --border:  oklch(22% 0.10 255);
+      --shell:   oklch(5% 0.03 252);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--shell);
+      color: var(--fg);
+      font: 18px/1.5 -apple-system, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .deck-shell {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+    .deck-stage {
+      width: 1920px;
+      height: 1080px;
+      background: var(--bg);
+      position: relative;
+      transform-origin: top left;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+    }
+    .slide {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+    .slide:not(.active) { display: none !important; }
+    :where(.slide.active) { display: flex; flex-direction: column; }
+    .deck-counter {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(10, 14, 26, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font: 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.18em;
+      z-index: 1000;
+    }
+    .deck-counter button {
+      width: 36px; height: 36px;
+      background: transparent;
+      color: #fff;
+      border: 0;
+      border-radius: 50%;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 0.15s;
+    }
+    .deck-counter button:hover { background: rgba(255, 255, 255, 0.12); }
+    .deck-counter button[disabled] { opacity: 0.3; cursor: default; }
+    .deck-counter .deck-count {
+      padding: 0 14px;
+      letter-spacing: 0.22em;
+    }
+    .deck-counter .deck-count .total { color: rgba(255, 255, 255, 0.5); }
+    .deck-hint {
+      position: fixed;
+      bottom: 26px;
+      right: 28px;
+      color: rgba(255, 255, 255, 0.4);
+      font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      z-index: 999;
+      pointer-events: none;
+    }
+    @media print {
+      @page { size: 1920px 1080px; margin: 0; }
+      html, body {
+        width: 1920px !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
+      }
+      .deck-shell {
+        position: static !important;
+        display: block !important;
+        inset: auto !important;
+      }
+      .deck-stage {
+        width: 1920px !important;
+        height: auto !important;
+        transform: none !important;
+        box-shadow: none !important;
+        position: static !important;
+      }
+      .slide {
+        display: flex !important;
+        position: relative !important;
+        inset: auto !important;
+        width: 1920px !important;
+        height: 1080px !important;
+        page-break-after: always;
+        break-after: page;
+      }
+      .slide:last-child { page-break-after: auto; break-after: auto; }
+      .deck-counter, .deck-hint { display: none !important; }
+    }
+  </style>
+  <style>
+    /* SLOT: per-deck styles */
+    .circuit-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 60% at 8% 50%,  oklch(22% 0.16 265 / 0.35) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 92% 40%, oklch(28% 0.20 220 / 0.28) 0%, transparent 55%),
+        radial-gradient(ellipse 45% 40% at 50% 110%, oklch(15% 0.10 250 / 0.4) 0%, transparent 50%);
+    }
+    .grad-text {
+      background: linear-gradient(135deg, oklch(84% 0.25 200) 0%, oklch(62% 0.30 265) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .brand-bar { position: absolute; bottom: 44px; right: 64px; display: flex; align-items: center; gap: 10px; z-index: 10; }
+    .brand-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .brand-name { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: oklch(70% 0.04 252); }
+    .brand-name strong {
+      background: linear-gradient(135deg, oklch(84% 0.25 200), oklch(62% 0.30 265));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .step-badge { display: flex; align-items: center; gap: 18px; margin-bottom: 32px; }
+    .step-num {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, oklch(72% 0.23 210), oklch(58% 0.28 265));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; font-weight: 900; color: #fff;
+      box-shadow: 0 0 28px oklch(72% 0.23 210 / 0.5); flex-shrink: 0;
+    }
+    .step-label { font-size: 20px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+
+    .s-title { align-items: center; justify-content: center; text-align: center; padding: 80px; }
+    .s-title .kicker { font-size: 26px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 28px; }
+    .s-title .headline { font-size: 100px; font-weight: 900; line-height: 1.0; letter-spacing: -0.03em; max-width: 1400px; margin-bottom: 36px; }
+    .s-title .subtitle { font-size: 34px; font-weight: 400; color: var(--muted); max-width: 900px; line-height: 1.4; }
+    .s-title .pills { display: flex; gap: 16px; margin-top: 48px; }
+    .pill { padding: 10px 30px; border-radius: 999px; border: 1px solid oklch(30% 0.10 255); font-size: 22px; font-weight: 500; color: var(--muted); background: oklch(12% 0.06 255 / 0.5); }
+
+    .s-intro { display: grid; grid-template-columns: 1fr 1fr; align-items: center; height: 100%; padding: 80px 100px; gap: 80px; }
+    .intro-heading { font-size: 80px; font-weight: 900; line-height: 1.0; letter-spacing: -0.03em; margin-bottom: 32px; }
+    .intro-subtext { font-size: 30px; line-height: 1.55; color: oklch(70% 0.04 255); }
+    .feature-cards { display: flex; flex-direction: column; gap: 20px; }
+    .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px 32px; display: flex; align-items: center; gap: 22px; }
+    .feature-icon { font-size: 36px; flex-shrink: 0; }
+    .feature-card h3 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+    .feature-card p  { font-size: 20px; color: var(--muted); }
+
+    .s-step { display: grid; grid-template-columns: 1fr 1fr; height: 100%; }
+    .step-left { padding: 80px 64px 80px 96px; display: flex; flex-direction: column; justify-content: center; }
+    .step-right { display: flex; align-items: center; justify-content: center; padding: 48px 64px; position: relative; }
+    .step-headline { font-size: 68px; font-weight: 800; line-height: 1.08; letter-spacing: -0.025em; margin-bottom: 28px; }
+    .step-body { font-size: 30px; line-height: 1.55; color: oklch(74% 0.04 255); max-width: 680px; margin-bottom: 28px; }
+    .step-tip {
+      display: flex; align-items: flex-start; gap: 16px;
+      padding: 20px 28px;
+      background: oklch(72% 0.23 210 / 0.10);
+      border: 1px solid oklch(72% 0.23 210 / 0.28);
+      border-radius: 12px;
+      font-size: 25px; line-height: 1.45;
+      color: oklch(80% 0.10 210); max-width: 680px;
+    }
+    .tip-icon { font-size: 26px; flex-shrink: 0; margin-top: 2px; }
+
+    .url-bar {
+      display: flex; align-items: center; gap: 14px;
+      background: oklch(94% 0.005 255); border-radius: 8px; padding: 18px 24px;
+      font-family: ui-monospace, Menlo, monospace; font-size: 26px;
+      border: 2px solid oklch(72% 0.23 210); box-shadow: 0 0 0 4px oklch(72% 0.23 210 / 0.15); color: #111;
+    }
+    .url-highlight { color: oklch(38% 0.28 265); font-weight: 700; }
+
+    .win-dialog { border-radius: 8px; overflow: hidden; box-shadow: 0 28px 72px rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.08); }
+    .win-titlebar { height: 34px; background: #1a1a2e; display: flex; align-items: center; justify-content: flex-end; padding: 0; position: relative; }
+    .win-titlebar .title-text { position: absolute; left: 50%; transform: translateX(-50%); font-size: 13px; color: #aaa; white-space: nowrap; }
+    .win-btn { width: 46px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #ccc; }
+    .win-btn.close-btn { background: #c42b1c; color: #fff; }
+    .win-body { background: #fff; color: #111; padding: 28px 32px; }
+    .win-body h4 { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: #111; }
+    .win-body p  { font-size: 13px; color: #555; margin-bottom: 14px; }
+    .win-next-btn { display: inline-flex; align-items: center; padding: 9px 28px; background: #2496ed; color: #fff; border-radius: 4px; font-size: 14px; font-weight: 600; }
+    .win-back-btn { display: inline-flex; align-items: center; padding: 9px 22px; border: 1px solid #bbb; color: #555; border-radius: 4px; font-size: 14px; }
+    .win-btn-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .chk-on { width: 18px; height: 18px; border-radius: 3px; background: #2496ed; border: 2px solid #2496ed; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .chk-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-size: 15px; color: #222; }
+    .setup-progress-track { background: #e0e0e0; border-radius: 4px; height: 20px; overflow: hidden; margin: 14px 0; }
+    .setup-progress-fill { height: 100%; background: #2496ed; border-radius: 4px; width: 72%; }
+
+    .dl-btn { display: inline-flex; align-items: center; gap: 14px; background: #2496ed; color: #fff; padding: 26px 52px; border-radius: 6px; font-size: 32px; font-weight: 700; box-shadow: 0 8px 36px rgba(36,150,237,0.45); }
+
+    .explorer-row { display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-radius: 6px; }
+    .explorer-row.selected { background: #cce5f7; border: 2px solid #0078d4; }
+    .explorer-row.dim { opacity: 0.35; }
+
+    .s-done { align-items: center; justify-content: center; text-align: center; padding: 80px; }
+    .done-icon { font-size: 110px; margin-bottom: 28px; filter: drop-shadow(0 0 36px oklch(72% 0.23 210)); }
+    .done-head { font-size: 92px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.0; margin-bottom: 22px; }
+    .done-sub  { font-size: 34px; color: var(--muted); margin-bottom: 52px; }
+    .next-cards { display: flex; gap: 24px; }
+    .next-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 36px; text-align: left; width: 360px; }
+    .next-card .nc-icon  { font-size: 38px; margin-bottom: 14px; }
+    .next-card .nc-title { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+    .next-card .nc-desc  { font-size: 20px; color: var(--muted); line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Beginner Guide · Windows 10 / 11</div>
+        <h1 class="headline">How to install<br><span class="grad-text">Docker</span></h1>
+        <p class="subtitle">Get a real database running for your tests in minutes — Docker Desktop, step by step</p>
+        <div class="pills">
+          <span class="pill">Free</span>
+          <span class="pill">~5 minutes</span>
+          <span class="pill">Docker Desktop</span>
+          <span class="pill">Windows 10 &amp; 11</span>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 02 What is Docker -->
+      <section class="slide s-intro" data-screen-label="02 What Is Docker">
+        <div class="circuit-bg"></div>
+        <div>
+          <p style="font-size:22px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:20px;">Before we start</p>
+          <h2 class="intro-heading">Why a tester<br>wants <span class="grad-text">Docker</span></h2>
+          <p class="intro-subtext">Your tests need a <strong>real database</strong> to run against — and a fresh, identical one every time, without installing Postgres by hand on every machine. One command gives you exactly that.</p>
+        </div>
+        <div>
+          <div class="feature-cards">
+            <div class="feature-card"><div class="feature-icon">🗄️</div><div><h3>A real database, on demand</h3><p>Spin up Postgres with one command — no manual install</p></div></div>
+            <div class="feature-card"><div class="feature-icon">🔁</div><div><h3>Fresh &amp; identical every run</h3><p>Throw the container away, start a clean one — locally and in CI</p></div></div>
+            <div class="feature-card"><div class="feature-icon">📦</div><div><h3>Nothing leaks onto your machine</h3><p>The database lives in the container, not your OS</p></div></div>
+            <div class="feature-card"><div class="feature-icon">🤝</div><div><h3>Same everywhere</h3><p>Your laptop, a teammate's, the CI server — no "works on mine"</p></div></div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 03 Step 1 open browser -->
+      <section class="slide s-step" data-screen-label="03 Step 1 Open Site">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge"><div class="step-num">1</div><div class="step-label">Step One</div></div>
+          <h2 class="step-headline">Go to the Docker site</h2>
+          <p class="step-body">Open your browser and head to the official Docker Desktop download page.</p>
+          <div class="url-bar"><span>🔒</span><span><span class="url-highlight">docker.com</span>/products/docker-desktop</span></div>
+          <div class="step-tip" style="margin-top:28px;"><span class="tip-icon">💡</span><span>Always download from <strong>docker.com</strong> — never a mirror or an ad link.</span></div>
+        </div>
+        <div class="step-right">
+          <div style="width:640px;border-radius:10px;overflow:hidden;box-shadow:0 28px 72px rgba(0,0,0,0.55);border:1px solid rgba(255,255,255,0.08);">
+            <div style="height:44px;background:#2a2a3e;display:flex;align-items:center;gap:8px;padding:0 16px;">
+              <span style="width:12px;height:12px;border-radius:50%;background:#ff5f57;"></span>
+              <span style="width:12px;height:12px;border-radius:50%;background:#febc2e;"></span>
+              <span style="width:12px;height:12px;border-radius:50%;background:#28c840;"></span>
+              <div style="flex:1;margin-left:14px;background:#1a1a2e;border-radius:6px;padding:6px 14px;font-family:ui-monospace,monospace;font-size:14px;color:#8ab4f8;">docker.com/products/docker-desktop</div>
+            </div>
+            <div style="background:#0d1117;padding:48px 40px;text-align:center;">
+              <div style="font-size:60px;">🐳</div>
+              <div style="font-size:26px;font-weight:800;color:#fff;margin-top:16px;">Docker Desktop</div>
+              <div style="font-size:16px;color:#8b949e;margin-top:8px;">The fastest way to containerize applications</div>
+              <div style="display:inline-flex;margin-top:24px;background:#2496ed;color:#fff;padding:14px 30px;border-radius:6px;font-size:17px;font-weight:700;">Download for Windows</div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 04 Step 2 download -->
+      <section class="slide s-step" data-screen-label="04 Step 2 Download">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge"><div class="step-num">2</div><div class="step-label">Step Two</div></div>
+          <h2 class="step-headline">Download Docker Desktop</h2>
+          <p class="step-body">Click <strong>Download for Windows</strong>. It grabs the installer — a single <code style="font-family:ui-monospace,monospace;background:var(--surface);padding:2px 8px;border-radius:5px;color:var(--accent);">.exe</code> file, a few hundred MB.</p>
+          <div class="step-tip"><span class="tip-icon">💡</span><span>On an Apple or Linux machine? Pick that download instead — the steps that follow are Windows, but the idea is the same.</span></div>
+        </div>
+        <div class="step-right">
+          <div style="text-align:center;">
+            <div class="dl-btn"><span style="font-size:34px;">⬇️</span><span>Download for Windows</span></div>
+            <div style="margin-top:40px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;width:520px;text-align:left;">
+              <div style="font-family:ui-monospace,monospace;font-size:18px;color:#fff;">Docker Desktop Installer.exe</div>
+              <div class="setup-progress-track" style="background:#333;"><div class="setup-progress-fill" style="width:100%;"></div></div>
+              <div style="font-size:17px;color:#4caf50;font-weight:600;">✓ Download complete · ~550 MB</div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 05 Step 3 run installer -->
+      <section class="slide s-step" data-screen-label="05 Step 3 Run Installer">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge"><div class="step-num">3</div><div class="step-label">Step Three</div></div>
+          <h2 class="step-headline">Run the installer</h2>
+          <p class="step-body">Open your <strong>Downloads</strong> folder and double-click the file you just got.</p>
+          <div style="display:inline-flex;align-items:center;gap:10px;font-family:ui-monospace,monospace;font-size:22px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 20px;color:#fff;">📦 Docker Desktop Installer.exe</div>
+          <div class="step-tip" style="margin-top:28px;"><span class="tip-icon">💡</span><span>Windows may ask "Allow this app to make changes?" — click <strong>Yes</strong>.</span></div>
+        </div>
+        <div class="step-right">
+          <div class="win-dialog" style="width:600px;">
+            <div class="win-titlebar"><span class="title-text">Downloads</span><span class="win-btn">─</span><span class="win-btn">☐</span><span class="win-btn close-btn">✕</span></div>
+            <div class="win-body" style="padding:20px;">
+              <div class="explorer-row selected"><span style="font-size:26px;">📦</span><div style="flex:1;"><div style="font-weight:600;">Docker Desktop Installer.exe</div><div style="font-size:12px;color:#666;">550 MB · Application</div></div><span style="color:#0078d4;font-weight:600;font-size:13px;">Open ↗</span></div>
+              <div class="explorer-row dim"><span style="font-size:26px;">📄</span><div><div style="font-weight:600;">report.pdf</div><div style="font-size:12px;color:#666;">2 MB</div></div></div>
+              <div class="explorer-row dim"><span style="font-size:26px;">🖼️</span><div><div style="font-weight:600;">screenshot.png</div><div style="font-size:12px;color:#666;">480 KB</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 06 Step 4 WSL 2 (key) -->
+      <section class="slide s-step" data-screen-label="06 Step 4 WSL 2">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge"><div class="step-num">4</div><div class="step-label" style="color:#febc2e;">Important!</div></div>
+          <h2 class="step-headline">Keep the <span class="grad-text">WSL 2</span> option on</h2>
+          <p class="step-body">The installer offers to use the <strong>WSL 2</strong> backend. Leave it checked — it's what lets Docker run Linux containers on Windows.</p>
+          <div class="step-tip"><span class="tip-icon">⚠️</span><span>This box is ticked by default. Just leave it on — Docker Desktop sets up WSL 2 for you.</span></div>
+        </div>
+        <div class="step-right">
+          <div class="win-dialog" style="width:600px;">
+            <div class="win-titlebar"><span class="title-text">Docker Desktop — Configuration</span><span class="win-btn">─</span><span class="win-btn">☐</span><span class="win-btn close-btn">✕</span></div>
+            <div class="win-body">
+              <h4>Configuration</h4>
+              <p>Choose how Docker Desktop should run on your machine.</p>
+              <div class="chk-row"><span class="chk-on">✓</span><span>Use WSL 2 instead of Hyper-V <strong>(recommended)</strong></span></div>
+              <div class="chk-row"><span class="chk-on">✓</span><span>Add shortcut to desktop</span></div>
+              <div class="win-btn-row"><span class="win-back-btn">Cancel</span><span class="win-next-btn">Ok</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 07 Step 5 finish & restart -->
+      <section class="slide s-step" data-screen-label="07 Step 5 Finish">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge"><div class="step-num">5</div><div class="step-label">Step Five</div></div>
+          <h2 class="step-headline">Finish &amp; restart</h2>
+          <p class="step-body">Let it install, then click <strong>Close</strong>. Docker Desktop may ask you to <strong>restart Windows</strong> to finish setting up WSL 2 — go ahead.</p>
+          <div class="step-tip"><span class="tip-icon">🔄</span><span>A one-time restart is normal here. It's WSL 2 finishing its setup, not something going wrong.</span></div>
+        </div>
+        <div class="step-right">
+          <div class="win-dialog" style="width:600px;">
+            <div class="win-titlebar"><span class="title-text">Docker Desktop</span><span class="win-btn">─</span><span class="win-btn">☐</span><span class="win-btn close-btn">✕</span></div>
+            <div class="win-body" style="text-align:center;padding:40px 32px;">
+              <div style="font-size:56px;">✅</div>
+              <h4 style="font-size:20px;margin-top:12px;">Installation succeeded</h4>
+              <p style="margin-top:6px;">Docker Desktop is installed. A restart is required to complete setup.</p>
+              <div style="display:flex;justify-content:center;gap:10px;margin-top:20px;"><span class="win-next-btn">Restart</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 08 Step 6 start docker -->
+      <section class="slide s-step" data-screen-label="08 Step 6 Start Docker">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge"><div class="step-num">6</div><div class="step-label">Step Six</div></div>
+          <h2 class="step-headline">Start Docker Desktop</h2>
+          <p class="step-body">Launch <strong>Docker Desktop</strong> from the Start menu. Wait for the whale icon in the system tray to go steady — that means the engine is running.</p>
+          <div class="step-tip"><span class="tip-icon">🐳</span><span>Keep Docker Desktop running while you use containers — it <em>is</em> the engine.</span></div>
+        </div>
+        <div class="step-right">
+          <div style="text-align:center;">
+            <div style="width:420px;background:#1a1a2e;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.06);">
+              <span style="font-size:34px;">🐳</span>
+              <div style="text-align:left;flex:1;"><div style="color:#fff;font-size:17px;font-weight:700;">Docker Desktop</div><div style="color:#4caf50;font-size:14px;">● Engine running</div></div>
+            </div>
+            <div style="margin-top:28px;font-size:20px;color:var(--muted);">↑ The whale in your system tray</div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 09 Step 7 verify -->
+      <section class="slide s-step" data-screen-label="09 Step 7 Verify">
+        <div class="circuit-bg"></div>
+        <div class="step-left">
+          <div class="step-badge"><div class="step-num">7</div><div class="step-label" style="color:#4caf50;">Verify Step</div></div>
+          <h2 class="step-headline">Confirm it works</h2>
+          <p class="step-body">Open <strong>PowerShell</strong> and run the two "hello world" checks of Docker.</p>
+          <div style="display:inline-flex;align-items:center;gap:10px;font-family:ui-monospace,monospace;font-size:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 18px;color:#fff;"><span style="color:var(--accent);">$</span> docker --version</div>
+          <div class="step-tip" style="margin-top:24px;"><span class="tip-icon">✅</span><span>If <code style="font-family:ui-monospace,monospace;">hello-world</code> prints its greeting, you're done — everything works.</span></div>
+        </div>
+        <div class="step-right">
+          <div style="width:640px;border-radius:8px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.55);border:1px solid rgba(255,255,255,0.06);">
+            <div style="height:36px;background:#1a1a2e;display:flex;align-items:center;justify-content:center;position:relative;"><span style="font-size:13px;color:#888;font-family:ui-monospace,monospace;">Windows PowerShell</span></div>
+            <div style="background:#012456;padding:22px 24px;font-family:ui-monospace,monospace;font-size:16px;line-height:1.7;">
+              <div><span style="color:#efc050;">PS C:\Users\Rufat&gt;</span> docker --version</div>
+              <div style="color:#4caf50;">Docker version 29.2.0, build 0b9d198</div>
+              <div style="height:0.5em;"></div>
+              <div><span style="color:#efc050;">PS C:\Users\Rufat&gt;</span> docker run hello-world</div>
+              <div style="color:#4caf50;">Hello from Docker!</div>
+              <div style="color:#8b949e;">This message shows your installation is working.</div>
+              <div><span style="color:#efc050;">PS C:\Users\Rufat&gt;</span> <span style="background:#4caf50;">&nbsp;</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+
+      <!-- 10 Done -->
+      <section class="slide s-done" data-screen-label="10 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">✅</div>
+        <h2 class="done-head">Docker is <span class="grad-text">ready</span></h2>
+        <p class="done-sub">Now you can spin up a real database for your tests — with one command</p>
+        <div class="next-cards">
+          <div class="next-card"><div class="nc-icon">🐘</div><div class="nc-title">Run a database</div><div class="nc-desc"><code style="font-family:ui-monospace,monospace;color:var(--accent);">docker run postgres</code> — a fresh Postgres at a known address</div></div>
+          <div class="next-card"><div class="nc-icon">🧩</div><div class="nc-title">Compose &amp; CI</div><div class="nc-desc">A <code style="font-family:ui-monospace,monospace;color:var(--accent);">docker-compose.yml</code> and a GitHub Actions service container</div></div>
+          <div class="next-card"><div class="nc-icon">📚</div><div class="nc-title">Learn the rest</div><div class="nc-desc">The Docker basics reference covers run, compose, and CI in full</div></div>
+        </div>
+        <div class="brand-bar"><div class="brand-dot"></div><span class="brand-name"><strong>AI</strong> with Rufat</span></div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script>
+    (function () {
+      var stage = document.getElementById('deck-stage');
+      var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+      var prev = document.getElementById('deck-prev');
+      var next = document.getElementById('deck-next');
+      var cur = document.getElementById('deck-cur');
+      var total = document.getElementById('deck-total');
+      var STORE = 'deck:idx:' + (location.pathname || '/');
+      var idx = 0;
+
+      function fit() {
+        var sw = window.innerWidth;
+        var sh = window.innerHeight;
+        var pad = 32;
+        var s = Math.min((sw - pad) / 1920, (sh - pad) / 1080);
+        if (!isFinite(s) || s <= 0) s = 1;
+        var tx = (sw - 1920 * s) / 2;
+        var ty = (sh - 1080 * s) / 2;
+        stage.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + s + ')';
+      }
+
+      function pad2(n) { return (n < 10 ? '0' : '') + n; }
+      function paint() {
+        slides.forEach(function (el, i) { el.classList.toggle('active', i === idx); });
+        if (cur) cur.textContent = pad2(idx + 1);
+        if (total) total.textContent = pad2(slides.length);
+        if (prev) prev.toggleAttribute('disabled', idx <= 0);
+        if (next) next.toggleAttribute('disabled', idx >= slides.length - 1);
+      }
+      function go(i) {
+        idx = Math.max(0, Math.min(slides.length - 1, i));
+        paint();
+        try { localStorage.setItem(STORE, String(idx)); } catch (_) {}
+      }
+      function onKey(e) {
+        var t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        if (t && t.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
+        if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(idx + 1); }
+        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(idx - 1); }
+        else if (e.key === 'Home') { e.preventDefault(); go(0); }
+        else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+      }
+      document.addEventListener('keydown', onKey, true);
+      if (prev) prev.addEventListener('click', function () { go(idx - 1); });
+      if (next) next.addEventListener('click', function () { go(idx + 1); });
+
+      document.body.setAttribute('tabindex', '-1');
+      document.body.style.outline = 'none';
+      function focusDeck() { try { window.focus(); document.body.focus({ preventScroll: true }); } catch (_) {} }
+      document.addEventListener('mousedown', focusDeck);
+      window.addEventListener('load', focusDeck);
+
+      try {
+        var saved = parseInt(localStorage.getItem(STORE) || '0', 10);
+        if (!isNaN(saved) && saved >= 0 && saved < slides.length) idx = saved;
+      } catch (_) {}
+
+      window.addEventListener('resize', fit);
+      fit();
+      paint();
+      focusDeck();
+    })();
+  </script>
+</body>
+</html>
