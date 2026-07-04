@@ -1,0 +1,87 @@
+---
+title: "Python for SDETs"
+description: "Real bir tətbiqə qarşı əsl Python testləri yaz — API və UI — pytest, requests, Playwright və CI ilə. Pulsuz, praktiki test-avtomatlaşdırma kursu."
+prev: false
+next: false
+---
+
+Bu kurs Python əsaslarını əsl **test-avtomatlaşdırma** bacarığına çevirir. Əsl testlər
+yazacaqsan — `requests` ilə REST API testləri, Playwright ilə UI testləri — onları
+**pytest** ilə işlədəcək və hamısını öz maşınında işlətdiyin real veb tətbiqə qarşı
+**CI**-yə bağlayacaqsan.
+
+Kurs **pulsuzdur** və avtomatlaşdırmaya keçən insanlar üçün qurulub: gələcək və junior
+SDET-lər, kod yazmağa addım atan manual testerlər. Bu, saytın Python trekinin qabaqcıl
+yarısı və [JavaScript Playwright kursunun](/az/course/) Python-dildəki qardaşıdır — eyni
+bacarıqlar, eyni məşq tətbiqi, fərqli dil.
+
+## Vəd
+
+Sonunda **real bir tətbiqə qarşı əsl Python testləri — API və UI — pytest və CI ilə yaza
+biləcəksən.** Oyuncaq nümunələr yox: müsahibədə göstərə və ya işə tətbiq edə biləcəyin
+strukturlaşdırılmış test dəsti.
+
+## İlkin şərtlər
+
+- **Python əsasları** — dəyişənlər, `if`, dövrlər, funksiyalar, list/dict-lər. Python sənə
+  yenidir? [Python Fundamentals](/az/python/) (pulsuz, brauzerdə işləyir) ilə başla və qayıt.
+- **Terminalda rahatlıq** — əmrləri işlətmək, `cd`, paketlər quraşdırmaq.
+  [Komanda sətri və npm istinadı](/az/reference/command-line-npm/) əsasları əhatə edir.
+- **Əvvəlcədən pytest, requests və ya Playwright təcrübəsi lazım deyil** — hər birini sıfırdan qururuq.
+
+## Kurs necə işləyir: Öyrən → Qur
+
+Brauzerdə işləyən [Python Fundamentals](/az/python/)-dan fərqli olaraq, bu kurs **real lokal
+quraşdırmadan** istifadə edir — Python-u, pytest-i və kitabxanaları quraşdırırsan və testləri
+terminalından işlədirsən, tam olaraq işdə olduğu kimi.
+
+- **Öyrən** — hər modul bir anlayışı izahlar və işlək nümunələrlə təqdim edir.
+- **Qur** — onu [TestMarket Lab](https://github.com/TesterBaku/testmarket-lab)-a tətbiq
+  edirsən: `npm install && npm start` ilə klonlayıb lokalda işlətdiyin real veb tətbiq (login,
+  məhsullar, səbət, checkout, admin).
+
+### TestMarket Lab — məşq meydanın
+
+[TestMarket Lab](https://github.com/TesterBaku/testmarket-lab) test edəcəyin iki səthi olan
+kiçik, amma real bir mağazadır:
+
+- `/api` altında bir **REST API** — `auth`, `products`, `orders`, `users`, `cart`, üstəgəl
+  test quraşdırma/söküş üçün qurulmuş `reset` endpoint-i. `requests` modulları üçün mükəmməl.
+- Hər yerdə `data-testid` qarmaqları olan bir **veb UI** — Playwright modulları üçün mükəmməl.
+
+Bu, [JavaScript kursunun](/az/course/) test etdiyi eyni tətbiqdir, ona görə hər iki dildə
+işləsən, endpoint-lər və seçicilər keçərli qalır.
+
+:::tip[API, HTTP və ya status kodları sənə yenidir?]
+**[İstinad](/az/reference/)** bölməsində API modulları boyunca işlədilən lüğəti
+əsaslandıran qısa girişlər var: [API-lər](/az/reference/apis/),
+[HTTP sorğu/cavab](/az/reference/http/) və [status kodları](/az/reference/http-status-codes/).
+:::
+
+## Modul planı
+
+| # | Başlıq | Status |
+|---|--------|--------|
+| 0 | [Quraşdırma və ilk test](/az/python-sdet/module-0/) | Mövcuddur |
+| 1 | [pytest əsasları](/az/python-sdet/module-1/) | Mövcuddur |
+| 2 | [Fixtures və parametrize](/az/python-sdet/module-2/) | Mövcuddur |
+| 3 | [`requests` ilə API testi](/az/python-sdet/module-3/) | Mövcuddur |
+| 4 | [Neqativ və validasiya testi](/az/python-sdet/module-4/) | Mövcuddur |
+| 5 | [Test datası quraşdırma və söküş](/az/python-sdet/module-5/) | Mövcuddur |
+| 6 | [UI avtomatlaşdırma — Python üçün Playwright](/az/python-sdet/module-6/) | Mövcuddur |
+| 7 | [Python-da Page Object Model](/az/python-sdet/module-7/) | Mövcuddur |
+| 8 | [Data-driven testlər](/az/python-sdet/module-8/) | Mövcuddur |
+| 9 | [Hesabat və dəst quruluşu](/az/python-sdet/module-9/) | Mövcuddur |
+| 10 | [GitHub Actions ilə CI](/az/python-sdet/module-10/) | Mövcuddur |
+| 11 | [Capstone — tam API + UI dəsti](/az/python-sdet/module-11/) | Mövcuddur |
+| 12 | [Verilənlər bazasının yoxlanması](/az/python-sdet/module-12/) | Mövcuddur |
+
+Yeni modullar tədricən əlavə olunur — gəldikcə yoxla. Modul 12 capstone-un üstünə bərkidə
+biləcəyin senior genişlənmədir: sadəcə cavabı yox, bir əməliyyatın *davam edən* yan təsirini
+yoxlamaq.
+
+---
+
+Hazırsan? [**Modul 0 ilə başla →**](/az/python-sdet/module-0/)
+
+Əvvəlcə sadəcə əsaslar lazımdır? [**Python Fundamentals →**](/az/python/) ilə başla.

@@ -180,7 +180,7 @@ export default defineConfig({
 					// label-based prune can't drift from it.
 					label: PYTHON_SDET.groupLabel,
 					items: [
-						{ label: 'Overview', link: '/python-sdet/' },
+						{ label: 'Overview', translations: { az: 'İcmal' }, link: '/python-sdet/' },
 						{ label: '0 — Setup & first test', link: '/python-sdet/module-0/' },
 						{ label: '1 — pytest fundamentals', link: '/python-sdet/module-1/' },
 						{ label: '2 — Fixtures & parametrize', link: '/python-sdet/module-2/' },
@@ -216,14 +216,14 @@ export default defineConfig({
 		}),
 		sitemap({
 			// /python-demo/ is an internal M1 verification page — keep it out of the sitemap.
-			// /<non-en>/python-sdet/ are Starlight locale-fallback pages (the Tier 2 course is
-			// English-only, see src/courses.mjs) that render EN content under another locale —
-			// keep only the canonical /en/ ones so the sitemap doesn't advertise duplicate
-			// content in the wrong language. Locale-agnostic so a future /ru/ etc. is covered
-			// automatically (those fallbacks are also noindexed in the middleware).
+			// /<non-en>/python-sdet/ are Starlight locale-fallback pages that render EN content
+			// under another locale — keep only the canonical /en/ ones, PLUS any /az/ page that
+			// has a real translation (PYTHON_SDET.azReady). Locale-agnostic so a future /ru/ etc.
+			// stays excluded automatically until translated (those fallbacks are noindexed too).
 			filter: (page) =>
 				!page.includes('/python-demo') &&
-				!(page.includes(PYTHON_SDET.segment) && !page.includes(PYTHON_SDET.enLanding)),
+				(!(page.includes(PYTHON_SDET.segment) && !page.includes(PYTHON_SDET.enLanding)) ||
+					PYTHON_SDET.azReady.some((p) => page.endsWith(p))),
 		}),
 	],
 });

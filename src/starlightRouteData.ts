@@ -77,7 +77,8 @@ export const onRequest = defineRouteMiddleware((context) => {
 			path === '/az/course/' ||
 			path === '/az/python/' ||
 			path === '/en/python/' ||
-			path === PYTHON_SDET.enLanding;
+			path === PYTHON_SDET.enLanding ||
+			(path === PYTHON_SDET.azLanding && PYTHON_SDET.azReady.includes(path));
 
 		if (isHome) {
 			ld({
@@ -112,23 +113,34 @@ export const onRequest = defineRouteMiddleware((context) => {
 	}
 
 	// Starlight still builds /<non-en>/python-sdet/ fallback pages that render the EN
-	// content. Mark those noindex so search engines don't index duplicate English
-	// content under e.g. /az/ (the sitemap already omits them; noindex is the signal
-	// that actually deindexes).
-	if (route.lang !== 'en' && isPythonSdet) {
+	// content for pages not yet translated. Mark those noindex so search engines don't
+	// index duplicate English content under e.g. /az/ (the sitemap already omits them;
+	// noindex is the signal that actually deindexes). Pages listed in PYTHON_SDET.azReady
+	// have a real AZ translation, so they are NOT fallbacks — leave them indexable.
+	if (route.lang !== 'en' && isPythonSdet && !PYTHON_SDET.azReady.includes(pathname)) {
 		route.head.push({ tag: 'meta', attrs: { name: 'robots', content: 'noindex, follow' } });
 	}
 
-	// Per-locale sidebar pruning: hide the group whose content only exists in the
-	// *other* locale, so each locale's nav stays free of empty groups / cross-locale
-	// links. Exam Helper is AZ/RU-only (hidden in EN); "Python for SDETs" is EN-only
-	// (hidden everywhere else). One mechanism, one label per locale.
+	// Per-locale sidebar pruning:
+	//  - EN hides the Exam Helper group (its content is Azerbaijani/Russian-only).
+	//  - Non-EN keeps the "Python for SDETs" group but shows only the modules that
+	//    have a real AZ translation (PYTHON_SDET.azReady); the rest render as EN
+	//    fallbacks and stay hidden from the nav until they ship. Empty groups drop.
 	type Entry = (typeof route.sidebar)[number];
-	const dropLabel = route.lang === 'en' ? 'Exam Helper' : PYTHON_SDET.groupLabel;
+	const isEn = route.lang === 'en';
 	const prune = (entries: Entry[]): Entry[] =>
 		entries
-			.filter((entry) => !(entry.type === 'group' && entry.label === dropLabel))
-			.map((entry) => (entry.type === 'group' ? { ...entry, entries: prune(entry.entries) } : entry))
+			.filter((entry) => !(isEn && entry.type === 'group' && entry.label === 'Exam Helper'))
+			.map((entry) => {
+				if (entry.type !== 'group') return entry;
+				const group = { ...entry, entries: prune(entry.entries) };
+				if (!isEn && entry.label === PYTHON_SDET.groupLabel) {
+					group.entries = group.entries.filter(
+						(child) => child.type === 'link' && PYTHON_SDET.azReady.some((p) => child.href.endsWith(p))
+					);
+				}
+				return group;
+			})
 			.filter((entry) => !(entry.type === 'group' && entry.entries.length === 0));
 
 	route.sidebar = prune(route.sidebar);
