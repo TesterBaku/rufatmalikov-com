@@ -111,6 +111,7 @@ export default defineConfig({
 								{ label: '11 — Visual / Mobile / A11y', translations: { az: '11 — Vizual / Mobil / Əlçatımlılıq' }, link: '/course/module-11/' },
 								{ label: '12 — CI, Docker, reports', translations: { az: '12 — CI, Docker, hesabatlar' }, link: '/course/module-12/' },
 								{ label: '13 — Final project review', translations: { az: '13 — Yekun layihə icmalı' }, link: '/course/module-13/' },
+								{ label: '14 — Database verification', translations: { az: '14 — Verilənlər bazasının yoxlanması' }, link: '/course/module-14/' },
 							],
 						},
 					],

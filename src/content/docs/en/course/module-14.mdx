@@ -1,0 +1,241 @@
+---
+title: "Module 14: Database verification"
+description: "The senior move on top of the capstone: verify the persisted side effect. Read TestMarket Lab's database from a Playwright test with better-sqlite3 — a read-only connection, parameterized queries, and a JOIN that proves an order really saved — then see the same pattern against a Dockerized Postgres."
+---
+
+import Video from '../../../../components/course/Video.astro';
+
+You finished the capstone — so this module is the senior move that sits on top of everything you built. Every test so far trusts what the app *reports*: a `201`, a response body, a green page. This one checks what the app **persisted** — after you place an order, is there really a row in the database with the right total and the right line items? *"The API said success — but did it save correctly?"* Answering that is the maturity leap, and in Node it costs almost nothing: the database driver you need, `better-sqlite3`, is the very same one TestMarket Lab itself runs on.
+
+Keep TestMarket Lab running at `http://localhost:3000`. This module builds directly on the API calls from [Module 9](/en/course/module-9/) and the fixtures / API seeding from [Module 8](/en/course/module-8/). If SQL is new, read the [SQL basics](/en/reference/sql-basics/) reference first — this module is the test-side of the same idea.
+
+<Video title="Module 14: Database verification" />
+
+---
+
+## The side effect a `201` doesn't prove
+
+A `POST /api/orders` that returns `201` and an order body tells you the app *accepted* the request. It doesn't, by itself, tell you the order was written correctly — the right total computed, the right line items stored, nothing dropped. The response is the app's **word**; the database row is the **record**.
+
+Most of the time the public API is the right place to verify — if `GET /api/orders` returns the truth you need, use it (that's what the API tests already did). You drop down to the database for the cases the API *won't* tell you: an internal column no endpoint returns, or a persisted effect with no matching `GET`. Reading the database couples your test to the schema, so reach for it deliberately — and keep it **read-only**.
+
+**Remember:** verifying against the database proves the *persisted side effect*, not just the response. Prefer the public API when it exposes the same truth; drop to the DB for what the API hides. Either way — read to verify, don't write.
+
+---
+
+## Connecting with `better-sqlite3`
+
+TestMarket Lab stores everything in one SQLite file — `data/testmarket.db` — and reads it with **`better-sqlite3`**. Your test suite uses the *same* driver, so install it once:
+
+```bash
+npm install better-sqlite3
+```
+
+Two touches make a verification connection safe and pleasant:
+
+- **Open it read-only** with `{ readonly: true }`. A verification connection has no business writing to the app's database — read-only makes that impossible, so a stray query can never corrupt the data the app owns. Add `fileMustExist: true` so a wrong path fails loudly instead of silently making an empty database.
+- **`better-sqlite3` is synchronous** — `.get()` and `.all()` return rows directly, no `await`. That keeps database checks a couple of readable lines inside an `async` test.
+
+```js
+const Database = require('better-sqlite3');
+const path = require('path');
+
+// Point this at your TestMarket Lab clone's database file.
+const DB_PATH = path.resolve(__dirname, '../testmarket-lab/data/testmarket.db');
+
+const db = new Database(DB_PATH, { readonly: true, fileMustExist: true });
+
+const row = db
+  .prepare('SELECT id, name, stock FROM products WHERE slug = ?')
+  .get('wireless-mouse');
+console.log(row.id, row.name, row.stock);   // -> 1 Wireless Mouse 50  (on a freshly seeded DB)
+
+db.close();
+```
+
+Note the `?` placeholder and the `'wireless-mouse'` argument to `.get()` — the value goes in as a **parameter**, never pasted into the SQL string. That's the one non-negotiable habit, exactly as the [SQL basics](/en/reference/sql-basics/) reference explains.
+
+**Remember:** open the app's database **read-only** (`{ readonly: true }`) so a test can only ever read, `.prepare(...).get()` / `.all()` return rows synchronously (no `await`), and always pass values as `?` parameters.
+
+---
+
+## A `db` fixture
+
+Wrap that connection in a fixture so every test gets a fresh read-only handle and it's closed automatically — the same fixture pattern from [Module 8](/en/course/module-8/):
+
+```js
+// fixtures/db.fixture.js
+const base = require('@playwright/test');
+const Database = require('better-sqlite3');
+const path = require('path');
+
+// Point this at your TestMarket Lab clone's database file.
+const DB_PATH = path.resolve(__dirname, '../../testmarket-lab/data/testmarket.db');
+
+exports.test = base.test.extend({
+  db: async ({}, use) => {
+    const db = new Database(DB_PATH, { readonly: true, fileMustExist: true });
+    await use(db);
+    db.close();
+  },
+});
+exports.expect = base.expect;
+```
+
+A test that wants to check the database just asks for `db`, alongside the built-in `request` fixture it already knows from the API modules.
+
+**Remember:** a `db` fixture opens a read-only connection and closes it after `use` — the same setup/teardown shape as your other fixtures, so database checks drop into your existing suite with no ceremony.
+
+---
+
+## Verify an order end to end
+
+Here's the payoff, and the pattern you'll reuse everywhere: **arrange and act through the API, then assert against the database.** Place an order with the `request` fixture, then prove it persisted — the `orders` row, and its `order_items` children via a JOIN:
+
+```js
+// tests/db/order.spec.js
+const { test, expect } = require('../../fixtures/db.fixture');
+
+test('order persists to the database', async ({ request, db }) => {
+  // arrange: reseed for a clean, predictable baseline
+  await request.post('/api/reset');
+
+  // act: place an order through the API
+  const res = await request.post('/api/orders', {
+    data: { email: 'customer@test.io', items: [{ product_id: 1, quantity: 2 }] },
+  });
+  expect(res.status()).toBe(201);
+  const { id: orderId } = await res.json();
+
+  // assert: the order row was persisted with the right status and total
+  const order = db
+    .prepare('SELECT status, total FROM orders WHERE id = ?')
+    .get(orderId);
+  expect(order.status).toBe('pending');
+  expect(order.total).toBeCloseTo(59.98);   // Wireless Mouse 29.99 x 2
+
+  // assert: the line items were persisted (JOIN orders -> order_items)
+  const items = db
+    .prepare(
+      `SELECT oi.product_id, oi.quantity
+         FROM orders o
+         JOIN order_items oi ON oi.order_id = o.id
+        WHERE o.id = ?`,
+    )
+    .all(orderId);
+  expect(items).toEqual([{ product_id: 1, quantity: 2 }]);
+});
+```
+
+This uses the `request` fixture's `baseURL` (set in `playwright.config.js`, as in the capstone), so `/api/orders` resolves to `http://localhost:3000/api/orders`. `POST /api/reset` reseeds first, so the test is isolated; the order's `id` comes straight from the response, so you never guess it. The API computes and stores the total; you assert it *persisted*, not just that it was returned. The read-only `db` connection sees the order the app just committed — WAL and all — because it opens the same file the app writes to.
+
+**Remember:** the shape is **arrange/act via API → assert via DB**. A `201` says *accepted*; the `orders` row says *saved*, and the `order_items` JOIN says *saved correctly*. Verifying the children, not just the parent, is what catches a half-written order.
+
+:::note[`total` is a stored value — don't recompute it]
+`orders.total` is a column the app *wrote* at checkout, and `order_items.price` is the price *snapshotted* then. They aren't recalculated on read. Assert `total` against what you expect the app to have saved (here, `29.99 × 2`), not against a live sum of the current item rows — the same caution the [SQL basics](/en/reference/sql-basics/) reference raises. `toBeCloseTo` sidesteps floating-point noise on the money value.
+:::
+
+---
+
+## Reading what the API hides
+
+The database earns its keep when it shows you something no endpoint will. TestMarket Lab never returns a user's password (rightly) — so the only way to verify the app **hashes** credentials instead of storing them in plain text is to look:
+
+```js
+// tests/db/security.spec.js
+const { test, expect } = require('../../fixtures/db.fixture');
+
+test('password is stored hashed', async ({ db }) => {
+  const row = db
+    .prepare('SELECT password FROM users WHERE email = ?')
+    .get('customer@test.io');
+  const stored = row.password;
+
+  expect(stored).not.toBe('customer123');       // never the plain-text password
+  expect(stored.startsWith('$2')).toBe(true);    // a bcrypt hash
+  expect(stored).toHaveLength(60);               // bcrypt hashes are 60 chars
+});
+```
+
+That's a real security assertion you *cannot* make through the API, because the API — correctly — never hands the password back. This is the whole argument for database verification in one test: some truths only live in the schema.
+
+**Remember:** drop to the database for what the API deliberately withholds. "Is the password stored hashed, not plain text?" is unanswerable from the outside and one `SELECT` away from the inside.
+
+---
+
+## Keep it read-mostly
+
+Notice every test above **arranges through the API** and only **reads** the database. That's deliberate, and it's the same discipline the fixtures module taught: writes go through the app (so its rules, computed columns, and constraints all run), and the database is your *verification* layer, not a back door for setup. The read-only connection enforces it — try to `INSERT` through `db` and `better-sqlite3` throws `SqliteError: attempt to write a readonly database`. Combined with `POST /api/reset` for a clean baseline, you get isolation without ever touching the app's data by hand.
+
+**Remember:** arrange with the API, verify with the DB, and keep the verification connection read-only. Writing test data straight into the app's database skips its logic and drifts from real behavior — let the app own its writes.
+
+---
+
+## Appendix — from SQLite to production-grade databases
+
+TestMarket Lab uses SQLite because it's a single file with zero setup — perfect for learning. Real jobs run **client-server** databases: Postgres, MySQL, SQL Server. The reassuring part is how little changes. The pattern is identical — **connect → parameterized query → assert → close** — and the SQL you wrote (`SELECT`, `WHERE`, `JOIN`) is standard. Only the driver and the connection setup differ.
+
+| | SQLite (this course) | Postgres | MySQL |
+|---|---|---|---|
+| Node driver | `better-sqlite3` | `pg` | `mysql2` |
+| Connect with | a file path | a connection string (host, port, user, password, db) | same |
+| Placeholder | `?` | `$1`, `$2`, … | `?` |
+| Calls | synchronous | `async` (`await`) | `async` (`await`) |
+
+Here is the **order-row check from above**, rewritten against Postgres with `pg` (`npm install pg`). The SQL and the logic carry over unchanged — only the driver, the numbered placeholder (`$1` not `?`), the `await`, and one return-type quirk differ:
+
+```js
+const { Client } = require('pg');
+
+// Credentials come from the environment, never hard-coded.
+const client = new Client({ connectionString: process.env.DATABASE_URL });
+// e.g. postgresql://testuser:testpass@localhost:5432/testmarket
+await client.connect();
+
+const { rows } = await client.query(
+  'SELECT status, total FROM orders WHERE id = $1',   // $1, not ?
+  [orderId],
+);
+await client.end();
+
+expect(rows[0].status).toBe('pending');
+expect(parseFloat(rows[0].total)).toBeCloseTo(59.98);   // pg returns NUMERIC as a string
+```
+
+Two small gotchas the switch introduces: placeholders are **numbered** (`$1`, `$2`) instead of `?`, and `pg` returns a `NUMERIC` column as a **string** (to avoid silent float rounding), so wrap it in `parseFloat(...)` before comparing.
+
+Where does the Postgres come from? A **container** — one `docker run` locally, and a **service container** in CI. Both are covered in the [Docker basics](/en/reference/docker/) reference: it shows how to install Docker, the exact `docker run postgres` command, a `docker-compose.yml`, and the GitHub Actions `services: postgres:` block that gives every test run its own fresh database. Point `DATABASE_URL` at that container and the check above runs unchanged.
+
+**Remember:** production swaps the driver and the connection string, not the *idea*. `better-sqlite3 → pg`, file path → connection string, `?` → `$1` — the connect/parameterize/assert/close pattern and your SQL carry over intact. When a job says "SQL / DB testing," this is it, and you already know it.
+
+---
+
+## Exercises
+
+Work in your capstone test project with TestMarket Lab running. Point `DB_PATH` at your clone's `data/testmarket.db`.
+
+### Exercise 1 — A read-only `db` fixture (10 min)
+
+Add the `db` fixture to `fixtures/db.fixture.js`. Write a test that reads `Wireless Mouse` by its slug (`wireless-mouse`) and asserts `stock === 50`. Then prove it's read-only: try an `INSERT` through `db` and confirm it throws `SqliteError: attempt to write a readonly database`.
+
+### Exercise 2 — Verify an order persisted (15 min)
+
+Reproduce the `order persists to the database` test: `POST` an order (product 1, quantity 2), then assert the `orders` row has `status === 'pending'` and `total` close to `59.98`, and that the JOIN to `order_items` yields exactly `[{ product_id: 1, quantity: 2 }]`.
+
+### Exercise 3 — Reach what the API hides (10 min)
+
+Write the `password is stored hashed` test: query `users` for `customer@test.io` and assert the stored password is a bcrypt hash (`startsWith('$2')`, length 60) and is *not* the plain-text `customer123`.
+
+### Exercise 4 — Count the line items (10 min)
+
+`POST` an order with two different products, then use a single `SELECT COUNT(*) … WHERE order_id = ?` against `order_items` to assert exactly two lines were stored. Compare it with fetching the rows and counting in JS — which reads better?
+
+### Challenge — Take it to Postgres
+
+Follow the [Docker basics](/en/reference/docker/) reference to start a Postgres container, set `DATABASE_URL`, and run the appendix's `pg` check against it. Confirm the only changes from your SQLite test are the connection, the `?` → `$1` placeholder, and wrapping the total in `parseFloat`.
+
+---
+
+## Where this leaves you
+
+You can now verify the layer the UI and the API sit on top of: the persisted truth. That's a skill most automation courses skip and most SDET interviews probe — "how do you know it actually saved?" You answer with a read-only connection, a parameterized query, and a JOIN — in SQLite today, in Postgres on the job, with the same four steps. Bolt this onto your capstone suite and you've covered the full stack of a test: response, UI, *and* record.
