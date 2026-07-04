@@ -1,0 +1,424 @@
+---
+title: "Modul 2: Fixtures və parametrize"
+description: "Quraşdırmanı təkrarlamağı dayandır: pytest fixture-ləri (yield söküşü və scope ilə), onları bölüşmək üçün conftest.py, bir testi çoxlu giriş üzərində işlətmək üçün @pytest.mark.parametrize və marker-lər — hamısı TestMarket Lab-a qarşı."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+
+[Modul 1](/az/python-sdet/module-1/)-də hər test eyni sətirləri təkrarlayırdı —
+`BASE_URL`, təzə bir `requests.get(...)`. Məhz o kopyala-yapışdırı **fixture-lər** aradan
+qaldırır. Bu modulda quraşdırmanı fixture-lərə ayıracaq, onlara söküş və düzgün **scope**
+verəcək, **`conftest.py`** ilə fayllar arasında bölüşəcək, **`@pytest.mark.parametrize`** ilə bir
+testi çoxlu giriş üzərində işlədəcək və testləri **marker-lərlə** etiketləyəcəksən. Bu dörd
+xüsusiyyət bir yığın test funksiyasını saxlanıla bilən dəstə çevirən şeydir.
+
+TestMarket Lab-ı `http://localhost:3000`-də işlək və `.venv`-ini aktiv saxla.
+
+<Video title="Modul 2: Fixtures və parametrize" />
+
+<Deck href="/python-sdet/decks/m2-fixtures-az/" title="Modul 2: fixtures və parametrize-ə qısa baxış — slayd təlimatı" />
+
+---
+
+## Problem: təkrarlanan quraşdırma
+
+Modul 1-dən iki testə bax — ilk iki sətir eynidir və hər test eyni base URL-i yenidən qurur:
+
+```python
+BASE_URL = "http://localhost:3000"
+
+def test_products():
+    products = requests.get(f"{BASE_URL}/api/products").json()
+    assert len(products) > 0
+
+def test_electronics():
+    products = requests.get(f"{BASE_URL}/api/products", params={"category": "electronics"}).json()
+    assert len(products) > 0
+```
+
+URL dəyişsə, ya da hər testin təmiz verilənlər bazasından başlamasını istəsən, hər testi
+redaktə etməli olardın. Fixture-lər sənə testlərin ehtiyac duyduğunu hazırlamaq üçün **bir yer**
+verir.
+
+**Yadda saxla:** bir neçə test eyni quraşdırmanı (base URL, klient, təmiz verilənlər bazası)
+təkrarlayırsa, bu, bir **fixture** çıxarmaq üçün siqnaldır.
+
+---
+
+## İlk fixture-in
+
+Fixture `@pytest.fixture` ilə dekorasiya edilmiş funksiyadır. Test onun adını testin parametr
+siyahısına qoyaraq onu **istəyir** — pytest fixture-i işlədir və onun qaytardığı dəyəri ötürür.
+
+```python
+# tests/test_fixtures_intro.py
+import pytest
+import requests
+
+
+@pytest.fixture
+def base_url():
+    return "http://localhost:3000"
+
+
+def test_products(base_url):
+    response = requests.get(f"{base_url}/api/products")
+    assert response.status_code == 200
+```
+
+`base_url` artıq qlobal deyil — `test_products` onu parametr kimi elan edir və pytest onu
+"inyeksiya edir". Bu, **dependency injection**-dir (asılılıq inyeksiyası): test nəyə ehtiyacı
+olduğunu deyir, pytest onu təmin edir.
+
+**Yadda saxla:** `@pytest.fixture` funksiyanı təkrar işlədilə bilən quraşdırmaya çevirir; test onu
+parametr kimi adlandıraraq alır. pytest adı uyğunlaşdırır və qaytarılan dəyəri inyeksiya edir —
+əllə çağırış yoxdur.
+
+---
+
+## Quraşdırma, söküş və `yield`
+
+Real quraşdırma çox vaxt sonradan təmizləmə tələb edir. `yield` edən fixture `yield`-dən
+**əvvəlki** kodu quraşdırma kimi işlədir, dəyəri testə ötürür, sonra `yield`-dən **sonrakı** kodu
+söküş kimi işlədir — test uğursuz olsa belə.
+
+```python
+# tests/test_session_fixture.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+@pytest.fixture
+def api():
+    # setup: a Session reuses the TCP connection across requests
+    session = requests.Session()
+    yield session          # the test runs here
+    # teardown: always runs, even if the test raised
+    session.close()
+
+
+def test_products_with_session(api):
+    response = api.get(f"{BASE_URL}/api/products")
+    assert response.status_code == 200
+```
+
+`yield`-dən əvvəlki hər şey hazırlıqdır; sonrakı hər şey təmizləmədir. `try/finally` lazım
+deyil — pytest söküşün işlədiyini təmin edir.
+
+**Yadda saxla:** `yield` fixture-i bir funksiyada əvvəl-quraşdırma / sonra-söküşdür; söküş test
+uğursuz olanda belə işləyir, ona görə təmizləmə üçün `try/finally`-ni əvəz edir.
+
+---
+
+## Fixture scope: bahalı quraşdırmanı təkrarlama
+
+Standart olaraq fixture **test başına bir dəfə** işləyir (`function` scope). Bölüşməsi təhlükəsiz
+olan quraşdırma üçün scope-u genişləndir ki, modul başına bir dəfə və ya bütün sessiya başına bir
+dəfə işləsin:
+
+```python
+# tests/test_scope.py
+import pytest
+import requests
+
+
+@pytest.fixture(scope="session")
+def base_url():
+    # built once for the entire test run
+    return "http://localhost:3000"
+
+
+@pytest.fixture(scope="module")
+def all_products(base_url):
+    # fetched once per test file, reused by every test in it
+    return requests.get(f"{base_url}/api/products").json()
+
+
+def test_has_products(all_products):
+    assert len(all_products) > 0
+
+
+def test_products_have_names(all_products):
+    assert all("name" in p for p in all_products)
+```
+
+| Scope | İşləyir |
+|---|---|
+| `function` (standart) | test başına bir dəfə |
+| `class` | test sinifi başına bir dəfə |
+| `module` | `.py` faylı başına bir dəfə |
+| `session` | bütün `pytest` işə salışı başına bir dəfə |
+
+Düzgün olan **ən dar** scope-u işlət. Daha geniş scope daha sürətlidir, amma testlərin vəziyyəti
+bölüşməsi deməkdir — `base_url` kimi yalnız-oxu verilən üçün yaxşıdır, testin dəyişdirdiyi hər şey
+üçün riskli.
+
+**Yadda saxla:** fixture scope (`function`→`class`→`module`→`session`) təcridi sürətə dəyişir.
+`function`-a default olaraq get; yalnız yalnız-oxu və ya bölüşməsi təhlükəsiz quraşdırma üçün
+genişləndir.
+
+---
+
+## `conftest.py`: fixture-ləri fayllar arasında bölüş
+
+**Hər** test faylında istədiyin fixture-lər `conftest.py` adlı xüsusi fayla gedir. pytest onu
+avtomatik yükləyir — import lazım deyil — həmin qovluqdakı və altındakı hər test üçün.
+
+```python
+# tests/conftest.py
+import pytest
+import requests
+
+
+@pytest.fixture(scope="session")
+def base_url():
+    return "http://localhost:3000"
+
+
+@pytest.fixture
+def api(base_url):
+    session = requests.Session()
+    yield session
+    session.close()
+
+
+@pytest.fixture
+def reset_db(base_url):
+    """Reseed TestMarket Lab before the test, so it starts from a known state."""
+    requests.post(f"{base_url}/api/reset")
+    yield
+    # No teardown needed: reseeding *before* each test is enough — the next test
+    # that wants a clean slate just requests reset_db and reseeds itself. Adding a
+    # second reset here would only double the work.
+```
+
+İndi `tests/`-dəki hər test `base_url`, `api` və ya `reset_db`-ni birbaşa istəyə bilər:
+
+```python
+# tests/test_uses_conftest.py
+def test_clean_db_has_seed_products(reset_db, base_url, api):
+    products = api.get(f"{base_url}/api/products").json()
+    assert len(products) == 15   # the seed always has 15 products
+```
+
+`reset_db` SDET super-gücüdür: hər test **məlum** vəziyyətdən başlayır, ona görə testlər
+bir-birini korlaya bilmir. (Verilən quraşdırma/söküşünə Modul 5-də daha dərindən gedirik.)
+
+**Yadda saxla:** `conftest.py` fayllar arasında bölüşülən fixture-ləri saxlayır — pytest onu
+avtomatik tapır, import yoxdur. Hər testdən əvvəl yenidən səpən `reset_db` fixture-i hər testə
+məlum başlanğıc vəziyyəti verir.
+
+---
+
+## `@pytest.mark.parametrize`: bir test, çoxlu giriş
+
+Eyni test məntiqi bir neçə giriş üzərində işləməlidirsə, funksiyanı kopyalama — onu parametrizə
+et. pytest testi sətir başına bir dəfə işlədir və hər birini ayrı nəticə kimi bildirir.
+
+```python
+# tests/test_parametrize.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+@pytest.mark.parametrize("category", ["electronics", "accessories", "furniture"])
+def test_category_filter(category):
+    response = requests.get(f"{BASE_URL}/api/products", params={"category": category})
+    assert response.status_code == 200
+    products = response.json()
+    assert len(products) > 0
+    assert all(p["category"] == category for p in products)
+```
+
+Onu işlədəndə üç müstəqil test göstərir:
+
+```
+test_parametrize.py::test_category_filter[electronics] PASSED
+test_parametrize.py::test_category_filter[accessories] PASSED
+test_parametrize.py::test_category_filter[furniture] PASSED
+```
+
+Sətir başına **çoxlu** arqument parametrizə edə bilərsən — giriş/gözlənilən-çıxış cədvəlləri üçün
+mükəmməl, API testinin əsası:
+
+```python
+# tests/test_login_states.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+@pytest.mark.parametrize(
+    "email, password, expected_status",
+    [
+        ("customer@test.io", "customer123", 200),   # valid login
+        ("customer@test.io", "wrongpass", 401),      # bad password
+        ("", "", 400),                                # missing fields
+    ],
+)
+def test_login_states(email, password, expected_status):
+    response = requests.post(
+        f"{BASE_URL}/api/auth/login", json={"email": email, "password": password}
+    )
+    assert response.status_code == expected_status
+```
+
+Bir funksiya indi həm uğurlu yolu, **həm də** iki uğursuzluq halını əhatə edir — dördüncü hal isə
+sadəcə bir sətir də.
+
+**Yadda saxla:** `@pytest.mark.parametrize("a, b", [(...), (...)])` testi sətir başına bir dəfə
+işlədir, hər biri ayrı bildirilir (`test[case]`). Bu, funksiyanı təkrarlamadan uğurlu yol + kənar
+halları əhatə etməyin təmiz yoludur.
+
+---
+
+## Marker-lər: testləri etiketlə və seç
+
+**Marker** testi elə etiketləyir ki, alt-dəsti işlədə və ya necə işlədiyini dəyişə biləsən. Onu
+`@pytest.mark.<name>` ilə tətbiq edirsən. pytest-in daxili marker-ləri var və öz marker-lərini də
+qeydiyyatdan keçirə bilərsən.
+
+### Daxili: `skip` və `xfail`
+
+```python
+# tests/test_markers.py
+import pytest
+
+
+@pytest.mark.skip(reason="endpoint not implemented yet")
+def test_future_feature():
+    ...
+
+
+@pytest.mark.xfail(reason="known bug: returns 200 instead of 404")
+def test_known_bug():
+    assert 1 == 2   # expected to fail; won't break the suite
+```
+
+### Qruplaşdırma üçün xüsusi marker-lər
+
+Xüsusi marker-ləri `pytest.ini`-də qeydiyyatdan keçir ki, pytest naməlum adlar barədə
+xəbərdarlıq etməsin:
+
+```ini
+# pytest.ini
+[pytest]
+testpaths = tests
+markers =
+    smoke: a fast, critical subset to run first
+    api: tests that hit the REST API
+```
+
+Testləri etiketlə və `-m` ilə seç:
+
+```python
+@pytest.mark.smoke
+@pytest.mark.api
+def test_products_up():
+    ...
+```
+
+```bash
+pytest -m smoke            # only smoke tests
+pytest -m "api and not smoke"
+```
+
+**Yadda saxla:** `@pytest.mark.skip`/`xfail` testi buraxır və ya uğursuzluğuna dözür; xüsusi
+marker-lər (`pytest.ini`-də qeydiyyatdan keçmiş) testləri etiketləyir ki, `-m "smoke"` yalnız o
+alt-dəsti işlətsin. `-m` marker-ə görə seçir, `-k` ada görə seçir.
+
+---
+
+## TestMarket Lab-a qarşı birləşdirmək
+
+Bölüşülən `conftest.py` (yuxarıdakı), parametrize və təmiz-verilənlər-bazası fixture-i işlədən
+kiçik, real bir fayl:
+
+```python
+# tests/test_products_suite.py
+import pytest
+
+
+@pytest.mark.parametrize(
+    "category, present",
+    [
+        ("electronics", True),
+        ("accessories", True),
+        ("furniture", True),
+        ("nonexistent", False),   # filter that matches nothing → empty list
+    ],
+)
+def test_category_presence(reset_db, base_url, api, category, present):
+    products = api.get(f"{base_url}/api/products", params={"category": category}).json()
+    assert (len(products) > 0) is present
+    assert all(p["category"] == category for p in products)
+
+
+def test_reset_restores_seed_count(reset_db, base_url, api):
+    # reset_db reseeded first, so the count is the known seed total
+    products = api.get(f"{base_url}/api/products").json()
+    assert len(products) == 15
+```
+
+`reset_db`, `base_url` və `api` hamısı import olmadan `conftest.py`-dən gəlir; `category` və
+`present` parametrize-dən gəlir. Diqqət et ki, boş-filtr halı (`nonexistent`) təmiz keçir, çünki
+boş list üzərində `all(...)` `True`-dur.
+
+**Yadda saxla:** fixture-lər (bölüşülən quraşdırma) + parametrize (giriş cədvəlləri) birləşir — bir
+test eyni parametr siyahısında həm inyeksiya edilmiş quraşdırmanı, həm də sətir başına verilən ala
+bilər. O birləşmə əksər real API test dəstlərinin formasıdır.
+
+---
+
+## Tapşırıqlar
+
+TestMarket Lab işlək olarkən `python-sdet` layihəndə işlə. Bir `tests/conftest.py` və aşağıdakı
+test fayllarını qur; `pytest -v` ilə işlət.
+
+### Tapşırıq 1 — `base_url` fixture-i (5 dəq)
+
+Sabit kodlanmış `BASE_URL`-i Modul 1 testlərindən `conftest.py`-də `session`-scope-lu `base_url`
+fixture-inə köçür. İki mövcud testi qlobal əvəzinə onu parametr kimi istəyəcək şəkildə yenilə.
+Hələ də keçdiyini təsdiqlə.
+
+### Tapşırıq 2 — Söküşlü `api` sessiya fixture-i (10 dəq)
+
+`requests.Session()` yield edən və sonra bağlayan bir `api` fixture-i əlavə et. Onu iki sorğu edən
+bir testdə işlət (məsələn, məhsulları siyahıla, sonra id ilə birini gətir) və hər ikisinin bir
+sessiya üzərində işlədiyini təsdiqlə.
+
+### Tapşırıq 3 — `reset_db` fixture-i (10 dəq)
+
+yield-dən əvvəl `/api/reset`-ə `POST` edən bir `reset_db` fixture-i əlavə et. Belə bir test yaz:
+`POST /api/products` ilə bir məhsul əlavə et, sonra **ikinci** test məhsul sayının 15-ə qayıtdığını
+assert etsin — `reset_db`-nin onları təcrid etdiyini sübut edərək. (Sıradan-asılı olmama məsələdir.)
+
+### Tapşırıq 4 — Login vəziyyətlərini parametrizə et (10 dəq)
+
+Bunları əhatə edən bir parametrizə edilmiş test yaz: düzgün login → 200, səhv parol → 401, çatışmayan
+sahələr → 400 və naməlum email → 401. Hər hal `(email, password, expected_status)` sətridir.
+
+### Tapşırıq 5 — Marker-lər (10 dəq)
+
+`pytest.ini`-də `smoke` və `api` marker-lərini qeydiyyatdan keçir. Ən sürətli, ən kritik testini
+`@pytest.mark.smoke` ilə etiketlə. `pytest -m smoke` işlət və yalnız onun işlədiyini təsdiqlə.
+Sonra hazırda yalan olan bir şeyi assert edən testi `xfail` et və dəstin hələ də yaşıl bildirdiyini
+təsdiqlə.
+
+### Bonus — `ids` ilə `parametrize`
+
+Login parametrize-inə `ids=` arqumenti ilə oxunaqlı hal adları ver — sətir başına bir id, beləcə
+4-hallı test 4 id tələb edir
+(məsələn `ids=["valid", "bad-password", "missing-fields", "unknown-email"]`), belə ki çıxış xam
+dəyərlər əvəzinə `test_login_states[valid]` oxunsun. `pytest -v` yoxla.
+
+---
+
+**Modul 3**-də **`requests` ilə API testinə** tam girişirik — bütün `/api/*` səthində
+GET/POST/PUT/DELETE, status kodları, JSON gövdələri, sorğu parametrləri və başlıqlar.
