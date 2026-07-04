@@ -104,8 +104,8 @@ def test_get_with_query_params():
 :::note[Yazma nümunələri Modul 2 fixture-lərini işlədir]
 Bundan sonra **yazma** nümunələri (`POST`/`PUT`/`DELETE`) [Modul 2](/az/python-sdet/module-2/)-də
 qurduğun `conftest.py`-dən `reset_db`, `base_url` və `api`-ni istəyir. `reset_db` əvvəlcə yenidən
-səpir, ona görə hər test 15-məhsullu seed-dən başlayır və **təkrar işə salışlar yaşıl qalır** —
-onsuz ikinci işə salış adı artıq mövcud olan bir məhsul əlavə etməyə cəhd edərdi və server onu rədd
+səpir, ona görə hər test 15-məhsullu seed-dən başlayır və **təkrar icralar yaşıl qalır** —
+onsuz ikinci icra adı artıq mövcud olan bir məhsul əlavə etməyə cəhd edərdi və server onu rədd
 edərdi. (Yuxarıdakı yalnız-oxu `GET` nümunələri vəziyyəti dəyişmir, ona görə sadə qalır.)
 :::
 
@@ -332,7 +332,7 @@ sistemi tapdığı kimi qoyur. Məlum başlanğıc üçün `reset_db`-yə söyk�
 
 TestMarket Lab işlək olarkən, Modul 2-dəki `conftest.py`-ni yenidən işlədərək `python-sdet`
 layihəndə işlə. `pytest -v` ilə işlət. **Yazma** tapşırıqları (2–4) üçün `reset_db` istə ki, hər
-təkrar işə salış təmiz seed-dən başlasın.
+təkrar icra təmiz seed-dən başlasın.
 
 ### Tapşırıq 1 — Bir məhsulu oxu (5 dəq)
 
