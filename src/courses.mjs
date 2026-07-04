@@ -19,7 +19,7 @@ export const PYTHON_SDET_MODULES = [
 	{ slug: 'module-2', label: '2 — Fixtures & parametrize', az: '2 — Fixtures və parametrize' },
 	{ slug: 'module-3', label: '3 — API testing with requests', az: '3 — requests ilə API testi' },
 	{ slug: 'module-4', label: '4 — Negative & validation testing', az: '4 — Neqativ və validasiya testi' },
-	{ slug: 'module-5', label: '5 — Test data setup & teardown', az: null },
+	{ slug: 'module-5', label: '5 — Test data setup & teardown', az: '5 — Test datası quraşdırma və söküş' },
 	{ slug: 'module-6', label: '6 — UI automation with Playwright', az: null },
 	{ slug: 'module-7', label: '7 — Page Object Model', az: null },
 	{ slug: 'module-8', label: '8 — Data-driven tests', az: null },
