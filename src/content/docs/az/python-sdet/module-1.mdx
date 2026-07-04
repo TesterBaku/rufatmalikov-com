@@ -1,0 +1,347 @@
+---
+title: "Modul 1: pytest əsasları"
+description: "pytest testləri necə aşkarlayıb işlədir, niyə sadə assert oxunaqlı uğursuzluqlar verir, -k/-x/-v ilə istədiyin testləri dəqiq işlətmək, və pytest.raises ilə pytest.approx — TestMarket Lab-a əsaslanır."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+
+[Modul 0](/az/python-sdet/module-0/)-da bir testi keçirtdin. İndi isə **pytest**-in özünü
+anlayacağıq: testlərini necə tapır, niyə sadə bir `assert` kifayətdir, istədiyin testləri
+dəqiq necə işlətmək və daim müraciət edəcəyin iki köməkçi — `pytest.raises` və `pytest.approx`.
+Buradakı hər şey TestMarket Lab-a əsaslanır, ona görə artıq əsl test işi kimi hiss olunur.
+
+Tətbiq əsaslı nümunələr üçün TestMarket Lab-ı `http://localhost:3000`-də işlək (Modul 0-dan) və
+`.venv`-ini aktiv saxla.
+
+<Video title="Modul 1: pytest əsasları" />
+
+<Deck href="/python-sdet/decks/m1-pytest-az/" title="Modul 1: pytest-ə qısa baxış — slayd təlimatı" />
+
+---
+
+## Test sadəcə bir funksiyadır
+
+pytest testi adı `test_` ilə başlayan sadə bir Python funksiyasıdır. Onun içində `assert` ilə bir
+iddia edirsən. İddia doğrudursa, test keçir; yoxsa, uğursuz olur.
+
+```python
+# tests/test_basics.py
+def test_addition():
+    assert 1 + 1 == 2
+
+
+def test_string_upper():
+    name = "playwright"
+    assert name.upper() == "PLAYWRIGHT"
+```
+
+İnherit ediləcək siniflər yoxdur, yadda saxlanacaq xüsusi assert metodları yoxdur — sadəcə
+funksiyalar və `assert`. Bu sadəlik pytest-in SDET standartı olmasının böyük səbəbidir.
+
+**Yadda saxla:** pytest testi `test_*` adlı funksiyadır ki, `assert` ilə bir iddia edir — şablon
+kod yoxdur, baza sinif yoxdur.
+
+---
+
+## pytest testləri necə aşkarlayır
+
+`pytest` işlədəndə, o, qovluğu gəzərək sadə adlandırma qaydaları ilə testləri axtarır:
+
+| Növ | Qayda |
+|---|---|
+| **Fayllar** | `test_*.py` və ya `*_test.py` |
+| **Funksiyalar** | `test_` ilə başlayır |
+| **Siniflər** (opsional qruplaşdırma) | `Test` ilə başlayır (və `__init__`-i olmur) |
+
+```python
+# tests/test_discovery_demo.py
+
+def test_this_runs():        # discovered: starts with test_
+    assert True
+
+def helper_not_a_test():     # ignored: no test_ prefix
+    return 42
+
+class TestProducts:          # discovered: class starts with Test
+    def test_inside_a_class(self):
+        assert helper_not_a_test() == 42
+```
+
+Məhz buna görə Modul 0-dakı smoke testi `test_products_endpoint_is_up` adlı funksiya ilə
+`test_smoke.py` olmalı idi — şablondan kənar hər şey səssizcə buraxılır, bu da ən çox rast
+gəlinən "niyə heç bir test işləmədi?" tələsidir.
+
+**Yadda saxla:** fayllar `test_*.py`/`*_test.py`, funksiyalar `test_*`, siniflər `Test*`.
+Şablondan kənar adlar səssizcə buraxılır — bir test "işləmirsə", əvvəlcə adı yoxla.
+
+---
+
+## Niyə sadə `assert` kifayətdir
+
+Bəzi çərçivələrdə `assertEqual(a, b)` və ya `assertTrue(x)` yazırsan. pytest isə sadə `assert`
+ifadəsini elə yenidən yazır ki, **uğursuz olduqda hər iki tərəfi sənə göstərsin**. Uğursuzluğun
+necə göründüyünə bax:
+
+```python
+# tests/test_failure_demo.py
+def test_intentional_failure():
+    expected = 5
+    actual = 2 + 2
+    assert actual == expected
+```
+
+Onu işlədəndə sadəcə "assertion failed" yox, dəyərləri çap edir:
+
+```
+    def test_intentional_failure():
+        expected = 5
+        actual = 2 + 2
+>       assert actual == expected
+E       assert 4 == 5
+
+tests/test_failure_demo.py:5: AssertionError
+```
+
+Problemin `4 == 5` olduğunu dərhal görürsən. Əlavə kontekst üçün ifadədən sonra göstərilən bir
+mesaj əlavə edə bilərsən:
+
+```python
+assert actual == expected, f"got {actual}, expected {expected}"
+```
+
+**Yadda saxla:** pytest-in yenidən yazdığı `assert` uğursuzluqda hər iki tərəfi göstərir
+(`assert 4 == 5`), ona görə xüsusi assert metodlarına nadir hallarda ehtiyac olur. Yalnız əlavə
+kontekst üçün `, "mesaj"` əlavə et.
+
+---
+
+## Ən çox işlədəcəyin assert-lər
+
+API testlərinin dolu olduğu yoxlama növləri ilə qısa tur:
+
+```python
+# tests/test_assert_styles.py
+
+def test_equality():
+    assert 2 + 2 == 4
+
+def test_membership():
+    roles = ["customer", "admin"]
+    assert "admin" in roles
+    assert "guest" not in roles
+
+def test_truthiness():
+    products = [1, 2, 3]
+    assert products            # non-empty list is truthy
+    assert not []              # empty list is falsy
+
+def test_comparisons():
+    price = 29.99
+    assert price > 0
+    assert 0 < price < 1000
+```
+
+**Yadda saxla:** Python-un öz operatorlarına söykən — `==`, `in` / `not in`, truthiness (`assert
+products`) və zəncirvari müqayisələr (`0 < price < 1000`). pytest onların hamısını aydın bildirir.
+
+---
+
+## İstisna gözləmək: `pytest.raises`
+
+Bəzən *düzgün* davranış xəta atmaqdır. Bunu `pytest.raises` ilə kontekst meneceri kimi assert
+edirsən — test yalnız blok gözlənilən istisna tipini atarsa keçir:
+
+```python
+# tests/test_exceptions.py
+import pytest
+
+
+def test_bad_int_conversion_raises():
+    with pytest.raises(ValueError):
+        int("not a number")
+
+
+def test_can_inspect_the_error_message():
+    with pytest.raises(ValueError) as exc_info:
+        int("nope")
+    assert "invalid literal" in str(exc_info.value)
+```
+
+Blok *atmasa*, test uğursuz olur — bu da yararsız girişin rədd edildiyini yoxlayanda istədiyin
+şeydir.
+
+**Yadda saxla:** `with pytest.raises(ExceptionType):` blokun həmin xətanı atdığını assert edir;
+mesaja assert etmək üçün onu `as exc_info` ilə tut. Atma yoxdursa = uğursuz test.
+
+---
+
+## Float-ları müqayisə: `pytest.approx`
+
+Floating-point riyaziyyatı dəqiq deyil, ona görə Python-da `0.1 + 0.2 == 0.3` `False`-dur.
+Qiymətlər və cəmlər float-dur, ona görə onları `pytest.approx` ilə müqayisə et:
+
+```python
+# tests/test_floats.py
+import pytest
+
+
+def test_float_math_needs_approx():
+    assert 0.1 + 0.2 == pytest.approx(0.3)   # passes
+    # assert 0.1 + 0.2 == 0.3                 # would FAIL
+
+
+def test_order_total():
+    # 29.99 + 89.99 + 24.99
+    assert 29.99 + 89.99 + 24.99 == pytest.approx(144.97)
+```
+
+**Yadda saxla:** hesablanmış float-ları heç vaxt `==` ilə müqayisə etmə; qiymətlər, cəmlər və
+istənilən hesab nəticəsi üçün `== pytest.approx(value)` işlət.
+
+---
+
+## İstədiyin testləri dəqiq işlətmək
+
+`pytest` standart olaraq hər şeyi işlədir, amma daim *daha az* işlətmək istəyəcəksən. Gündəlik
+əhəmiyyət daşıyan bayraqlar:
+
+```bash
+pytest                       # run all tests
+pytest -v                    # verbose: one line per test with PASSED/FAILED
+pytest -q                    # quiet: compact output
+pytest tests/test_basics.py  # just one file
+pytest tests/test_basics.py::test_addition   # one specific test
+pytest -x                    # stop at the first failure
+pytest -k "product"          # only tests whose name matches the expression
+```
+
+`-k` substring ifadəsi qəbul edir və `and` / `or` / `not`-u dəstəkləyir:
+
+```bash
+pytest -k "product and not slow"   # names containing 'product' but not 'slow'
+pytest -k "login or register"
+```
+
+Tipik debaq dövrü `pytest -x -k "the_thing_im_fixing"`-dir — ilk uğursuzluqda dayan və yalnız
+maraqlandığın testləri nəzərə al.
+
+**Yadda saxla:** `-v` (verbose), `-q` (quiet), `-x` (ilk uğursuzluqda dayan), `-k "expr"` (ada görə
+süz, `and`/`or`/`not`-u dəstəkləyir) və bir testi hədəfləmək üçün `file::test`. `pytest -x -k …`
+gündəlik debaq dövrüdür.
+
+---
+
+## TestMarket Lab-a qarşı birləşdirmək
+
+Bu testlər real tətbiqə dəyir — TestMarket Lab-ın işlək olduğundan əmin ol. Onlar qəsdən kiçikdir;
+Modul 3 API testinə dərindən gedir. Birincisi Modul 0-dakı `/api/products` smoke yoxlamasını təkrar
+edir — API test faylının yuxarısında saxlamağa əlverişli bir sağlamlıq yoxlaması.
+
+```python
+# tests/test_products_api.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_products_returns_a_nonempty_list():
+    response = requests.get(f"{BASE_URL}/api/products")
+    assert response.status_code == 200
+    products = response.json()
+    assert isinstance(products, list)
+    assert len(products) > 0
+
+
+def test_each_product_has_core_fields():
+    products = requests.get(f"{BASE_URL}/api/products").json()
+    assert products                      # guard: an empty list would pass the loop vacuously
+    for product in products:
+        assert "id" in product
+        assert "name" in product
+        assert "price" in product
+
+
+def test_category_filter_returns_only_that_category():
+    response = requests.get(
+        f"{BASE_URL}/api/products", params={"category": "electronics"}
+    )
+    assert response.status_code == 200
+    products = response.json()
+    assert len(products) > 0
+    assert all(p["category"] == "electronics" for p in products)
+```
+
+Üzərində işləyərkən yalnız bu faylı işlət:
+
+```bash
+pytest tests/test_products_api.py -v
+```
+
+```
+tests/test_products_api.py::test_products_returns_a_nonempty_list PASSED
+tests/test_products_api.py::test_each_product_has_core_fields PASSED
+tests/test_products_api.py::test_category_filter_returns_only_that_category PASSED
+```
+
+Diqqət et ki, `requests.get(url, params={...})` sorğu sətrini (`?category=electronics`) sənin üçün
+qurur — əllə sətir birləşdirmə yoxdur.
+
+**Yadda saxla:** əsl API testləri hələ də sadəcə `assert`-li `test_*` funksiyalarıdır — **status**-u
+və **gövdə formasını** (list, düzgün sahələr, filtrə uyğun hər element) assert et.
+`requests.get(url, params={...})` sorğu sətrini sənin üçün qurur.
+
+---
+
+## Tapşırıqlar
+
+TestMarket Lab işlək olarkən `python-sdet` layihəndə işlə. Faylları `tests/` altında əlavə et və
+onları `pytest -v` ilə işlət.
+
+### Tapşırıq 1 — Aşkarlama qaydaları (5 dəq)
+
+`tests/test_discovery.py` yaz: **işləyən** və keçən bir funksiya, pytest-in **buraxdığı** bir köməkçi
+funksiya (səhv ad) və `Test` prefiksli sinifin içində qruplaşdırılmış bir test. `pytest
+tests/test_discovery.py -v` işlət və yalnız iki əsl testin göründüyünü təsdiqlə.
+
+### Tapşırıq 2 — Oxunaqlı uğursuzluqlar (5 dəq)
+
+*Uğursuz olmasını gözlədiyin* bir test yaz (məsələn `assert 2 + 2 == 5`). Onu işlət və çıxışı oxu —
+pytest-in hər iki tərəfi göstərdiyini təsdiqlə (`assert 4 == 5`). Sonra bir uğursuzluq mesajı əlavə et
+və harada göründüyünü görmək üçün yenidən işlət. Nəhayət, assert-i düzəlt ki, keçsin.
+
+### Tapşırıq 3 — `raises` və `approx` (10 dəq)
+
+`tests/test_helpers.py`-də:
+- `int("abc")`-nin `ValueError` atdığını və mesajın `"invalid literal"` daxil etdiyini assert et.
+- `0.1 + 0.1 + 0.1 == pytest.approx(0.3)` olduğunu assert et (və sadə `== 0.3`-ün uğursuz olacağını təsdiqlə).
+- Üç qiymətin `19.99 + 4.99 + 49.99` `pytest.approx(74.97)`-yə bərabər olduğunu assert et.
+
+### Tapşırıq 4 — İstədiyini dəqiq işlət (5 dəq)
+
+Bir neçə test faylı olarkən filtrləri məşq et:
+- Bir testi `file::test` yolu ilə işlət.
+- Yalnız məhsulla bağlı testləri işlətmək üçün `-k "product"` işlət.
+- Onlardan *başqa* hər şeyi işlətmək üçün `-k "not product"` işlət.
+- İlk uğursuzluqda dayanmaq üçün `-x` işlət (görmək üçün uğursuz bir test əlavə et).
+
+### Tapşırıq 5 — Məhsul API testlərini genişləndir (15 dəq)
+
+`tests/test_products_api.py`-də işlənmiş nümunədən artıq üç testin var (irəli keçmisənsə, əvvəlcə o
+faylı yaz). Ona daha ikisini əlavə et — fərqli dəyərlə kateqoriya filtri və hələ işlətmədiyin `search`
+parametri:
+- `GET /api/products?category=accessories` → status `200` və hər nəticədə `category == "accessories"`.
+- `GET /api/products?search=keyboard` → ən azı bir nəticə və hansısa məhsulun `name`-ində "Keyboard"
+  görünür. *(İpucu: `requests.get(url, params={"search": "keyboard"})`.)*
+
+### Bonus — `get_json` köməkçisi
+
+`requests.get(f"{BASE_URL}{path}").json()` edən kiçik bir `get_json(path)` köməkçisi yaz və təkrarı
+azaltmaq üçün onu testlərində yenidən işlət. (Modul 2-də bu cür quraşdırmanı əsl pytest **fixture**-inə
+çevirəcəyik.)
+
+---
+
+**Modul 2**-də **fixtures və parametrize**-i ələ alırıq — quraşdırmanı (bir base URL və ya təzə sıfırlanmış
+verilənlər bazası kimi) testlər arasında bölüşmək və bir testi kopyalama-yapışdırma olmadan çoxlu giriş
+üzərində işlətmək.
