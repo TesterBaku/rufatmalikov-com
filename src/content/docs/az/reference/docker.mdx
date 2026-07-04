@@ -5,6 +5,8 @@ sidebar:
   order: 13
 ---
 
+import Deck from '../../../../components/course/Deck.astro';
+
 Gec-tez bir test işi səndən "verilənlər bazasını Docker-də qaldırmağı" istəyəcək və ya bir CI faylında `services:` bloku görəcəksən — bunun nə demək olduğunu bilmək kömək edir. **Docker** bir proqramı işləməsi üçün lazım olan hər şeylə — dəqiq versiya, kitabxanaları, konfiqurasiyası — birlikdə bir **konteynerə** (container) qablaşdırır və bu konteyner sənin noutbukunda, komanda yoldaşının maşınında və CI serverində eyni cür davranır. Daha "mənimkində işləyir" yoxdur.
 
 Tester üçün bu, konkret və təkrarlanan problemi həll edir: testlərinin qarşısında işləmək üçün **real verilənlər bazası** lazımdır və hər dəfə — həm lokalda, həm CI-də — *təzə, eyni* birini istəyirsən, üstəlik hər maşında Postgres-i əllə quraşdırmadan. Bir əmr məhz bunu verir. Bu səhifə testerin əslində işlətdiyi Docker-in sadə dildə turudur və **Database verification** modullarının qaldırdığı Postgres verilənlər bazasına əsaslanır.
@@ -24,6 +26,10 @@ docker run hello-world     # kiçik bir image endirir, işlədir və uğur mesaj
 ```
 
 `docker run hello-world` öz salamını çap edirsə, quraşdırman qaydasındadır və aşağıdakı hər əmr işləyəcək. Docker Desktop-un standart parametrləri buradakı hər şey üçün kifayətdir — konfiqurasiya ediləsi bir şey yoxdur.
+
+Klik-klik vizual təlimat istəyirsən? Bu slayd bələdçisi Docker Desktop-u Windows-da başdan-sona quraşdırır — endirmə, WSL 2 seçimi və yoxlama addımı:
+
+<Deck href="/course/decks/docker-install/" title="Docker quraşdırma — slayd təlimatı" />
 
 ## Konteyner əslində nədir
 

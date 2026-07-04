@@ -5,6 +5,8 @@ sidebar:
   order: 13
 ---
 
+import Deck from '../../../../components/course/Deck.astro';
+
 Sooner or later a testing job asks you to "spin up the database in Docker" or a CI file mentions a `services:` block, and it helps to know what that means. **Docker** packages a program together with everything it needs to run — the exact version, its libraries, its config — into a **container** that behaves the same on your laptop, a teammate's machine, and the CI server. No more "it works on mine."
 
 For a tester that solves a specific, recurring problem: your tests need a **real database** to run against, and you want a *fresh, identical* one every time — locally and in CI — without installing and configuring Postgres by hand on every machine. One command gives you exactly that. This page is a plain-language tour of the Docker a tester actually uses, grounded in the Postgres database the [Database verification](/en/python-sdet/) modules spin up.
@@ -24,6 +26,10 @@ docker run hello-world     # pulls a tiny image, runs it, and prints a success m
 ```
 
 If `docker run hello-world` prints its greeting, your setup is good and every command below will work. Docker Desktop's default settings are fine for everything here — there's nothing to configure.
+
+Prefer a visual, click-by-click walkthrough? This slide guide installs Docker Desktop on Windows end to end — download, the WSL 2 option, and the verify step:
+
+<Deck href="/course/decks/docker-install-en/" title="Installing Docker — slide guide" locale="en" />
 
 ## What a container actually is
 
