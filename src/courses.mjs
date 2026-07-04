@@ -3,20 +3,15 @@
 // route middleware (src/starlightRouteData.ts) can import it without drift.
 
 // "Python for SDETs" (Tier 2) is being translated to Azerbaijani incrementally.
-// Until a given page has a real AZ source file, Starlight serves /az/python-sdet/…
-// as an English fallback; those fallbacks stay noindexed, out of the sitemap, and
-// hidden from the AZ sidebar. As each page ships in AZ, add its /az/ pathname to
-// `azReady` below — that one list flips it live everywhere: sitemap inclusion
-// (astro.config.mjs), noindex removal + Course JSON-LD on the AZ landing + AZ
-// sidebar link (starlightRouteData.ts). This object is the single source of truth
-// for the sidebar group label, the segment, and both landings.
-// The Python-for-SDETs pages, in sidebar order — the SINGLE source for both the
+// PYTHON_SDET_MODULES below (in sidebar order) is the SINGLE source for both the
 // sidebar (EN + AZ labels, generated in astro.config.mjs) and which pages are
-// translated to AZ. A page is AZ-ready exactly when it has an `az` label, so
-// shipping a translation is one edit here: fill in `az`. That one field adds the
-// AZ sidebar label AND (via `azReady` below) makes the page indexed, in the
-// sitemap, and visible in the AZ nav — the two can't drift apart. `slug: ''` is
-// the Overview/landing.
+// translated to AZ. A page is AZ-ready exactly when its entry has an `az` label —
+// so shipping a translation is ONE edit: fill in `az`. That one field adds the AZ
+// sidebar label AND (via the derived `azReady` below) flips the page live
+// everywhere — sitemap inclusion (astro.config.mjs), noindex removal + Course
+// JSON-LD on the AZ landing + AZ sidebar link (starlightRouteData.ts) — so the two
+// can't drift apart. Until a page is translated it stays an EN fallback: noindexed,
+// out of the sitemap, hidden from the AZ nav. `slug: ''` is the Overview/landing.
 export const PYTHON_SDET_MODULES = [
 	{ slug: '', label: 'Overview', az: 'İcmal' },
 	{ slug: 'module-0', label: '0 — Setup & first test', az: '0 — Quraşdırma və ilk test' },
@@ -34,16 +29,20 @@ export const PYTHON_SDET_MODULES = [
 	{ slug: 'module-12', label: '12 — Database verification', az: null },
 ];
 
-const azPath = (slug) => '/az/python-sdet/' + (slug ? slug + '/' : '');
+const SEGMENT = '/python-sdet/';
+// Locale-prefixed page path for a module ('' slug = the landing).
+const sdetPath = (locale, slug) => `/${locale}${SEGMENT}${slug ? slug + '/' : ''}`;
+// Sidebar link for a module — no locale prefix (Starlight adds it per locale).
+export const sdetLink = (slug) => `${SEGMENT}${slug ? slug + '/' : ''}`;
 
 export const PYTHON_SDET = {
-	segment: '/python-sdet/',
-	enLanding: '/en/python-sdet/',
+	segment: SEGMENT,
+	enLanding: sdetPath('en', ''),
 	groupLabel: 'Python for SDETs',
-	// AZ pathnames (trailing slash) with a real translation — DERIVED from the
-	// module list above (a page is AZ-ready iff it has an `az` label). Everything
-	// else under /az/python-sdet/ is an EN fallback (noindex, no sitemap, no AZ nav).
-	azReady: PYTHON_SDET_MODULES.filter((m) => m.az != null).map((m) => azPath(m.slug)),
+	// AZ pathnames with a real translation — DERIVED from the module list above.
+	// A page is AZ-ready iff its entry has a (truthy) `az` label — the SAME test
+	// the sidebar's translations spread uses, so the two can never disagree.
+	azReady: PYTHON_SDET_MODULES.filter((m) => m.az).map((m) => sdetPath('az', m.slug)),
 };
 
 // Single predicate for "does this page have a real AZ translation?", used by every

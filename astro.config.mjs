@@ -2,7 +2,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
-import { PYTHON_SDET, PYTHON_SDET_MODULES, isAzReady } from './src/courses.mjs';
+import { PYTHON_SDET, PYTHON_SDET_MODULES, sdetLink, isAzReady } from './src/courses.mjs';
 
 // https://astro.build/config
 export default defineConfig({
@@ -171,20 +171,19 @@ export default defineConfig({
 					],
 				},
 				{
-					// Tier 2 Python course — English-only (net-new). Explicit module links
-					// like the Playwright Course group above; links are added per increment
-					// as modules ship, so the nav never points at unauthored pages. The
-					// route middleware (src/starlightRouteData.ts) prunes this group from
-					// non-EN sidebars and noindexes the Starlight locale-fallback pages.
-					// Label comes from the shared PYTHON_SDET constant so the middleware's
-					// label-based prune can't drift from it.
+					// Tier 2 "Python for SDETs" — the sidebar (EN + AZ labels) is GENERATED
+					// from PYTHON_SDET_MODULES (src/courses.mjs), the single source that also
+					// derives which pages are AZ-translated. The group label comes from the
+					// shared PYTHON_SDET constant so the middleware's label-based prune can't
+					// drift; the middleware (src/starlightRouteData.ts) filters this group to
+					// AZ-ready modules on non-EN routes and noindexes untranslated fallbacks.
 					label: PYTHON_SDET.groupLabel,
 					// Generated from the single PYTHON_SDET_MODULES list (src/courses.mjs)
 					// so an AZ label and the page's AZ-ready status can't drift apart.
 					items: PYTHON_SDET_MODULES.map((m) => ({
 						label: m.label,
 						...(m.az ? { translations: { az: m.az } } : {}),
-						link: '/python-sdet/' + (m.slug ? m.slug + '/' : ''),
+						link: sdetLink(m.slug),
 					})),
 				},
 				{
