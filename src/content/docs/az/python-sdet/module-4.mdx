@@ -251,7 +251,7 @@ mövcud olanın adını təkrarlayan bir məhsul post etmək düzgün `409`/`400
 
 Tapıntını silmə — onu `xfail` (Modul 2) ilə **kodla**, *istədiyin* davranışı assert edərək və onu
 **`strict=True`** işarələ. O, bu gün məlum problem kimi yaşıl qalır; baq düzələn gün test **XPASS
-olur və işə salışı uğursuz edir** — səni indi köhnəlmiş marker-i silməyə məcbur edir (sadə,
+olur və icranı uğursuz edir** — səni indi köhnəlmiş marker-i silməyə məcbur edir (sadə,
 qeyri-strict `xfail` düzəlişin səssiz xülasə sətri kimi keçməsinə imkan verərdi):
 
 ```python
@@ -271,7 +271,7 @@ def test_duplicate_product_name_should_conflict(reset_db, base_url, api):
 Bu test **yazır** (məhsul əlavə edir), ona görə təkrar-işlədilə bilən qalmaq üçün Modul 2
 `conftest.py`-dən `reset_db` alır. Bir xəbərdarlıq: `xfail` **bütün testi** işarələyir, ona görə onun
 *istənilən yerində* uğursuzluq gözlənilən uğursuzluq kimi sayılır — baq testlərini kiçik və bir
-defektə fokuslanmış saxla, yoxsa böyük bir test səssizcə əlaqəsiz reqressiyanı udabilər.
+defektə fokuslanmış saxla, yoxsa böyük bir test səssizcə əlaqəsiz reqressiyanı uda bilər.
 
 **Yadda saxla:** məlum baqı `reason` ilə *düzgün* davranışı assert edən **`strict=True`** `xfail`
 testi kimi tut. O, defekti sənədləşdirir, dəsti bu gün yaşıl saxlayır və **düzəliş gələn an ucadan
@@ -308,7 +308,7 @@ qeyd etdiyini assert et (böyük-kiçik hərfə həssas deyil, alt-sətir — d�
 
 `(payload, expected_status)` sətirləri üzərində `POST /api/auth/register`-i parametrizə et: valid yeni
 qeydiyyat (`201`), təkrar email (`409`), qısa parol (`400`) və çatışmayan sahə (`400`). Hər sətrə
-oxunaqlı `id` ver. *(İpucu: valid qeydiyyat yazır — təkrar işə salışların təmiz başlaması üçün
+oxunaqlı `id` ver. *(İpucu: valid qeydiyyat yazır — təkrar icraların təmiz başlaması üçün
 `reset_db` al.)*
 
 ### Bonus — Bir baq tap və xfail et
