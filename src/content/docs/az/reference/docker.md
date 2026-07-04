@@ -23,7 +23,7 @@ docker --version           # quraşdırılmış versiyanı çap edir, məsələn
 docker run hello-world     # kiçik bir image endirir, işlədir və uğur mesajı çap edir
 ```
 
-`docker run hello-world` öz salamını çap edirsə, quraşdırman qaydasındadır və aşağıdakı hər əmr işləyəcək. Docker Desktop-un standart parametrləri bu kurs üçün kifayətdir — konfiqurasiya ediləsi bir şey yoxdur.
+`docker run hello-world` öz salamını çap edirsə, quraşdırman qaydasındadır və aşağıdakı hər əmr işləyəcək. Docker Desktop-un standart parametrləri buradakı hər şey üçün kifayətdir — konfiqurasiya ediləsi bir şey yoxdur.
 
 ## Konteyner əslində nədir
 

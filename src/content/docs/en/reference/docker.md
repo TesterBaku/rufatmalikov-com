@@ -23,7 +23,7 @@ docker --version           # prints the installed version, e.g. Docker version 2
 docker run hello-world     # pulls a tiny image, runs it, and prints a success message
 ```
 
-If `docker run hello-world` prints its greeting, your setup is good and every command below will work. Docker Desktop's default settings are fine for this course — there's nothing to configure.
+If `docker run hello-world` prints its greeting, your setup is good and every command below will work. Docker Desktop's default settings are fine for everything here — there's nothing to configure.
 
 ## What a container actually is
 
