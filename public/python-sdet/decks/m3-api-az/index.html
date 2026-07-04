@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Modul 3: requests ilə API testi — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Modul 3 · Python for SDETs</div>
+        <h1 class="headline">API Testi<br><span class="grad-text">requests</span> ilə</h1>
+        <p class="subtitle">Real API-yə qarşı hər HTTP felini işlət — və geri gələni oxu</p>
+        <div class="pills">
+          <span class="pill">GET / POST</span>
+          <span class="pill">PUT / DELETE</span>
+          <span class="pill">status &amp; JSON</span>
+          <span class="pill">CRUD həyat dövrü</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 Anatomy of a Response -->
+      <section class="slide s-step" data-screen-label="02 Response Anatomy" style="gap:60px;padding:60px 90px;align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Cavabın anatomiyası</div>
+
+        <div>
+          <div class="code-block" style="font-size:19px;">
+            <div style="color:#d4d4d4;">r = requests.get(<span style="color:#ce9178;">"…/api/products/1"</span>)</div>
+            <div style="height:0.8em;"></div>
+            <div>r.status_code <span style="color:#6a9955;"># 200</span></div>
+            <div>r.ok <span style="color:#6a9955;"># True for any 2xx/3xx</span></div>
+            <div>r.headers <span style="color:#6a9955;"># case-insensitive dict</span></div>
+            <div>r.json() <span style="color:#6a9955;"># body → dict / list</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="feature-card"><div class="feature-icon">🔢</div><div><h3>.status_code</h3><p>tam status (200, 201, 404…)</p></div></div>
+          <div class="feature-card"><div class="feature-icon">✅</div><div><h3>.ok</h3><p>400-dən aşağı istənilən status üçün True</p></div></div>
+          <div class="feature-card"><div class="feature-icon">📋</div><div><h3>.headers</h3><p>cavab başlıqları, böyük-kiçik hərfə həssas deyil</p></div></div>
+          <div class="feature-card"><div class="feature-icon">📦</div><div><h3>.json()</h3><p>gövdəni Python-a ayrışdır</p></div></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 The four verbs + status -->
+      <section class="slide s-full" data-screen-label="03 The Verbs">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Hər fel, uğur statusu</div>
+        <h2 class="section-head">Dörd HTTP feli</h2>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;max-width:1600px;">
+          <div class="verb-card"><div class="name">GET</div><div class="stat">200</div><div class="desc">resurs oxu</div></div>
+          <div class="verb-card"><div class="name">POST</div><div class="stat">201</div><div class="desc">yaradıldı; gövdədə yeni qeyd var</div></div>
+          <div class="verb-card"><div class="name">PUT</div><div class="stat">200</div><div class="desc">yeniləndi</div></div>
+          <div class="verb-card"><div class="name">DELETE</div><div class="stat">200</div><div class="desc">silindi</div></div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">📌</span><span><code class="code-inline">requests</code> 4xx-də heç vaxt xəta atmır — status sadəcə assert etdiyin verilədir. <strong>Oxumalar</strong> sadə requests işlədir; <strong>yazmalar</strong> <code class="code-inline">reset_db</code> fixture-i ilə yenidən səpir ki, təkrar işə salışlar təmiz qalsın.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 POST json + server work -->
+      <section class="slide s-step" data-screen-label="04 POST" style="gap:60px;padding:60px 90px;align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading"><code class="grad-text" style="font-family:ui-monospace,Consolas,monospace;font-style:normal;">json=</code> gövdə göndərir, server iş görür</div>
+
+        <div>
+          <div class="code-block" style="font-size:18px;">
+            <div style="color:#d4d4d4;">payload = {</div>
+            <div style="margin-left:22px;"><span style="color:#ce9178;">"email"</span>: <span style="color:#ce9178;">"customer@test.io"</span>,</div>
+            <div style="margin-left:22px;"><span style="color:#ce9178;">"items"</span>: [{<span style="color:#ce9178;">"product_id"</span>: <span style="color:#b5cea8;">1</span>, <span style="color:#ce9178;">"quantity"</span>: <span style="color:#b5cea8;">2</span>}],</div>
+            <div style="color:#d4d4d4;">}</div>
+            <div style="color:#d4d4d4;">r = api.post(<span style="color:#ce9178;">"…/api/orders"</span>, json=payload)</div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;align-items:center;gap:16px;"><span style="background:#1b5e20;border:2px solid #4caf50;border-radius:8px;padding:10px 20px;font-size:24px;font-weight:800;color:#fff;">201</span><span style="color:oklch(74% 0.04 255);font-size:22px;">Created</span></div>
+            <div style="font-family:ui-monospace,Consolas,monospace;font-size:20px;color:#d4d4d4;background:oklch(12% 0.05 255);border-radius:8px;padding:16px 20px;">total: <span style="color:#4caf50;">59.98</span> <span style="color:#6a9955;"># 29.99 × 2, server-side</span></div>
+            <div style="color:oklch(74% 0.04 255);font-size:20px;"><code class="code-inline">json=</code> <code class="code-inline">Content-Type</code>-ı da sənin üçün qoyur. Total hesablanır — onu <code class="code-inline">pytest.approx</code> ilə assert et.</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 CRUD lifecycle -->
+      <section class="slide s-full" data-screen-label="05 CRUD Lifecycle">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Əsl API testinin forması</div>
+        <h2 class="section-head">Tam həyat dövrü, bir test</h2>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;max-width:1650px;">
+          <div class="crud-step"><div class="step-name">YARAT</div><div class="step-code">POST → 201</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="crud-step"><div class="step-name">OXU</div><div class="step-code">GET → 200</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="crud-step"><div class="step-name">YENİLƏ</div><div class="step-code">PUT → 200</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="crud-step"><div class="step-name">SİL</div><div class="step-code">DELETE → 200</div></div>
+          <div class="pipe-arrow">→</div>
+          <div class="crud-step gone"><div class="step-name">GETDİYİNİ TƏSDİQLƏ</div><div class="step-code">GET → 404</div></div>
+        </div>
+        <div class="step-tip" style="margin-top:40px;max-width:1500px;"><span class="tip-icon">🔁</span><span>Bir tutarlı testdə hər fel — və özündən sonra təmizləyir. Yalnız silmə statusunu yox, təsiri sübut et (sonrakı <code class="code-inline">GET → 404</code>).</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🌐</div>
+        <h2 class="done-head">Bütün<br><span class="grad-text">API səthi</span></h2>
+        <p class="done-sub">Oxu və yaz, status + gövdə assert et və tam CRUD həyat dövrü işlət</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🧪</div>
+            <div class="nc-title">Məşq</div>
+            <div class="nc-desc">TestMarket Lab-a qarşı CRUD — yeni id-ni POST cavabından tut</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">♻️</div>
+            <div class="nc-title">reset_db</div>
+            <div class="nc-desc">Yazmalar əvvəlcə yenidən səpir, ona görə testlərin müstəqil və təkrar-işlədilə bilən qalır</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Modul 4</div>
+            <div class="nc-desc">Neqativ &amp; validasiya — 400 / 401 / 404 / 409, düzgün cür uğursuz olmaq</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>

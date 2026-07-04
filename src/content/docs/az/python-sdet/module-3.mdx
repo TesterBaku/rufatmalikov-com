@@ -1,0 +1,373 @@
+---
+title: "Modul 3: requests ilə API testi"
+description: "requests ilə real REST API-ni başdan-sona test et: /api/* boyunca GET/POST/PUT/DELETE, status kodlarını və JSON gövdələrini oxumaq, sorğu parametrləri və başlıqlar göndərmək, və TestMarket Lab-a qarşı tam yarat-oxu-yenilə-sil həyat dövrü."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+
+İndiyə qədər əsasən `GET` ilə API-dən *oxumusan*. Əsl API testi bütün səthi işlədir —
+oxumaq **və** yazmaq: məhsul əlavə etmək, onu yeniləmək, silmək, sifariş vermək. Bu modulda
+`requests` ilə TestMarket Lab-a qarşı hər dörd HTTP felini işlədəcək, geri gələni (status kodu,
+JSON gövdəsi, başlıqlar) oxuyacaq və bir testdə **tam yarat-oxu-yenilə-sil həyat dövrü** ilə
+bitirəcəksən.
+
+TestMarket Lab-ı `http://localhost:3000`-də işlək və `.venv`-ini aktiv saxla.
+
+:::tip[API və HTTP sənə yenidir?]
+**[İstinad](/az/reference/)** bölməsində bu modul boyunca işlədilən lüğəti əsaslandıran qısa
+girişlər var: [API-lər](/az/reference/apis/), [HTTP sorğu/cavab](/az/reference/http/) və
+[status kodları](/az/reference/http-status-codes/).
+:::
+
+<Video title="Modul 3: requests ilə API testi" />
+
+<Deck href="/python-sdet/decks/m3-api-az/" title="Modul 3: API testinə qısa baxış — slayd təlimatı" />
+
+---
+
+## Cavabın anatomiyası
+
+Hər `requests` çağırışı bir `Response` obyekti qaytarır. Dörd atribut assert edəcəyin demək olar
+hər şeyi daşıyır:
+
+```python
+# tests/test_response_anatomy.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_response_anatomy():
+    response = requests.get(f"{BASE_URL}/api/products/1")
+
+    assert response.status_code == 200          # the HTTP status
+    assert response.ok                          # True for any 2xx/3xx
+    assert response.headers["Content-Type"].startswith("application/json")
+
+    product = response.json()                   # parse the JSON body into a dict/list
+    assert product["name"] == "Wireless Mouse"
+```
+
+- `.status_code` — tam status (200, 201, 404 …).
+- `.ok` — 400-dən aşağı istənilən status üçün `True`; tez "geniş mənada uğurlu oldumu?" yoxlaması.
+- `.headers` — cavab başlıqlarının böyük-kiçik hərfə həssas olmayan lüğəti.
+- `.json()` — gövdəni ayrışdırır və sənə Python `dict` və ya `list` verir. (Xam sətir lazım olsa,
+  `.text` verir.)
+
+**Yadda saxla:** `requests` cavabı `.status_code`, `.ok`, `.headers` və `.json()`-u açır. Əksər API
+assert-ləri "düzgün status" + "düzgün gövdə forması"dır — o dörd hər ikisini əhatə edir.
+
+---
+
+## GET — verilən oxu
+
+`GET` ilə artıq tanışsan; budur, daim işlədəcəyin iki forma ilə — bir **kolleksiya** və bir
+**tək resurs** — üstəgəl sorğu parametrləri:
+
+```python
+# tests/test_get.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_get_collection():
+    response = requests.get(f"{BASE_URL}/api/products")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_get_single_resource():
+    response = requests.get(f"{BASE_URL}/api/products/1")
+    assert response.status_code == 200
+    assert response.json()["id"] == 1
+
+
+def test_get_with_query_params():
+    # params={...} builds ?category=electronics&search=mouse for you
+    response = requests.get(
+        f"{BASE_URL}/api/products",
+        params={"category": "electronics", "search": "mouse"},
+    )
+    assert response.status_code == 200
+    assert all(p["category"] == "electronics" for p in response.json())
+```
+
+**Yadda saxla:** `GET` oxuyur. Kolleksiya endpoint-i **list** qaytarır; `/:id` endpoint-i tək bir
+**obyekt** qaytarır. Filtrləri `params={...}` kimi ötür — sorğu sətrini heç vaxt əllə qurma.
+
+---
+
+## POST — yeni verilən yarat
+
+:::note[Yazma nümunələri Modul 2 fixture-lərini işlədir]
+Bundan sonra **yazma** nümunələri (`POST`/`PUT`/`DELETE`) [Modul 2](/az/python-sdet/module-2/)-də
+qurduğun `conftest.py`-dən `reset_db`, `base_url` və `api`-ni istəyir. `reset_db` əvvəlcə yenidən
+səpir, ona görə hər test 15-məhsullu seed-dən başlayır və **təkrar işə salışlar yaşıl qalır** —
+onsuz ikinci işə salış adı artıq mövcud olan bir məhsul əlavə etməyə cəhd edərdi və server onu rədd
+edərdi. (Yuxarıdakı yalnız-oxu `GET` nümunələri vəziyyəti dəyişmir, ona görə sadə qalır.)
+:::
+
+`POST` yeni resurs yaratmaq üçün gövdə göndərir. `requests` ilə (burada `api` sessiyası vasitəsilə)
+bir dict-i **`json=`**-ə ötür və o, gövdəni serializasiya edir *və* `Content-Type: application/json`
+başlığını sənin üçün qoyur. Uğurlu `POST` **`201 Created`** qaytarır və TestMarket Lab yeni qeydi —
+server-təyinatlı `id` daxil olmaqla — geri əks etdirir:
+
+```python
+# tests/test_post.py  (api, base_url, reset_db come from Module 2's conftest.py)
+def test_create_product(reset_db, base_url, api):
+    payload = {"name": "Test Widget", "price": 9.99, "category": "electronics"}
+    response = api.post(f"{base_url}/api/products", json=payload)
+
+    assert response.status_code == 201          # Created
+    body = response.json()
+    assert body["id"]                           # server assigned an id
+    assert body["name"] == "Test Widget"        # echoes what we sent
+    assert body["price"] == 9.99
+```
+
+:::note[`json=` vs `data=`]
+JSON gövdəsi göndərmək üçün **`json=payload`** işlət (buradakı API JSON gözləyir). `data=payload`
+əvəzinə form-kodlaşdırılmış gövdə göndərir — fərqli `Content-Type`, və bu API-nin istədiyi deyil.
+Bu kurs boyunca `json=`-ə müraciət et.
+:::
+
+Daha zəngin `POST` — sifariş vermək — serverin assert edə biləcəyin işi gördüyünü göstərir. Sən
+maddələr göndərirsən; server **total**-ı hesablayır:
+
+```python
+# tests/test_orders.py
+import pytest   # for pytest.approx
+
+
+def test_place_order_computes_total(reset_db, base_url, api):
+    payload = {
+        "email": "customer@test.io",
+        "items": [{"product_id": 1, "quantity": 2}],   # Wireless Mouse @ 29.99
+    }
+    response = api.post(f"{base_url}/api/orders", json=payload)
+
+    assert response.status_code == 201
+    order = response.json()
+    # the total is computed server-side, so it's a float — compare with approx (Module 1)
+    assert order["total"] == pytest.approx(29.99 * 2)   # 59.98
+    assert order["items"][0]["quantity"] == 2
+```
+
+**Yadda saxla:** `json=payload` ilə `POST` resurs yaradır, `Content-Type`-ı sənin üçün qoyur və
+**201** üstəgəl yeni qeydi (öz `id`-si ilə) qaytarır. Status-u *və* gövdənin göndərdiyini / serverin
+hesabladığını əks etdirdiyini assert et.
+
+---
+
+## PUT — mövcud veriləni yenilə
+
+`PUT` məlum bir URL-də resursu yeniləyir. Dəyişən sahələri gövdədə göndər; uğur **`200`**-dür və
+cavab yenilənmiş qeydi göstərir:
+
+```python
+# tests/test_put.py
+def test_update_product(reset_db, base_url, api):
+    # make one to update
+    created = api.post(
+        f"{base_url}/api/products",
+        json={"name": "Old Name", "price": 5.00, "category": "accessories"},
+    ).json()
+    product_id = created["id"]
+
+    # update it
+    response = api.put(
+        f"{base_url}/api/products/{product_id}",
+        json={"name": "New Name", "price": 7.50},
+    )
+
+    assert response.status_code == 200
+    updated = response.json()
+    assert updated["name"] == "New Name"
+    assert updated["price"] == 7.50
+```
+
+Diqqət et ki, test müəyyən bir məhsulun mövcud olduğunu güman etmək əvəzinə **öz verilənini əvvəlcə
+yaradır** — testləri müstəqil saxlayan vərdiş. (Modul 5 bunu təmiz fixture-lərə çevirir.)
+
+**Yadda saxla:** `PUT /resource/:id` yeniləyir; yeni sahə dəyərlərini `json=` gövdəsi kimi göndər və
+qaytarılan qeydin onları əks etdirdiyini assert et. Test artıq orada olana bağlı olmasın deyə öz
+verilənini hazırla.
+
+---
+
+## DELETE — verilən sil
+
+`DELETE` resursu silir. TestMarket Lab kiçik təsdiq gövdəsi ilə **`200`** qaytarır; işlədiyinin əsl
+sübutu odur ki, sonrakı `GET` artıq **`404`** qaytarır:
+
+```python
+# tests/test_delete.py
+def test_delete_product(reset_db, base_url, api):
+    created = api.post(
+        f"{base_url}/api/products",
+        json={"name": "Disposable", "price": 1.00, "category": "accessories"},
+    ).json()
+    product_id = created["id"]
+
+    response = api.delete(f"{base_url}/api/products/{product_id}")
+    assert response.status_code == 200
+
+    # it's really gone
+    follow_up = api.get(f"{base_url}/api/products/{product_id}")
+    assert follow_up.status_code == 404
+```
+
+**Yadda saxla:** `DELETE /resource/:id` onu silir (burada `200` + təsdiq). Yalnız status-u yox,
+təsiri sübut et: sonrakı `GET` indi `404` qaytarmalıdır.
+
+---
+
+## Status kodları, qısaca
+
+Hər felin yadda saxlamağa dəyər bir "uğur" statusu var — kursun qalanı onlara söykənir:
+
+| Fel | Tipik uğur | Məna |
+|---|---|---|
+| `GET` | `200 OK` | resurs budur |
+| `POST` | `201 Created` | yaradıldı; gövdədə yeni qeyd var |
+| `PUT` | `200 OK` | yeniləndi |
+| `DELETE` | `200 OK` | silindi |
+
+`requests` özü `4xx`/`5xx`-də heç vaxt xəta atmır — `response.status_code` sadəcə assert etdiyin
+verilədir. (Xəta statuslarında istisna *istəyirsənsə*, `response.raise_for_status()` çağır —
+uğursuzluğun testi dərhal dayandırmalı olduğu quraşdırma addımlarında əlverişli.) **Xəta**
+statuslarına — `400`, `401`, `404`, `409` — **Modul 4**-də dərindən gedirik.
+
+**Yadda saxla:** `GET`/`PUT`/`DELETE` `200` ilə, `POST` `201` ilə uğur qazanır. `4xx` `requests`-də
+istisna deyil — assert etdiyin bir `status_code`-dur. `raise_for_status()`-u yalnız uğursuzluqda
+sərt dayanma istədikdə işlət.
+
+---
+
+## Başlıqlar
+
+Cavab başlıqlarını `response.headers`-dən oxu (böyük-kiçik hərfə həssas deyil) və sorğu başlıqlarını
+`headers={...}` ilə göndər:
+
+```python
+# tests/test_headers.py
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def test_response_content_type():
+    response = requests.get(f"{BASE_URL}/api/products")
+    assert response.headers["Content-Type"].startswith("application/json")
+
+
+def test_send_request_headers():
+    # custom headers go in headers={...}; json= already sets Content-Type
+    response = requests.get(
+        f"{BASE_URL}/api/products",
+        headers={"Accept": "application/json"},
+    )
+    assert response.status_code == 200
+```
+
+`json=` ilə gövdə göndərəndə `requests` `Content-Type: application/json`-u avtomatik qoyur — sən
+başlıqları yalnız `Accept` və ya sonralar auth token-ləri kimi şeylər üçün əllə qoyursan.
+
+**Yadda saxla:** `response.headers["Content-Type"]` bir başlığı oxuyur (böyük-kiçik hərfə həssas
+deyil); özününkünü `headers={...}` ilə göndər. `json=` sorğu `Content-Type`-ını onsuz da qoyur, ona
+görə onu nadir hallarda əllə qoyursan.
+
+---
+
+## Birləşdirmək: CRUD həyat dövrü
+
+Əsl API testinin forması çox vaxt bir axında resursun bütün həyat dövrüdür —
+**yarat → oxu → yenilə → sil → getdiyini təsdiqlə**. Modul 2 `conftest.py`-dəki `reset_db`, `base_url`
+və `api` fixture-lərini işlədərək təmiz oxunur:
+
+```python
+# tests/test_product_lifecycle.py
+def test_product_crud_lifecycle(reset_db, base_url, api):
+    # CREATE
+    created = api.post(
+        f"{base_url}/api/products",
+        json={"name": "Lifecycle Lamp", "price": 39.99, "category": "furniture"},
+    )
+    assert created.status_code == 201
+    product_id = created.json()["id"]
+
+    # READ
+    read = api.get(f"{base_url}/api/products/{product_id}")
+    assert read.status_code == 200
+    assert read.json()["name"] == "Lifecycle Lamp"
+
+    # UPDATE
+    updated = api.put(
+        f"{base_url}/api/products/{product_id}", json={"price": 34.99}
+    )
+    assert updated.status_code == 200
+    assert updated.json()["price"] == 34.99
+
+    # DELETE
+    deleted = api.delete(f"{base_url}/api/products/{product_id}")
+    assert deleted.status_code == 200
+
+    # CONFIRM GONE
+    gone = api.get(f"{base_url}/api/products/{product_id}")
+    assert gone.status_code == 404
+```
+
+Bir test, hər fel, və yaratdığını silərək özündən sonra təmizləyir — üstəgəl `reset_db` məlum
+başlanğıc nöqtəsini təmin edir. Bu, API test dəstlərinin onurğasıdır.
+
+**Yadda saxla:** yarat→oxu→yenilə→sil→getdiyini-təsdiqlə axını bir tutarlı testdə hər feli işlədir və
+sistemi tapdığı kimi qoyur. Məlum başlanğıc üçün `reset_db`-yə söykən və yeni `id`-ni sabit kodlamaq
+əvəzinə `POST` cavabından tut.
+
+---
+
+## Tapşırıqlar
+
+TestMarket Lab işlək olarkən, Modul 2-dəki `conftest.py`-ni yenidən işlədərək `python-sdet`
+layihəndə işlə. `pytest -v` ilə işlət. **Yazma** tapşırıqları (2–4) üçün `reset_db` istə ki, hər
+təkrar işə salış təmiz seed-dən başlasın.
+
+### Tapşırıq 1 — Bir məhsulu oxu (5 dəq)
+
+`GET /api/products/1` və assert et: status `200`, gövdə `dict`-dir və onun `id`, `name` və `price`-ı
+var. Sonra `GET /api/products/99999` və status-un `404` olduğunu assert et (Modul 4-ün dadı).
+
+### Tapşırıq 2 — Əlavə et və yoxla (10 dəq)
+
+`{"name": ..., "price": ..., "category": "electronics"}` ilə `POST /api/products`. Status `201`
+olduğunu, cavabın `id`-si olduğunu və `name`/`price`-ın göndərdiyinlə uyğun gəldiyini assert et.
+
+### Tapşırıq 3 — Məhsulu yenilə (10 dəq)
+
+Bir məhsul əlavə et, onun `id`-sini tut, sonra yeni `price` ilə `PUT /api/products/<id>`. Status
+`200` və qaytarılan `price`-ın yeni dəyər olduğunu assert et.
+
+### Tapşırıq 4 — Sil və təsdiqlə (10 dəq)
+
+Bir məhsul əlavə et, onu `DELETE` et (`200` assert et), sonra onu `GET` et və `404` assert et.
+Sonrakı `GET` əsl sübutdur — yalnız silmə statusuna güvənmə.
+
+### Tapşırıq 5 — Sifariş ver (15 dəq)
+
+`{"email": "customer@test.io", "items": [{"product_id": 1, "quantity": 3}]}` ilə `POST /api/orders`.
+Status `201` və server-hesablanmış `total`-ın `29.99 * 3`-ə bərabər olduğunu assert et. *(İpucu:
+qiymətlər float-dur — `pytest.approx` işlət.)*
+
+### Bonus — `make_product` köməkçisi
+
+3 və 4 tapşırıqları eyni cür başlayır: bir məhsul `POST` et və onun `id`-sini götür. Bunu
+`/api/products`-a post edib yeni məhsulun `id`-sini qaytaran `make_product(**fields)` köməkçisinə
+ayır, sonra təkrarı azaltmaq üçün onu hər iki testdə işlət. *(Modul 5-də bu, əsl fixture olur.)*
+
+---
+
+**Modul 4**-də **neqativ və validasiya testinə** fokuslanırıq — qəsdən `400` (çatışmayan sahələr),
+`401` (səhv login), `404` (çatışmayan resurs) və `409` (təkrar qeydiyyat) tətikləyib API-nin *düzgün*
+cür uğursuz olduğunu assert etmək.
