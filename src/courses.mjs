@@ -17,7 +17,7 @@ export const PYTHON_SDET = {
 	// AZ pathnames (trailing slash) that have a real Azerbaijani translation.
 	// Grow this list as each page is translated; everything else under
 	// /az/python-sdet/ is treated as an EN fallback (noindex, no sitemap, no AZ nav).
-	azReady: ['/az/python-sdet/'],
+	azReady: ['/az/python-sdet/', '/az/python-sdet/module-0/'],
 };
 
 // Single predicate for "does this page have a real AZ translation?", used by every
