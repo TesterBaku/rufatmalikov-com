@@ -44,7 +44,7 @@ row = con.execute(
     "SELECT id, name, stock FROM products WHERE slug = ?",
     ("wireless-mouse",),
 ).fetchone()
-print(row["id"], row["name"], row["stock"])   # -> 1 Wireless Mouse 50
+print(row["id"], row["name"], row["stock"])   # -> 1 Wireless Mouse 50  (on a freshly seeded DB)
 
 con.close()
 ```
@@ -171,11 +171,12 @@ TestMarket Lab uses SQLite because it's a single file with zero setup — perfec
 | Connect with | a file path | a connection string (host, port, user, password, db) | same |
 | Placeholder | `?` | `%s` | `%s` |
 
-Here is the **exact order check from above**, rewritten against Postgres with `psycopg` (`pip install "psycopg[binary]"`). The assertions are unchanged; the connection and the placeholder are the only differences:
+Here is the **order-row check from above**, rewritten against Postgres with `psycopg` (`pip install "psycopg[binary]"`). The query and the logic carry over unchanged — only the driver, the placeholder (`%s` not `?`), and reading a `NUMERIC` back as a `Decimal` differ:
 
 ```python
 import os
 import psycopg
+import pytest
 
 # Credentials come from the environment, never hard-coded.
 DSN = os.environ["DATABASE_URL"]   # e.g. postgresql://testuser:testpass@localhost:5432/testmarket
@@ -183,16 +184,13 @@ DSN = os.environ["DATABASE_URL"]   # e.g. postgresql://testuser:testpass@localho
 with psycopg.connect(DSN) as con:
     with con.cursor() as cur:
         cur.execute(
-            """SELECT o.status, o.total, oi.product_name, oi.quantity
-               FROM orders o
-               JOIN order_items oi ON oi.order_id = o.id
-               WHERE o.id = %s""",             # %s, not ?
+            "SELECT status, total FROM orders WHERE id = %s",   # %s, not ?
             (order_id,),
         )
-        rows = cur.fetchall()
+        row = cur.fetchone()
 
-assert rows[0][0] == "pending"
-assert float(rows[0][1]) == 59.98              # Postgres NUMERIC comes back as Decimal
+assert row[0] == "pending"
+assert float(row[1]) == pytest.approx(59.98)   # NUMERIC comes back as Decimal
 ```
 
 Two small gotchas the switch introduces: placeholders are `%s` (not `?`), and a `NUMERIC` column arrives as a Python `Decimal`, so compare with `float(...)` or another `Decimal`.
