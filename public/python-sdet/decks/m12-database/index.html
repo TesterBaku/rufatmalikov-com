@@ -131,10 +131,12 @@
           <div class="col-label" style="color:#4caf50;">The children — order_items via JOIN</div>
           <div class="code-block" style="font-size:15px;">
             <div>items = db.execute(</div>
-            <div style="margin-left:20px;color:#ce9178;">"""SELECT oi.product_id, oi.quantity</div>
-            <div style="margin-left:20px;color:#ce9178;">   FROM orders o</div>
-            <div style="margin-left:20px;color:#ce9178;">   JOIN order_items oi ON oi.order_id = o.id</div>
-            <div style="margin-left:20px;color:#ce9178;">   WHERE o.id = ?"""</div>
+            <div style="margin-left:20px;color:#ce9178;">
+              <div>"""SELECT oi.product_id, oi.quantity</div>
+              <div>   FROM orders o</div>
+              <div>   JOIN order_items oi ON oi.order_id = o.id</div>
+              <div>   WHERE o.id = ?"""</div>
+            </div>
             <div style="margin-left:20px;">, (order_id,)).fetchall()</div>
             <div style="height:0.35em;"></div>
             <div><span style="color:#c586c0;">assert</span> [(i[<span style="color:#ce9178;">"product_id"</span>], i[<span style="color:#ce9178;">"quantity"</span>]) <span style="color:#569cd6;">for</span> i <span style="color:#569cd6;">in</span> items] == [(<span style="color:#b5cea8;">1</span>, <span style="color:#b5cea8;">2</span>)]</div>
