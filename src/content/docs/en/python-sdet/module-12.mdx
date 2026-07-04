@@ -4,12 +4,15 @@ description: "The senior move on top of the capstone: verify the persisted side 
 ---
 
 import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
 
 You finished the capstone — so this module is the senior move that sits on top of everything you built. Every test so far trusts what the app *reports*: a `201`, a response body, a green page. This one checks what the app **persisted** — after you place an order, is there really a row in the database with the right total and the right line items? *"The API said success — but did it save correctly?"* Answering that is the maturity leap, and in Python it costs almost nothing: the database driver you need, `sqlite3`, is in the standard library.
 
 Keep TestMarket Lab running at `http://localhost:3000` and your `.venv` active. This module builds directly on the API calls from [Module 3](/en/python-sdet/module-3/) and the `reset_db` / arrange-via-API fixtures from [Module 5](/en/python-sdet/module-5/). If SQL is new, read the [SQL basics](/en/reference/sql-basics/) reference first — this module is the Python side of the same idea.
 
 <Video title="Module 12: Database verification" />
+
+<Deck href="/python-sdet/decks/m12-database/" title="Module 12: proving the record — slide guide" locale="en" />
 
 ---
 
@@ -106,6 +109,7 @@ def test_order_persists_to_the_database(reset_db, base_url, api, db):
     order = db.execute(
         "SELECT status, total FROM orders WHERE id = ?", (order_id,)
     ).fetchone()
+    assert order is not None                           # the row exists at all — it saved
     assert order["status"] == "pending"
     assert order["total"] == pytest.approx(59.98)      # Wireless Mouse 29.99 x 2
 

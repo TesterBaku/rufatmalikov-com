@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module 12: Database verification — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Module 12 · Python for SDETs</div>
+        <h1 class="headline">The API said success —<br><span class="grad-text">but did it save?</span></h1>
+        <p class="subtitle">The senior move on top of the capstone: verify the persisted side effect, not just the response</p>
+        <div class="pills">
+          <span class="pill">read-only</span>
+          <span class="pill">sqlite3 — stdlib</span>
+          <span class="pill">JOIN</span>
+          <span class="pill">the record</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 Word vs record -->
+      <section class="slide s-two-col" data-screen-label="02 Word vs record" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">A <span class="grad-text">201</span> is the app's word — the row is the record</div>
+        <div>
+          <div class="col-label" style="color:var(--muted);">What the app REPORTS</div>
+          <div class="code-block" style="font-size:17px;">
+            <div><span style="color:#4caf50;">201 Created</span></div>
+            <div style="height:0.5em;"></div>
+            <div>{ <span style="color:#ce9178;">"id"</span>: <span style="color:#b5cea8;">7</span>, <span style="color:#ce9178;">"total"</span>: <span style="color:#b5cea8;">59.98</span> }</div>
+          </div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">💬</span><span>The response is the app's <strong>word</strong>: "I accepted it."</span></div>
+        </div>
+        <div>
+          <div class="col-label" style="color:var(--accent);">What the app PERSISTED</div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#888;"># orders</div>
+            <div>id=7 · status=<span style="color:#ce9178;">pending</span> · total=<span style="color:#b5cea8;">59.98</span></div>
+            <div style="height:0.5em;"></div>
+            <div style="color:#888;"># order_items</div>
+            <div>order_id=7 · product_id=1 · qty=2</div>
+          </div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🗄️</span><span>The database row is the <strong>record</strong>: "here is what saved."</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 The pattern -->
+      <section class="slide s-full" data-screen-label="03 The pattern">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">The pattern you reuse everywhere</div>
+        <h2 class="section-head">Arrange &amp; act via API → assert via DB</h2>
+        <div class="pipe-row" style="margin-top:8px;">
+          <span class="pipe-chip green mono">reset_db</span>
+          <span class="pipe-arrow">→</span>
+          <span class="pipe-chip blue mono">api.post("/api/orders")</span>
+          <span class="pipe-arrow">→</span>
+          <span class="pipe-chip blue mono">db.execute("SELECT …")</span>
+          <span class="pipe-arrow">→</span>
+          <span class="pipe-chip win">persisted ✓</span>
+        </div>
+        <div class="pipe-row" style="margin-top:16px;gap:40px;">
+          <div class="pipe-label" style="margin:0;">writes go through the <strong>app</strong></div>
+          <div class="pipe-label" style="margin:0;color:var(--accent);">the DB is your <strong>read-only</strong> verification layer</div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">🔒</span><span>Let the app own its writes — its rules and computed columns run. You only <strong>read</strong> to confirm the effect, so a test can never corrupt the app's data.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Connect read-only -->
+      <section class="slide s-step" data-screen-label="04 Connect read-only">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Open it <span class="grad-text">read-only</span>, pass values as <code class="code-inline">?</code></div>
+        <div>
+          <div class="code-block" style="font-size:16px;">
+            <div><span style="color:#569cd6;">import</span> sqlite3</div>
+            <div style="height:0.4em;"></div>
+            <div>con = sqlite3.connect(</div>
+            <div style="margin-left:20px;"><span style="color:#ce9178;">f"file:{DB_PATH.as_posix()}?mode=ro"</span>, uri=<span style="color:#569cd6;">True</span>)</div>
+            <div>con.row_factory = sqlite3.Row</div>
+            <div style="height:0.5em;"></div>
+            <div>row = con.execute(</div>
+            <div style="margin-left:20px;"><span style="color:#ce9178;">"SELECT id, name, stock FROM products"</span></div>
+            <div style="margin-left:20px;"><span style="color:#ce9178;">"  WHERE slug = ?"</span>, (<span style="color:#ce9178;">"wireless-mouse"</span>,),</div>
+            <div>).fetchone()</div>
+          </div>
+        </div>
+        <div>
+          <div class="step-tip"><span class="tip-icon">🛡️</span><span><code class="code-inline">mode=ro</code> makes writing <strong>impossible</strong> — a stray query can't corrupt the app's data. An <code class="code-inline">INSERT</code> raises <code class="code-inline">OperationalError</code>.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">💉</span><span>The value goes in as a <code class="code-inline">?</code> <strong>parameter</strong>, never pasted into the SQL string. The one non-negotiable habit.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">📦</span><span><code class="code-inline">sqlite3</code> is in the standard library — zero install.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 Parent + children -->
+      <section class="slide s-two-col" data-screen-label="05 Order end to end" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">201 = accepted · row = saved · JOIN = <span class="grad-text">saved correctly</span></div>
+        <div>
+          <div class="col-label" style="color:var(--accent);">The parent — the orders row</div>
+          <div class="code-block" style="font-size:15px;">
+            <div>order = db.execute(</div>
+            <div style="margin-left:20px;"><span style="color:#ce9178;">"SELECT status, total FROM orders"</span></div>
+            <div style="margin-left:20px;"><span style="color:#ce9178;">"  WHERE id = ?"</span>, (order_id,)).fetchone()</div>
+            <div style="height:0.35em;"></div>
+            <div><span style="color:#c586c0;">assert</span> order <span style="color:#569cd6;">is not None</span></div>
+            <div><span style="color:#c586c0;">assert</span> order[<span style="color:#ce9178;">"status"</span>] == <span style="color:#ce9178;">"pending"</span></div>
+            <div><span style="color:#c586c0;">assert</span> order[<span style="color:#ce9178;">"total"</span>] == pytest.approx(<span style="color:#b5cea8;">59.98</span>)</div>
+          </div>
+        </div>
+        <div>
+          <div class="col-label" style="color:#4caf50;">The children — order_items via JOIN</div>
+          <div class="code-block" style="font-size:15px;">
+            <div>items = db.execute(</div>
+            <div style="margin-left:20px;color:#ce9178;">"""SELECT oi.product_id, oi.quantity</div>
+            <div style="margin-left:20px;color:#ce9178;">   FROM orders o</div>
+            <div style="margin-left:20px;color:#ce9178;">   JOIN order_items oi ON oi.order_id = o.id</div>
+            <div style="margin-left:20px;color:#ce9178;">   WHERE o.id = ?"""</div>
+            <div style="margin-left:20px;">, (order_id,)).fetchall()</div>
+            <div style="height:0.35em;"></div>
+            <div><span style="color:#c586c0;">assert</span> [(i[<span style="color:#ce9178;">"product_id"</span>], i[<span style="color:#ce9178;">"quantity"</span>]) <span style="color:#569cd6;">for</span> i <span style="color:#569cd6;">in</span> items] == [(<span style="color:#b5cea8;">1</span>, <span style="color:#b5cea8;">2</span>)]</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Reading what the API hides -->
+      <section class="slide s-step" data-screen-label="06 What the API hides">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Reach what the API <span class="grad-text">won't</span> return</div>
+        <div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#888;"># the API never hands the password back — rightly</div>
+            <div>row = db.execute(</div>
+            <div style="margin-left:20px;"><span style="color:#ce9178;">"SELECT password FROM users WHERE email = ?"</span>,</div>
+            <div style="margin-left:20px;">(<span style="color:#ce9178;">"customer@test.io"</span>,)).fetchone()</div>
+            <div>stored = row[<span style="color:#ce9178;">"password"</span>]</div>
+            <div style="height:0.5em;"></div>
+            <div><span style="color:#c586c0;">assert</span> stored != <span style="color:#ce9178;">"customer123"</span></div>
+            <div><span style="color:#c586c0;">assert</span> stored.startswith(<span style="color:#ce9178;">"$2"</span>)</div>
+            <div><span style="color:#c586c0;">assert</span> len(stored) == <span style="color:#b5cea8;">60</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="step-tip"><span class="tip-icon">🔑</span><span>"Is the password stored <strong>hashed</strong>, not plain text?" is unanswerable from the outside…</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🔎</span><span>…and one <code class="code-inline">SELECT</code> away from the inside. Some truths only live in the schema.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 07 SQLite -> production -->
+      <section class="slide s-full" data-screen-label="07 To production">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Same idea, on the job</div>
+        <h2 class="section-head">SQLite → production: swap the driver, not the pattern</h2>
+        <div class="pipe-row" style="margin-top:8px;">
+          <span class="pipe-chip blue mono">sqlite3</span>
+          <span class="pipe-arrow">→</span>
+          <span class="pipe-chip green mono">psycopg</span>
+          <span class="pipe-arrow">·</span>
+          <span class="pipe-chip green mono">PyMySQL</span>
+          <span class="pipe-arrow" style="margin-left:24px;">|</span>
+          <span class="pipe-chip blue mono">?</span>
+          <span class="pipe-arrow">→</span>
+          <span class="pipe-chip green mono">%s</span>
+          <span class="pipe-arrow" style="margin-left:24px;">|</span>
+          <span class="pipe-chip blue mono">file path</span>
+          <span class="pipe-arrow">→</span>
+          <span class="pipe-chip green mono">connection string</span>
+        </div>
+        <div class="pipe-row" style="margin-top:28px;">
+          <span class="pipe-chip win" style="font-size:20px;">connect → parameterize → assert → close</span>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">🧭</span><span>The SQL you wrote (<code class="code-inline">SELECT</code>, <code class="code-inline">WHERE</code>, <code class="code-inline">JOIN</code>) is standard, and a Postgres <code class="code-inline">NUMERIC</code> just comes back as a <code class="code-inline">Decimal</code>. The container comes from one <code class="code-inline">docker run</code> — or a CI service container.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 08 Done -->
+      <section class="slide s-done" data-screen-label="08 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🗄️</div>
+        <h2 class="done-head">You can verify<br>the <span class="grad-text">record</span></h2>
+        <p class="done-sub">Response, UI — and the persisted truth the API sits on top of</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🛡️</div>
+            <div class="nc-title">You can now</div>
+            <div class="nc-desc">A read-only connection, a parameterized query, and a JOIN that proves it saved</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🧭</div>
+            <div class="nc-title">On the job</div>
+            <div class="nc-desc">SQLite today, Postgres tomorrow — the same four steps, only the driver changes</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🧩</div>
+            <div class="nc-title">Bolt it on</div>
+            <div class="nc-desc">Add DB verification to your capstone — "how do you know it actually saved?"</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>
