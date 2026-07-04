@@ -20,7 +20,7 @@ Kursun istinad etdiyi, amma sıfırdan izah etməyə dayanmadığı anlayışlar
 - **[Əlçatımlılıq, ARIA və WCAG](/az/reference/accessibility/)** — POUR prinsipləri, ARIA atributları və axe-core-un tutduğu pozuntular.
 - **[Komanda sətri və npm](/az/reference/command-line-npm/)** — terminal, Node, `package.json`, `npm install` və `npx` — kursun işlətdiyi əmrlər.
 - **[SQL əsasları](/az/reference/sql-basics/)** — test verilənlər bazasını oxumaq üçün `SELECT`, `WHERE`, `JOIN`, aqreqatlar və parametrləşdirilmiş sorğular, TestMarket Lab-ın real sxeminə əsaslanır.
-- **[Docker əsasları](/az/reference/docker/)** — image-lər, konteynerlər, `docker run`, portlar və env dəyişənləri, Compose və GitHub Actions servis konteyneri — testlərin üçün real verilənlər bazasını necə qaldırmaq.
+- **[Docker əsasları](/az/reference/docker/)** — Docker-i quraşdırmaq, image-lər, konteynerlər, `docker run`, portlar və env dəyişənləri, Compose və GitHub Actions servis konteyneri — testlərin üçün real verilənlər bazasını necə qaldırmaq.
 
 ## Bu harada yerləşir
 
@@ -33,7 +33,7 @@ Hər səhifə ən çox istinad etdiyi modulu dəstəkləyir:
 - **Cookie-lər və sessiyalar** → **[Modul 10 — Autentifikasiya](/az/course/module-10/)**.
 - **Əlçatımlılıq, ARIA və WCAG** → **[Modul 11 — əlçatımlılıq testi](/az/course/module-11/)**.
 - **Git və GitHub** → **[Modul 12 — CI, Docker, hesabatlar](/az/course/module-12/)**.
-- **SQL əsasları** → Playwright və Python SDET kurslarına gələn **Database verification** modulları.
+- **SQL əsasları** → Python SDET kursundakı **Database verification** modulu (ingiliscə, artıq mövcuddur) və Playwright kursuna gələn modul.
 - **Docker əsasları** → həmin **Database verification** modulları və **[Modul 12 — CI, Docker, hesabatlar](/az/course/module-12/)**.
 
 Düzgün əsaslandırmaq istədiyiniz bir termin ortaya çıxanda bunları oxuyun — heç bir əvvəlcədən backend və ya front-end biliyi tələb olunmur.

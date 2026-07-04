@@ -9,6 +9,22 @@ Sooner or later a testing job asks you to "spin up the database in Docker" or a 
 
 For a tester that solves a specific, recurring problem: your tests need a **real database** to run against, and you want a *fresh, identical* one every time — locally and in CI — without installing and configuring Postgres by hand on every machine. One command gives you exactly that. This page is a plain-language tour of the Docker a tester actually uses, grounded in the Postgres database the [Database verification](/en/python-sdet/) modules spin up.
 
+## Installing Docker
+
+Before any command on this page works, you need Docker on your machine. What you install depends on your OS, but each one gives you the same `docker` command:
+
+- **Windows & macOS — Docker Desktop.** Download it from [docker.com](https://www.docker.com/products/docker-desktop/), install, and launch it. Desktop bundles everything you need: the engine, the `docker` CLI, and Compose. On Windows it runs on the WSL 2 backend — Docker Desktop sets that up for you and prompts if a one-time reboot is needed. Keep the app running while you use containers; it *is* the engine.
+- **Linux — Docker Engine.** Install the engine from your distribution's package manager (Docker's install docs have a copy-paste block per distro) or via Docker's convenience script. Compose comes as the built-in `docker compose` plugin. There's no Desktop app to run — the engine runs as a background service.
+
+Then confirm it works — these two commands are the "hello world" of Docker:
+
+```bash
+docker --version           # prints the installed version, e.g. Docker version 29.2.0
+docker run hello-world     # pulls a tiny image, runs it, and prints a success message
+```
+
+If `docker run hello-world` prints its greeting, your setup is good and every command below will work. Docker Desktop's default settings are fine for this course — there's nothing to configure.
+
 ## What a container actually is
 
 A container is a running program plus its whole environment, isolated from the rest of your machine. Think of a shipping container: whatever's inside, the outside is a standard shape every crane and ship can handle. A Postgres container carries Postgres and its dependencies; your machine just has to run Docker, not install Postgres.

@@ -9,6 +9,22 @@ Gec-tez bir test işi səndən "verilənlər bazasını Docker-də qaldırmağı
 
 Tester üçün bu, konkret və təkrarlanan problemi həll edir: testlərinin qarşısında işləmək üçün **real verilənlər bazası** lazımdır və hər dəfə — həm lokalda, həm CI-də — *təzə, eyni* birini istəyirsən, üstəlik hər maşında Postgres-i əllə quraşdırmadan. Bir əmr məhz bunu verir. Bu səhifə testerin əslində işlətdiyi Docker-in sadə dildə turudur və **Database verification** modullarının qaldırdığı Postgres verilənlər bazasına əsaslanır.
 
+## Docker-i quraşdırmaq
+
+Bu səhifədəki hər hansı əmr işləməzdən əvvəl maşınında Docker olmalıdır. Nə quraşdırdığın OS-dən asılıdır, amma hər biri sənə eyni `docker` əmrini verir:
+
+- **Windows və macOS — Docker Desktop.** Onu [docker.com](https://www.docker.com/products/docker-desktop/)-dan endir, quraşdır və işə sal. Desktop lazım olan hər şeyi qablaşdırır: mühərriki (engine), `docker` CLI-ni və Compose-u. Windows-da WSL 2 backend-ində işləyir — Docker Desktop bunu sənin üçün qurur və birdəfəlik yenidən başlatma lazımdırsa xəbərdarlıq edir. Konteynerlərdən istifadə edərkən tətbiqi açıq saxla; mühərrik məhz odur.
+- **Linux — Docker Engine.** Mühərriki distribusiyanın paket menecerindən (Docker-in quraşdırma sənədlərində hər distro üçün kopyala-yapışdır bloku var) və ya Docker-in rahatlıq skripti ilə quraşdır. Compose daxili `docker compose` plagini kimi gəlir. İşə salınacaq Desktop tətbiqi yoxdur — mühərrik arxa plan servisi kimi işləyir.
+
+Sonra işlədiyini təsdiqlə — bu iki əmr Docker-in "hello world"-udur:
+
+```bash
+docker --version           # quraşdırılmış versiyanı çap edir, məsələn Docker version 29.2.0
+docker run hello-world     # kiçik bir image endirir, işlədir və uğur mesajı çap edir
+```
+
+`docker run hello-world` öz salamını çap edirsə, quraşdırman qaydasındadır və aşağıdakı hər əmr işləyəcək. Docker Desktop-un standart parametrləri bu kurs üçün kifayətdir — konfiqurasiya ediləsi bir şey yoxdur.
+
 ## Konteyner əslində nədir
 
 Konteyner işləyən bir proqram üstəgəl onun bütün mühitidir və maşınının qalan hissəsindən təcrid olunub. Bir yük konteynerini təsəvvür et: içində nə olursa olsun, xarici tərəf hər kran və gəminin işləyə biləcəyi standart formadadır. Postgres konteyneri Postgres-i və asılılıqlarını daşıyır; sənin maşınının isə yalnız Docker-i işlətməsi kifayətdir, Postgres quraşdırmaq lazım deyil.
