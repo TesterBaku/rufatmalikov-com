@@ -7,10 +7,10 @@ import Video from '../../../../components/course/Video.astro';
 import Deck from '../../../../components/course/Deck.astro';
 import { Steps } from '@astrojs/starlight/components';
 
-Özün üçün saxladığın dəstə sadəcə keçmək lazımdır. **Komandaya** təhvil verdiyin dəstə həm də
-**oxunaqlı** olmaq lazımdır: nəyin işlədiyinin bölüşülə bilən hesabatı, yalnız *smoke* alt-dəstini
+Özün üçün saxladığın dəst sadəcə keçməlidir. **Komandaya** təhvil verdiyin dəst həm də
+**oxunaqlı** olmalıdır: nəyin işlədiyinin bölüşülə bilən hesabatı, yalnız *smoke* alt-dəstini
 işlətmək yolu və onlarla faylı keçib miqyaslanan qovluq quruluşu. Bu modul `pytest-html` ilə
-hesabatı, testləri marker-lərlə seçməyi və dəsti quruluşlandırmağı əhatə edir.
+hesabatı, testləri marker-lərlə seçməyi və dəsti strukturlaşdırmağı əhatə edir.
 
 TestMarket Lab-ı `http://localhost:3000`-də işlək və `.venv`-ini aktiv saxla.
 
@@ -98,7 +98,7 @@ sağlamlıq darvazandır.
 
 ---
 
-## Dəsti quruluşlandırmaq
+## Dəsti strukturlaşdırmaq
 
 Bir neçə faylı keçdikdə, testləri sahəyə görə qruplaşdır və hər sahənin öz `conftest.py`-i vasitəsilə
 fixture-ləri bölüşməsinə imkan ver:
@@ -118,7 +118,7 @@ python-sdet/
 
 pytest bir testə gedən yoldakı **hər** `conftest.py`-i yükləyir, ona görə `tests/conftest.py`-dəki
 fixture hər yerdə əlçatandır, `tests/ui/conftest.py`-dəki isə UI testlərinə scope-lanır. Bu,
-bölüşülən quraşdırmanı mərkəzi, sahəyə-xas quraşdırmanı lokal saxlayır.
+bölüşülən fixture-ləri mərkəzi, sahəyə-xas fixture-ləri lokal saxlayır.
 
 **Yadda saxla:** testləri sahə başına qovluqlara təşkil et; bölüşülən fixture-ləri yuxarı
 `conftest.py`-ə, sahəyə-xas fixture-ləri isə iç-içə birinə qoy. pytest bir testə gedən yoldakı hər
