@@ -50,7 +50,7 @@ export default defineConfig({
 				en: 'Rufat Malikov',
 				az: 'Rüfət Məlikov',
 			},
-			description: 'QA automation enthusiast and educator. Playwright training, engineering writing, and side projects.',
+			description: 'Free, hands-on QA and coding courses in English and Azerbaijani — Playwright, Python, and test automation — plus free QA tools and study apps.',
 			// Fonts are self-hosted via @fontsource-variable (bundled below), so there
 			// is no render-blocking cross-origin Google Fonts request. fontsource CSS
 			// comes first so the @font-face rules are defined before brand.css uses them.

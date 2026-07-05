@@ -24,11 +24,11 @@ Qurub paylaşdığım layihələr. Hər biri inkişaf etdikcə öz yazısını a
 
 ## İmtahan Köməkçisi — Azərbaycandakı şagirdlər üçün imtahan hazırlığı
 
-Azərbaycandakı şagirdlər üçün pulsuz, brauzer əsaslı təhsil tətbiqi. Fənn seçirsiniz, qısa dərsləri oxuyursunuz, sonra dərhal qiymətləndirən və hər səhvi izah edən pilləli testlərlə məşq edirsiniz — quraşdırma yoxdur, brauzerdə işləyir. Bir məzmun-bilən tətbiq eyni koddan 40 bölməni (5–11-ci sinif, abituriyent və rus bölməsi) təqdim edir və hər riyaziyyat cavabı avtomatik cavab-yoxlayıcısı ilə yoxlanılır.
+Azərbaycandakı şagirdlər üçün pulsuz, brauzer əsaslı təhsil tətbiqi. Fənn seçirsiniz, qısa dərsləri oxuyursunuz, sonra dərhal qiymətləndirən və hər səhvi izah edən pilləli testlərlə məşq edirsiniz — quraşdırma yoxdur, brauzerdə işləyir. Bir məzmun-bilən tətbiq eyni koddan 41 bölməni (5–11-ci sinif, abituriyent və rus bölməsi) təqdim edir və hər riyaziyyat cavabı avtomatik cavab-yoxlayıcısı ilə yoxlanılır.
 
 **İçərisində nə var:**
 
-- **40 bölmə** — 5–11-ci sinif, abituriyent və rus bölməsi; riyaziyyat, elmlər, dillər və ədəbiyyat
+- **41 bölmə** — 5–11-ci sinif, abituriyent və rus bölməsi; riyaziyyat, elmlər, dillər və ədəbiyyat
 - **5-ci sinif riyaziyyatı** — 8 fəsil üzrə 57 mövzu, **1 710 sual**, rus dilində
 - **9-cu sinif buraxılış riyaziyyatı** — 11 fəsil üzrə 38 mövzu, **1 140 sual**, ayrıca DİM formatında tam məşq imtahanı
 - **Pilləli testlər** — asan / orta / çətin / qarışıq, hər səhv üçün rəylə

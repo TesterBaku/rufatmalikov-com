@@ -1,20 +1,26 @@
 ---
 title: QA Automation & Free Testing Courses
-description: Free Playwright automation testing course (EN & AZ) — learn the concepts, then practice hands-on in the browser and on a real app you run locally.
+description: Free, hands-on QA and coding courses in English and Azerbaijani — Playwright, Python, and test automation. Learn the concepts, practice in your browser, then test a real app you run locally.
 template: splash
 hero:
   title: Rufat Malikov
-  tagline: QA automation engineer (9+ years) sharing what I learn about testing and AI — and building free tools along the way.
+  tagline: Free, hands-on courses in software testing and automation — Playwright and Python, in English and Azerbaijani. Learn the concepts, practice in your browser, then test a real app you run locally.
   actions:
     - text: Start the Playwright course
       link: /en/course/
       icon: right-arrow
       variant: primary
+    - text: Start Python from zero
+      link: /en/python/
+      variant: secondary
+    - text: Browse the reference
+      link: /en/reference/
+      variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## What you'll find here
+## Learning tracks
 
 <CardGrid>
 	<Card title="Playwright course" icon="rocket">
@@ -22,18 +28,38 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 		[Start the course →](/en/course/) · [Practice with BrauzerLab →](/en/playwright/)
 	</Card>
+	<Card title="Python Fundamentals" icon="laptop">
+		A free, browser-based Python course for complete beginners — no setup, nothing to install. Write real Python on the page, run it instantly, and build the foundation that test automation, data, and AI are all built on.
+
+		[Start Python Fundamentals →](/en/python/)
+	</Card>
+	<Card title="Python for SDETs" icon="seti:python">
+		The advanced half of the Python track: write real API and UI tests with pytest, requests, and Playwright, and wire them into CI — all against a real app you run locally. In English and Azerbaijani.
+
+		[Go to Python for SDETs →](/en/python-sdet/)
+	</Card>
+	<Card title="Reference" icon="open-book">
+		Short, plain-language primers for the concepts the courses lean on — HTTP, APIs, CSS selectors, regex, Git, SQL, and Docker. Read one whenever a term needs grounding.
+
+		[Browse the reference →](/en/reference/)
+	</Card>
+</CardGrid>
+
+## Also here
+
+<CardGrid>
 	<Card title="Projects" icon="puzzle">
-		Free QA and study tools I've built — an interview trainer, AI-assisted study apps, and a couple of client websites.
+		Free QA and study tools I've built — BrauzerLab, an SDET interview trainer, AI-assisted study apps, and a couple of client sites shipped through automated testing pipelines.
 
 		[See the projects →](/en/projects/)
 	</Card>
-	<Card title="Exam Helper" icon="open-book">
-		A free, browser-based exam-prep app for students in Azerbaijan — 24 subject banks across grades 5–11 and university-entrance prep, with tiered quizzes and instant feedback.
+	<Card title="Exam Helper" icon="pencil">
+		A free, browser-based exam-prep app for students in Azerbaijan — 41 subject banks across grades 5–11 and university-entrance prep, with tiered quizzes and instant feedback.
 
 		[Open Exam Helper →](https://exam.rufatmalikov.com/) · [More about it →](/en/exam-helper/)
 	</Card>
 	<Card title="About me" icon="information">
-		9+ years of test automation across web, mobile, APIs, and AWS data pipelines — and where I'm taking it with AI-assisted QA.
+		I've spent 9+ years doing test automation for a living — web, mobile, APIs, and data pipelines. These free courses are the path into QA I wish I'd had starting out.
 
 		[More about me →](/en/about/)
 	</Card>
