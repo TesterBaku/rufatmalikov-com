@@ -1,0 +1,316 @@
+---
+title: "Modul 11: Capstone — tam API + UI dəsti"
+description: "Bütün kursu bir araya gətir: TestMarket Lab-a qarşı tam, peşəkarcasına strukturlaşdırılmış bir pytest dəsti — bölüşülən fixture-lər, API uğurlu-yol və neqativ testləri, Page Object UI axını, data-driven hallar, HTML hesabat və CI."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+
+Hər şeyin bir araya gəldiyi yer budur. TestMarket Lab-a qarşı 0–10-cu modullardan hər şeyi işlədən
+kiçik, amma **tam** bir test dəsti yığacaqsan: bölüşülən fixture-lər, API uğurlu-yol *və* neqativ
+testləri, Page-Object UI axını, data-driven hallar, HTML hesabat və CI workflow-u. Bunu müsahibəçiyə
+göstərəcəyin layihə kimi qəbul et.
+
+TestMarket Lab-ı `http://localhost:3000`-də işlək, `.venv`-ini aktiv və `pytest-playwright` +
+`pytest-html`-i quraşdırılmış saxla.
+
+<Video title="Modul 11: Capstone — tam API + UI dəsti" />
+
+<Deck href="/python-sdet/decks/m11-capstone-az/" title="Modul 11: capstone dəstinə qısa baxış — slayd təlimatı" />
+
+---
+
+## Missiya
+
+TestMarket Lab-ın başdan-başa işlədiyini sübut edən bir dəst qur:
+
+- **API uğurlu yol** — məhsullar siyahı/oxu, düzgün total-lı bir sifariş *(Modul 3, 5)*
+- **API neqativ** — səhv girişdə `400`/`401`/`404`/`409` *(Modul 4)*
+- **UI axını** — page object ilə brauzerdən daxil ol *(Modul 6, 7)*
+- **Data-driven** — fayldan login matrisi *(Modul 8)*
+- **Struktur & təcrid** — fixture-lər, `reset_db`, sahə başına qovluqlar *(Modul 2, 5, 9)*
+- **Hesabat & CI** — HTML hesabat, hər push-da yaşıl *(Modul 9, 10)*
+
+**Yadda saxla:** peşəkar dəst bir ağıllı test deyil — o, *struktur* (fixture-lər, page object-lər,
+qovluqlar) və *avtomatlaşdırma* (hesabat + CI) ilə *qatlar boyunca əhatədir* (API uğurlu + neqativ,
+UI). Capstone kiçik miqyasda məhz o formadır.
+
+---
+
+## Layihə quruluşu
+
+Qurduğun hər şey, bir düzülüşdə:
+
+```
+python-sdet/
+├── .github/workflows/tests.yml   # CI (Module 10)
+├── pages/
+│   ├── __init__.py
+│   └── login_page.py             # POM (Module 7)
+├── tests/
+│   ├── conftest.py               # base_url / api / reset_db (Modules 2, 5)
+│   ├── data/
+│   │   └── login_cases.json      # data-driven cases (Module 8)
+│   ├── api/
+│   │   ├── test_products.py      # happy path (Module 3)
+│   │   ├── test_orders.py        # arrange-via-API (Module 5)
+│   │   ├── test_negative.py      # 4xx (Module 4)
+│   │   └── test_login_matrix.py  # data-driven (Module 8)
+│   └── ui/
+│       └── test_login.py         # Playwright + POM (Modules 6, 7)
+├── pytest.ini                    # markers + pythonpath (Modules 2, 7, 9)
+└── requirements.txt              # pinned deps (Modules 0, 6, 9)
+```
+
+**Yadda saxla:** düzülüş *elə* dizayndır — bölüşülən quraşdırma `conftest.py`-də, seçicilər
+`pages/`-də, verilən `data/`-da, testlər sahəyə görə qruplaşdırılıb, konfiqurasiya/CI isə kökdə. Bir
+reviewer ağacı oxuyub dəstin nə etdiyini bilə bilər.
+
+---
+
+## Bölüşülən conftest
+
+Hər testin söykəndiyi fixture-lər (Modul 2 və 5-dən):
+
+```python
+# tests/conftest.py
+import pytest
+import requests
+
+
+@pytest.fixture(scope="session")
+def base_url():
+    return "http://localhost:3000"
+
+
+@pytest.fixture
+def api(base_url):
+    session = requests.Session()
+    yield session
+    session.close()
+
+
+@pytest.fixture
+def reset_db(base_url):
+    requests.post(f"{base_url}/api/reset")
+    yield
+```
+
+---
+
+## API testləri — uğurlu yol və neqativ
+
+Uğurlu-yol sifariş testi (API vasitəsilə hazırla, hesablanmış total-ı assert et) və bir neqativ test
+(səhv login → `401`):
+
+```python
+# tests/api/test_orders.py
+import pytest
+
+
+@pytest.mark.api
+@pytest.mark.smoke
+def test_order_total(reset_db, base_url, api):
+    r = api.post(
+        f"{base_url}/api/orders",
+        json={"email": "customer@test.io", "items": [{"product_id": 1, "quantity": 2}]},
+    )
+    assert r.status_code == 201
+    assert r.json()["total"] == pytest.approx(29.99 * 2)
+```
+
+```python
+# tests/api/test_negative.py
+import pytest
+
+
+@pytest.mark.api
+def test_login_rejects_bad_password(base_url, api):
+    r = api.post(
+        f"{base_url}/api/auth/login",
+        json={"email": "customer@test.io", "password": "wrong"},
+    )
+    assert r.status_code == 401
+```
+
+**Yadda saxla:** hər iki istiqaməti əhatə et — uğurlu yolu *və* uğursuzluğu. Yalnız uğuru sübut edən
+dəst əsl baqların yaşadığı yeri qaçırır.
+
+---
+
+## Page object ilə UI testi
+
+`LoginPage` (Modul 7) vasitəsilə idarə olunan login axını:
+
+```python
+# pages/login_page.py
+class LoginPage:
+    def __init__(self, page, base_url):
+        self.page = page
+        self.base_url = base_url
+        self.email = page.get_by_label("Email")
+        self.password = page.get_by_label("Password")
+        self.submit = page.get_by_test_id("login-submit")
+
+    def goto(self):
+        self.page.goto(f"{self.base_url}/auth/login")
+        return self
+
+    def login(self, email, password):
+        self.email.fill(email)
+        self.password.fill(password)
+        self.submit.click()
+```
+
+```python
+# tests/ui/test_login.py
+import pytest
+from playwright.sync_api import expect
+
+from pages.login_page import LoginPage
+
+
+@pytest.mark.ui
+def test_login_flow(page, base_url):
+    LoginPage(page, base_url).goto().login("customer@test.io", "customer123")
+    expect(page.get_by_test_id("nav-logout")).to_be_visible()
+```
+
+**Yadda saxla:** UI testi bir *ssenaridir* — page object seçiciləri gizlədir və test "daxil ol,
+sonra daxil olmuşam" kimi oxunur. POM strukturunun faydası budur.
+
+---
+
+## Data-driven hissə
+
+JSON faylından login validasiya matrisi (Modul 8) — `tests/data/login_cases.json`:
+
+```json
+[
+  { "email": "customer@test.io", "password": "customer123", "expected": 200 },
+  { "email": "customer@test.io", "password": "wrong",       "expected": 401 },
+  { "email": "ghost@test.io",    "password": "whatever",    "expected": 401 },
+  { "email": "customer@test.io", "password": "",            "expected": 400 }
+]
+```
+
+```python
+# tests/api/test_login_matrix.py
+import json
+from pathlib import Path
+
+import pytest
+
+CASES = json.loads((Path(__file__).parent.parent / "data" / "login_cases.json").read_text())
+
+
+@pytest.mark.api
+@pytest.mark.parametrize("case", CASES, ids=[f"{c['email']}->{c['expected']}" for c in CASES])
+def test_login_matrix(case, base_url, api):
+    r = api.post(
+        f"{base_url}/api/auth/login",
+        json={"email": case["email"], "password": case["password"]},
+    )
+    assert r.status_code == case["expected"]
+```
+
+Yola diqqət et: bu test `tests/api/`-də yaşayır, ona görə `tests/data/`-ya iki səviyyə yuxarı
+(`.parent.parent`) qalxır.
+
+**Yadda saxla:** bir JSON fayl çoxlu halı idarə edir; yol `Path(__file__).parent` ilə lövbərlənib,
+ona görə istənilən qovluqdan işləyir — `data/`-nın testdən neçə səviyyə yuxarı olduğuna diqqət et.
+
+---
+
+## Hər şeyi qoş
+
+Dəsti bir araya bağlayan konfiqurasiya:
+
+```ini
+# pytest.ini
+[pytest]
+testpaths = tests
+pythonpath = .
+markers =
+    smoke: a fast, critical subset to run first
+    api: tests that hit the REST API
+    ui: tests that drive the browser
+```
+
+```
+# requirements.txt (pin everything you've installed)
+pytest
+requests
+pytest-playwright
+pytest-html
+```
+
+`requirements.txt`-i istənilən vaxt `pip freeze > requirements.txt` ilə yenidən yarat və Modul 10-dakı
+CI workflow-unu dəyişmədən yenidən işlət — o, onsuz da bunları quraşdırır, tətbiqi başladır və dəsti
+işlədir.
+
+**Yadda saxla:** `pytest.ini` (marker-lər + `pythonpath`), tam bir `requirements.txt` və CI
+workflow-u birləşdirici toxumadır. Onları bir dəfə düzgün qur və hər yeni test sadəcə yerinə düşür.
+
+---
+
+## İşlət
+
+```bash
+pytest -m api                                          # just the API layer
+pytest -m ui                                           # just the browser layer
+pytest -ra --html=report.html --self-contained-html    # everything, with a report
+```
+
+Onu Modul 10 workflow-u ilə GitHub-a push et və hər PR-da bütün şey işləyir, hesabat da daxil. Bu,
+komandaya — və ya işə götürən menecerə — təhvil verə biləcəyin bir dəstdir.
+
+**Yadda saxla:** inkişaf edərkən marker-lə bir hissəni işlət (`-m api`, `-m ui`), push-dan əvvəl bütün
+dəsti hesabatla, və CI-nin onu hər dəyişiklikdə işlətməsinə imkan ver. Lokalda sürətli əks-əlaqə,
+CI-də tam əhatə.
+
+---
+
+## Tapşırıqlar
+
+Capstone-u `python-sdet` layihəndə yığ. `pytest -v` ilə işlət.
+
+### Tapşırıq 1 — Strukturu qur (20 dəq)
+
+Yuxarıdakı qovluq düzülüşünü qur (`pages/`, `tests/api/`, `tests/ui/`, `tests/data/`, `pytest.ini`,
+`requirements.txt`). Mövcud testlərini `tests/api/`-yə və `tests/ui/`-yə köçür. `pytest`-in hələ də
+hər şeyi topladığını və keçdiyini təsdiqlə.
+
+### Tapşırıq 2 — Hər qatı doldur (30 dəq)
+
+Ən azı bunların olduğundan əmin ol: bir API uğurlu-yol testi, bir API neqativ testi, bir data-driven
+matris və bir UI axını — hər biri düzgün marker ilə (`api`/`ui` və ən sürətlidə `smoke`).
+
+### Tapşırıq 3 — Hesabat və seç (10 dəq)
+
+`pytest -m smoke --html=report.html --self-contained-html` işlət və hesabatı aç. Sonra
+`pytest -m "api and not ui"` işlət və yalnız API testlərinin işlədiyini təsdiqlə.
+
+### Tapşırıq 4 — Onu CI-yə qoy (15 dəq)
+
+Modul 10 workflow-unu əlavə et, GitHub-a push et və dəstin Actions-da yaşıl işlədiyini, hesabatın
+artefakt kimi yükləndiyini təsdiqlə. Onu tələb olunan yoxlama et.
+
+### Capstone çətinliyi — Onu genişləndir
+
+Bir **məhsul yarat → oxu → yenilə → sil** UI və ya API həyat-dövrü testi və bir **neqativ UI** testi
+(səhv parol `flash-error` göstərir) əlavə et. Sonra `base_url`-i və seçiciləri dəyişərək bütün dəsti
+*öz* tətbiqinə yönəlt — struktur dəyişmədən keçir.
+
+---
+
+## Python for SDETs-i bitirdin 🎉
+
+`pip install pytest`-dən CI ilə qorunan API + UI dəstinə qədər, indi əsl SDET rollarının hər gün işlətdiyi
+alət dəstin var: pytest, `requests`, Playwright, fixture-lər, Page Object Model, data-driven testlər,
+hesabat və CI — hamısı real bir tətbiqə qarşı işlənib. Bu capstone-u götür, genişləndir və öz
+layihələrinə yönəlt. O dəst sənin portfolio parçandır.
+
+Üstünə daha bir senior bacarıq istəyirsən? [**Modul 12 — Verilənlər bazasının yoxlanması**](/az/python-sdet/module-12/)
+bir əməliyyatın verilənlər bazasını birbaşa oxuyaraq düzgün *davam etdiyini* necə sübut edəcəyini
+göstərir — əksər dəstlərin və əksər kursların atladığı "amma həqiqətən saxladımı?" yoxlaması.
