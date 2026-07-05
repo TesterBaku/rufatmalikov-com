@@ -1,0 +1,213 @@
+---
+title: "Modul 9: Hesabat və dəst quruluşu"
+description: "Dəsti komanda üçün oxunaqlı et: pytest-html ilə HTML hesabatları, testləri marker-lərlə seçmək və qruplaşdırmaq, testləri bölüşülən fixture-lərlə qovluqlara təşkil etmək və hesabat-dostu bayraqlar — TestMarket Lab-a qarşı."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+Özün üçün saxladığın dəstə sadəcə keçmək lazımdır. **Komandaya** təhvil verdiyin dəstə həm də
+**oxunaqlı** olmaq lazımdır: nəyin işlədiyinin bölüşülə bilən hesabatı, yalnız *smoke* alt-dəstini
+işlətmək yolu və onlarla faylı keçib miqyaslanan qovluq quruluşu. Bu modul `pytest-html` ilə
+hesabatı, testləri marker-lərlə seçməyi və dəsti quruluşlandırmağı əhatə edir.
+
+TestMarket Lab-ı `http://localhost:3000`-də işlək və `.venv`-ini aktiv saxla.
+
+<Video title="Modul 9: Hesabat və dəst quruluşu" />
+
+<Deck href="/python-sdet/decks/m9-reporting-az/" title="Modul 9: hesabat və dəst quruluşuna qısa baxış — slayd təlimatı" />
+
+---
+
+## pytest-html ilə HTML hesabatları
+
+`pytest`-in terminal çıxışı sənin üçün yaxşıdır; **hesabat faylı** isə komanda ilə bölüşdüyün və ya
+CI icrasına əlavə etdiyin şeydir. `pytest-html` tək, öz-özünə tam bir HTML fayl istehsal edir:
+
+<Steps>
+
+1. **Onu quraşdır:**
+
+   ```bash
+   pip install pytest-html
+   ```
+
+2. **Asılılıqlarını yenidən bərkit** (ki, CI və komanda yoldaşların da `pytest-html`-i alsın):
+
+   ```bash
+   pip freeze > requirements.txt
+   ```
+
+3. **Hesabatla işlət:**
+
+   ```bash
+   pytest --html=report.html --self-contained-html
+   ```
+
+</Steps>
+
+`report.html` hər testi nəticəsi, müddəti və tutulmuş çıxışı ilə siyahılayır — bir baxışda
+keç/uğursuz, uğursuz testlərin traceback-ləri inline. `--self-contained-html` CSS/JS-i inline edir
+ki, o bir fayl email edilə və ya CI artefaktı kimi yüklənə bilsin.
+
+**Yadda saxla:** `pip install pytest-html`, `pip freeze > requirements.txt` ilə yenidən bərkit (ki,
+CI də plagini alsın), sonra tək bölüşülə bilən hesabat faylı üçün `pytest --html=report.html
+--self-contained-html` — CI icrasına əlavə etdiyin və ya komanda yoldaşına göndərdiyin artefakt.
+
+---
+
+## Marker-lərlə seç və qruplaşdır
+
+Marker-lər (Modul 2) testləri etiketləyir ki, bir **alt-dəst** işlədə biləsən. Marker adlarını
+`pytest.ini`-də qeydiyyatdan keçir (şərhlər öz sətirlərində — `pytest.ini` inline `#` şərhləri
+dəstəkləmir), sonra etiketlə və seç:
+
+```ini
+# pytest.ini
+[pytest]
+testpaths = tests
+markers =
+    smoke: a fast, critical subset to run first
+    api: tests that hit the REST API
+    ui: tests that drive the browser
+```
+
+```python
+import pytest
+
+
+@pytest.mark.smoke
+@pytest.mark.api
+def test_products_endpoint_up():
+    ...
+```
+
+```bash
+pytest -m smoke                 # only smoke tests
+pytest -m "api and not smoke"   # api tests that aren't smoke
+pytest -m ui                    # only browser tests
+```
+
+Saniyələr içində işləyən `smoke` alt-dəsti standart "kritik nəyisə sındırdıqmı?" darvazasıdır — onu
+hər push-da işlət, tam dəsti daha az.
+
+**Yadda saxla:** marker-ləri `pytest.ini`-də qeydiyyatdan keçir, testləri `@pytest.mark.<name>` ilə
+etiketlə və `-m` ilə seç (`and`/`or`/`not` dəstəkləyir). Sürətli `smoke` alt-dəsti sənin gündəlik
+sağlamlıq darvazandır.
+
+---
+
+## Dəsti quruluşlandırmaq
+
+Bir neçə faylı keçdikdə, testləri sahəyə görə qruplaşdır və hər sahənin öz `conftest.py`-i vasitəsilə
+fixture-ləri bölüşməsinə imkan ver:
+
+```
+python-sdet/
+├── tests/
+│   ├── conftest.py          # shared fixtures (base_url, api, reset_db)
+│   ├── api/
+│   │   ├── conftest.py      # API-only fixtures
+│   │   └── test_products.py
+│   └── ui/
+│       ├── conftest.py      # UI-only fixtures
+│       └── test_login.py
+└── pytest.ini
+```
+
+pytest bir testə gedən yoldakı **hər** `conftest.py`-i yükləyir, ona görə `tests/conftest.py`-dəki
+fixture hər yerdə əlçatandır, `tests/ui/conftest.py`-dəki isə UI testlərinə scope-lanır. Bu,
+bölüşülən quraşdırmanı mərkəzi, sahəyə-xas quraşdırmanı lokal saxlayır.
+
+**Yadda saxla:** testləri sahə başına qovluqlara təşkil et; bölüşülən fixture-ləri yuxarı
+`conftest.py`-ə, sahəyə-xas fixture-ləri isə iç-içə birinə qoy. pytest bir testə gedən yoldakı hər
+`conftest.py`-i avtomatik aşkarlayır — import yoxdur.
+
+---
+
+## Hesabat-dostu bayraqlar
+
+Bir neçə bayraq icraları (və CI loglarını) qat-qat oxunaqlı edir:
+
+```bash
+pytest -ra                 # summary of all non-passing outcomes (skips, xfails, errors)
+pytest --tb=short          # compact tracebacks
+pytest --durations=10      # the 10 slowest tests — find what to speed up
+pytest -q                  # quiet: one char per test
+```
+
+`-ra` xüsusilə CI-də dəyərlidir: o, sonda hər skip və `xfail`-i üzə çıxarır, ona görə səssizcə
+buraxılmış test gizlənə bilmir. `--durations` səni optimallaşdırmağa dəyər yavaş testlərə yönəldir.
+
+**Yadda saxla:** `-ra` (skip/xfail/xətaları üzə çıxar), `--tb=short` (yığcam uğursuzluqlar) və
+`--durations=N` (ən yavaş testlər) çıxış divarını oxunaqlı xülasəyə çevirir — onları CI-də qur.
+
+---
+
+## Daha zəngin hesabatlar: Allure
+
+Cilalanmış, tarixi dashboard üçün (icralar arası trendlər, addımlar, əlavələr) **Allure** ümumi
+yüksəltmədir: `pip install allure-pytest`, `pytest --alluredir=allure-results` işlət, sonra ayrı
+Allure komanda-sətri aləti ilə render et. O, `pytest-html`-dən daha ağırdır (Java-əsaslı CLI), ona
+görə komanda tək fayl əvəzinə dashboard və tarix istəyəndə ona müraciət et.
+
+**Yadda saxla:** `pytest-html` sıfır-sürtünmə tək-fayl hesabatıdır; **Allure** ayrı CLI bahasına
+dashboard, trend və addım təfərrüatı əlavə edir. `pytest-html` ilə başla; komandaya tarix lazım
+olanda Allure-u qəbul et.
+
+---
+
+## Birləşdirmək
+
+CI-tipli əmr: yalnız smoke alt-dəstini işlət, bölüşülə bilən hesabat istehsal et və keçməyən hər şeyi
+xülasələ:
+
+```bash
+pytest -m smoke --html=smoke-report.html --self-contained-html -ra --tb=short
+```
+
+O bir sətir real bir "darvaza" addımıdır — sürətli alt-dəst, əlavə etmək üçün artefakt və keçməyən
+istənilən şeyin təmiz xülasəsi. Modul 10 məhz bunu GitHub Actions-a qoşur.
+
+**Yadda saxla:** yaxşı darvaza əmri bir marker-i (`-m smoke`), bir hesabatı (`--html …
+--self-contained-html`) və bir xülasəni (`-ra`) birləşdirir. Oxunaqlı giriş və oxunaqlı çıxış dəsti
+*komanda* aktivinə çevirən şeydir.
+
+---
+
+## Tapşırıqlar
+
+TestMarket Lab işlək olarkən `python-sdet` layihəndə işlə. `pytest -v` ilə işlət.
+
+### Tapşırıq 1 — Hesabat yarat (5 dəq)
+
+`pip install pytest-html`, sonra `pytest --html=report.html --self-contained-html` işlət.
+`report.html`-i brauzerdə aç və bir testin müddətini və nəticəsini tap.
+
+### Tapşırıq 2 — smoke alt-dəsti (10 dəq)
+
+`pytest.ini`-də `smoke`-u qeydiyyatdan keçir, iki sürətli testi `@pytest.mark.smoke` etiketlə və
+`pytest -m smoke`-un yalnız o ikisini işlətdiyini təsdiqlə. Sonra `pytest -m "not smoke"` işlət və
+onun qalanını işlətdiyini təsdiqlə.
+
+### Tapşırıq 3 — Yenidən təşkil et (15 dəq)
+
+API testlərini `tests/api/`-yə, UI testlərini `tests/ui/`-yə köçür, hər biri bir `conftest.py` ilə.
+Dəstin hələ də keçdiyini və `tests/conftest.py`-dəki fixture-in hər iki sahədən işlədilə bildiyini
+təsdiqlə.
+
+### Tapşırıq 4 — Hesabat-dostu icra (5 dəq)
+
+`pytest -ra --durations=5` işlət. Ən yavaş testini müəyyən et və istənilən skip/xfail-in icra-sonu
+xülasəsini oxu.
+
+### Bonus — Darvaza əmri
+
+Yalnız `smoke` işlədən, öz-özünə tam HTML hesabat yazan və keçməyən xülasə çap edən tək bir əmr yığ.
+Bu, kiçik miqyasda sənin Modul 10 CI addımındır.
+
+---
+
+**Modul 10**-da dəsti **CI**-yə qoyuruq — alətləri quraşdıran, TestMarket Lab-ı başladan, testləri
+hər push və pull request-də işlədən və hesabatı yükləyən GitHub Actions workflow-u.
