@@ -70,6 +70,7 @@ export default defineConfig({
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/TesterBaku' },
 			],
 			sidebar: [
+				{ label: 'Choose a course', translations: { az: 'Kurs seç' }, link: '/courses/' },
 				{
 					// Explicit module links (not autogenerate) so the 14 flat module files
 					// can be grouped into collapsible difficulty phases. Phases start
@@ -115,11 +116,6 @@ export default defineConfig({
 							],
 						},
 					],
-				},
-				{
-					label: 'Reference',
-					translations: { az: 'İstinad' },
-					items: [{ autogenerate: { directory: 'reference' } }],
 				},
 				{
 					// Explicit per-module groups so the module headings can be localized
@@ -187,7 +183,13 @@ export default defineConfig({
 					})),
 				},
 				{
-					label: 'BrauzerLab',
+					label: 'Reference',
+					translations: { az: 'İstinad' },
+					items: [{ autogenerate: { directory: 'reference' } }],
+				},
+				{
+					label: 'BrauzerLab — practice',
+					translations: { az: 'BrauzerLab — məşq' },
 					items: [{ autogenerate: { directory: 'playwright' } }],
 				},
 				{

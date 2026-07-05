@@ -43,6 +43,7 @@ export const onRequest = defineRouteMiddleware((context) => {
 			{ tag: 'meta', attrs: { property: 'og:image', content: img } },
 			{ tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
 			{ tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
+			{ tag: 'meta', attrs: { property: 'og:image:alt', content: alt } },
 			{ tag: 'meta', attrs: { name: 'twitter:image', content: img } },
 			{ tag: 'meta', attrs: { name: 'twitter:image:alt', content: alt } }
 		);
