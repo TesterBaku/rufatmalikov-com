@@ -1,15 +1,19 @@
 ---
 title: Haqqında
-description: 9+ illik təcrübəyə malik QA avtomatlaşdırma mühəndisi — test avtomatlaşdırması, AWS/ETL data testi və AI-dəstəkli QA.
+description: Rüfət Məlikovdan pulsuz QA və kodlaşdırma kursları — test avtomatlaşdırması, AWS/ETL data testi və AI-dəstəkli QA üzrə 9+ illik təcrübəyə malik QA avtomatlaşdırma mühəndisi.
 ---
 
-Salam, mən **Rüfət Məlikovam** — veb, mobil, REST API və AWS əsaslı data pipeline-ları üzrə end-to-end test avtomatlaşdırması quran və sabitləşdirən, 9+ illik təcrübəyə malik QA avtomatlaşdırma mühəndisiyəm.
+Salam, mən **Rüfət Məlikovam** — sahədə 9+ illik təcrübəyə malik QA avtomatlaşdırma mühəndisiyəm, və bu sayt öyrəndiklərimi pulsuz öyrətdiyim yerdir.
 
-İşimin böyük hissəsi keyfiyyətin yüksək məsuliyyətli tərəfi olub: flaky testlərin aradan qaldırılması, buraxılış üçün go/no-go qərarları və ETL pipeline-ları üçün source-to-target data yoxlaması. Selenium, Playwright, Appium və XCUITest ilə — Java, Python və C# dillərində — dərin AWS və SQL təcrübəsi ilə işləmişəm.
+Kurslar səni sıfırdan test avtomatlaşdırmaya aparır: ingilis və Azərbaycan dilində 15 modulluq [Playwright kursu](/az/course/), yeni başlayanlar üçün [Python Əsasları](/az/python/) kursu, real API və UI testinə keçid üçün [SDET-lər üçün Python](/az/python-sdet/) və sadə dildə [İstinad](/az/reference/) kitabxanası. Konsepsiyaları öyrənir, qurduğum pulsuz brauzer əsaslı Playwright məşqçisi [BrauzerLab](/az/playwright/)-də praktiki məşq edir, sonra yerli işlətdiyin real tətbiq olan TestMarket Lab-a qarşı tam test dəstləri yazırsan. Buradakı hər şey pulsuzdur.
+
+**Niyə məndən öyrənmək:** veb, mobil, REST API və AWS əsaslı data pipeline-ları üzrə end-to-end test avtomatlaşdırması quraraq və sabitləşdirərək 9+ il keçirmişəm — keyfiyyətin yüksək məsuliyyətli tərəfi: flaky testlərin aradan qaldırılması, buraxılış üçün go/no-go qərarları və ETL pipeline-ları üçün source-to-target data yoxlaması. Selenium, Playwright, Appium və XCUITest ilə — Java, Python və C# dillərində — dərin AWS və SQL təcrübəsi ilə işləmişəm.
 
 Son zamanlar xüsusilə **AI-dəstəkli test** ilə maraqlanıram: test yazımını sürətləndirmək, real test datası yaratmaq və defekt nümunələrini aşkar etmək üçün Claude, Claude Code və MCP əsaslı agent alətlərindən istifadə edirəm. Bunu YouTube kanalımda da paylaşıram: [AI with Rufat](https://www.youtube.com/@AIwithRufat).
 
-Bu sayt öyrəndiklərimi və qurduqlarımı paylaşdığım yerdir — pulsuz, interaktiv Playwright məşqçisi ([BrauzerLab](/az/playwright/)), pulsuz [Python kursu](/az/python/) (yeni başlayanlar üçün), Azərbaycandakı şagirdlər üçün [İmtahan Köməkçisi](/az/exam-helper/), test və AI haqqında qeydlər və [müsahibə məşqçisi](/az/projects/) kimi yan layihələr. Buradakı hər şey pulsuzdur.
+Kurslardan başqa, pulsuz QA və təhsil alətləri qururam — Azərbaycandakı şagirdlər üçün [İmtahan Köməkçisi](/az/exam-helper/), müsahibə məşqçisi və [layihələr səhifəsində](/az/projects/) daha çox.
+
+Həmçinin hazırda QA avtomatlaşdırma / SDET vəzifələrinə açığam — remote, hibrid və ya ofisdə.
 
 ## Mənimlə əlaqə
 

@@ -34,22 +34,33 @@ test('home hero CTA links to the course overview', async ({ page }) => {
 	await expect(cta).toHaveAttribute('href', '/en/course/');
 });
 
-test('projects page lists all entries in importance order', async ({ page }) => {
+test('projects page groups entries and lists them in importance order', async ({ page }) => {
 	await page.goto('/en/projects/');
-	const headings = await page.locator('.sl-markdown-content h2').allInnerTexts();
+
+	// Three labeled groups, in order.
+	const groups = await page.locator('.sl-markdown-content h2').allInnerTexts();
+	const expectedGroups = ['QA & testing tools', 'Study apps', 'Client websites'];
+	expect(groups).toHaveLength(expectedGroups.length);
+	expectedGroups.forEach((name, i) => {
+		expect(groups[i]).toContain(name);
+	});
+
+	// Individual projects (h3) in importance order within the groups.
+	const projects = await page.locator('.sl-markdown-content h3').allInnerTexts();
 	const expectedOrder = [
 		'BrauzerLab',
-		'Exam Helper',
+		'TestMarket Lab',
 		'SDET Interview Trainer',
+		'Exam Helper',
 		'Study Quiz',
 		'Quiz Formatter',
 		'Grade 5 Math',
 		'Universal Appliances Repair',
 		'RMC Tow',
 	];
-	expect(headings).toHaveLength(expectedOrder.length);
+	expect(projects).toHaveLength(expectedOrder.length);
 	expectedOrder.forEach((name, i) => {
-		expect(headings[i]).toContain(name);
+		expect(projects[i]).toContain(name);
 	});
 });
 

@@ -3,11 +3,13 @@ title: Layihələr
 description: Qurub paylaşdığım layihələr — QA təlim alətləri, AI-dəstəkli təhsil tətbiqləri və müştəri vebsaytları.
 ---
 
-Qurub paylaşdığım layihələr. Hər biri inkişaf etdikcə öz yazısını alacaq.
+Qurub paylaşdığım layihələr, təyinatına görə qruplaşdırılıb. Hər biri inkişaf etdikcə öz yazısını alacaq.
 
-## BrauzerLab — interaktiv Playwright məşqçisi
+## QA və test alətləri
 
-İngilis və Azərbaycan dillərində pulsuz, brauzer əsaslı Playwright kursu. Brauzerdaxili redaktorda real Playwright (JavaScript/TypeScript) kodu yazırsınız, simulyasiya olunmuş səhifənin reaksiyasını görürsünüz və dərhal keç/keçmə rəyi alırsınız — quraşdırma tələb olunmur. Tapşırıqları və yoxlama mühərrikini sıfırdan qurmuşam.
+### BrauzerLab — interaktiv Playwright məşqçisi
+
+İngilis və Azərbaycan dillərində pulsuz, brauzer əsaslı Playwright kursu. Brauzerdaxili redaktorda real Playwright (JavaScript/TypeScript) kodu yazırsınız, simulyasiya olunmuş səhifənin reaksiyasını görürsünüz və dərhal keç/keçmə rəyi alırsınız — quraşdırma tələb olunmur. Tapşırıqları və yoxlama mühərrikini sıfırdan qurmuşam. O, [Playwright kursunun](/az/course/) praktiki məşq yoldaşıdır.
 
 **İçərisində nə var:**
 
@@ -22,7 +24,41 @@ Qurub paylaşdığım layihələr. Hər biri inkişaf etdikcə öz yazısını a
 
 [BrauzerLab-ı aç →](https://brauzerlab.rufatmalikov.com/az/) · [Ətraflı →](/az/playwright/)
 
-## İmtahan Köməkçisi — Azərbaycandakı şagirdlər üçün imtahan hazırlığı
+### TestMarket Lab — test etdiyin tətbiq
+
+Kurslar boyu test dəstlərinin qarşısında işlədiyi hədəf kimi qurulmuş kiçik, lakin real bir e-ticarət veb tətbiqi. Məhsul kataloqu, səbət, ödəniş və sifarişlər, müştəri və admin autentifikasiyası, həmçinin REST API-si var — üstəlik testlərin oxunaqlı və təkrarlana bilən qalması üçün qəsdən qoyulmuş sabit test qarmaqları. Onu klonlayır, yerli işlədir və həm [Playwright kursunda](/az/course/), həm də [SDET-lər üçün Python](/az/python-sdet/)-da avtomatlaşdırırsan.
+
+**İçərisində nə var:**
+
+- **Real stek** — Express, EJS və SQLite (better-sqlite3), beş cədvəlli sxem (istifadəçilər, məhsullar, səbət, sifarişlər, sifariş elementləri) və real xarici açarlarla.
+- **Test üçün qurulub** — sabit `data-testid` selektorları, deterministik datanı yenidən əkən `POST /api/reset` endpoint-i və test-data qurulumu üçün API marşrutları (`POST /api/orders`).
+- **Əlçatanlıq və UI vəziyyətləri** — əlçatan mobil naviqasiya, üstəlik yüklənmə, boş, xəta və validasiya vəziyyətləri — real avtomatlaşdırmanın idarə etməli olduğu hallar.
+- **İki kurs, bir tətbiq** — JavaScript Playwright kursu və Python SDET kursu üçün ortaq məşq hədəfi, beləcə bacarıqlar birbaşa köçürülür.
+
+Node.js (Express + better-sqlite3) ilə qurulub.
+
+[Koda bax →](https://github.com/TesterBaku/testmarket-lab)
+
+### SDET Interview Trainer
+
+QA və ya SDET müsahibələrinə hazırlaşırsan? Bu, məhz bunun üçün qurduğum məşq tətbiqidir. İstər masamda, istərsə də yolda — istənilən yerdə istifadə edə biləcəyim bir köməkçi istəyirdim, ona görə də onu qurdum və eyni vəziyyətdə olan hər kəs üçün açıq etdim.
+
+*Qeyd: tətbiqin interfeysi hazırda ingilis dilindədir.*
+
+**İçərisində nə var:**
+
+- **Gündəlik məşq** — kodlaşdırma, SQL, Playwright/Selenium, API/CI/AWS və strategiya suallarını birləşdirən fokuslanmış gündəlik plan
+- **Coding Gym** — Python, Java, SQL və TypeScript-də kodlaşdırma inamı qazanmaq üçün QA yönümlü tapşırıqlar
+- **Mock müsahibə** — cavab yaz, model cavabı aç və yoxlama siyahısına görə özünü qiymətləndir
+- **Tərəqqi izləməsi** — 500 məşq elementi üzrə tamamlanma göstəriciləri və "zəif mövzular" baxışı
+
+Hələlik backend olmadan işləyir, ona görə də masaüstündə və mobil cihazda sürətlə istifadə olunur. Bu, erkən bir konsepsiya sübutudur — üzərində qurmağa davam edəcəyim başlanğıc nöqtəsi. Sıfırdan hazırlaşırsansa, [Playwright kursu](/az/course/) və [SDET-lər üçün Python](/az/python-sdet/) ilə yaxşı uyğunlaşır.
+
+[Məşqçini aç →](https://sdet-interview-trainer.vercel.app/) · [Koda bax →](https://github.com/TesterBaku/sdet-interview-trainer)
+
+## Təhsil tətbiqləri
+
+### İmtahan Köməkçisi — Azərbaycandakı şagirdlər üçün imtahan hazırlığı
 
 Azərbaycandakı şagirdlər üçün pulsuz, brauzer əsaslı təhsil tətbiqi. Fənn seçirsiniz, qısa dərsləri oxuyursunuz, sonra dərhal qiymətləndirən və hər səhvi izah edən pilləli testlərlə məşq edirsiniz — quraşdırma yoxdur, brauzerdə işləyir. Bir məzmun-bilən tətbiq eyni koddan 41 bölməni (5–11-ci sinif, abituriyent və rus bölməsi) təqdim edir və hər riyaziyyat cavabı avtomatik cavab-yoxlayıcısı ilə yoxlanılır.
 
@@ -38,24 +74,7 @@ TypeScript və Next.js ilə qurulub (statik export).
 
 [İmtahan Köməkçisini aç →](https://exam.rufatmalikov.com/) · [Ətraflı →](/az/exam-helper/)
 
-## SDET Interview Trainer
-
-QA və SDET müsahibələrinə hazırlıq üçün məşq tətbiqi. Müsahibələrə hazırlaşıram və istər masamda, istərsə də yolda — istənilən yerdə istifadə edə biləcəyim bir köməkçi istəyirdim, ona görə də onu qurdum və eyni vəziyyətdə olan hər kəs üçün açıq etdim.
-
-*Qeyd: tətbiqin interfeysi hazırda ingilis dilindədir.*
-
-**İçərisində nə var:**
-
-- **Gündəlik məşq** — kodlaşdırma, SQL, Playwright/Selenium, API/CI/AWS və strategiya suallarını birləşdirən fokuslanmış gündəlik plan
-- **Coding Gym** — Python, Java, SQL və TypeScript-də kodlaşdırma inamı qazanmaq üçün QA yönümlü tapşırıqlar
-- **Mock müsahibə** — cavab yaz, model cavabı aç və yoxlama siyahısına görə özünü qiymətləndir
-- **Tərəqqi izləməsi** — 500 məşq elementi üzrə tamamlanma göstəriciləri və "zəif mövzular" baxışı
-
-Hələlik backend olmadan işləyir, ona görə də masaüstündə və mobil cihazda sürətlə istifadə olunur. Bu, erkən bir konsepsiya sübutudur — üzərində qurmağa davam edəcəyim başlanğıc nöqtəsi.
-
-[Məşqçini aç →](https://sdet-interview-trainer.vercel.app/) · [Koda bax →](https://github.com/TesterBaku/sdet-interview-trainer)
-
-## Study Quiz — kurs materiallarından imtahan hazırlığı
+### Study Quiz — kurs materiallarından imtahan hazırlığı
 
 İtaliyada proqram mühəndisliyi üzrə magistr təhsili alan bacım oğlu üçün qurduğum lokal imtahan-hazırlıq köməkçisi. O, mühazirə slaydları və laboratoriya materiallarından faydalı məşq testləri yaratmaq üçün NotebookLM-i sınamış, lakin istədiyi nəticəni ala bilməmişdi — ona görə də mən materialları parse edib bunu edən bir alət qurdum. Tamamilə onun kompüterində işləyir və istənilən kursa uyğunlaşdıra biləcəyi bir şablon kimi istifadə oluna bilər.
 
@@ -71,7 +90,7 @@ Python ilə qurulub.
 
 [Koda bax →](https://github.com/TesterBaku/softeng-study-quiz)
 
-## Quiz Formatter — PDF-dən viktorina hazırlayan köməkçi
+### Quiz Formatter — PDF-dən viktorina hazırlayan köməkçi
 
 Bacımqızı üçün qurduğum təhsil köməkçisi — o, UNEC-də (Azərbaycan) rus dilində təhsil alır, ona görə də tətbiq rus dilindədir. Dərs materialları cavab açarı ilə birlikdə PDF şəklində gəlir; bu alət onları məşq viktorinalarına çevirir.
 
@@ -91,7 +110,7 @@ Python ilə qurulub.
 
 [Necə istifadə olunduğunu izlə →](https://youtu.be/qLmmXnKrZoI) · [Koda bax →](https://github.com/TesterBaku/unec-quiz-formatter)
 
-## 5-ci sinif riyaziyyatı — interaktiv dərslər və testlər
+### 5-ci sinif riyaziyyatı — interaktiv dərslər və testlər
 
 Riyaziyyat və rus dili müəllimi olan (texniki olmayan) bacım üçün qurduğum müstəqil riyaziyyat tətbiqi. O — və ya şagirdləri — tətbiqi yükləyib, arxivdən çıxarıb bir cüt kliklə başlada bilər; terminal lazım deyil. 5-ci sinif riyaziyyat kurrikulumunu rus dilində əhatə edir.
 
@@ -109,7 +128,9 @@ TypeScript və Next.js ilə qurulub (Docker-a hazır).
 
 [Koda bax →](https://github.com/TesterBaku/math-teacher-prototype)
 
-## Universal Appliances Repair — müştəri vebsaytı
+## Müştəri vebsaytları
+
+### Universal Appliances Repair — müştəri vebsaytı
 
 Orange County, Kaliforniyada yerləşən Universal Appliances Repair adlı məişət texnikası təmiri xidməti üçün qurduğum statik marketinq vebsaytı. Sayt canlı işləyir və sevdiyim test-və-avtomatlaşdırma iş axınını nümayiş etdirir: hər dəyişiklik avtomatik yoxlamalarla qorunan PR vasitəsilə yayımlanır.
 
@@ -124,7 +145,7 @@ HTML + Tailwind CSS ilə qurulub.
 
 [Sayta bax →](https://fixappliancesfast.com/) · [Koda bax →](https://github.com/TesterBaku/appliance-repair-website)
 
-## RMC Tow — yedək xidməti vebsaytı
+### RMC Tow — yedək xidməti vebsaytı
 
 Corona və Inland Empire (Kaliforniya) bölgəsində fəaliyyət göstərən RMC Tow LLC yedək və yol kənarı yardım biznesi üçün qurub təhvil verdiyim kiçik statik marketinq saytı.
 
