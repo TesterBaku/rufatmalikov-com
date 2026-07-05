@@ -323,6 +323,10 @@ The HTML report includes an embedded "Open Trace" link for any test that has a t
 
 ## The official Playwright Docker image
 
+:::tip[New to Docker itself?]
+This section runs your tests inside Docker. If `image`, `container`, `docker run`, or Compose are unfamiliar, the **[Docker basics reference](/en/reference/docker/)** walks through installing Docker and the core commands used here.
+:::
+
 The Playwright team publishes an official Docker image that includes Node, all three browser binaries, and their system dependencies. This removes the need for `npx playwright install --with-deps` inside the container:
 
 ```
