@@ -3,11 +3,13 @@ title: Projects
 description: Projects I build and share — QA training tools, AI-assisted study apps, and client websites.
 ---
 
-Projects I'm building and sharing. Each gets its own write-up as it grows.
+Projects I'm building and sharing, grouped by what they're for. Each gets its own write-up as it grows.
 
-## BrauzerLab — interactive Playwright trainer
+## QA & testing tools
 
-A free, browser-based Playwright course, available in English and Azerbaijani. You write real Playwright (JavaScript/TypeScript) in an in-browser editor, watch a simulated page react, and get instant pass/fail feedback — no install, no setup. I built the missions and the validation engine from scratch.
+### BrauzerLab — interactive Playwright trainer
+
+A free, browser-based Playwright course, available in English and Azerbaijani. You write real Playwright (JavaScript/TypeScript) in an in-browser editor, watch a simulated page react, and get instant pass/fail feedback — no install, no setup. I built the missions and the validation engine from scratch. It's the hands-on practice companion to the [Playwright course](/en/course/).
 
 **What's inside:**
 
@@ -22,7 +24,39 @@ Available in English and Azerbaijani.
 
 [Launch BrauzerLab →](https://brauzerlab.rufatmalikov.com/en/) · [More about it →](/en/playwright/)
 
-## Exam Helper — exam prep for students in Azerbaijan
+### TestMarket Lab — the app you test against
+
+A small but real e-commerce web app, built as the target your test suites run against throughout the courses. It has a product catalog, cart, checkout and orders, customer and admin authentication, and a REST API — plus deliberate, stable test hooks so tests stay readable and repeatable. You clone it, run it locally, and automate it in both the [Playwright course](/en/course/) and [Python for SDETs](/en/python-sdet/).
+
+**What's inside:**
+
+- **A real stack** — Express, EJS, and SQLite (better-sqlite3), with a five-table schema (users, products, cart, orders, order items) and real foreign keys.
+- **Built for testing** — stable `data-testid` selectors, a `POST /api/reset` endpoint that reseeds deterministic data, and API routes for test-data setup (`POST /api/orders`).
+- **Accessibility & UI states** — an accessible mobile nav plus loading, empty, error, and validation states — the situations real automation has to handle.
+- **Two courses, one app** — the shared practice target for the JavaScript Playwright course and the Python SDET course, so the skills transfer directly.
+
+Built with Node.js (Express + better-sqlite3).
+
+[View the code →](https://github.com/TesterBaku/testmarket-lab)
+
+### SDET Interview Trainer
+
+Preparing for QA or SDET interviews? This is a practice app I built for exactly that. I wanted a helper I could use anywhere — at my desk or on the go — so I built one and opened it up for anyone in the same spot.
+
+**What's inside:**
+
+- **Daily Practice** — a focused daily plan mixing coding, SQL, Playwright/Selenium, API/CI/AWS, and strategy questions
+- **Coding Gym** — QA-focused tasks to build coding confidence in Python, Java, SQL, and TypeScript
+- **Mock Interview** — type an answer, reveal a model answer, and self-rate against a checklist
+- **Progress tracking** — completion metrics and a "weak topics" view across 500 practice items
+
+For now it runs without a backend, so it's quick to use on desktop or mobile. It's an early proof of concept — a starting point I'll keep building on. If you're preparing from the ground up, it pairs well with the [Playwright course](/en/course/) and [Python for SDETs](/en/python-sdet/).
+
+[Open the trainer →](https://sdet-interview-trainer.vercel.app/) · [View the code →](https://github.com/TesterBaku/sdet-interview-trainer)
+
+## Study apps
+
+### Exam Helper — exam prep for students in Azerbaijan
 
 A free, browser-based study app for students in Azerbaijan. Pick a subject, read short lessons, then practise with tiered quizzes that grade instantly and explain every mistake — no install, runs in the browser. One bank-aware app serves 41 subject banks (grades 5–11, abituriyent, and a Russian-language section) from the same code, and every math answer is verified by an automatic answer-checker.
 
@@ -38,22 +72,7 @@ Built with TypeScript and Next.js (static export).
 
 [Open Exam Helper →](https://exam.rufatmalikov.com/) · [More about it →](/en/exam-helper/)
 
-## SDET Interview Trainer
-
-A practice app for QA and SDET interview prep. I'm getting ready for interviews and wanted a helper I could use anywhere — at my desk or on the go — so I built one and opened it up for anyone in the same spot.
-
-**What's inside:**
-
-- **Daily Practice** — a focused daily plan mixing coding, SQL, Playwright/Selenium, API/CI/AWS, and strategy questions
-- **Coding Gym** — QA-focused tasks to build coding confidence in Python, Java, SQL, and TypeScript
-- **Mock Interview** — type an answer, reveal a model answer, and self-rate against a checklist
-- **Progress tracking** — completion metrics and a "weak topics" view across 500 practice items
-
-For now it runs without a backend, so it's quick to use on desktop or mobile. It's an early proof of concept — a starting point I'll keep building on.
-
-[Open the trainer →](https://sdet-interview-trainer.vercel.app/) · [View the code →](https://github.com/TesterBaku/sdet-interview-trainer)
-
-## Study Quiz — exam prep from course materials
+### Study Quiz — exam prep from course materials
 
 A local exam-prep helper I built for my nephew, a software-engineering master's student in Italy. He'd tried NotebookLM to turn his lecture slides and lab handouts into useful practice quizzes and couldn't get there — so I parsed the study materials and built a tool that does. It runs entirely on his machine and works as a blueprint he can adapt to any course.
 
@@ -69,7 +88,7 @@ Built with Python.
 
 [View the code →](https://github.com/TesterBaku/softeng-study-quiz)
 
-## Quiz Formatter — PDF-to-quiz study helper
+### Quiz Formatter — PDF-to-quiz study helper
 
 A study helper I built for my niece, a student at UNEC (Azerbaijan) who studies in Russian — so the app is in Russian. Her course materials arrive as PDFs of questions with an answer key; this tool turns them into practice quizzes.
 
@@ -87,7 +106,7 @@ Built with Python.
 
 [Watch the how-to video →](https://youtu.be/qLmmXnKrZoI) · [View the code →](https://github.com/TesterBaku/unec-quiz-formatter)
 
-## Grade 5 Math — interactive lessons & quizzes
+### Grade 5 Math — interactive lessons & quizzes
 
 A self-contained math app I built for my sister, a (non-technical) math and Russian-language tutor. She — or her students — can download it, unzip, and start it with a double-click; no command line. It covers the Grade 5 mathematics curriculum, in Russian.
 
@@ -105,7 +124,9 @@ Built with TypeScript and Next.js (Docker-ready).
 
 [View the code →](https://github.com/TesterBaku/math-teacher-prototype)
 
-## Universal Appliances Repair — client website
+## Client websites
+
+### Universal Appliances Repair — client website
 
 A static marketing website I built for Universal Appliances Repair, an appliance repair service in Orange County, CA. It's live in production and shows the testing-and-automation workflow I enjoy: every change ships through a PR gated by automated checks.
 
@@ -120,7 +141,7 @@ Built with HTML + Tailwind CSS.
 
 [Visit the site →](https://fixappliancesfast.com/) · [View the code →](https://github.com/TesterBaku/appliance-repair-website)
 
-## RMC Tow — towing company website
+### RMC Tow — towing company website
 
 A small static marketing site I built and handed off for RMC Tow LLC, a towing and roadside-assistance business serving Corona and the Inland Empire, CA.
 

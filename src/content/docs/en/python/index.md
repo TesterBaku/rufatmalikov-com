@@ -24,7 +24,7 @@ Your XP and badges are stored **in this browser** — no sign-up, no password, n
 
 The course builds up from zero, one small step at a time:
 
-- **00 — Start here** — what a program is; write and run your first Python. *(available now)*
+- **00 — Start here** — what a program is; write and run your first Python.
 - **01 — Talk to Python** — `print`, text, numbers, variables, and `input()`.
 - **02 — Make decisions** — `if`/`else`, comparisons, and `and`/`or`/`not`.
 - **03 — Repeat** — `for`, `range`, and `while` loops.
@@ -32,7 +32,7 @@ The course builds up from zero, one small step at a time:
 - **05 — Functions** — `def`, parameters, and `return`.
 - **06 — Projects** — put it together: a calculator, a guessing game, a quiz, and a cipher.
 
-New modules are rolling out — check back as they land.
+All modules are live — start at the top and work straight through.
 
 ---
 
