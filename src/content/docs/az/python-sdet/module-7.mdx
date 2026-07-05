@@ -1,0 +1,264 @@
+---
+title: "Modul 7: Python-da Page Object Model"
+description: "Böyüyən UI testlərini Page Object Model ilə ram et: hər səhifənin lokatorlarını və əməliyyatlarını bir sinifə bük ki, seçicilər bir yerdə yaşasın və testlər ssenari kimi oxunsun — TestMarket Lab-a qarşı Python üçün Playwright."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+
+Modul 6 testləri işləyirdi, amma onlardan əllisini təsəvvür et: hər yerə kopyala-yapışdır edilmiş
+eyni `get_by_label("Email")` və `get_by_test_id("login-submit")`. Bir seçicini dəyiş və onlarla
+testi redaktə edirsən. **Page Object Model (POM)** bunu düzəldir: hər səhifə lokatorlarını və
+əməliyyatlarını saxlayan bir **sinifə** çevrilir, beləcə seçicilər *bir* yerdə yaşayır və testlər
+təsvir etdikləri ssenari kimi oxunur.
+
+TestMarket Lab-ı `http://localhost:3000`-də işlək, `.venv`-ini aktiv və `pytest-playwright`-i
+quraşdırılmış (Modul 6) saxla.
+
+<Video title="Modul 7: Python-da Page Object Model" />
+
+<Deck href="/python-sdet/decks/m7-pom-az/" title="Modul 7: Page Object Model-ə qısa baxış — slayd təlimatı" />
+
+---
+
+## Problem: testlər arasında səpələnmiş seçicilər
+
+Hər ikisi daxil olan iki test eyni üç lokatoru və eyni addımları təkrarlayır:
+
+```python
+def test_a(page, base_url):
+    page.goto(f"{base_url}/auth/login")
+    page.get_by_label("Email").fill("customer@test.io")
+    page.get_by_label("Password").fill("customer123")
+    page.get_by_test_id("login-submit").click()
+    # ...
+
+def test_b(page, base_url):
+    page.goto(f"{base_url}/auth/login")               # same four lines again
+    page.get_by_label("Email").fill("customer@test.io")
+    page.get_by_label("Password").fill("customer123")
+    page.get_by_test_id("login-submit").click()
+    # ...
+```
+
+Login forması dəyişəndə hər nüsxəni ovlayırsan. POM o lokatorları və addımları hər testin yenidən
+işlətdiyi bir `LoginPage` sinifinə köçürür.
+
+**Yadda saxla:** testlər arasında təkrarlanan lokatorlar/addımlar saxlama tələsidir — bir UI
+dəyişikliyi çoxlu redaktə deməkdir. Page object bir səhifənin seçicilərini və əməliyyatlarını
+mərkəzləşdirir ki, testlər onları bölüşsün.
+
+---
+
+## Layihə quruluşu
+
+Page object-ləri `tests/`-in yanında bir `pages/` paketinə qoy və pytest-ə layihə kökünü import
+yoluna əlavə etməyi de ki, `from pages... import ...` işləsin:
+
+```
+python-sdet/
+├── pages/
+│   ├── __init__.py
+│   ├── login_page.py
+│   └── products_page.py
+├── tests/
+│   ├── conftest.py
+│   └── test_*.py
+└── pytest.ini
+```
+
+```ini
+# pytest.ini — extend your Module 0/2 file: keep the markers, add pythonpath
+[pytest]
+testpaths = tests
+pythonpath = .
+markers =
+    smoke: a fast, critical subset to run first
+    api: tests that hit the REST API
+```
+
+Yeni sətir `pythonpath = .`-dir (o, layihə kökünü `sys.path`-a qoyur; ona **pytest ≥ 7.0** lazımdır
+ki, bu kurs onsuz da işlədir). Mövcud `markers`-ini saxla — və dəyər sətrinin sonuna `#` şərhləri
+qoyma: pytest-in ini parseri inline şərhləri kəsmir, ona görə onlar dəyərin bir hissəsinə çevrilər.
+
+**Yadda saxla:** page object-lər `tests/`-in yanındakı `pages/` paketində yaşayır; `pytest.ini`-dəki
+`pythonpath = .` layihə kökünü `sys.path`-a qoyur ki, testlər `import pages` edə bilsin.
+
+---
+
+## İlk page object-in
+
+Page object Playwright `page`-ini götürür, səhifənin **lokatorlarını** atribut kimi saxlayır və
+**əməliyyatları** metod kimi açır. Lokatorlar tənbəldir, ona görə onları `__init__`-də qurmaq
+normaldır — istifadə olunanda həll olunurlar:
+
+```python
+# pages/login_page.py
+class LoginPage:
+    def __init__(self, page, base_url):
+        self.page = page
+        self.base_url = base_url
+        # locators — the page's selectors, in ONE place
+        self.email = page.get_by_label("Email")
+        self.password = page.get_by_label("Password")
+        self.submit = page.get_by_test_id("login-submit")
+
+    def goto(self):
+        self.page.goto(f"{self.base_url}/auth/login")
+        return self                     # return self so calls can chain
+
+    def login(self, email, password):
+        self.email.fill(email)
+        self.password.fill(password)
+        self.submit.click()
+```
+
+Login seçiciləri nə vaxtsa dəyişsə, onları **burada** redaktə edirsən — testlərdə yox.
+
+**Yadda saxla:** page object `page`-i bükür, lokatorları atribut kimi saxlayır və istifadəçi
+əməliyyatlarını metod kimi açır. Səni eyni səhifədə saxlayan metodlardan (`goto` kimi) `self`
+qaytar ki, çağırışlar zəncirlənə bilsin; *başqa yerə* naviqasiya edən metod növbəti page object-i
+(və ya heç nə) qaytarır — buna görə buradakı `login()` heç nə qaytarmır.
+
+---
+
+## Onu bir testdə işlətmək
+
+Test indi xam seçicilər olmadan ssenari kimi oxunur:
+
+```python
+# tests/test_login_pom.py
+from playwright.sync_api import expect
+from pages.login_page import LoginPage
+
+
+def test_login_with_page_object(page, base_url):
+    LoginPage(page, base_url).goto().login("customer@test.io", "customer123")
+    expect(page.get_by_test_id("nav-logout")).to_be_visible()
+```
+
+O bir sətirlik niyyəti əvəz etdiyi dörd sətirlik lokatorla müqayisə et. Assert-lər adətən
+**testdə** qalır (yoxladığın şey); page object **necə**-yə sahibdir (elementləri tapmaq və idarə
+etmək).
+
+**Yadda saxla:** testlər xam lokatorları yox, page-object metodlarını (`login(...)`) çağırır —
+onlar niyyət kimi oxunur. *Assert-ləri* testdə saxla; *element interaksiyasını* page object-də
+saxla.
+
+---
+
+## İkinci page object
+
+Eyni forma sənə bir `ProductsPage` verir. Haradasa aparan əməliyyatlar `self` (və ya başqa page
+object) qaytarır ki, zəncirləyə biləsən:
+
+```python
+# pages/products_page.py
+class ProductsPage:
+    def __init__(self, page, base_url):
+        self.page = page
+        self.base_url = base_url
+        self.search_input = page.get_by_test_id("search-input")
+        self.apply = page.get_by_test_id("apply-filters")
+        self.cards = page.get_by_test_id("product-card")   # a locator for all cards
+
+    def goto(self):
+        self.page.goto(f"{self.base_url}/products")
+        return self
+
+    def search(self, term):
+        self.search_input.fill(term)
+        self.apply.click()
+        return self
+```
+
+```python
+# tests/test_products_pom.py
+import requests
+from playwright.sync_api import expect
+from pages.products_page import ProductsPage
+
+
+def test_search_with_page_object(page, base_url):
+    requests.post(f"{base_url}/api/reset")             # known seed -> deterministic count
+    products = ProductsPage(page, base_url).goto().search("keyboard")
+    expect(products.cards).to_have_count(1)
+```
+
+Diqqət et ki, `self.cards` atribut kimi açılan bir **lokatordur** — test onu birbaşa assert edir
+(`expect(products.cards)`), kartları tapmağın *necə*-si isə page object-də qalır.
+
+**Yadda saxla:** hər səhifə eyni forma ilə (lokatorlar + əməliyyat metodları) öz obyektini alır.
+Açar lokatoru (`cards` kimi) açmaq testlərə seçicini yenidən elan etmədən onu assert etməyə imkan
+verir.
+
+---
+
+## Birləşdirmək
+
+Page object-lər birləşir — iki səhifəni əhatə edən ssenari hekayə kimi oxunur:
+
+```python
+# tests/test_login_then_browse.py
+import requests
+from playwright.sync_api import expect
+from pages.login_page import LoginPage
+from pages.products_page import ProductsPage
+
+
+def test_login_then_browse(page, base_url):
+    requests.post(f"{base_url}/api/reset")                      # known seed (Module 5/6 rule)
+
+    LoginPage(page, base_url).goto().login("customer@test.io", "customer123")
+    expect(page.get_by_test_id("nav-logout")).to_be_visible()   # signed in
+
+    products = ProductsPage(page, base_url).goto()
+    expect(products.cards.first).to_be_visible()                # products render
+```
+
+Hər səhifənin **əməliyyatları və onların seçiciləri** `pages/`-də yaşayır, ona görə test ssenari
+kimi oxunur — inline yazılan yeganə lokator `nav-logout` nəticə yoxlamasıdır; `cards` `ProductsPage`
+obyektindən gəlir. Böyük UI dəstini saxlanıla bilən edən məhz o ayrılıqdır.
+
+**Yadda saxla:** POM-un faydası miqyaslanır — seçicilər `pages/`-də, ssenarilər `tests/`-də. UI
+dəyişəndə bir page object-i düzəldirsən; yeni test yazanda mövcudları birləşdirirsən.
+
+---
+
+## Tapşırıqlar
+
+`python-sdet` layihəndə işlə (`pages/` və `pythonpath = .` qurulmuş). `pytest -v` ilə işlət.
+
+### Tapşırıq 1 — Quruluşu qur (5 dəq)
+
+`tests/`-in yanına `pages/` paketini (`__init__.py`) əlavə et və `pytest.ini`-də `pythonpath = .`
+qur. Bir testdən trivial `from pages... import`-in işlədiyini təsdiqlə.
+
+### Tapşırıq 2 — `LoginPage` (15 dəq)
+
+`email`/`password`/`submit` lokatorları, `self` qaytaran bir `goto()` və bir `login(email,
+password)` metodu ilə `pages/login_page.py` qur. Daxil olan və `nav-logout`-un görünən olduğunu
+assert edən bir test yaz.
+
+### Tapşırıq 3 — `ProductsPage` (15 dəq)
+
+Bir `goto()`, bir `search(term)` və bir `cards` lokatoru ilə `pages/products_page.py` qur.
+(`POST /api/reset`-dən sonra) "keyboard" axtaran və `cards`-ın sayının 1 olduğunu assert edən bir
+test yaz.
+
+### Tapşırıq 4 — Birləşdir (10 dəq)
+
+**Hər iki** page object-i işlədən bir test yaz: `LoginPage` ilə daxil ol, sonra `ProductsPage` aç və
+ən azı bir kartın görünən olduğunu assert et.
+
+### Bonus — Neqativ login metodu
+
+`LoginPage.login()`-i **səhv** parolla işlədən və `flash-error`-un görünən olduğunu assert edən bir
+test əlavə et. Page object-i dəyişmək lazım oldu? (Olmamalıdır — eyni `login()` hər iki yolu idarə
+edir.)
+
+---
+
+**Modul 8**-də testləri **data-driven** edirik — page object-ləri və API çağırışlarını `parametrize`
+ilə cədvəllərdən və xarici fayllardan (CSV/JSON) qidalandıraraq, beləcə bir test gövdəsi çoxlu halı
+əhatə edir.
