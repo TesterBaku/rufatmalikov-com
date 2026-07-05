@@ -9,7 +9,7 @@ This section is home to **BrauzerLab**, a free, interactive Playwright trainer. 
 
 ## What you'll practice
 
-50 hands-on missions across 7 progressive modules:
+100 hands-on missions across 7 progressive modules:
 
 1. **Locators** — find any element with role, text, label, test-id, filters, and positional selectors (including Shadow DOM and dynamic IDs)
 2. **Actions** — clicks, typing, forms, keyboard, dropdowns, drag-and-drop, and hover

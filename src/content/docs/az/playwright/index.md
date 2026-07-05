@@ -7,7 +7,7 @@ Bu bölmə **BrauzerLab**-ın evidir — pulsuz, interaktiv Playwright məşqçi
 
 ## Nə məşq edəcəksiniz
 
-7 mərhələli modul üzrə 50 praktiki tapşırıq:
+7 mərhələli modul üzrə 100 praktiki tapşırıq:
 
 1. **Lokatorlar** — rol, mətn, label, test-id, filter və mövqe selektorları ilə istənilən elementi tapın (Shadow DOM və dinamik id-lər daxil)
 2. **Əməliyyatlar** — klik, yazı, formalar, klaviatura, açılan siyahılar, drag-and-drop və hover
