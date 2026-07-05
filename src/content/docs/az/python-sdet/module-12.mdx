@@ -1,0 +1,236 @@
+---
+title: "Modul 12: Verilənlər bazasının yoxlanması"
+description: "Capstone-un üstündəki senior addım: davam edən yan təsiri yoxla. TestMarket Lab-ın verilənlər bazasını pytest testindən Python-un stdlib sqlite3-ü ilə oxu — yalnız-oxu bağlantı, parametrləşdirilmiş sorğular və sifarişin həqiqətən saxlandığını sübut edən JOIN — sonra eyni şablonu Docker-dəki Postgres-ə qarşı gör."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+
+Capstone-u bitirdin — deməli bu modul qurduğun hər şeyin üstündə oturan senior addımdır. İndiyə qədər hər test tətbiqin *bildirdiyinə* güvənir: bir `201`, bir cavab gövdəsi, yaşıl səhifə. Bu isə tətbiqin nəyi **saxladığını** yoxlayır — sifariş verdikdən sonra, verilənlər bazasında həqiqətən düzgün cəmi və düzgün sətir maddələri olan sətir varmı? *"API uğur dedi — amma düzgün saxladımı?"* Buna cavab vermək yetkinlik sıçrayışıdır və Python-da demək olar heç nəyə başa gəlmir: lazım olan verilənlər bazası sürücüsü, `sqlite3`, standart kitabxanadadır.
+
+TestMarket Lab-ı `http://localhost:3000`-də işlək və `.venv`-ini aktiv saxla. Bu modul birbaşa [Modul 3](/az/python-sdet/module-3/)-dəki API çağırışları və [Modul 5](/az/python-sdet/module-5/)-dəki `reset_db` / API-vasitəsilə-hazırlama fixture-ləri üzərində qurulur. SQL sənə yenidirsə, əvvəlcə [SQL əsasları](/az/reference/sql-basics/) istinadını oxu — bu modul eyni ideyanın Python tərəfidir.
+
+<Video title="Modul 12: Verilənlər bazasının yoxlanması" />
+
+<Deck href="/python-sdet/decks/m12-database-az/" title="Modul 12: qeydi sübut etmək — slayd təlimatı" />
+
+---
+
+## `201`-in sübut etmədiyi yan təsir
+
+`201` və bir sifariş gövdəsi qaytaran `POST /api/orders` sənə tətbiqin sorğunu *qəbul etdiyini* deyir. Özlüyündə o, sifarişin düzgün yazıldığını demir — düzgün cəm hesablandı, düzgün sətir maddələri saxlandı, heç nə itmədi. Cavab tətbiqin **sözüdür**; verilənlər bazası sətri isə **qeyddir**.
+
+Çox vaxt yoxlamaq üçün düzgün yer ictimai API-dir — `GET /api/orders` sənə lazım olan həqiqəti qaytarırsa, onu işlət (Modul 5 məhz bunu etdi). Verilənlər bazasına isə API-nin *demədiyi* hallar üçün enirsən: heç bir endpoint-in qaytarmadığı daxili sütun, ya da uyğun `GET`-i olmayan davam edən təsir. Verilənlər bazasını oxumaq testini sxemə bağlayır, ona görə ona qəsdən müraciət et — və onu **yalnız-oxu** saxla.
+
+**Yadda saxla:** verilənlər bazasına qarşı yoxlamaq sadəcə cavabı yox, *davam edən yan təsiri* sübut edir. Eyni həqiqəti göstərdikdə ictimai API-yə üstünlük ver; API-nin gizlətdiyi üçün DB-yə en. Hər iki halda — yoxlamaq üçün oxu, yazma.
+
+---
+
+## `sqlite3` ilə qoşulmaq (quraşdırılacaq heç nə yoxdur)
+
+TestMarket Lab hər şeyi bir SQLite faylında saxlayır — `data/testmarket.db`. Python-un stdlib `sqlite3`-ü onu birbaşa açır. İki toxunuş yoxlama bağlantısını təhlükəsiz və rahat edir:
+
+- **Onu yalnız-oxu aç** `file:…?mode=ro` URI ilə. Yoxlama bağlantısının tətbiqin verilənlər bazasına yazmaqda heç bir işi yoxdur — yalnız-oxu bunu qeyri-mümkün edir, beləcə səhvən yazılmış bir sorğu tətbiqin sahib olduğu verilənləri heç vaxt korlaya bilməz.
+- **`row_factory = sqlite3.Row` təyin et** ki, sütunları mövqeyə görə yox, ada görə (`row["total"]`) oxuyasan.
+
+```python
+import sqlite3
+from pathlib import Path
+
+# Point this at your TestMarket Lab clone's database file.
+DB_PATH = Path(r"C:/code/testmarket-lab/data/testmarket.db")
+
+con = sqlite3.connect(f"file:{DB_PATH.as_posix()}?mode=ro", uri=True)
+con.row_factory = sqlite3.Row
+
+row = con.execute(
+    "SELECT id, name, stock FROM products WHERE slug = ?",
+    ("wireless-mouse",),
+).fetchone()
+print(row["id"], row["name"], row["stock"])   # -> 1 Wireless Mouse 50  (on a freshly seeded DB)
+
+con.close()
+```
+
+`?` yer-tutucusuna və `("wireless-mouse",)` tuple-ına diqqət et — dəyər SQL sətrinə yapışdırılmır, **parametr** kimi daxil olur. Bu, tam olaraq [SQL əsasları](/az/reference/sql-basics/) istinadının izah etdiyi kimi, yeganə güzəştsiz vərdişdir.
+
+**Yadda saxla:** `sqlite3` stdlib-dir — sıfır quraşdırma. Tətbiqin verilənlər bazasını **yalnız-oxu** aç (`mode=ro`) ki, test yalnız oxuya bilsin, ada görə giriş üçün `row_factory = sqlite3.Row` təyin et və dəyərləri həmişə `?` parametrləri kimi ötür.
+
+---
+
+## `db` fixture-i
+
+O bağlantını bir fixture-ə bük ki, hər test təzə yalnız-oxu bağlantı alsın və avtomatik bağlansın:
+
+```python
+# tests/conftest.py (add to it)
+import sqlite3
+from pathlib import Path
+
+import pytest
+
+# Point this at your TestMarket Lab clone's database file.
+DB_PATH = Path(r"C:/code/testmarket-lab/data/testmarket.db")
+
+
+@pytest.fixture
+def db():
+    con = sqlite3.connect(f"file:{DB_PATH.as_posix()}?mode=ro", uri=True)
+    con.row_factory = sqlite3.Row
+    yield con
+    con.close()
+```
+
+Verilənlər bazasını yoxlamaq istəyən test sadəcə `db`-ni istəyir — Modul 2 və 5-dən artıq bildiyi `api` və `reset_db` fixture-ləri ilə yanaşı.
+
+**Yadda saxla:** `db` fixture-i yalnız-oxu bağlantı yield edir və `yield`-dən sonra onu bağlayır — `api` fixture-i ilə eyni quraşdırma/söküş forması, beləcə verilənlər bazası yoxlamaları mövcud dəstinə rahatca düşür.
+
+---
+
+## Sifarişi başdan-başa yoxla
+
+Budur nəticə və hər yerdə təkrar işlədəcəyin şablon: **API vasitəsilə hazırla və icra et, sonra verilənlər bazasına qarşı yoxla.** `api` ilə sifariş ver, sonra onun davam etdiyini sübut et — `orders` sətri və JOIN vasitəsilə onun `order_items` övladları:
+
+```python
+# tests/test_db_order.py
+import pytest
+
+
+def test_order_persists_to_the_database(reset_db, base_url, api, db):
+    # act: place an order through the API
+    r = api.post(
+        f"{base_url}/api/orders",
+        json={"email": "customer@test.io", "items": [{"product_id": 1, "quantity": 2}]},
+    )
+    assert r.status_code == 201
+    order_id = r.json()["id"]
+
+    # assert: the order row was persisted with the right status and total
+    order = db.execute(
+        "SELECT status, total FROM orders WHERE id = ?", (order_id,)
+    ).fetchone()
+    assert order is not None                           # the row exists at all — it saved
+    assert order["status"] == "pending"
+    assert order["total"] == pytest.approx(59.98)      # Wireless Mouse 29.99 x 2
+
+    # assert: the line items were persisted (JOIN orders -> order_items)
+    items = db.execute(
+        """SELECT oi.product_id, oi.quantity
+           FROM orders o
+           JOIN order_items oi ON oi.order_id = o.id
+           WHERE o.id = ?""",
+        (order_id,),
+    ).fetchall()
+    assert [(i["product_id"], i["quantity"]) for i in items] == [(1, 2)]
+```
+
+`reset_db` əvvəlcə yenidən səpir, ona görə id-lər proqnozlaşdırıla biləndir və test təcrid olunub. API cəmi hesablayır və saxlayır; sən onun sadəcə qaytarıldığını yox, *davam etdiyini* assert edirsən. Yalnız-oxu `db` bağlantısı tətbiqin indicə commit etdiyi sifarişi görür — WAL da daxil olmaqla — çünki o, tətbiqin yazdığı eyni faylı açır.
+
+**Yadda saxla:** forma **API vasitəsilə hazırla/icra et → DB vasitəsilə yoxla**-dır. `201` *qəbul edildi* deyir; `orders` sətri *saxlanıldı* deyir, `order_items` JOIN-i isə *düzgün saxlanıldı* deyir. Yalnız valideyni yox, övladları da yoxlamaq yarımçıq yazılmış sifarişi tutan şeydir.
+
+:::note[`total` saxlanılmış dəyərdir — onu yenidən hesablama]
+`orders.total` tətbiqin checkout-da *yazdığı* sütundur və `order_items.price` o zaman *anlıq çəkilmiş* qiymətdir. Onlar oxunuşda yenidən hesablanmır. `total`-ı tətbiqin saxladığını gözlədiyin dəyərə qarşı yoxla (burada `29.99 × 2`), cari maddə sətirlərinin canlı cəminə qarşı yox — [SQL əsasları](/az/reference/sql-basics/) istinadının qaldırdığı eyni ehtiyat.
+:::
+
+---
+
+## API-nin gizlətdiyini oxumaq
+
+Verilənlər bazası heç bir endpoint-in göstərməyəcəyi bir şeyi sənə göstərəndə haqqını verir. TestMarket Lab istifadəçinin parolunu heç vaxt qaytarmır (haqlı olaraq) — deməli tətbiqin kimlik məlumatlarını açıq mətnlə saxlamaq əvəzinə **hash-lədiyini** yoxlamağın yeganə yolu baxmaqdır:
+
+```python
+# tests/test_db_security.py
+def test_password_is_stored_hashed(db):
+    row = db.execute(
+        "SELECT password FROM users WHERE email = ?", ("customer@test.io",)
+    ).fetchone()
+    stored = row["password"]
+
+    assert stored != "customer123"      # never the plain-text password
+    assert stored.startswith("$2")      # a bcrypt hash
+    assert len(stored) == 60            # bcrypt hashes are 60 chars
+```
+
+Bu, API vasitəsilə edə *bilməyəcəyin* real təhlükəsizlik yoxlamasıdır, çünki API — düzgün olaraq — parolu heç vaxt geri vermir. Bu, bir testdə verilənlər bazası yoxlamasının bütün arqumentidir: bəzi həqiqətlər yalnız sxemdə yaşayır.
+
+**Yadda saxla:** API-nin qəsdən gizlətdiyi üçün verilənlər bazasına en. "Parol açıq mətnlə yox, hash-lənmiş saxlanılırmı?" xaricdən cavablana bilməz və içəridən bir `SELECT` uzaqlıqdadır.
+
+---
+
+## Onu əsasən oxumaqda saxla
+
+Diqqət et ki, yuxarıdakı hər test **API vasitəsilə hazırlayır** və verilənlər bazasını yalnız **oxuyur**. Bu qəsdəndir və Modul 5-in öyrətdiyi eyni intizamdır: yazılar tətbiq vasitəsilə gedir (beləcə onun qaydaları, hesablanmış sütunları və məhdudiyyətlərinin hamısı işləyir) və verilənlər bazası sənin *yoxlama* qatındır, quraşdırma üçün arxa qapı deyil. Yalnız-oxu bağlantı bunu təmin edir — `db` vasitəsilə hərfən yaza bilməzsən. Təmiz baza üçün `reset_db` ilə birləşdirdikdə, tətbiqin verilənlərinə heç vaxt əllə toxunmadan təcrid alırsan.
+
+**Yadda saxla:** API ilə hazırla, DB ilə yoxla və yoxlama bağlantısını yalnız-oxu saxla. Test verilənlərini birbaşa tətbiqin verilənlər bazasına yazmaq onun məntiqini atlayır və real davranışdan uzaqlaşır — qoy tətbiq öz yazılarına sahib olsun.
+
+---
+
+## Əlavə — SQLite-dan istehsal səviyyəli verilənlər bazalarına
+
+TestMarket Lab SQLite işlədir, çünki o, sıfır quraşdırma ilə tək bir fayldır — öyrənmək üçün mükəmməl. Real işlər **klient-server** verilənlər bazaları işlədir: Postgres, MySQL, SQL Server. Rahatladıcı hissə nə qədər az şeyin dəyişdiyidir. Şablon eynidir — **qoşul → parametrləşdirilmiş sorğu → yoxla → bağla** — və yazdığın SQL (`SELECT`, `WHERE`, `JOIN`) standartdır. Yalnız sürücü və bağlantı quraşdırması dəyişir.
+
+| | SQLite (bu kurs) | Postgres | MySQL |
+|---|---|---|---|
+| Python sürücüsü | `sqlite3` (stdlib) | `psycopg` | `PyMySQL` |
+| Qoşulma | fayl yolu | bağlantı sətri (host, port, istifadəçi, parol, db) | eyni |
+| Yer-tutucu | `?` | `%s` | `%s` |
+
+Budur **yuxarıdakı sifariş-sətri yoxlaması**, `psycopg` ilə Postgres-ə qarşı yenidən yazılıb (`pip install "psycopg[binary]"`). Sorğu və məntiq dəyişməz keçir — yalnız sürücü, yer-tutucu (`%s`, `?` yox) və `NUMERIC`-i geri `Decimal` kimi oxumaq fərqlənir:
+
+```python
+import os
+import psycopg
+import pytest
+
+# Credentials come from the environment, never hard-coded.
+DSN = os.environ["DATABASE_URL"]   # e.g. postgresql://testuser:testpass@localhost:5432/testmarket
+
+with psycopg.connect(DSN) as con:
+    with con.cursor() as cur:
+        cur.execute(
+            "SELECT status, total FROM orders WHERE id = %s",   # %s, not ?
+            (order_id,),
+        )
+        row = cur.fetchone()
+
+assert row[0] == "pending"
+assert float(row[1]) == pytest.approx(59.98)   # NUMERIC comes back as Decimal
+```
+
+Keçidin gətirdiyi iki kiçik özəllik: yer-tutucular `%s`-dir (`?` yox) və `NUMERIC` sütunu Python `Decimal` kimi gəlir, ona görə `float(...)` və ya başqa bir `Decimal` ilə müqayisə et.
+
+Postgres haradan gəlir? Bir **konteynerdən** — lokalda bir `docker run` və CI-də bir **servis konteyneri**. Hər ikisi [Docker əsasları](/az/reference/docker/) istinadında əhatə olunub: o, dəqiq `docker run postgres` əmrini, bir `docker-compose.yml`-i və hər test icrasına öz təzə verilənlər bazasını verən GitHub Actions `services: postgres:` blokunu göstərir. `DATABASE_URL`-i o konteynerə yönəlt və yuxarıdakı test dəyişmədən işləyir.
+
+**Yadda saxla:** istehsal sürücünü və bağlantı sətrini dəyişir, *ideyanı* yox. `sqlite3 → psycopg`, fayl yolu → bağlantı sətri, `?` → `%s` — qoşul/parametrləşdir/yoxla/bağla şablonu və SQL-in toxunulmadan keçir. Bir iş "SQL / DB testi" deyəndə, məhz budur və sən onu artıq bilirsən.
+
+---
+
+## Tapşırıqlar
+
+TestMarket Lab işlək olarkən `python-sdet` layihəndə işlə. `pytest -v` ilə işlət. `DB_PATH`-i öz klonunun `data/testmarket.db`-nə yönəlt.
+
+### Tapşırıq 1 — Yalnız-oxu `db` fixture-i (10 dəq)
+
+`db` fixture-ini `conftest.py`-ə əlavə et. `Wireless Mouse`-u slug-ı ilə (`wireless-mouse`) oxuyan və `stock == 50` assert edən bir test yaz. Sonra onun yalnız-oxu olduğunu sübut et: `db` vasitəsilə bir `INSERT` cəhd et və onun `sqlite3.OperationalError` atdığını təsdiqlə.
+
+### Tapşırıq 2 — Sifarişin davam etdiyini yoxla (15 dəq)
+
+`test_order_persists_to_the_database`-i təkrar et: bir sifariş `POST` et (məhsul 1, miqdar 2), sonra `orders` sətrinin `status == "pending"` və `total == pytest.approx(59.98)` olduğunu və `order_items`-ə JOIN-in tam olaraq `[(1, 2)]` verdiyini assert et.
+
+### Tapşırıq 3 — API-nin gizlətdiyinə çat (10 dəq)
+
+`test_password_is_stored_hashed` yaz: `users`-i `customer@test.io` üçün sorğula və saxlanılan parolun bcrypt hash olduğunu (`startswith("$2")`, uzunluq 60) və açıq-mətn `customer123` *olmadığını* assert et.
+
+### Tapşırıq 4 — Sətir maddələrini say (10 dəq)
+
+İki fərqli məhsulla bir sifariş `POST` et, sonra `order_items`-ə qarşı tək bir `SELECT COUNT(*) … WHERE order_id = ?` işlədərək tam iki sətrin saxlanıldığını assert et. Onu sətirləri gətirib Python-da saymaqla müqayisə et — hansı daha yaxşı oxunur?
+
+### Çətinlik — Postgres-ə apar
+
+[Docker əsasları](/az/reference/docker/) istinadını izləyərək bir Postgres konteyneri qaldır, `DATABASE_URL` qur və əlavənin `psycopg` yoxlamasını ona qarşı işlət. SQLite testindən yeganə dəyişikliklərin bağlantı və `?` → `%s` yer-tutucusu olduğunu təsdiqlə.
+
+---
+
+## Bu səni harada qoyur
+
+İndi UI və API-nin üstündə oturduğu qatı yoxlaya bilərsən: davam edən həqiqəti. Bu, əksər avtomatlaşdırma kurslarının atladığı və əksər SDET müsahibələrinin araşdırdığı bacarıqdır — "onun həqiqətən saxlandığını haradan bilirsən?" Sən yalnız-oxu bağlantı, parametrləşdirilmiş sorğu və JOIN ilə cavab verirsən — bu gün SQLite-da, işdə Postgres-də, eyni dörd addımla. Bunu capstone dəstinə bərkit və testin bütün yığınını əhatə etdin: cavab, UI *və* qeyd.

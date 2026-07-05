@@ -26,7 +26,7 @@ export const PYTHON_SDET_MODULES = [
 	{ slug: 'module-9', label: '9 — Reporting & suite structure', az: '9 — Hesabat və dəst quruluşu' },
 	{ slug: 'module-10', label: '10 — CI with GitHub Actions', az: '10 — GitHub Actions ilə CI' },
 	{ slug: 'module-11', label: '11 — Capstone project', az: '11 — Capstone layihəsi' },
-	{ slug: 'module-12', label: '12 — Database verification', az: null },
+	{ slug: 'module-12', label: '12 — Database verification', az: '12 — Verilənlər bazasının yoxlanması' },
 ];
 
 const SEGMENT = '/python-sdet/';
