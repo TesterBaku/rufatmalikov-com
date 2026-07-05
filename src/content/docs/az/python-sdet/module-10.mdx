@@ -8,7 +8,7 @@ import Deck from '../../../../components/course/Deck.astro';
 
 İşlətməyi *xatırlamalı* olduğun testlər gec-tez işlədilməyən testlərdir. **Fasiləsiz İnteqrasiya
 (CI)** bütün dəsti hər push və pull request-də avtomatik işlədir, ona görə reqressiya
-göndərilməzdən əvvəl — yox, göndərildikdən sonra — tutulur. Bu modul pytest dəstini **GitHub
+birləşmədən əvvəl tutulur — göndərildikdən sonra yox. Bu modul pytest dəstini **GitHub
 Actions**-a qoşur.
 
 :::tip[git push / branch-lar / pull request-lər sənə yenidir?]
@@ -36,7 +36,7 @@ Fayda **tələb olunan yoxlamadır**: dəst CI-nin təmiz maşınında keçənə
 sadəcə "mənim noutbukumda işləyir" yox.
 
 **Yadda saxla:** CI dəsti hər push/PR-da avtomatik işlədir, uğursuzluğu görünən qırmızı yoxlamaya
-çevirir və birləşmələri darvazalaya bilər. O, "testləri işlətməyi unutma"nı "testlər həmişə
+çevirir və birləşmələri bloklaya bilər. O, "testləri işlətməyi unutma"nı "testlər həmişə
 işlədi" ilə əvəz edir.
 
 ---
@@ -128,7 +128,7 @@ jobs:
 - **`playwright install --with-deps chromium`** — brauzeri *və* onun Linux sistem kitabxanalarını
   (`--with-deps`) endir, headless runner-in onlara ehtiyacı var.
 - **TestMarket Lab-ı başlat** — onu klonla, `npm install` et və arxa planda (`&`) başlat. (CI-ni
-  tətbiqə upstream dəyişikliklərdən təcrid etmək istəyirsənsə, bərkidilmiş tag/commit klonla.)
+  tətbiqin upstream dəyişikliklərindən təcrid etmək istəyirsənsə, bərkidilmiş tag/commit klonla.)
 - **Tətbiqi gözlə** — cavab verənə qədər `/api/products`-u yoxla ki, testlər server qalxmazdan əvvəl
   başlamasın.
 - **Testləri işlət** — Modul 9-dakı hesabat bayraqları ilə `pytest`.
@@ -146,7 +146,7 @@ büdrədən iki yalnız-CI təfərrüatıdır.
 `npm start &` dərhal qayıdır — server hələ də açılır. `pytest` tətbiq cavab verməzdən əvvəl işləsə,
 hər test `Connection refused` ilə uğursuz olur. Dövr `/api/products` cavab verənə qədər yoxlayır
 (`0` ilə çıxaraq), və ya ~30 saniyədən sonra **addımı uğursuz edir** ki, heç vaxt başlamayan server
-belə bildirilsin — test addımında bir divar bağlantı xətasının arxasında gizlənmək əvəzinə:
+belə bildirilsin — test addımında bağlantı xətalarından ibarət bir divarın arxasında gizlənmək əvəzinə:
 
 ```bash
 for i in $(seq 1 30); do
