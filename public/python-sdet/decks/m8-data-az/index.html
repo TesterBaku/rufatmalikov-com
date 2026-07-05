@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Modul 8: Data-driven testlər — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Modul 8 · Python for SDETs</div>
+        <h1 class="headline">Data-driven<br><span class="grad-text">testlər</span></h1>
+        <p class="subtitle">Bir test gövdəsi, çoxlu hal — cədvəldən, JSON faylından və ya CSV-dən</p>
+        <div class="pills">
+          <span class="pill">parametrize</span>
+          <span class="pill">JSON &amp; CSV</span>
+          <span class="pill">oxunaqlı id-lər</span>
+          <span class="pill">verilən ≠ məntiq</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 The idea -->
+      <section class="slide s-full" data-screen-label="02 The idea">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Halları koddan ayır</div>
+        <h2 class="section-head">Bir test gövdəsi, hallar cədvəli</h2>
+        <div class="pipe-row" style="max-width:1640px;">
+          <div class="pipe-chip blue">hallar siyahısı</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">onun üzərində <span style="font-family:ui-monospace,Consolas,monospace;">@parametrize</span></div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip green">N müstəqil, etiketli test</div>
+        </div>
+        <div class="step-tip" style="margin-top:40px;max-width:1500px;"><span class="tip-icon">🧩</span><span>Sətir əlavə et, test al — gövdə heç vaxt dəyişmir. Hər hal müstəqil işləyir (və uğursuz olur), ona görə bir səhv giriş qalanları gizlətmir.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 Data from a JSON file -->
+      <section class="slide s-two-col" data-screen-label="03 JSON file">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">JSON faylından verilən</div>
+        <div>
+          <div class="col-label" style="color:var(--accent);">tests/data/login_cases.json</div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#d4d4d4;">[</div>
+            <div style="margin-left:16px;">{ <span style="color:#9cdcfe;">"email"</span>: <span style="color:#ce9178;">"customer@test.io"</span>,</div>
+            <div style="margin-left:32px;"><span style="color:#9cdcfe;">"password"</span>: <span style="color:#ce9178;">"customer123"</span>, <span style="color:#9cdcfe;">"expected"</span>: <span style="color:#b5cea8;">200</span> },</div>
+            <div style="margin-left:16px;">{ <span style="color:#9cdcfe;">"email"</span>: <span style="color:#ce9178;">"ghost@test.io"</span>,</div>
+            <div style="margin-left:32px;"><span style="color:#9cdcfe;">"password"</span>: <span style="color:#ce9178;">"x"</span>, <span style="color:#9cdcfe;">"expected"</span>: <span style="color:#b5cea8;">401</span> }</div>
+            <div style="color:#d4d4d4;">]</div>
+          </div>
+        </div>
+        <div>
+          <div class="code-block" style="font-size:16px;">
+            <div>CASES = json.loads(</div>
+            <div style="margin-left:16px;">(Path(__file__).parent / <span style="color:#ce9178;">"data"</span></div>
+            <div style="margin-left:32px;">/ <span style="color:#ce9178;">"login_cases.json"</span>).read_text()</div>
+            <div>)</div>
+            <div style="height:0.5em;"></div>
+            <div style="color:#d4d4d4;">@pytest.mark.parametrize(<span style="color:#ce9178;">"case"</span>, CASES)</div>
+            <div><span style="color:#569cd6;">def</span> <span style="color:#dcdcaa;">test_login</span>(case): …</div>
+          </div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">📂</span><span><strong>Modul səviyyəsində</strong> yüklə — <code class="code-inline">parametrize</code> import zamanı işləyir, ona görə verilən onda mövcud olmalıdır. (JSON faylı = <code class="code-inline">//</code> şərh yox.)</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 CSV + type conversion -->
+      <section class="slide s-step" data-screen-label="04 CSV">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">CSV: hər dəyər bir <span class="grad-text">sətirdir</span></div>
+
+        <div>
+          <div class="code-block" style="font-size:17px;">
+            <div style="color:#6a9955;"># tests/data/categories.csv</div>
+            <div style="color:#d4d4d4;">category,present</div>
+            <div style="color:#d4d4d4;">electronics,true</div>
+            <div style="color:#d4d4d4;">nonexistent,false</div>
+            <div style="height:0.7em;"></div>
+            <div>rows = csv.DictReader(f)</div>
+            <div>present = row[<span style="color:#ce9178;">"present"</span>] == <span style="color:#ce9178;">"true"</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">🔤</span><span><code class="code-inline">csv.DictReader</code> sətir başına bir dict verir, amma <strong>hər dəyər sətirdir</strong> — ona görə <code class="code-inline">"false"</code> truthy-dir!</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🔁</span><span>Tipləri özün çevir: <code class="code-inline">== "true"</code> müqayisə et və ya <code class="code-inline">int(...)</code>-a bük — reader bunu sənin üçün etməyəcək.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 Readable ids -->
+      <section class="slide s-two-col" data-screen-label="05 Readable ids" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Hər hala <span class="grad-text">oxunaqlı</span> ad ver</div>
+        <div>
+          <div class="col-label" style="color:#ef9a9a;">id yox — qapalı</div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#888;">test_login[case0]</div>
+            <div style="color:#888;">test_login[case1]</div>
+            <div style="color:#888;">test_login[case2]</div>
+          </div>
+        </div>
+        <div>
+          <div class="col-label" style="color:#4caf50;">verilədən id-lər</div>
+          <div class="code-block" style="font-size:15px;">
+            <div style="color:#d4d4d4;">ids=[<span style="color:#569cd6;">f</span><span style="color:#ce9178;">"{c['email']}-&gt;{c['expected']}"</span></div>
+            <div style="margin-left:36px;"><span style="color:#569cd6;">for</span> c <span style="color:#569cd6;">in</span> CASES]</div>
+          </div>
+          <div class="code-block" style="font-size:15px;margin-top:12px;">
+            <div style="color:#4caf50;">test_login[customer@test.io-&gt;200]</div>
+            <div style="color:#4caf50;">test_login[ghost@test.io-&gt;401]</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🧮</div>
+        <h2 class="done-head">Hallar<br><span class="grad-text">verilən kimi</span></h2>
+        <p class="done-sub">Bir gövdə, çoxlu sətir — JSON və ya CSV-dən, hər biri adlandırılıb ki, uğursuzluqlar hala işarə etsin</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🧪</div>
+            <div class="nc-title">Məşq</div>
+            <div class="nc-desc">JSON-dan login matrisi: valid→200, wrong→401, empty→400</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🔤</div>
+            <div class="nc-title">CSV tipləri</div>
+            <div class="nc-desc">categories.csv-ni oxu və sətirləri çevirməyi unutma</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Modul 9</div>
+            <div class="nc-desc">Hesabat &amp; dəst quruluşu — HTML hesabatları, marker-lər, qovluqlar</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>

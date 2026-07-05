@@ -1,0 +1,260 @@
+---
+title: "Modul 8: Data-driven testlər"
+description: "Test datasını test məntiqindən ayır: bir test gövdəsini parametrize ilə cədvəllərdən və xarici fayllardan (JSON, CSV) idarə et, oxunaqlı id-lər yarat və fayldan login validasiya matrisi yüklə — TestMarket Lab-a qarşı."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+
+`parametrize` (Modul 2) artıq bir testi çoxlu sətir üzərində işlədir. **Data-driven test** növbəti
+addımı atır: o sətirləri *koddan çıxar* fayllara (JSON, CSV) qoy ki, **verilən** və **məntiq** ayrı
+inkişaf etsin. Yeni hallar yeni sətirlərə çevrilir — test gövdəsinə redaktə yoxdur — və eyni
+verilən dəsti bir neçə testi qidalandıra bilər.
+
+TestMarket Lab-ı `http://localhost:3000`-də işlək və `.venv`-ini aktiv saxla.
+
+<Video title="Modul 8: Data-driven testlər" />
+
+<Deck href="/python-sdet/decks/m8-data-az/" title="Modul 8: data-driven testlərə qısa baxış — slayd təlimatı" />
+
+---
+
+## Xülasə: inline cədvəl
+
+İnline formanı artıq bilirsən — dekoratorda tuple-lar siyahısı:
+
+```python
+# tests/test_inline.py
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+@pytest.mark.parametrize(
+    "email, password, expected",
+    [
+        ("customer@test.io", "customer123", 200),
+        ("customer@test.io", "wrong", 401),
+        ("", "", 400),
+    ],
+)
+def test_login(email, password, expected):
+    r = requests.post(f"{BASE_URL}/api/auth/login", json={"email": email, "password": password})
+    assert r.status_code == expected
+```
+
+Bu, bir neçə hal üçün mükəmməldir. Cədvəl böyüyəndə — və ya proqramçı olmayan biri hal əlavə edə
+bilməli olanda — onu fayla köçür.
+
+**Yadda saxla:** inline `parametrize` cədvəli bir neçə hal üçün idealdır. Verilən böyüyəndə,
+testlər arasında bölüşüləndə və ya koda toxunmadan redaktə edilə bilməli olanda xarici fayla köçür.
+
+---
+
+## JSON faylından verilən
+
+Halları bir JSON faylına — `tests/data/login_cases.json` — qoy, onu **modul səviyyəsində** yüklə
+(`parametrize` dekoratoru import zamanı işləyir, ona görə verilən onda mövcud olmalıdır) və siyahı
+üzərində parametrizə et (JSON-un şərhi yoxdur, ona görə fayl sadəcə massivdir):
+
+```json
+[
+  { "email": "customer@test.io", "password": "customer123", "expected": 200 },
+  { "email": "customer@test.io", "password": "wrong",       "expected": 401 },
+  { "email": "ghost@test.io",    "password": "whatever",    "expected": 401 },
+  { "email": "customer@test.io", "password": "",            "expected": 400 }
+]
+```
+
+```python
+# tests/test_login_json.py
+import json
+from pathlib import Path
+
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+CASES = json.loads((Path(__file__).parent / "data" / "login_cases.json").read_text())
+
+
+@pytest.mark.parametrize("case", CASES)
+def test_login_from_json(case):
+    r = requests.post(
+        f"{BASE_URL}/api/auth/login",
+        json={"email": case["email"], "password": case["password"]},
+    )
+    assert r.status_code == case["expected"]
+```
+
+`Path(__file__).parent` verilən yolunu test faylına lövbərləyir, ona görə test istənilən
+qovluqdan işləyir. Hər JSON obyekti bir haldır; sətir əlavə edəndə test gövdəsi heç vaxt dəyişmir.
+(pytest halları avtomatik `case0`, `case1`, … etiketləyir — aşağıdakı *Oxunaqlı id-lər* bölməsi
+onları mənalı edir.)
+
+**Yadda saxla:** xarici veriləni **modul səviyyəsində** yüklə (parametrize import zamanı işləyir).
+Fayl yollarını `Path(__file__).parent` ilə lövbərlə ki, testlər iş qovluğuna bağlı olmasın.
+
+---
+
+## CSV faylından verilən
+
+CSV cədvəlin yarada biləcəyi cədvəl-tipli hallara uyğundur — `tests/data/categories.csv`.
+`csv.DictReader` sətir başına bir dict verir, amma hər dəyər **sətirdir**, ona görə tipləri özün
+çevir (fayl sadəcə başlıq sətri üstəgəl verilədir — şərh sətri yox):
+
+```
+category,present
+electronics,true
+accessories,true
+furniture,true
+nonexistent,false
+```
+
+```python
+# tests/test_categories_csv.py
+import csv
+from pathlib import Path
+
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+
+
+def load_rows(name):
+    with open(Path(__file__).parent / "data" / name, newline="") as f:
+        return list(csv.DictReader(f))
+
+
+ROWS = load_rows("categories.csv")
+
+
+@pytest.mark.parametrize("row", ROWS, ids=[r["category"] for r in ROWS])
+def test_category_presence(row):
+    products = requests.get(f"{BASE_URL}/api/products", params={"category": row["category"]}).json()
+    present = row["present"] == "true"          # CSV values are strings — convert!
+    assert (len(products) > 0) is present
+```
+
+O `present == "true"` sətri klassik CSV tələsidir: `"false"` boş olmayan sətirdir və deməli
+truthy-dir, ona görə xam dəyərə güvənmək əvəzinə açıq şəkildə müqayisə etməlisən.
+
+**Yadda saxla:** `csv.DictReader` sətir başına **hamısı-sətir** dəyərləri olan bir dict verir —
+assert etməzdən əvvəl tipləri çevir (`"true"` → `bool`, `"3"` → `int`). Bunu unutmaq #1 CSV baqıdır.
+
+---
+
+## Verilədən oxunaqlı id-lər
+
+Uzun parametrize icraları, pytest hər halı xam dict ilə etiketləyirsə, oxunmaz olur. Veriləni
+hesablanmış `ids=` ötür ki, `pytest -v` mənalı adlar göstərsin:
+
+```python
+@pytest.mark.parametrize(
+    "case",
+    CASES,
+    ids=[f"{c['email'] or 'empty'}->{c['expected']}" for c in CASES],
+)
+def test_login_labelled(case):
+    ...
+```
+
+```
+test_login_labelled[customer@test.io->200] PASSED
+test_login_labelled[customer@test.io->401] PASSED
+test_login_labelled[ghost@test.io->401] PASSED
+test_login_labelled[customer@test.io->400] PASSED
+```
+
+**Yadda saxla:** `ids=`-i hər halın verilənindən qur ki, uğursuzluqlar özlərini adlandırsın
+(`[customer@test.io->400]`), qapalı bir dict göstərmək əvəzinə — bir baxışda *hansı* halın uğursuz
+olduğunu görürsən.
+
+---
+
+## Niyə veriləni məntiqdən ayırmalı
+
+İkisini bölmək üç yolla haqqını verir:
+
+- **Miqyas** — 5 və ya 500 hal, test gövdəsi eynidir; yalnız sətir əlavə edirsən.
+- **Sahiblik** — manual QA və ya PM Python oxumadan CSV/JSON-a hal əlavə edə bilər.
+- **Təkrar işlətmə** — bir verilən dəsti həm API testini, *həm də* UI testini idarə edə bilər.
+
+Test *nəyin* yoxlandığının tək aydın ifadəsinə çevrilir; fayl *hansı* girişlərin olduğunu saxlayır.
+
+**Yadda saxla:** data-driven testlər yoxladığın **nəyi** (test gövdəsi) **hansı** girişlərdən (fayl)
+ayırır. Test kodu böyümədən əhatənin böyüməsinə imkan verən budur.
+
+---
+
+## Birləşdirmək
+
+Modul 4-dəki login validasiya matrisi, indi fayl-idarəli — `login_cases.json`-a bir sətir əlavə
+edərək kənar hal əlavə et, başqa heç nə yox:
+
+```python
+# tests/test_login_matrix_json.py
+import json
+from pathlib import Path
+
+import pytest
+import requests
+
+BASE_URL = "http://localhost:3000"
+CASES = json.loads((Path(__file__).parent / "data" / "login_cases.json").read_text())
+
+
+@pytest.mark.parametrize("case", CASES, ids=[f"{c['email'] or 'empty'}->{c['expected']}" for c in CASES])
+def test_login_validation(case):
+    r = requests.post(
+        f"{BASE_URL}/api/auth/login",
+        json={"email": case["email"], "password": case["password"]},
+    )
+    assert r.status_code == case["expected"]
+```
+
+**Yadda saxla:** fayl-idarəli validasiya matrisi Modul 4-ün neqativ testinin yetkin formasıdır —
+eyni məntiq, hallar hər kəsin genişləndirə biləcəyi və başqa testlərin təkrar işlədə biləcəyi bir
+faylda.
+
+---
+
+## Tapşırıqlar
+
+TestMarket Lab işlək olarkən `python-sdet` layihəndə işlə. Verilən fayllarını `tests/data/`
+altına qoy. `pytest -v` ilə işlət.
+
+### Tapşırıq 1 — JSON-idarəli login (10 dəq)
+
+Dörd halla `tests/data/login_cases.json` düzəlt (valid → 200, səhv parol → 401, naməlum email → 401,
+çatışmayan parol → 400). Onu modul səviyyəsində yüklə və onun üzərində login testini parametrizə et.
+
+### Tapşırıq 2 — CSV kateqoriyaları (10 dəq)
+
+`category,present` sətirləri ilə `tests/data/categories.csv` düzəlt. `GET
+/api/products?category=<category>`-nin yalnız `present` true olanda məhsul qaytardığını yoxlayan bir
+testi parametrizə et — `"true"`/`"false"` sətrini çevirməyi unutmayaraq.
+
+### Tapşırıq 3 — Oxunaqlı id-lər (5 dəq)
+
+İki testdən birinə `ids=` əlavə et ki, `pytest -v` `customer@test.io->200` kimi adlar göstərsin.
+Uğursuz olan bir sətir daxil et və hesabatın məhz həmin halı adlandırdığını təsdiqlə.
+
+### Tapşırıq 4 — Koda toxunmadan hal əlavə et (5 dəq)
+
+JSON/CSV-nə yeni sətir əlavə et (məsələn, boşluqlu email → 401 və ya 400 — əvvəlcə tətbiqin əsl
+davranışını yoxla) və yenidən işlət. Yeni halın test gövdəsinə **dəyişiklik olmadan** işlədiyini
+təsdiqlə.
+
+### Bonus — Bir verilən dəsti, iki test
+
+Həm bir API testini, həm də (Modul 6/7-ni etmisənsə) bir UI login testini *eyni*
+`login_cases.json`-a yönəlt, bir verilən dəstinin fərqli qatları idarə edə biləcəyini sübut edərək.
+
+---
+
+**Modul 9**-da nəticələri oxunaqlı edirik — **hesabat və dəst quruluşu**: `pytest-html`/Allure
+hesabatları, testləri marker-lərlə təşkil etmək və komandaya təhvil verə biləcəyin bir dəst
+formalaşdırmaq.
