@@ -60,7 +60,7 @@ con.close()
 
 ## `db` fixture-i
 
-O bağlantını bir fixture-ə bük ki, hər test təzə yalnız-oxu handle alsın və avtomatik bağlansın:
+O bağlantını bir fixture-ə bük ki, hər test təzə yalnız-oxu bağlantı alsın və avtomatik bağlansın:
 
 ```python
 # tests/conftest.py (add to it)
@@ -83,7 +83,7 @@ def db():
 
 Verilənlər bazasını yoxlamaq istəyən test sadəcə `db`-ni istəyir — Modul 2 və 5-dən artıq bildiyi `api` və `reset_db` fixture-ləri ilə yanaşı.
 
-**Yadda saxla:** `db` fixture-i yalnız-oxu bağlantı yield edir və `yield`-dən sonra onu bağlayır — `api` fixture-i ilə eyni quraşdırma/söküş forması, beləcə verilənlər bazası yoxlamaları mövcud dəstinə mərasimsiz düşür.
+**Yadda saxla:** `db` fixture-i yalnız-oxu bağlantı yield edir və `yield`-dən sonra onu bağlayır — `api` fixture-i ilə eyni quraşdırma/söküş forması, beləcə verilənlər bazası yoxlamaları mövcud dəstinə rahatca düşür.
 
 ---
 
@@ -151,15 +151,15 @@ def test_password_is_stored_hashed(db):
     assert len(stored) == 60            # bcrypt hashes are 60 chars
 ```
 
-Bu, API vasitəsilə edə *bilməyəcəyin* real təhlükəsizlik yoxlamasıdır, çünki API — düzgün olaraq — parolu heç vaxt geri vermir. Bu, verilənlər bazası yoxlamasının bütün arqumentidir bir testdə: bəzi həqiqətlər yalnız sxemdə yaşayır.
+Bu, API vasitəsilə edə *bilməyəcəyin* real təhlükəsizlik yoxlamasıdır, çünki API — düzgün olaraq — parolu heç vaxt geri vermir. Bu, bir testdə verilənlər bazası yoxlamasının bütün arqumentidir: bəzi həqiqətlər yalnız sxemdə yaşayır.
 
 **Yadda saxla:** API-nin qəsdən gizlətdiyi üçün verilənlər bazasına en. "Parol açıq mətnlə yox, hash-lənmiş saxlanılırmı?" xaricdən cavablana bilməz və içəridən bir `SELECT` uzaqlıqdadır.
 
 ---
 
-## Onu çoxunda-oxu saxla
+## Onu əsasən oxumaqda saxla
 
-Diqqət et ki, yuxarıdakı hər test **API vasitəsilə hazırlayır** və verilənlər bazasını yalnız **oxuyur**. Bu qəsdəndir və Modul 5-in öyrətdiyi eyni intizamdır: yazılar tətbiq vasitəsilə gedir (beləcə onun qaydaları, hesablanmış sütunları və məhdudiyyətlərinin hamısı işləyir) və verilənlər bazası sənin *yoxlama* qatındır, quraşdırma üçün arxa qapı deyil. Yalnız-oxu bağlantı bunu icra edir — `db` vasitəsilə hərfən yaza bilməzsən. Təmiz baza üçün `reset_db` ilə birləşdirdikdə, tətbiqin verilənlərinə heç vaxt əllə toxunmadan təcrid alırsan.
+Diqqət et ki, yuxarıdakı hər test **API vasitəsilə hazırlayır** və verilənlər bazasını yalnız **oxuyur**. Bu qəsdəndir və Modul 5-in öyrətdiyi eyni intizamdır: yazılar tətbiq vasitəsilə gedir (beləcə onun qaydaları, hesablanmış sütunları və məhdudiyyətlərinin hamısı işləyir) və verilənlər bazası sənin *yoxlama* qatındır, quraşdırma üçün arxa qapı deyil. Yalnız-oxu bağlantı bunu təmin edir — `db` vasitəsilə hərfən yaza bilməzsən. Təmiz baza üçün `reset_db` ilə birləşdirdikdə, tətbiqin verilənlərinə heç vaxt əllə toxunmadan təcrid alırsan.
 
 **Yadda saxla:** API ilə hazırla, DB ilə yoxla və yoxlama bağlantısını yalnız-oxu saxla. Test verilənlərini birbaşa tətbiqin verilənlər bazasına yazmaq onun məntiqini atlayır və real davranışdan uzaqlaşır — qoy tətbiq öz yazılarına sahib olsun.
 
@@ -167,7 +167,7 @@ Diqqət et ki, yuxarıdakı hər test **API vasitəsilə hazırlayır** və veri
 
 ## Əlavə — SQLite-dan istehsal səviyyəli verilənlər bazalarına
 
-TestMarket Lab SQLite işlədir, çünki o, sıfır quraşdırma ilə tək bir fayldır — öyrənmək üçün mükəmməl. Real işlər **klient-server** verilənlər bazaları işlədir: Postgres, MySQL, SQL Server. Ürəkaçan hissə nə qədər az şeyin dəyişdiyidir. Şablon eynidir — **qoşul → parametrləşdirilmiş sorğu → yoxla → bağla** — və yazdığın SQL (`SELECT`, `WHERE`, `JOIN`) standartdır. Yalnız sürücü və bağlantı quraşdırması dəyişir.
+TestMarket Lab SQLite işlədir, çünki o, sıfır quraşdırma ilə tək bir fayldır — öyrənmək üçün mükəmməl. Real işlər **klient-server** verilənlər bazaları işlədir: Postgres, MySQL, SQL Server. Rahatladıcı hissə nə qədər az şeyin dəyişdiyidir. Şablon eynidir — **qoşul → parametrləşdirilmiş sorğu → yoxla → bağla** — və yazdığın SQL (`SELECT`, `WHERE`, `JOIN`) standartdır. Yalnız sürücü və bağlantı quraşdırması dəyişir.
 
 | | SQLite (bu kurs) | Postgres | MySQL |
 |---|---|---|---|
