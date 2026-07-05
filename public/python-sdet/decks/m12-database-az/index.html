@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Modul 12: Verilənlər bazasının yoxlanması — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Modul 12 · Python for SDETs</div>
+        <h1 class="headline">API uğur dedi —<br><span class="grad-text">amma saxladımı?</span></h1>
+        <p class="subtitle">Capstone-un üstündəki senior addım: sadəcə cavabı yox, davam edən yan təsiri yoxla</p>
+        <div class="pills">
+          <span class="pill">yalnız-oxu</span>
+          <span class="pill">sqlite3 — stdlib</span>
+          <span class="pill">JOIN</span>
+          <span class="pill">qeyd</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 Word vs record -->
+      <section class="slide s-two-col" data-screen-label="02 Word vs record" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading"><span class="grad-text">201</span> tətbiqin sözüdür — sətir isə qeyddir</div>
+        <div>
+          <div class="col-label" style="color:var(--muted);">Tətbiqin BİLDİRDİYİ</div>
+          <div class="code-block" style="font-size:17px;">
+            <div><span style="color:#4caf50;">201 Created</span></div>
+            <div style="height:0.5em;"></div>
+            <div>{ <span style="color:#ce9178;">"id"</span>: <span style="color:#b5cea8;">7</span>, <span style="color:#ce9178;">"total"</span>: <span style="color:#b5cea8;">59.98</span> }</div>
+          </div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">💬</span><span>Cavab tətbiqin <strong>sözüdür</strong>: "qəbul etdim."</span></div>
+        </div>
+        <div>
+          <div class="col-label" style="color:var(--accent);">Tətbiqin SAXLADIĞI</div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#888;"># orders</div>
+            <div>id=7 · status=<span style="color:#ce9178;">pending</span> · total=<span style="color:#b5cea8;">59.98</span></div>
+            <div style="height:0.5em;"></div>
+            <div style="color:#888;"># order_items</div>
+            <div>order_id=7 · product_id=1 · qty=2</div>
+          </div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🗄️</span><span>Verilənlər bazası sətri <strong>qeyddir</strong>: "saxlanılan budur."</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 The pattern -->
+      <section class="slide s-full" data-screen-label="03 The pattern">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Hər yerdə təkrar işlətdiyin şablon</div>
+        <h2 class="section-head">API vasitəsilə hazırla &amp; icra et → DB vasitəsilə yoxla</h2>
+        <div class="pipe-row" style="margin-top:8px;">
+          <span class="pipe-chip green mono">reset_db</span>
+          <span class="pipe-arrow">→</span>
+          <span class="pipe-chip blue mono">api.post("/api/orders")</span>
+          <span class="pipe-arrow">→</span>
+          <span class="pipe-chip blue mono">db.execute("SELECT …")</span>
+          <span class="pipe-arrow">→</span>
+          <span class="pipe-chip win">davam etdi ✓</span>
+        </div>
+        <div class="pipe-row" style="margin-top:16px;gap:40px;">
+          <div class="pipe-label" style="margin:0;">yazılar <strong>tətbiq</strong> vasitəsilə gedir</div>
+          <div class="pipe-label" style="margin:0;color:var(--accent);">DB sənin <strong>yalnız-oxu</strong> yoxlama qatındır</div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">🔒</span><span>Qoy tətbiq öz yazılarına sahib olsun — onun qaydaları və hesablanmış sütunları işləyir. Sən təsiri təsdiqləmək üçün yalnız <strong>oxuyursan</strong>, ona görə test tətbiqin verilənlərini heç vaxt korlaya bilməz.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 Connect read-only -->
+      <section class="slide s-step" data-screen-label="04 Connect read-only">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">Onu <span class="grad-text">yalnız-oxu</span> aç, dəyərləri <code class="code-inline">?</code> kimi ötür</div>
+        <div>
+          <div class="code-block" style="font-size:16px;">
+            <div><span style="color:#569cd6;">import</span> sqlite3</div>
+            <div style="height:0.4em;"></div>
+            <div>con = sqlite3.connect(</div>
+            <div style="margin-left:20px;"><span style="color:#ce9178;">f"file:{DB_PATH.as_posix()}?mode=ro"</span>, uri=<span style="color:#569cd6;">True</span>)</div>
+            <div>con.row_factory = sqlite3.Row</div>
+            <div style="height:0.5em;"></div>
+            <div>row = con.execute(</div>
+            <div style="margin-left:20px;"><span style="color:#ce9178;">"SELECT id, name, stock FROM products"</span></div>
+            <div style="margin-left:20px;"><span style="color:#ce9178;">"  WHERE slug = ?"</span>, (<span style="color:#ce9178;">"wireless-mouse"</span>,),</div>
+            <div>).fetchone()</div>
+          </div>
+        </div>
+        <div>
+          <div class="step-tip"><span class="tip-icon">🛡️</span><span><code class="code-inline">mode=ro</code> yazmağı <strong>qeyri-mümkün</strong> edir — səhvən yazılmış sorğu tətbiqin verilənlərini korlaya bilməz. <code class="code-inline">INSERT</code> <code class="code-inline">OperationalError</code> atır.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">💉</span><span>Dəyər <code class="code-inline">?</code> <strong>parametr</strong> kimi daxil olur, SQL sətrinə heç vaxt yapışdırılmır. Yeganə güzəştsiz vərdiş.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">📦</span><span><code class="code-inline">sqlite3</code> standart kitabxanadadır — sıfır quraşdırma.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 Parent + children -->
+      <section class="slide s-two-col" data-screen-label="05 Order end to end" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">201 = qəbul edildi · sətir = saxlanıldı · JOIN = <span class="grad-text">düzgün saxlanıldı</span></div>
+        <div>
+          <div class="col-label" style="color:var(--accent);">Valideyn — orders sətri</div>
+          <div class="code-block" style="font-size:15px;">
+            <div>order = db.execute(</div>
+            <div style="margin-left:20px;"><span style="color:#ce9178;">"SELECT status, total FROM orders"</span></div>
+            <div style="margin-left:20px;"><span style="color:#ce9178;">"  WHERE id = ?"</span>, (order_id,)).fetchone()</div>
+            <div style="height:0.35em;"></div>
+            <div><span style="color:#c586c0;">assert</span> order <span style="color:#569cd6;">is not None</span></div>
+            <div><span style="color:#c586c0;">assert</span> order[<span style="color:#ce9178;">"status"</span>] == <span style="color:#ce9178;">"pending"</span></div>
+            <div><span style="color:#c586c0;">assert</span> order[<span style="color:#ce9178;">"total"</span>] == pytest.approx(<span style="color:#b5cea8;">59.98</span>)</div>
+          </div>
+        </div>
+        <div>
+          <div class="col-label" style="color:#4caf50;">Övladlar — JOIN vasitəsilə order_items</div>
+          <div class="code-block" style="font-size:15px;">
+            <div>items = db.execute(</div>
+            <div style="margin-left:20px;color:#ce9178;">
+              <div>"""SELECT oi.product_id, oi.quantity</div>
+              <div>   FROM orders o</div>
+              <div>   JOIN order_items oi ON oi.order_id = o.id</div>
+              <div>   WHERE o.id = ?"""</div>
+            </div>
+            <div style="margin-left:20px;">, (order_id,)).fetchall()</div>
+            <div style="height:0.35em;"></div>
+            <div><span style="color:#c586c0;">assert</span> [(i[<span style="color:#ce9178;">"product_id"</span>], i[<span style="color:#ce9178;">"quantity"</span>]) <span style="color:#569cd6;">for</span> i <span style="color:#569cd6;">in</span> items] == [(<span style="color:#b5cea8;">1</span>, <span style="color:#b5cea8;">2</span>)]</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Reading what the API hides -->
+      <section class="slide s-step" data-screen-label="06 What the API hides">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">API-nin <span class="grad-text">qaytarmayacağı</span>na çat</div>
+        <div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#888;"># the API never hands the password back — rightly</div>
+            <div>row = db.execute(</div>
+            <div style="margin-left:20px;"><span style="color:#ce9178;">"SELECT password FROM users WHERE email = ?"</span>,</div>
+            <div style="margin-left:20px;">(<span style="color:#ce9178;">"customer@test.io"</span>,)).fetchone()</div>
+            <div>stored = row[<span style="color:#ce9178;">"password"</span>]</div>
+            <div style="height:0.5em;"></div>
+            <div><span style="color:#c586c0;">assert</span> stored != <span style="color:#ce9178;">"customer123"</span></div>
+            <div><span style="color:#c586c0;">assert</span> stored.startswith(<span style="color:#ce9178;">"$2"</span>)</div>
+            <div><span style="color:#c586c0;">assert</span> len(stored) == <span style="color:#b5cea8;">60</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="step-tip"><span class="tip-icon">🔑</span><span>"Parol açıq mətnlə yox, <strong>hash-lənmiş</strong> saxlanılırmı?" xaricdən cavablana bilməz…</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🔎</span><span>…və içəridən bir <code class="code-inline">SELECT</code> uzaqlıqdadır. Bəzi həqiqətlər yalnız sxemdə yaşayır.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 07 SQLite -> production -->
+      <section class="slide s-full" data-screen-label="07 To production">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">Eyni ideya, işdə</div>
+        <h2 class="section-head">SQLite → istehsal: şablonu yox, sürücünü dəyiş</h2>
+        <div class="pipe-row" style="margin-top:8px;">
+          <span class="pipe-chip blue mono">sqlite3</span>
+          <span class="pipe-arrow">→</span>
+          <span class="pipe-chip green mono">psycopg</span>
+          <span class="pipe-arrow">·</span>
+          <span class="pipe-chip green mono">PyMySQL</span>
+          <span class="pipe-arrow" style="margin-left:24px;">|</span>
+          <span class="pipe-chip blue mono">?</span>
+          <span class="pipe-arrow">→</span>
+          <span class="pipe-chip green mono">%s</span>
+          <span class="pipe-arrow" style="margin-left:24px;">|</span>
+          <span class="pipe-chip blue mono">fayl yolu</span>
+          <span class="pipe-arrow">→</span>
+          <span class="pipe-chip green mono">bağlantı sətri</span>
+        </div>
+        <div class="pipe-row" style="margin-top:28px;">
+          <span class="pipe-chip win" style="font-size:20px;">qoşul → parametrləşdir → yoxla → bağla</span>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1500px;"><span class="tip-icon">🧭</span><span>Yazdığın SQL (<code class="code-inline">SELECT</code>, <code class="code-inline">WHERE</code>, <code class="code-inline">JOIN</code>) standartdır və Postgres <code class="code-inline">NUMERIC</code>-i sadəcə <code class="code-inline">Decimal</code> kimi gəlir. Konteyner bir <code class="code-inline">docker run</code>-dan — və ya CI servis konteynerindən gəlir.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 08 Done -->
+      <section class="slide s-done" data-screen-label="08 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🗄️</div>
+        <h2 class="done-head"><span class="grad-text">Qeydi</span><br>yoxlaya bilərsən</h2>
+        <p class="done-sub">Cavab, UI — və API-nin üstündə oturduğu davam edən həqiqət</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">🛡️</div>
+            <div class="nc-title">İndi bacarırsan</div>
+            <div class="nc-desc">Yalnız-oxu bağlantı, parametrləşdirilmiş sorğu və saxlandığını sübut edən JOIN</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🧭</div>
+            <div class="nc-title">İşdə</div>
+            <div class="nc-desc">Bu gün SQLite, sabah Postgres — eyni dörd addım, yalnız sürücü dəyişir</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🧩</div>
+            <div class="nc-title">Onu bərkit</div>
+            <div class="nc-desc">Capstone-una DB yoxlaması əlavə et — "onun həqiqətən saxlandığını haradan bilirsən?"</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>
