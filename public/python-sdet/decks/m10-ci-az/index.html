@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Modul 10: GitHub Actions ilə CI — Python for SDETs</title>
+  <link rel="stylesheet" href="/python-sdet/decks/deck.css" />
+</head>
+<body>
+  <div class="deck-shell">
+    <div class="deck-stage" id="deck-stage">
+      <!-- 01 Title -->
+      <section class="slide active s-title" data-screen-label="01 Title">
+        <div class="circuit-bg"></div>
+        <div class="kicker">Modul 10 · Python for SDETs</div>
+        <h1 class="headline">CI<br><span class="grad-text">GitHub Actions</span> ilə</h1>
+        <p class="subtitle">Dəst özünü işlədir — hər push və pull request-də</p>
+        <div class="pills">
+          <span class="pill">tests.yml</span>
+          <span class="pill">tətbiqi başlat &amp; gözlə</span>
+          <span class="pill">hesabat artefaktı</span>
+          <span class="pill">tələb olunan yoxlama</span>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 02 What CI does -->
+      <section class="slide s-full" data-screen-label="02 Why CI">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">İşlətməyi xatırlamalı olduğun testlər gec-tez işlədilmir</div>
+        <h2 class="section-head">CI dəsti sənin üçün işlədir — avtomatik</h2>
+        <div class="feature-cards" style="max-width:1560px;margin-top:16px;">
+          <div class="feature-card">
+            <div class="feature-icon">🔁</div>
+            <div><h3>Hər dəyişiklik</h3><p>Hər push və PR-da hər testi işlədir — "işlətməyi unutdum" yoxdur.</p></div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🛑</div>
+            <div><h3>Sınmanı bloklayır</h3><p>Uğursuzluq commit/PR-ı qırmızı işarələyir — və birləşmək üçün yaşıl tələb edə bilər.</p></div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📄</div>
+            <div><h3>Bölüşülə bilən hesabat</h3><p>HTML hesabatı icraya əlavə olunur, hər kəsin açması üçün.</p></div>
+          </div>
+        </div>
+        <div class="step-tip" style="margin-top:34px;max-width:1500px;"><span class="tip-icon">🚪</span><span>Fayda <strong>tələb olunan yoxlamadır</strong>: dəst CI-nin təmiz maşınında keçənə qədər PR birləşə bilmir — sadəcə "mənim noutbukumda işləyir" yox.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 03 The workflow file -->
+      <section class="slide s-two-col" data-screen-label="03 Workflow file" style="align-items:center;">
+        <div class="circuit-bg"></div>
+        <div class="full-heading"><span class="grad-text">.github/workflows/</span>-da bir YAML fayl</div>
+        <div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#6a9955;"># .github/workflows/tests.yml</div>
+            <div><span style="color:#9cdcfe;">name</span>: tests</div>
+            <div><span style="color:#9cdcfe;">on</span>:</div>
+            <div style="margin-left:16px;"><span style="color:#9cdcfe;">push</span>: { <span style="color:#9cdcfe;">branches</span>: [main] }</div>
+            <div style="margin-left:16px;"><span style="color:#9cdcfe;">pull_request</span>:</div>
+            <div><span style="color:#9cdcfe;">jobs</span>:</div>
+            <div style="margin-left:16px;"><span style="color:#9cdcfe;">test</span>:</div>
+            <div style="margin-left:32px;"><span style="color:#9cdcfe;">runs-on</span>: ubuntu-latest</div>
+            <div style="margin-left:32px;"><span style="color:#9cdcfe;">steps</span>: …</div>
+          </div>
+        </div>
+        <div>
+          <div class="step-tip"><span class="tip-icon">🧱</span><span>Bir <code class="code-inline">name</code>, bir <code class="code-inline">on:</code> tətikləyici və <code class="code-inline">steps</code>-dən ibarət <code class="code-inline">jobs</code>.</span></div>
+          <div class="step-tip" style="margin-top:20px;"><span class="tip-icon">🔩</span><span>Hər addım ya <code class="code-inline">uses:</code> (hazır action) ya da <code class="code-inline">run:</code> (shell əmrləri)-dir. <code class="code-inline">push</code>-u <code class="code-inline">main</code>-ə scope-lamaq branch push-unun <em>və</em> onun PR-ının hər ikisinin işləməsini dayandırır.</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 04 The pipeline of steps -->
+      <section class="slide s-full" data-screen-label="04 The steps">
+        <div class="circuit-bg"></div>
+        <div class="kicker-label">İşin forması</div>
+        <h2 class="section-head">Checkout → qur → tətbiqi başlat → test → yüklə</h2>
+        <div class="pipe-row" style="max-width:1720px;flex-wrap:wrap;gap:14px;">
+          <div class="pipe-chip blue">checkout</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">Python + Node</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">pip install + playwright</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">tətbiqi başlat &amp; gözlə</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip">pytest</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-chip green">hesabatı yüklə</div>
+        </div>
+        <div class="step-tip" style="margin-top:36px;max-width:1560px;"><span class="tip-icon">📌</span><span>Hər quraşdırmadan sonra <code class="code-inline">requirements.txt</code>-i yenidən bərkit (<code class="code-inline">pytest-html</code>, <code class="code-inline">pytest-playwright</code>) — çatışmayan asılılıq CI-də <code class="code-inline">--html</code> addımını uğursuz edir.</span></div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 05 The two CI-only gotchas -->
+      <section class="slide s-step" data-screen-label="05 CI gotchas">
+        <div class="circuit-bg"></div>
+        <div class="full-heading">İnsanları büdrədən iki təfərrüat</div>
+
+        <div>
+          <div class="code-block" style="font-size:16px;">
+            <div style="color:#6a9955;"># background the app, then WAIT</div>
+            <div>npm start &amp;</div>
+            <div style="height:0.5em;"></div>
+            <div><span style="color:#c586c0;">for</span> i <span style="color:#c586c0;">in</span> $(seq 1 30); <span style="color:#c586c0;">do</span></div>
+            <div style="margin-left:20px;">curl -sf localhost:3000/api/products \</div>
+            <div style="margin-left:40px;">&amp;&amp; <span style="color:#c586c0;">exit</span> 0</div>
+            <div style="margin-left:20px;">sleep 1</div>
+            <div><span style="color:#c586c0;">done</span>; <span style="color:#c586c0;">exit</span> 1 <span style="color:#6a9955;"># never started</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="step-tip"><span class="tip-icon">⏳</span><span><code class="code-inline">npm start &amp;</code> dərhal qayıdır — real endpoint-i cavab verənə qədər yoxla, sabit təxmini <code class="code-inline">sleep</code> etmə.</span></div>
+          <div class="step-tip" style="margin-top:16px;"><span class="tip-icon">🐧</span><span><code class="code-inline">playwright install --with-deps chromium</code> — headless runner-in Linux kitabxanalarına da ehtiyacı var.</span></div>
+          <div class="step-tip" style="margin-top:16px;"><span class="tip-icon">💾</span><span><code class="code-inline">if: always()</code> ilə yüklə — testlər uğursuz olanda belə hesabatı saxla (məhz onu istədiyin an).</span></div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+
+      <!-- 06 Done -->
+      <section class="slide s-done" data-screen-label="06 Done">
+        <div class="circuit-bg"></div>
+        <div class="done-icon">🤖</div>
+        <h2 class="done-head">Testlər<br><span class="grad-text">həmişə işlədi</span></h2>
+        <p class="done-sub">Hər push təmiz maşında yoxlanılıb, hesabat əlavə olunub, birləşmələr yaşıla bağlıdır</p>
+        <div class="next-cards">
+          <div class="next-card">
+            <div class="nc-icon">⚙️</div>
+            <div class="nc-title">Məşq</div>
+            <div class="nc-desc">tests.yml əlavə et, push et və Actions tabında icranın yaşıl getdiyini izlə</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">🚪</div>
+            <div class="nc-title">Onu tələb et</div>
+            <div class="nc-desc">Branch qorunması: test işini tələb et ki, heç bir qırmızı PR main-ə çatmasın</div>
+          </div>
+          <div class="next-card">
+            <div class="nc-icon">➡️</div>
+            <div class="nc-title">Modul 11</div>
+            <div class="nc-desc">Capstone — hər şeyi birləşdirən tam API + UI dəsti</div>
+          </div>
+        </div>
+        <div class="brand-bar">
+          <div class="brand-dot"></div>
+          <span class="brand-name"><strong>AI</strong> with Rufat</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <nav class="deck-counter" role="navigation" aria-label="Deck navigation">
+    <button type="button" id="deck-prev" aria-label="Previous slide">‹</button>
+    <span class="deck-count"><span id="deck-cur">01</span> <span class="total">/ <span id="deck-total">01</span></span></span>
+    <button type="button" id="deck-next" aria-label="Next slide">›</button>
+  </nav>
+  <div class="deck-hint">← / → · space</div>
+
+  <script src="/python-sdet/decks/deck.js"></script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+---
+title: "Modul 10: GitHub Actions ilə CI"
+description: "pytest dəstini GitHub Actions ilə hər push və pull request-də avtomatik işlət: Python və Node quran, TestMarket Lab-ı başladan, testləri işlədən və HTML hesabatı artefakt kimi yükləyən bir workflow."
+---
+
+import Video from '../../../../components/course/Video.astro';
+import Deck from '../../../../components/course/Deck.astro';
+
+İşlətməyi *xatırlamalı* olduğun testlər gec-tez işlədilməyən testlərdir. **Fasiləsiz İnteqrasiya
+(CI)** bütün dəsti hər push və pull request-də avtomatik işlədir, ona görə reqressiya
+birləşmədən əvvəl tutulur — göndərildikdən sonra yox. Bu modul pytest dəstini **GitHub
+Actions**-a qoşur.
+
+:::tip[git push / branch-lar / pull request-lər sənə yenidir?]
+CI push-larda və PR-larda tətiklənir, ona görə commit edib GitHub-a push edə bildiyini güman edir.
+`git add` / `commit` / `push` və ya "pull request" qeyri-müəyyəndirsə,
+**[Git və GitHub istinadı](/az/reference/git-github/)** dəqiq əmrləri əhatə edir.
+:::
+
+<Video title="Modul 10: GitHub Actions ilə CI" />
+
+<Deck href="/python-sdet/decks/m10-ci-az/" title="Modul 10: GitHub Actions ilə CI-yə qısa baxış — slayd təlimatı" />
+
+---
+
+## CI test dəsti üçün nə edir
+
+CI workflow-u push etdikdə GitHub-ın öz maşınlarında işlətdiyi bir reseptdir. Test dəsti üçün o:
+
+- **hər dəyişiklikdə hər testi işlədir** — "işlətməyi unutdum" yoxdur,
+- **sınmış kodu bloklayır** — uğursuz icra commit/PR-ı qırmızı işarələyir (və birləşmək üçün yaşıl
+  *tələb* edə bilər),
+- **bölüşülə bilən hesabat istehsal edir** — icraya əlavə olunur, hər kəsin açması üçün.
+
+Fayda **tələb olunan yoxlamadır**: dəst CI-nin təmiz maşınında keçənə qədər PR birləşə bilmir —
+sadəcə "mənim noutbukumda işləyir" yox.
+
+**Yadda saxla:** CI dəsti hər push/PR-da avtomatik işlədir, uğursuzluğu görünən qırmızı yoxlamaya
+çevirir və birləşmələri bloklaya bilər. O, "testləri işlətməyi unutma"nı "testlər həmişə
+işlədi" ilə əvəz edir.
+
+---
+
+## Workflow faylı
+
+GitHub Actions `.github/workflows/`-dan YAML faylları oxuyur. Budur `python-sdet` layihəsi üçün tam
+bir workflow — onu `.github/workflows/tests.yml` kimi saxla:
+
+```yaml
+# .github/workflows/tests.yml
+name: tests
+
+on:
+  push:
+    branches: [main]      # pushes to main
+  pull_request:           # and every PR (feature branches run here, not twice)
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the test project
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"      # cache pip downloads between runs
+
+      - name: Set up Node (for TestMarket Lab)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright browser
+        run: playwright install --with-deps chromium
+
+      - name: Start TestMarket Lab
+        run: |
+          git clone https://github.com/TesterBaku/testmarket-lab
+          cd testmarket-lab
+          npm install
+          npm start &
+
+      - name: Wait for the app
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/api/products && exit 0
+            sleep 1
+          done
+          echo "TestMarket Lab did not start in time" >&2
+          exit 1
+
+      - name: Run the tests
+        run: pytest -ra --html=report.html --self-contained-html
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: report.html
+```
+
+**Yadda saxla:** workflow `.github/workflows/*.yml`-də yaşayır, bir `name`, bir `on:` tətikləyici və
+`steps`-dən ibarət `jobs` ilə. Addımlar ya `uses:` (hazır action) ya da `run:` (shell əmrləri)-dir.
+
+---
+
+## Addımları nəzərdən keçirmək
+
+- **`on: push` (main) / `pull_request`** — `main`-ə push-larda və hər PR-da işlət. (`push`-u `main`-ə
+  scope-lamaq feature-branch push-unun *və* onun PR-ının hər ikisinin tam icranı tətikləməsindən qaçır
+  — feature branch onun PR-ını açan kimi onsuz da CI alır. Hər branch push-unun da işləməsini
+  istəyirsənsə, `branches:` filtrini çıxar.)
+- **`actions/checkout@v4`** — *sənin* test repo-nu runner-a klonla.
+- **`setup-python@v5` / `setup-node@v4`** — iki runtime-ı quraşdır (Node yalnız TestMarket Lab-ı
+  işlətmək üçün oradadır). `cache: "pip"` endirilmiş wheel-ləri icralar arası yenidən işlədir.
+- **`pip install -r requirements.txt`** — bərkidilmiş asılılıqların. `requirements.txt`-in
+  quraşdırdığın *hər şeyi* siyahıladığından əmin ol — `pytest`/`requests` (Modul 0),
+  `pytest-playwright` (Modul 6), `pytest-html` (Modul 9) — hər yeni quraşdırmadan sonra
+  `pip freeze > requirements.txt` yenidən işlədərək. `pytest-html` çatışmırsa, `--html` addımı CI-də
+  uğursuz olur.
+- **`playwright install --with-deps chromium`** — brauzeri *və* onun Linux sistem kitabxanalarını
+  (`--with-deps`) endir, headless runner-in onlara ehtiyacı var.
+- **TestMarket Lab-ı başlat** — onu klonla, `npm install` et və arxa planda (`&`) başlat. (CI-ni
+  tətbiqin upstream dəyişikliklərindən təcrid etmək istəyirsənsə, bərkidilmiş tag/commit klonla.)
+- **Tətbiqi gözlə** — cavab verənə qədər `/api/products`-u yoxla ki, testlər server qalxmazdan əvvəl
+  başlamasın.
+- **Testləri işlət** — Modul 9-dakı hesabat bayraqları ilə `pytest`.
+- **Hesabatı yüklə** — `if: always()` testlər uğursuz olanda belə `report.html`-i yükləyir (məhz onu
+  istədiyin an).
+
+**Yadda saxla:** forma *checkout et → runtime-ları qur → asılılıqları + brauzeri quraşdır → tətbiqi
+başlat və gözlə → pytest işlət → hesabatı yüklə*-dir. `--with-deps` və gözləmə-dövrü insanları
+büdrədən iki yalnız-CI təfərrüatıdır.
+
+---
+
+## Gözləmə-dövrü niyə vacibdir
+
+`npm start &` dərhal qayıdır — server hələ də açılır. `pytest` tətbiq cavab verməzdən əvvəl işləsə,
+hər test `Connection refused` ilə uğursuz olur. Dövr `/api/products` cavab verənə qədər yoxlayır
+(`0` ilə çıxaraq), və ya ~30 saniyədən sonra **addımı uğursuz edir** ki, heç vaxt başlamayan server
+belə bildirilsin — test addımında bağlantı xətalarından ibarət bir divarın arxasında gizlənmək əvəzinə:
+
+```bash
+for i in $(seq 1 30); do
+  curl -sf http://localhost:3000/api/products && exit 0   # -f: non-zero on HTTP 4xx/5xx
+  sleep 1
+done
+echo "TestMarket Lab did not start in time" >&2           # timed out -> fail the step
+exit 1
+```
+
+Bu, Modul 0-dakı "TestMarket Lab-ı öz terminalında işlək saxla"-nın CI versiyasıdır — runner-in bir
+shell-i var, ona görə tətbiqi arxa plana salıb onu gözləyirsən.
+
+**Yadda saxla:** serveri `&` ilə arxa plana sal, sonra test etməzdən əvvəl onun hazır olmasını
+**gözlə**. Hələ dinləməyən serverə qarşı testləri başlatmaq klassik CI flake-idir — real endpoint-i
+yoxla, sabit təxmini `sleep` etmə.
+
+---
+
+## Artefakt kimi hesabat
+
+`actions/upload-artifact@v4` `report.html`-i workflow icrasına əlavə edir — icranın xülasə
+səhifəsindən endirilə bilən. `if: always()` açardır: onsuz uğursuz `pytest` addımı işi bitirir və
+yükləmə buraxılır, ona görə hesabatı məhz test uğursuz olanda itirərdin. Onunla hesabat həmişə
+açmaq üçün oradadır.
+
+**Yadda saxla:** HTML hesabatı `if: always()` ilə artefakt kimi yüklə ki, uğursuz test icrasından
+sağ qalsın — hesabatına ən çox ehtiyacın olan icra məhz uğursuz olandır.
+
+---
+
+## Onu tələb olunan yoxlama etmək
+
+Workflow yaşıl işləyəndən sonra onu məcburi et: repo-nun **Settings → Branches**-ında `main` üçün
+birləşmədən əvvəl **`test` işinin keçməsini tələb edən** branch-qorunma qaydası əlavə et. İndi heç
+bir qırmızı PR `main`-ə çata bilməz — dəst təklif yox, əsl darvazadır.
+
+**Yadda saxla:** workflow sən onu branch qorunmasında **tələb olunan status yoxlaması** edənə qədər
+yalnız *bildirir*. CI-ni məlumatlandırıcıdan birləşmə darvazasına çevirən addım budur.
+
+---
+
+## Tapşırıqlar
+
+`python-sdet` layihən üçün bir GitHub repo-su və commit edilmiş bir `requirements.txt` (Modul 0)
+lazımdır.
+
+### Tapşırıq 1 — Workflow əlavə et (10 dəq)
+
+Yuxarıdan `.github/workflows/tests.yml` əlavə et, commit et və push et. Repo-nun **Actions**
+tabını aç və icranı izlə — addımların sıra ilə icra olunduğunu və işin yaşıl getdiyini təsdiqlə.
+
+### Tapşırıq 2 — Hesabat artefaktını oxu (5 dəq)
+
+Bitmiş icranın xülasə səhifəsindən `pytest-report` artefaktını endir və `report.html`-i aç.
+
+### Tapşırıq 3 — Uğursuzluqları tutduğunu sübut et (10 dəq)
+
+Bir branch-da qəsdən uğursuz olan bir test push et, PR aç və yoxlamanın **qırmızı** getdiyini və
+hesabat artefaktının hələ də yükləndiyini (`if: always()` sayəsində) təsdiqlə. Sonra onu düzəlt və
+yaşıl getdiyini izlə.
+
+### Tapşırıq 4 — Yoxlamanı tələb et (5 dəq)
+
+`main`-də `test` işini tələb edən bir branch-qorunma qaydası əlavə et. Uğursuz yoxlaması olan bir
+PR-ın artıq birləşdirilə bilmədiyini təsdiqlə.
+
+### Bonus — Push-da smoke, PR-da tam
+
+İki işə böl (və ya tətikləyicidə `if:` işlət): hər push-da yalnız `-m smoke` işlət, pull request-lərdə
+isə tam dəsti. Push-larda sürətli əks-əlaqə, birləşmədən əvvəl hərtərəfli yoxlama.
+
+---
+
+**Modul 11**-də hər şeyi bir **capstone**-da birləşdirəcəksən — TestMarket Lab-a qarşı kiçik, amma
+tam bir API + UI dəsti, fixture-lər, page object-lər, data-driven hallar, hesabat və bu CI
+workflow-u ilə.
