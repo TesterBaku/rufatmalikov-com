@@ -50,7 +50,8 @@ QA və ya SDET müsahibələrinə hazırlaşırsan? Bu, məhz bunun üçün qurd
 - **Gündəlik məşq** — kodlaşdırma, SQL, Playwright/Selenium, API/CI/AWS və strategiya suallarını birləşdirən fokuslanmış gündəlik plan
 - **Coding Gym** — Python, Java, SQL və TypeScript-də kodlaşdırma inamı qazanmaq üçün QA yönümlü tapşırıqlar
 - **Mock müsahibə** — cavab yaz, model cavabı aç və yoxlama siyahısına görə özünü qiymətləndir
-- **Tərəqqi izləməsi** — 500 məşq elementi üzrə tamamlanma göstəriciləri və "zəif mövzular" baxışı
+- **Tərəqqi izləməsi** — 525 məşq elementi üzrə tamamlanma göstəriciləri və "zəif mövzular" baxışı
+- **Quraşdırıla bilən və oflayn** — onu telefonun və ya masaüstünün ana ekranına native tətbiq kimi əlavə et; servis işçisi əsas ekranları bağlantı olmadan da işlək saxlayır
 
 Hələlik backend olmadan işləyir, ona görə də masaüstündə və mobil cihazda sürətlə istifadə olunur. Bu, erkən bir konsepsiya sübutudur — üzərində qurmağa davam edəcəyim başlanğıc nöqtəsi. Sıfırdan hazırlaşırsansa, [Playwright kursu](/az/course/) və [SDET-lər üçün Python](/az/python-sdet/) ilə yaxşı uyğunlaşır.
 
