@@ -46,6 +46,11 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			routeMiddleware: './src/starlightRouteData.ts',
+			// Replace the default language <select> with a compact EN | AZ toggle
+			// (two locales → a segmented toggle is clearer than a dropdown).
+			components: {
+				LanguageSelect: './src/components/LanguageToggle.astro',
+			},
 			title: {
 				en: 'Rufat Malikov',
 				az: 'Rüfət Məlikov',

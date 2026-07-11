@@ -1,0 +1,81 @@
+---
+/*
+  Override for Starlight's default LanguageSelect (a plain <select> dropdown).
+  This site has exactly two locales, so a segmented EN | AZ toggle is faster and
+  clearer than a dropdown — one tap to switch, current language always visible.
+
+  The locale-equivalent path is computed by swapping the leading path segment
+  (/en/… ↔ /az/…). Both locales use clean prefixes and there is no base path, so
+  this matches Starlight's own localizedUrl for every route (untranslated pages
+  fall back exactly as the default select would).
+*/
+const url = Astro.url;
+const seg = url.pathname.split('/')[1];
+const current = seg === 'az' || seg === 'en' ? seg : Astro.locals.starlightRoute?.locale ?? 'en';
+
+function pathFor(code: string): string {
+	const segs = url.pathname.split('/');
+	if (segs.length > 1) segs[1] = code;
+	return segs.join('/') || '/';
+}
+
+const langs = [
+	{ code: 'en', short: 'EN', full: 'English' },
+	{ code: 'az', short: 'AZ', full: 'Azərbaycan dili' },
+];
+const label = Astro.locals.t?.('languageSelect.accessibleLabel') ?? 'Select language';
+---
+
+<nav class="lang-toggle" aria-label={label}>
+	{
+		langs.map((l) => (
+			<a
+				href={pathFor(l.code)}
+				lang={l.code}
+				hreflang={l.code}
+				title={l.full}
+				aria-current={l.code === current ? 'true' : undefined}
+				class:list={['lang-opt', { active: l.code === current }]}
+			>
+				{l.short}
+			</a>
+		))
+	}
+</nav>
+
+<style>
+	.lang-toggle {
+		display: inline-flex;
+		align-items: stretch;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: var(--brand-radius-sm, 0.5rem);
+		overflow: hidden;
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		line-height: 1;
+	}
+	.lang-opt {
+		display: flex;
+		align-items: center;
+		padding: 0.3rem 0.55rem;
+		color: var(--sl-color-gray-3);
+		text-decoration: none;
+		letter-spacing: 0.02em;
+		transition: background 150ms ease, color 150ms ease;
+	}
+	.lang-opt + .lang-opt {
+		border-inline-start: 1px solid var(--sl-color-gray-5);
+	}
+	.lang-opt:hover {
+		color: var(--sl-color-text-accent);
+		background: color-mix(in srgb, var(--sl-color-accent) 9%, transparent);
+	}
+	.lang-opt.active {
+		background: var(--ember-deep, var(--sl-color-accent));
+		color: #fff;
+	}
+	.lang-opt:focus-visible {
+		outline: 2px solid var(--sl-color-accent);
+		outline-offset: -2px;
+	}
+</style>
