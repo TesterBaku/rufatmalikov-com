@@ -16,7 +16,7 @@ const COPY = {
 		byline: 'Rufat Malikov · QA automation engineer, 9+ years',
 		h1: 'Learn software testing, hands-on and free.',
 		tagline:
-			'Free courses in test automation — Playwright and Python, in English and Azerbaijani. Learn the concepts, practice in your browser, then test a real app you run locally.',
+			'Free courses in test automation: Playwright and Python, in English and Azerbaijani. Learn the concepts, practice in your browser, then test a real app you run locally.',
 		ctas: [
 			{ text: 'Start the Playwright course', href: '/en/course/', variant: 'primary' },
 			{ text: 'Start Python from zero', href: '/en/python/', variant: 'secondary' },
@@ -60,9 +60,9 @@ const COPY = {
 				href: '/en/python-sdet/',
 			},
 			{
-				tag: '11 primers',
+				tag: 'Concepts · reference',
 				title: 'Reference',
-				body: 'Short, plain-language primers — HTTP, SQL, Git, selectors, regex, Docker.',
+				body: 'Eleven short, plain-language primers — HTTP, SQL, Git, selectors, regex, Docker.',
 				href: '/en/reference/',
 			},
 		],
@@ -83,7 +83,7 @@ const COPY = {
 		byline: 'Rüfət Məlikov · QA avtomatlaşdırma mühəndisi, 9+ il',
 		h1: 'Proqram testini praktiki və pulsuz öyrən.',
 		tagline:
-			'Test avtomatlaşdırma üzrə pulsuz kurslar — Playwright və Python, ingilis və Azərbaycan dilində. Konsepsiyaları öyrən, brauzerdə məşq et, sonra yerli işlətdiyin real tətbiqi test et.',
+			'Test avtomatlaşdırma üzrə pulsuz kurslar: Playwright və Python, ingilis və Azərbaycan dilində. Konsepsiyaları öyrən, brauzerdə məşq et, sonra yerli işlətdiyin real tətbiqi test et.',
 		ctas: [
 			{ text: 'Playwright kursuna başla', href: '/az/course/', variant: 'primary' },
 			{ text: 'Sıfırdan Python-a başla', href: '/az/python/', variant: 'secondary' },
@@ -127,9 +127,9 @@ const COPY = {
 				href: '/az/python-sdet/',
 			},
 			{
-				tag: '11 səhifə',
+				tag: 'Anlayışlar · istinad',
 				title: 'İstinad',
-				body: 'Qısa, sadə dildə səhifələr — HTTP, SQL, Git, seçicilər, regex, Docker.',
+				body: 'On bir qısa, sadə dildə səhifə — HTTP, SQL, Git, seçicilər, regex, Docker.',
 				href: '/az/reference/',
 			},
 		],
@@ -172,7 +172,7 @@ const t = COPY[lang];
 		<!-- Signature visual: a passing test report against the course's own app -->
 		<div class="report reveal r2" role="img" aria-label={`A passing test run: ${t.report.rows.join('; ')}. ${t.report.passed}, ${t.report.failed}.`}>
 			<div class="report-bar" aria-hidden="true">
-				<span class="dot"></span><span class="dot"></span><span class="dot"></span>
+				<svg class="run" viewBox="0 0 12 12" width="12" height="12"><path d="M2.5 1.5l7 4.5-7 4.5z" fill="currentColor" /></svg>
 				<span class="report-file">{t.report.file}</span>
 			</div>
 			<ul class="report-rows" aria-hidden="true">
@@ -281,7 +281,10 @@ const t = COPY[lang];
 		display: grid;
 		grid-template-columns: 1fr;
 		gap: clamp(2rem, 5vmin, 3.5rem);
-		align-items: center;
+		/* start, not center: the report card stays pinned to the top of the copy
+		   column regardless of how many lines the tagline wraps to (EN vs the
+		   longer AZ), instead of drifting down. */
+		align-items: start;
 		padding-block: clamp(1.5rem, 5vmin, 3.5rem);
 	}
 	@media (min-width: 55rem) {
@@ -321,7 +324,7 @@ const t = COPY[lang];
 		color: var(--sl-color-gray-2);
 		font-size: var(--sl-text-lg);
 		line-height: 1.55;
-		max-width: 34ch;
+		max-width: 40ch;
 		margin: 1.1rem 0 0;
 		text-wrap: pretty;
 	}
@@ -334,7 +337,7 @@ const t = COPY[lang];
 	.meta {
 		margin-top: 1.6rem;
 		font-size: var(--sl-text-sm);
-		color: var(--sl-color-gray-3);
+		color: var(--sl-color-gray-2);
 		line-height: 1.6;
 	}
 	.meta span:first-child {
@@ -347,9 +350,9 @@ const t = COPY[lang];
 
 	/* ---------- Report card ---------- */
 	.report {
-		border: 1px solid var(--sl-color-hairline);
+		border: 1px solid var(--sl-color-gray-5);
 		border-radius: var(--brand-radius);
-		background: var(--sl-color-bg);
+		background: var(--brand-surface);
 		box-shadow: var(--sl-shadow-lg);
 		overflow: hidden;
 		font-family: var(--sl-font-system-mono);
@@ -359,19 +362,16 @@ const t = COPY[lang];
 	.report-bar {
 		display: flex;
 		align-items: center;
-		gap: 0.4rem;
+		gap: 0.5rem;
 		padding: 0.7rem 0.9rem;
-		background: color-mix(in srgb, var(--sl-color-gray-6) 55%, transparent);
-		border-bottom: 1px solid var(--sl-color-hairline-light);
+		background: color-mix(in srgb, var(--brand-surface) 92%, var(--sl-color-white));
+		border-bottom: 1px solid var(--sl-color-hairline);
 	}
-	.dot {
-		width: 0.6rem;
-		height: 0.6rem;
-		border-radius: 50%;
-		background: var(--sl-color-gray-5);
+	.run {
+		flex: none;
+		color: var(--sl-color-text-accent);
 	}
 	.report-file {
-		margin-inline-start: 0.5rem;
 		color: var(--sl-color-gray-3);
 		font-size: 0.8rem;
 	}
@@ -398,8 +398,8 @@ const t = COPY[lang];
 		display: flex;
 		gap: 1rem;
 		padding: 0.7rem 0.9rem;
-		border-top: 1px solid var(--sl-color-hairline-light);
-		background: color-mix(in srgb, var(--sl-color-gray-6) 30%, transparent);
+		border-top: 1px solid var(--sl-color-hairline);
+		background: color-mix(in srgb, var(--brand-surface) 92%, var(--sl-color-white));
 		font-size: 0.8rem;
 	}
 	.report-foot .pass {
@@ -419,14 +419,23 @@ const t = COPY[lang];
 
 	/* ---------- Tracks ---------- */
 	.tracks h2,
-	.how h2,
-	.also h2 {
+	.how h2 {
 		font-family: var(--brand-display);
 		font-weight: 600;
 		letter-spacing: -0.02em;
 		font-size: clamp(1.6rem, 3vw, 2.1rem);
 		margin: 0 0 1.5rem;
 		color: var(--sl-color-white);
+	}
+	/* "Also here" is a quiet footer, not a peer content section — smaller,
+	   muted heading so it doesn't compete with the tracks / how-it-works. */
+	.also h2 {
+		font-family: var(--brand-display);
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		font-size: 1.2rem;
+		margin: 0 0 0.5rem;
+		color: var(--sl-color-gray-2);
 	}
 	.tracks-primary {
 		display: grid;
@@ -595,25 +604,28 @@ const t = COPY[lang];
 	}
 
 	/* ---------- Also here ---------- */
+	/* Cap the width so the arrow sits near the copy instead of stranded at the
+	   far edge, and separate rows with hairlines for structure. */
 	.also-rows {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 0.6rem;
+		gap: 0;
+		max-width: 44rem;
+		border-top: 1px solid var(--sl-color-hairline-light);
 	}
 	.also-row {
 		display: grid;
 		grid-template-columns: minmax(7rem, auto) 1fr auto;
 		align-items: baseline;
 		gap: 0.5rem 1.1rem;
-		padding: 0.9rem 1.1rem;
-		border-radius: var(--brand-radius-sm);
+		padding: 0.85rem 0.6rem;
+		border-bottom: 1px solid var(--sl-color-hairline-light);
 		text-decoration: none;
-		border: 1px solid transparent;
-		transition: border-color var(--brand-fast) ease, background var(--brand-fast) ease;
+		transition: background var(--brand-fast) ease, padding-inline-start var(--brand-fast) ease;
 	}
 	.also-row:hover {
-		border-color: var(--sl-color-hairline);
-		background: color-mix(in srgb, var(--sl-color-gray-6) 30%, transparent);
+		background: color-mix(in srgb, var(--sl-color-accent) 5%, transparent);
+		padding-inline-start: 0.85rem;
 	}
 	.also-title {
 		font-family: var(--brand-display);

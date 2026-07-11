@@ -69,6 +69,7 @@
 	--sl-color-bg-inline-code: oklch(0.30 0.012 52);
 	--brand-code-border: oklch(0.34 0.014 52);
 	--brand-ember-wash: oklch(0.30 0.055 42);       /* subtle ember fill on dark */
+	--brand-surface: oklch(0.235 0.011 50);         /* raised card surface (lighter than bg) */
 }
 
 /* ---- Light ---- */
@@ -95,6 +96,7 @@
 	--sl-color-bg-inline-code: oklch(0.955 0.010 70);
 	--brand-code-border: oklch(0.90 0.012 70);
 	--brand-ember-wash: oklch(0.965 0.024 55);      /* subtle ember fill on paper */
+	--brand-surface: oklch(0.972 0.003 75);         /* raised card surface (below paper bg) */
 }
 
 /* ============================================================
