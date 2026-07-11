@@ -245,7 +245,7 @@ h1#_top,
 /* Primary — solid ember, white text (ember-deep clears WCAG AA with headroom). */
 .sl-link-button.primary {
 	background: var(--ember-deep);
-	border-color: var(--ember-deep);
+	border: 1px solid var(--ember-deep);
 	color: #fff;
 	border-radius: var(--brand-radius-sm);
 	padding: 0.6rem 1.25rem;
@@ -262,23 +262,34 @@ h1#_top,
 	box-shadow: var(--sl-shadow-md);
 }
 
-/* Secondary / minimal — outlined, warms to ember on hover. */
-.sl-link-button.secondary,
-.sl-link-button.minimal {
+/* Secondary — outlined slate that warms to ember on hover. */
+.sl-link-button.secondary {
 	border-radius: var(--brand-radius-sm);
 	padding: 0.6rem 1.1rem;
 	font-weight: 600;
 	color: var(--sl-color-white);
-	border-color: var(--sl-color-gray-5);
+	border: 1px solid var(--sl-color-gray-4);
 	transition: color var(--brand-fast) ease, border-color var(--brand-fast) ease,
 		background var(--brand-fast) ease, transform var(--brand-fast) var(--brand-ease);
 }
-.sl-link-button.secondary:hover,
-.sl-link-button.minimal:hover {
+.sl-link-button.secondary:hover {
 	color: var(--sl-color-text-accent);
 	border-color: var(--sl-color-text-accent);
 	background: color-mix(in srgb, var(--sl-color-accent) 8%, transparent);
 	transform: translateY(-2px);
+}
+
+/* Minimal — borderless text button; just warms to ember on hover. */
+.sl-link-button.minimal {
+	border-radius: var(--brand-radius-sm);
+	font-weight: 600;
+	color: var(--sl-color-text-accent);
+	border: 1px solid transparent;
+	transition: color var(--brand-fast) ease, background var(--brand-fast) ease;
+}
+.sl-link-button.minimal:hover {
+	color: var(--sl-color-text-accent);
+	background: color-mix(in srgb, var(--sl-color-accent) 8%, transparent);
 }
 
 /* ============================================================
