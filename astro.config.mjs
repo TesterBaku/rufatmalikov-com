@@ -46,6 +46,11 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			routeMiddleware: './src/starlightRouteData.ts',
+			// Replace the default language <select> with a compact EN | AZ toggle
+			// (two locales → a segmented toggle is clearer than a dropdown).
+			components: {
+				LanguageSelect: './src/components/LanguageToggle.astro',
+			},
 			title: {
 				en: 'Rufat Malikov',
 				az: 'Rüfət Məlikov',
@@ -77,6 +82,9 @@ export default defineConfig({
 					// collapsed; Starlight auto-expands the one holding the active page.
 					label: 'Playwright Course',
 					translations: { az: 'Playwright Kursu' },
+					// Collapse the whole course tree by default; Starlight auto-expands
+					// it when the active page is inside, so non-active courses stay tidy.
+					collapsed: true,
 					items: [
 						{ label: 'Overview', translations: { az: 'İcmal' }, link: '/course/' },
 						{ label: '0 — Roadmap & setup', translations: { az: '0 — Kurs xəritəsi və quraşdırma' }, link: '/course/module-0/' },
@@ -126,6 +134,7 @@ export default defineConfig({
 					// only the Overview stub.
 					label: 'Python Course',
 					translations: { az: 'Python Kursu' },
+					collapsed: true,
 					items: [
 						{ label: 'Overview', translations: { az: 'Giriş' }, link: '/python/' },
 						{
@@ -174,6 +183,7 @@ export default defineConfig({
 					// drift; the middleware (src/starlightRouteData.ts) filters this group to
 					// AZ-ready modules on non-EN routes and noindexes untranslated fallbacks.
 					label: PYTHON_SDET.groupLabel,
+					collapsed: true,
 					// Generated from the single PYTHON_SDET_MODULES list (src/courses.mjs)
 					// so an AZ label and the page's AZ-ready status can't drift apart.
 					items: PYTHON_SDET_MODULES.map((m) => ({
@@ -185,20 +195,24 @@ export default defineConfig({
 				{
 					label: 'Reference',
 					translations: { az: 'İstinad' },
+					collapsed: true,
 					items: [{ autogenerate: { directory: 'reference' } }],
 				},
 				{
 					label: 'BrauzerLab — practice',
 					translations: { az: 'BrauzerLab — məşq' },
+					collapsed: true,
 					items: [{ autogenerate: { directory: 'playwright' } }],
 				},
 				{
 					label: 'Exam Helper',
 					translations: { az: 'İmtahan Köməkçisi' },
+					collapsed: true,
 					items: [{ autogenerate: { directory: 'exam-helper' } }],
 				},
 				{
 					label: 'Projects',
+					collapsed: true,
 					items: [{ autogenerate: { directory: 'projects' } }],
 				},
 				{ label: 'About', link: '/about/', translations: { az: 'Haqqında' } },

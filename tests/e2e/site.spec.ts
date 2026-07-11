@@ -19,7 +19,11 @@ for (const p of pagesThatLoad) {
 	test(`${p.name} loads with content`, async ({ page }) => {
 		const resp = await page.goto(p.path);
 		expect(resp?.status(), `HTTP status for ${p.path}`).toBeLessThan(400);
-		await expect(page.locator('h1').first()).toBeVisible();
+		// Assert the accessible top-level heading, not the first <h1> in the DOM:
+		// the splash homepage keeps Starlight's title <h1 id="_top"> in the markup
+		// but hidden (the hero supplies the real, visible h1), so a role query —
+		// which skips the display:none duplicate — is the robust check on every page.
+		await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
 	});
 }
 

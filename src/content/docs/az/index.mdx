@@ -2,67 +2,8 @@
 title: QA Avtomatlaşdırma və Pulsuz Kurslar
 description: Pulsuz, praktiki QA və kodlaşdırma kursları (EN & AZ) — Playwright, Python və test avtomatlaşdırma. Konsepsiyaları öyrən, brauzerdə məşq et, sonra yerli işlətdiyin real tətbiqi test et.
 template: splash
-hero:
-  title: Rüfət Məlikov
-  tagline: Proqram testi və avtomatlaşdırma üzrə pulsuz, praktiki kurslar — Playwright və Python, ingilis və Azərbaycan dilində. Konsepsiyaları öyrən, brauzerdə məşq et, sonra yerli işlətdiyin real tətbiqi test et.
-  actions:
-    - text: Playwright kursuna başla
-      link: /az/course/
-      icon: right-arrow
-      variant: primary
-    - text: Sıfırdan Python-a başla
-      link: /az/python/
-      variant: secondary
-    - text: İstinadlara bax
-      link: /az/reference/
-      variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import Landing from '../../../components/home/Landing.astro';
 
-**Dörd pulsuz istiqamət · 35+ modul · İngilis və Azərbaycan dilində · qeydiyyat yoxdur.** Yenisən və haradan başlayacağını bilmirsən? [Sənə uyğun kursu tap →](/az/courses/)
-
-## Öyrənmə istiqamətləri
-
-<CardGrid>
-	<Card title="Playwright kursu" icon="rocket">
-		İngilis və Azərbaycan dillərində pulsuz, başlayanlar üçün Playwright kursu — konsepsiyaları öyrən, BrauzerLab ilə brauzerində məşq et, sonra yerli işlətdiyin real tətbiq olan TestMarket Lab-a qarşı tam test dəstləri yaz.
-
-		[Kursa başla →](/az/course/) · [BrauzerLab ilə məşq et →](/az/playwright/)
-	</Card>
-	<Card title="Python Əsasları" icon="laptop">
-		Tam başlayanlar üçün pulsuz, brauzer əsaslı Python kursu — əvvəlcədən kodlaşdırma təcrübəsi lazım deyil, heç nə quraşdırmaq lazım deyil. Real Python-u səhifədə yaz, dərhal işə sal və test avtomatlaşdırma, data və AI-nin üzərində qurulduğu təməli formalaşdır.
-
-		[Python-a başla →](/az/python/)
-	</Card>
-	<Card title="SDET-lər üçün Python" icon="seti:python">
-		Python təməllərini əsl test-avtomatlaşdırma bacarığına çevirir: pytest, requests və Playwright ilə real API və UI testləri yaz, CI-yə bağla — hamısı yerli işlətdiyin real tətbiqə qarşı. İngilis və Azərbaycan dilində.
-
-		[SDET-lər üçün Python-a keç →](/az/python-sdet/)
-	</Card>
-	<Card title="İstinad" icon="open-book">
-		Kursların istinad etdiyi anlayışlar üçün qısa, sadə dildə səhifələr — HTTP, API-lər, CSS seçiciləri, regex, Git, SQL və Docker. Hansısa termin izah tələb edəndə birini oxu.
-
-		[İstinadlara bax →](/az/reference/)
-	</Card>
-</CardGrid>
-
-## Həmçinin burada
-
-<CardGrid>
-	<Card title="Layihələr" icon="puzzle">
-		Qurduğum pulsuz QA və təhsil alətləri — BrauzerLab, SDET müsahibə məşqçisi, AI-dəstəkli məşq tətbiqləri və avtomatlaşdırılmış test boru xətləri ilə çatdırılan bir neçə müştəri saytı.
-
-		[Layihələrə bax →](/az/projects/)
-	</Card>
-	<Card title="İmtahan Köməkçisi" icon="pencil">
-		Azərbaycandakı şagirdlər üçün pulsuz, brauzerdə işləyən imtahan hazırlığı tətbiqi — 5–11-ci sinif və abituriyent hazırlığı üzrə 41 fənn bankı, səviyyəli testlər və ani qiymətləndirmə ilə.
-
-		[İmtahan Köməkçisini aç →](https://exam.rufatmalikov.com/) · [Ətraflı →](/az/exam-helper/)
-	</Card>
-	<Card title="Mənim haqqımda" icon="information">
-		Test avtomatlaşdırma sahəsində 9+ il çalışmışam — veb, mobil, API və data pipeline-ları. Bu pulsuz kurslar QA-ya başlayarkən özümün arzuladığım yoldur.
-
-		[Ətraflı →](/az/about/)
-	</Card>
-</CardGrid>
+<Landing lang="az" />
