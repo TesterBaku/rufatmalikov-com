@@ -1,13 +1,20 @@
 /*
-  Rufat Malikov — "Editorial Slate + Rust" brand theme for Starlight.
-  Slate ink, warm rust accent, Fraunces (display) + Inter (body).
+  Rufat Malikov — "Inspector's Mark" brand theme for Starlight.
+
+  A QA educator's field-notebook aesthetic: warm charcoal ink + one committed
+  ember (burnt-sienna) accent on clean near-white paper, Fraunces display over
+  Inter. Warmth is carried by the accent and a warm-tinted neutral ramp, never a
+  cream body. The ember accent is applied site-wide via Starlight's own
+  --sl-color-accent-* ramp, so every button, link, card, focus ring, and sidebar
+  highlight inherits it.
+
   Rules here are intentionally unlayered so they win over Starlight's
   @layer starlight.* defaults without needing inflated specificity.
 */
 
-/* ---------- Brand tokens + typography ---------- */
-/* Accent stays Starlight's blue; the brand identity is carried by the
-   serif display type, hero treatment, and card styling below. */
+/* ============================================================
+   Brand tokens — fonts, radii, the ember scale, motion
+   ============================================================ */
 :root {
 	/* Self-hosted via @fontsource-variable (see astro.config customCss). The
 	   "Variable" suffix is the family name fontsource registers. */
@@ -16,18 +23,93 @@
 	/* Body / UI font */
 	--sl-font: 'Inter Variable', var(--sl-font-system);
 
-	/* Unified corner radius — containers vs inner controls. */
+	/* Corner radius — containers vs inner controls. */
 	--brand-radius: 0.75rem;     /* cards, missions, runner, progress, deck, video */
 	--brand-radius-sm: 0.5rem;   /* buttons, inputs, link-buttons, feedback */
+
+	/* Ember scale — the brand's single committed accent (theme-independent
+	   reference values; the Starlight ramp below points at these). */
+	--ember: oklch(0.585 0.155 42);        /* vivid brand mid */
+	--ember-deep: oklch(0.475 0.145 40);   /* CTA fill + link text on light (AA on white) */
+	--ember-bright: oklch(0.80 0.11 58);   /* accent on dark surfaces */
+
+	/* Motion — ease-out curves, no bounce. */
+	--brand-ease: cubic-bezier(0.22, 1, 0.36, 1);   /* ease-out-quint */
+	--brand-fast: 150ms;
+	--brand-med: 260ms;
+
+	/* Tabular, lining figures for stats and tables. */
+	--brand-nums: 'tnum' 1, 'lnum' 1;
 }
 
-/* ---------- Headings: serif display ---------- */
+/* ============================================================
+   Color ramp — DARK (Starlight's default :root) + LIGHT override.
+   Warm-tinted neutrals (hue ~55–75, low chroma) replace Starlight's
+   cool blue-grays; the accent trio becomes ember.
+   ============================================================ */
+
+/* ---- Dark (default) ---- */
+:root,
+::backdrop {
+	--sl-color-white: oklch(0.96 0.006 75);
+	--sl-color-gray-1: oklch(0.90 0.006 74);
+	--sl-color-gray-2: oklch(0.81 0.008 72);   /* --sl-color-text (body) */
+	--sl-color-gray-3: oklch(0.66 0.010 68);
+	--sl-color-gray-4: oklch(0.50 0.011 62);
+	--sl-color-gray-5: oklch(0.37 0.012 56);   /* borders / hairlines */
+	--sl-color-gray-6: oklch(0.27 0.012 52);   /* nav + sidebar bg */
+	--sl-color-black: oklch(0.185 0.010 50);   /* page bg — warm charcoal, not pure black */
+
+	--sl-color-accent-low: oklch(0.32 0.060 44);
+	--sl-color-accent: oklch(0.62 0.145 46);
+	--sl-color-accent-high: oklch(0.80 0.110 58);  /* = text-accent (links) on dark */
+
+	--sl-color-bg-inline-code: oklch(0.30 0.012 52);
+	--brand-code-border: oklch(0.34 0.014 52);
+	--brand-ember-wash: oklch(0.30 0.055 42);       /* subtle ember fill on dark */
+}
+
+/* ---- Light ---- */
+:root[data-theme='light'],
+[data-theme='light'] ::backdrop {
+	--sl-color-white: oklch(0.24 0.014 60);    /* strongest text / headings */
+	--sl-color-gray-1: oklch(0.30 0.013 60);
+	--sl-color-gray-2: oklch(0.40 0.012 62);   /* --sl-color-text (body) */
+	--sl-color-gray-3: oklch(0.48 0.011 64);   /* muted text (AA on paper) */
+	--sl-color-gray-4: oklch(0.64 0.010 66);
+	--sl-color-gray-5: oklch(0.83 0.008 70);   /* borders / hairlines */
+	--sl-color-gray-6: oklch(0.93 0.006 72);   /* light surfaces */
+	--sl-color-gray-7: oklch(0.968 0.004 74);
+	--sl-color-black: oklch(0.994 0.002 80);   /* page bg — near-white, a whisper warm (NOT cream) */
+
+	--sl-color-accent-high: oklch(0.475 0.145 40);
+	--sl-color-accent: oklch(0.585 0.155 42);
+	--sl-color-accent-low: oklch(0.935 0.040 55);   /* light ember wash */
+	/* Starlight's light theme points text-accent at the vivid mid ember (~4.4:1,
+	   just under AA). Point prose/link text at the deeper ember instead (~7:1);
+	   the mid ember still carries non-text borders, focus rings, and fills. */
+	--sl-color-text-accent: var(--sl-color-accent-high);
+
+	--sl-color-bg-inline-code: oklch(0.955 0.010 70);
+	--brand-code-border: oklch(0.90 0.012 70);
+	--brand-ember-wash: oklch(0.965 0.024 55);      /* subtle ember fill on paper */
+}
+
+/* ============================================================
+   Typography — serif display headings, warm links
+   ============================================================ */
 h1#_top,
 .sl-markdown-content h1,
-.sl-markdown-content h2 {
+.sl-markdown-content h2,
+.sl-markdown-content h3 {
 	font-family: var(--brand-display);
 	font-weight: 600;
 	letter-spacing: -0.015em;
+	text-wrap: balance;
+}
+
+.sl-markdown-content h1 {
+	letter-spacing: -0.02em;
 }
 
 /* Section rule under content h2 — a quiet editorial divider. */
@@ -36,25 +118,114 @@ h1#_top,
 	border-bottom: 1px solid var(--sl-color-hairline-light);
 }
 
-/* ---------- Site title (top-left brand) ---------- */
+/* Long-form prose reads calmer with pretty wrapping. */
+.sl-markdown-content p {
+	text-wrap: pretty;
+}
+
+/* Site title (top-left brand). */
 .site-title {
 	font-family: var(--brand-display);
 	font-weight: 600;
 	letter-spacing: -0.01em;
 }
 
-/* ---------- Links in prose ---------- */
+/* Links in prose — ember underline that fills in on hover. */
 .sl-markdown-content a {
 	text-underline-offset: 0.2em;
 	text-decoration-thickness: 1px;
 	text-decoration-color: color-mix(in srgb, var(--sl-color-text-accent) 45%, transparent);
-	transition: text-decoration-color 150ms ease, color 150ms ease;
+	transition: text-decoration-color var(--brand-fast) ease, color var(--brand-fast) ease;
 }
 .sl-markdown-content a:hover {
 	text-decoration-color: currentColor;
 }
 
-/* ---------- Hero / splash ---------- */
+/* Tabular figures for the many stat-heavy tables and numbers. */
+.sl-markdown-content table {
+	font-feature-settings: var(--brand-nums);
+}
+
+/* ============================================================
+   Tables — refined, warm hairlines, distinct header
+   ============================================================ */
+.sl-markdown-content table {
+	border-collapse: separate;
+	border-spacing: 0;
+	border: 1px solid var(--sl-color-hairline);
+	border-radius: var(--brand-radius);
+	overflow: hidden;
+	display: table;
+	width: 100%;
+}
+.sl-markdown-content th {
+	background: var(--sl-color-gray-7, var(--sl-color-gray-6));
+	font-family: var(--brand-display);
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	text-align: left;
+	border-bottom: 2px solid var(--sl-color-hairline);
+}
+.sl-markdown-content td,
+.sl-markdown-content th {
+	padding: 0.6rem 0.85rem;
+	border-inline-end: 1px solid var(--sl-color-hairline-light);
+}
+.sl-markdown-content td:last-child,
+.sl-markdown-content th:last-child {
+	border-inline-end: 0;
+}
+.sl-markdown-content tbody tr {
+	border-top: 1px solid var(--sl-color-hairline-light);
+}
+.sl-markdown-content tbody tr:nth-child(odd) {
+	background: color-mix(in srgb, var(--sl-color-gray-6) 35%, transparent);
+}
+
+/* ============================================================
+   Inline code + horizontal rule
+   ============================================================ */
+.sl-markdown-content :not(pre) > code {
+	border: 1px solid var(--brand-code-border);
+	border-radius: 0.35rem;
+	padding-inline: 0.35em;
+	font-size: 0.9em;
+}
+
+.sl-markdown-content hr {
+	border: 0;
+	height: 1px;
+	background: var(--sl-color-hairline);
+	margin-block: 2.5rem;
+	position: relative;
+	overflow: visible;
+}
+/* A small ember inspector's mark centered on the rule. */
+.sl-markdown-content hr::after {
+	content: '';
+	position: absolute;
+	inset-block-start: 50%;
+	inset-inline-start: 50%;
+	width: 6px;
+	height: 6px;
+	transform: translate(-50%, -50%) rotate(45deg);
+	background: var(--sl-color-accent);
+	border-radius: 1px;
+}
+
+/* Blockquotes — warm ember-washed panel, not a side-stripe. */
+.sl-markdown-content blockquote {
+	border-inline-start: 0;
+	background: var(--brand-ember-wash);
+	border: 1px solid color-mix(in srgb, var(--sl-color-accent) 22%, transparent);
+	border-radius: var(--brand-radius);
+	padding: 0.85rem 1.15rem;
+	font-style: normal;
+}
+
+/* ============================================================
+   Hero / splash
+   ============================================================ */
 .hero h1 {
 	font-family: var(--brand-display);
 	font-weight: 600;
@@ -64,43 +235,34 @@ h1#_top,
 
 .hero .tagline {
 	color: var(--sl-color-gray-2);
-	line-height: 1.5;
+	line-height: 1.55;
 	text-wrap: balance;
 }
 
-/* No hero image yet: collapse Starlight's reserved 2-column (image) grid to a
-   single full-width column — this keeps the default LEFT alignment without the
-   empty right-hand image gap — and tighten the tall default vertical padding.
-   Remove this block when a portrait is added to restore the left/right split. */
-@media (min-width: 50rem) {
-	.hero {
-		grid-template-columns: 1fr;
-		padding-block: clamp(2rem, 6vmin, 4.5rem);
-	}
-}
-
-/* Solid accent primary CTA in both themes (white text for strong contrast).
-   Darkened ~10% off the raw accent so white text clears WCAG AA with headroom
-   in the light theme (the raw accent was a borderline 4.54:1). */
+/* ============================================================
+   Buttons / CTAs
+   ============================================================ */
+/* Primary — solid ember, white text (ember-deep clears WCAG AA with headroom). */
 .sl-link-button.primary {
-	background: color-mix(in srgb, var(--sl-color-accent) 90%, #000);
-	border-color: color-mix(in srgb, var(--sl-color-accent) 90%, #000);
+	background: var(--ember-deep);
+	border-color: var(--ember-deep);
 	color: #fff;
 	border-radius: var(--brand-radius-sm);
 	padding: 0.6rem 1.25rem;
 	font-weight: 600;
 	box-shadow: var(--sl-shadow-sm);
-	transition: background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+	transition: background var(--brand-fast) ease, transform var(--brand-fast) var(--brand-ease),
+		box-shadow var(--brand-fast) ease;
 }
 .sl-link-button.primary:hover {
-	background: color-mix(in srgb, var(--sl-color-accent) 82%, #000);
-	border-color: color-mix(in srgb, var(--sl-color-accent) 82%, #000);
+	background: color-mix(in srgb, var(--ember-deep) 88%, #000);
+	border-color: color-mix(in srgb, var(--ember-deep) 88%, #000);
 	color: #fff;
-	transform: translateY(-1px);
+	transform: translateY(-2px);
 	box-shadow: var(--sl-shadow-md);
 }
 
-/* Secondary CTA: outlined slate that warms to the accent on hover. */
+/* Secondary / minimal — outlined, warms to ember on hover. */
 .sl-link-button.secondary,
 .sl-link-button.minimal {
 	border-radius: var(--brand-radius-sm);
@@ -108,23 +270,27 @@ h1#_top,
 	font-weight: 600;
 	color: var(--sl-color-white);
 	border-color: var(--sl-color-gray-5);
-	transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+	transition: color var(--brand-fast) ease, border-color var(--brand-fast) ease,
+		background var(--brand-fast) ease, transform var(--brand-fast) var(--brand-ease);
 }
 .sl-link-button.secondary:hover,
 .sl-link-button.minimal:hover {
 	color: var(--sl-color-text-accent);
 	border-color: var(--sl-color-text-accent);
 	background: color-mix(in srgb, var(--sl-color-accent) 8%, transparent);
+	transform: translateY(-2px);
 }
 
-/* ---------- Cards (homepage CardGrid) ---------- */
-/* Replace Starlight's per-position color cycling with a unified slate+rust look. */
+/* ============================================================
+   Cards (homepage CardGrid)
+   ============================================================ */
 .card {
 	--sl-card-border: var(--sl-color-accent);
 	background-color: var(--sl-color-bg);
 	border: 1px solid var(--sl-color-gray-5);
 	border-radius: var(--brand-radius);
-	transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+	transition: border-color var(--brand-med) ease, transform var(--brand-med) var(--brand-ease),
+		box-shadow var(--brand-med) ease;
 }
 .card:hover {
 	border-color: var(--sl-color-accent);
@@ -142,7 +308,9 @@ h1#_top,
 	background: color-mix(in srgb, var(--sl-color-accent) 12%, transparent);
 }
 
-/* ---------- Accents & focus ---------- */
+/* ============================================================
+   Accents & focus
+   ============================================================ */
 ::selection {
 	background: color-mix(in srgb, var(--sl-color-accent) 28%, transparent);
 }
@@ -152,4 +320,23 @@ button:focus-visible,
 .sl-link-button:focus-visible {
 	outline: 2px solid var(--sl-color-accent);
 	outline-offset: 0.2rem;
+}
+
+/* ============================================================
+   Reduced motion — no transforms, instant transitions
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+	.sl-link-button.primary,
+	.sl-link-button.secondary,
+	.sl-link-button.minimal,
+	.card {
+		transition: color var(--brand-fast) ease, border-color var(--brand-fast) ease,
+			background var(--brand-fast) ease;
+	}
+	.sl-link-button.primary:hover,
+	.sl-link-button.secondary:hover,
+	.sl-link-button.minimal:hover,
+	.card:hover {
+		transform: none;
+	}
 }
