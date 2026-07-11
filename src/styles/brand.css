@@ -28,10 +28,12 @@
 	--brand-radius-sm: 0.5rem;   /* buttons, inputs, link-buttons, feedback */
 
 	/* Ember scale — the brand's single committed accent (theme-independent
-	   reference values; the Starlight ramp below points at these). */
-	--ember: oklch(0.585 0.155 42);        /* vivid brand mid */
-	--ember-deep: oklch(0.475 0.145 40);   /* CTA fill + link text on light (AA on white) */
-	--ember-bright: oklch(0.80 0.11 58);   /* accent on dark surfaces */
+	   reference values; the Starlight ramp below points at these). Chroma is kept
+	   high for a vivid rust-red (not a muddy brown); lightness is held so white
+	   text on --ember-deep still clears WCAG AA. */
+	--ember: oklch(0.60 0.17 40);          /* vivid brand mid */
+	--ember-deep: oklch(0.475 0.168 38);   /* CTA fill + link text on light (AA on white) */
+	--ember-bright: oklch(0.80 0.115 55);  /* accent on dark surfaces */
 
 	/* Motion — ease-out curves, no bounce. */
 	--brand-ease: cubic-bezier(0.22, 1, 0.36, 1);   /* ease-out-quint */
@@ -262,20 +264,22 @@ h1#_top,
 	box-shadow: var(--sl-shadow-md);
 }
 
-/* Secondary — outlined slate that warms to ember on hover. */
+/* Secondary — ember "ghost": ember label + tinted ember outline, so the filled
+   primary and the secondary read as one accent family (not a stray gray box). */
 .sl-link-button.secondary {
 	border-radius: var(--brand-radius-sm);
 	padding: 0.6rem 1.1rem;
 	font-weight: 600;
-	color: var(--sl-color-white);
-	border: 1px solid var(--sl-color-gray-4);
+	color: var(--sl-color-text-accent);
+	border: 1px solid color-mix(in srgb, var(--sl-color-accent) 50%, var(--sl-color-gray-5));
+	background: color-mix(in srgb, var(--sl-color-accent) 5%, transparent);
 	transition: color var(--brand-fast) ease, border-color var(--brand-fast) ease,
 		background var(--brand-fast) ease, transform var(--brand-fast) var(--brand-ease);
 }
 .sl-link-button.secondary:hover {
 	color: var(--sl-color-text-accent);
 	border-color: var(--sl-color-text-accent);
-	background: color-mix(in srgb, var(--sl-color-accent) 8%, transparent);
+	background: color-mix(in srgb, var(--sl-color-accent) 11%, transparent);
 	transform: translateY(-2px);
 }
 
