@@ -89,6 +89,14 @@ The rule of thumb: never commit secrets, credentials, or anything a build can re
 | push / pull request | Modules 12 & 13 — what CI runs on |
 | `.gitignore` (`auth/`, `node_modules/`) | Module 13 — keep sessions and deps out of the repo |
 
+## Practice — see what the commands do
+
+This page explains the commands; **[Learn Git Branching](https://learngitbranching.js.org/)** lets you watch them. It's a free, open-source git sandbox that draws the commit graph as you type — you run `git commit`, `git branch`, `git merge`, and the nodes and arrows move in front of you. Branches and merges are much easier to hold in your head once you've seen the graph redraw a few times.
+
+Start with the **Introduction Sequence** (commits → branching → merging → rebasing), which covers everything above except remotes. The **Remote** levels then cover `clone`, `push`, `pull`, and `fetch`.
+
+Nothing you type there touches a real repository — it's a simulation, so experiment freely and reset when you break it.
+
 ## Quick reference
 
 ```text
