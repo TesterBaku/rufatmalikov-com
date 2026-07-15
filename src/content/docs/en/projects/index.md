@@ -48,7 +48,8 @@ Preparing for QA or SDET interviews? This is a practice app I built for exactly 
 - **Daily Practice** — a focused daily plan mixing coding, SQL, Playwright/Selenium, API/CI/AWS, and strategy questions
 - **Coding Gym** — QA-focused tasks to build coding confidence in Python, Java, SQL, and TypeScript
 - **Mock Interview** — type an answer, reveal a model answer, and self-rate against a checklist
-- **Progress tracking** — completion metrics and a "weak topics" view across 500 practice items
+- **Progress tracking** — completion metrics and a "weak topics" view across 525 practice items
+- **Installable & offline** — add it to your phone or desktop home screen like a native app; a service worker keeps the core screens working without a connection
 
 For now it runs without a backend, so it's quick to use on desktop or mobile. It's an early proof of concept — a starting point I'll keep building on. If you're preparing from the ground up, it pairs well with the [Playwright course](/en/course/) and [Python for SDETs](/en/python-sdet/).
 
