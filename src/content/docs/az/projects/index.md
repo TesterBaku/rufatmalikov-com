@@ -50,7 +50,7 @@ QA və ya SDET müsahibələrinə hazırlaşırsan? Bu, məhz bunun üçün qurd
 - **Gündəlik məşq** — kodlaşdırma, SQL, Playwright/Selenium, API/CI/AWS və strategiya suallarını birləşdirən fokuslanmış gündəlik plan
 - **Coding Gym** — Python, Java, SQL və TypeScript-də kodlaşdırma inamı qazanmaq üçün QA yönümlü tapşırıqlar
 - **Mock müsahibə** — cavab yaz, model cavabı aç və yoxlama siyahısına görə özünü qiymətləndir
-- **Qulaqla öyrən (Commute Mode)** — hər mövzu audio kimi: müsahibə tələlərini səsli danışan iki aparıcılı podkast, üstəgəl güclü cavabları nümayiş etdirən mock-müsahibə raundu. Onları növbəyə qoy, ardıcıl səslənsin — 18 mövzunun hamısı üzrə ekransız hazırlıq: yolda, idmanda və ya gəzintidə
+- **Dinləməklə öyrən (Commute Mode)** — hər mövzu audio kimi: müsahibə tələlərini səsli danışan iki aparıcılı podkast, üstəgəl güclü cavabları nümayiş etdirən mock-müsahibə raundu. Onları növbəyə qoy, ardıcıl səslənsin — 18 mövzunun hamısı üzrə ekransız hazırlıq: yolda, idmanda və ya gəzintidə
 - **Cheat sheet-lər və quizlər** — 18 istinad səhifəsi (Playwright, Selenium, SQL, Docker, Kubernetes, Python, Java və s.), hər biri öz çoxvariantlı quizi və dərhal geribildirimi ilə — 40 suallıq mock imtahanı olan Claude Certified Architect trekini də əhatə edir
 - **Tərəqqi izləməsi** — 525 məşq elementi üzrə tamamlanma göstəriciləri və "zəif mövzular" baxışı
 - **Quraşdırıla bilən və oflayn** — onu telefonun və ya masaüstünün ana ekranına native tətbiq kimi əlavə et; servis işçisi əsas ekranları bağlantı olmadan da işlək saxlayır
