@@ -48,10 +48,12 @@ Preparing for QA or SDET interviews? This is a practice app I built for exactly 
 - **Daily Practice** — a focused daily plan mixing coding, SQL, Playwright/Selenium, API/CI/AWS, and strategy questions
 - **Coding Gym** — QA-focused tasks to build coding confidence in Python, Java, SQL, and TypeScript
 - **Mock Interview** — type an answer, reveal a model answer, and self-rate against a checklist
+- **Study by ear (Commute Mode)** — every topic as audio: a two-host podcast that talks through the interview traps out loud, plus a mock-interview round that models strong answers. Queue them and they play back-to-back — screen-free prep for the commute, the gym, or a walk, across all 18 topics
+- **Cheat sheets & quizzes** — 18 reference pages (Playwright, Selenium, SQL, Docker, Kubernetes, Python, Java, and more), each with its own multiple-choice quiz and instant feedback — including a Claude Certified Architect track with a 40-question mock exam
 - **Progress tracking** — completion metrics and a "weak topics" view across 525 practice items
 - **Installable & offline** — add it to your phone or desktop home screen like a native app; a service worker keeps the core screens working without a connection
 
-For now it runs without a backend, so it's quick to use on desktop or mobile. It's an early proof of concept — a starting point I'll keep building on. If you're preparing from the ground up, it pairs well with the [Playwright course](/en/course/) and [Python for SDETs](/en/python-sdet/).
+There's no login or setup — it runs in the browser and installs like a native app on desktop or mobile. What started as a quick proof of concept has grown into a fairly complete prep kit, and I'm still building on it. If you're preparing from the ground up, it pairs well with the [Playwright course](/en/course/) and [Python for SDETs](/en/python-sdet/).
 
 [Open the trainer →](https://sdet-interview-trainer.vercel.app/) · [View the code →](https://github.com/TesterBaku/sdet-interview-trainer)
 
