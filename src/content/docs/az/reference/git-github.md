@@ -91,14 +91,14 @@ auth/            # saxlanılan login sessiyaları (storageState) — real sessiy
 
 ## Məşq — əmrlərin nə etdiyini gör
 
-Bu səhifə əmrləri izah edir; **[Learn Git Branching](https://learngitbranching.js.org/)** isə onları izləməyə imkan verir. Bu, pulsuz və açıq mənbəli git sandbox-udur — sən yazdıqca commit qrafikini çəkir: `git commit`, `git branch`, `git merge` işlədirsən və node-larla oxlar gözünün qarşısında hərəkət edir. Qrafikin bir neçə dəfə yenidən çəkildiyini görəndən sonra branch-ları və merge-ləri başında saxlamaq xeyli asanlaşır.
+Bu səhifə əmrləri izah edir; **[Learn Git Branching](https://learngitbranching.js.org/?locale=az)** isə onları izləməyə imkan verir. Bu, pulsuz və açıq mənbəli git sandbox-udur — sən yazdıqca commit qrafikini çəkir: `git commit`, `git branch`, `git merge` işlədirsən və node-larla oxlar gözünün qarşısında hərəkət edir. Qrafikin bir neçə dəfə yenidən çəkildiyini görəndən sonra branch-ları və merge-ləri başında saxlamaq xeyli asanlaşır.
 
 **Introduction Sequence** ilə başla (commit-lər → branching → merging → rebasing) — remote-lardan başqa yuxarıdakıların hamısını əhatə edir. **Remote** səviyyələri isə `clone`, `push`, `pull` və `fetch`-i öyrədir.
 
 Orada yazdığın heç nə real repozitoriyaya toxunmur — bu, simulyasiyadır, ona görə sərbəst təcrübə et və nəyisə sındıranda sıfırla.
 
-:::note[Dil barədə]
-Sayt hələ Azərbaycan dilində deyil. Türkcə (**[learngitbranching.js.org/?locale=tr_TR](https://learngitbranching.js.org/?locale=tr_TR)**) və ya rusca (**[?locale=ru_RU](https://learngitbranching.js.org/?locale=ru_RU)**) versiyanı aça bilərsən — əmrlər onsuz da hər dildə eynidir.
+:::tip[Azərbaycan dilində]
+Yuxarıdakı keçid səni birbaşa **Azərbaycan dilindəki** versiyaya aparır — səviyyələr, tapşırıqlar və izahlar tərcümə olunub. Menyudakı bölmə adları (**Introduction Sequence**, **Remote**) ingiliscə qalır, ona görə onları yuxarıda yazıldığı kimi axtar.
 :::
 
 ## Sürətli istinad
