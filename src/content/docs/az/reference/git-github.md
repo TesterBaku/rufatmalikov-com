@@ -99,6 +99,8 @@ Orada yazdığın heç nə real repozitoriyaya toxunmur — bu, simulyasiyadır,
 
 :::tip[Azərbaycan dilində]
 Yuxarıdakı keçid səni birbaşa **Azərbaycan dilindəki** versiyaya aparır — səviyyələr, tapşırıqlar və izahlar tərcümə olunub. Menyudakı bölmə adları (**Introduction Sequence**, **Remote**) ingiliscə qalır, ona görə onları yuxarıda yazıldığı kimi axtar.
+
+Azərbaycan dili dəstəyini bu layihəyə mən əlavə etmişəm — [#1382](https://github.com/pcottle/learnGitBranching/pull/1382), [#1383](https://github.com/pcottle/learnGitBranching/pull/1383) və [#1388](https://github.com/pcottle/learnGitBranching/pull/1388).
 :::
 
 ## Sürətli istinad
