@@ -13,7 +13,7 @@ Qurub paylaşdığım layihələr, təyinatına görə qruplaşdırılıb. Hər 
 
 **İçərisində nə var:**
 
-- **7 mərhələli modul üzrə 100 praktiki tapşırıq**
+- **7 mərhələli modul üzrə 50 praktiki tapşırıq**
 - **Lokatorlar** — rol, mətn, label, test-id, filter və mövqe selektorları (Shadow DOM və dinamik id-lər daxil)
 - **Əməliyyatlar və avtomatik gözləmə** — klik, yazı, formalar, drag-and-drop və flaky `sleep` olmadan etibarlı gözləmələr
 - **İddialar və ciddi rejim** — avtomatik gözləyən `expect` və qeyri-müəyyən lokatorların təmiz həlli

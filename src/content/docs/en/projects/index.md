@@ -13,7 +13,7 @@ A free, browser-based Playwright course, available in English and Azerbaijani. Y
 
 **What's inside:**
 
-- **100 hands-on missions** across 7 progressive modules
+- **50 hands-on missions** across 7 progressive modules
 - **Locators** — roles, text, labels, test-ids, filters, and positional selectors (including Shadow DOM and dynamic IDs)
 - **Actions & auto-waiting** — clicks, typing, forms, drag-and-drop, plus reliable waits without flaky `sleep`
 - **Assertions & strict mode** — auto-waiting `expect` and clean handling of ambiguous locators
