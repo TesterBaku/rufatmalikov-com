@@ -61,12 +61,12 @@ There's no login or setup — it runs in the browser and installs like a native 
 
 ### Exam Helper — exam prep for students in Azerbaijan
 
-A free, browser-based study app for students in Azerbaijan. Pick a subject, read short lessons, then practise with tiered quizzes that grade instantly and explain every mistake — no install, runs in the browser. One bank-aware app serves 41 subject banks (grades 5–11, abituriyent, and a Russian-language section) from the same code, and every math answer is verified by an automatic answer-checker.
+A free, browser-based study app for students in Azerbaijan. Pick a subject, read short lessons, then practise with tiered quizzes that grade instantly and explain every mistake — no install, runs in the browser. One bank-aware app serves 64 subject banks (grades 5–11 and abituriyent, nine of them in a Russian-language section) from the same code, and every math answer is verified by an automatic answer-checker.
 
 **What's inside:**
 
-- **41 subject banks** — grades 5–11, abituriyent, and a Russian section, across maths, sciences, languages and literature
-- **Grade 5 Mathematics** — 57 topics / 8 chapters, **1,710 questions**, in Russian
+- **64 subject banks** — grades 5–11 and abituriyent, nine of them in a Russian section, across maths, sciences, languages and literature
+- **Grade 5 Mathematics** — 57 topics / 8 chapters, **1,710 questions**, in Azerbaijani and Russian
 - **Grade 9 buraxılış maths** — 38 topics / 11 chapters, **1,140 questions**, plus a full DİM-format practice exam
 - **Tiered quizzes** — easy / medium / hard / mixed, with per-mistake feedback
 - **Verified answers** — a deterministic answer-checker validates every math item before it ships
