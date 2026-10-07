@@ -1,11 +1,11 @@
 ---
 title: İmtahan Köməkçisi
-description: Azərbaycandakı şagirdlər üçün pulsuz, brauzer əsaslı imtahan-hazırlıq tətbiqi — interaktiv riyaziyyat dərsləri və dərhal rəyli pilləli testlər.
+description: Azərbaycandakı şagirdlər üçün pulsuz, brauzer əsaslı imtahan-hazırlıq tətbiqi — 64 bölmə üzrə interaktiv dərslər və dərhal rəyli pilləli testlər.
 ---
 
 **İmtahan Köməkçisi** — Azərbaycandakı şagirdlər üçün pulsuz, brauzer əsaslı təhsil tətbiqidir. Fənn seçirsiniz, qısa dərsləri oxuyursunuz, sonra sizi dərhal qiymətləndirən və hər səhvi izah edən pilləli testlərlə məşq edirsiniz. Quraşdırmaq lazım deyil — hər şey brauzerinizdə işləyir.
 
-> İndi **64 bölmə**: 5–11-ci siniflər və **abituriyent** (ali məktəbə qəbul) hazırlığı — riyaziyyat, fizika, kimya, biologiya, coğrafiya, tarix, Azərbaycan dili, ingilis dili və ədəbiyyat üzrə. Əksər bölmələr Azərbaycan dilindədir; doqquzu rus bölməsində rus dilində də var, ingilis dili bölmələri isə ingilis dilindədir.
+> İndi **64 bölmə**: 5–11-ci siniflər və **abituriyent** (ali məktəbə qəbul) hazırlığı — riyaziyyat, fizika, kimya, biologiya, coğrafiya, tarix, Azərbaycan dili, ingilis dili və ədəbiyyat üzrə. Əksər bölmələr Azərbaycan dilindədir; doqquzunun rus dilində də variantı var, ingilis dili bölmələri isə ingilis dilindədir.
 
 ## İçərisində nə var
 
