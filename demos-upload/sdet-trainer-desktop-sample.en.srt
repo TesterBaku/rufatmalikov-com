@@ -1,0 +1,27 @@
+1
+00:00:03,400 --> 00:00:12,700
+Practice, cheat sheets, quizzes and commute mode
+
+2
+00:00:12,900 --> 00:00:18,200
+Coding Gym: QA and SDET coding tasks
+
+3
+00:00:18,400 --> 00:00:24,700
+Run visible Python tests right in the browser
+
+4
+00:00:24,900 --> 00:00:30,200
+Progress across coding, quizzes and mock interviews
+
+5
+00:00:30,400 --> 00:00:36,700
+Topic breakdown, including REST Assured
+
+6
+00:00:36,900 --> 00:00:42,200
+Mock interview questions
+
+7
+00:00:42,400 --> 00:00:49,700
+Model answer, checklist and self-rating

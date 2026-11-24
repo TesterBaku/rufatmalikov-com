@@ -1,0 +1,27 @@
+1
+00:00:03,400 --> 00:00:12,700
+Məşq, xülasə vərəqləri, testlər və yolda dinləmə rejimi
+
+2
+00:00:12,900 --> 00:00:18,200
+Coding Gym: QA və SDET üçün kodlaşdırma tapşırıqları
+
+3
+00:00:18,400 --> 00:00:24,700
+Python testlərini birbaşa brauzerdə işə salın
+
+4
+00:00:24,900 --> 00:00:30,200
+Kod, testlər və sınaq müsahibələri üzrə irəliləyiş
+
+5
+00:00:30,400 --> 00:00:36,700
+Mövzular üzrə bölgü, REST Assured da daxil
+
+6
+00:00:36,900 --> 00:00:42,200
+Sınaq müsahibəsi sualları
+
+7
+00:00:42,400 --> 00:00:49,700
+Nümunəvi cavab, yoxlama siyahısı və özünüqiymətləndirmə

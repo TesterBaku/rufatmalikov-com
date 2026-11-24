@@ -1,0 +1,35 @@
+1
+00:00:03,400 --> 00:00:09,700
+Home: subjects for grades 5 to 11 and university entrance
+
+2
+00:00:09,900 --> 00:00:15,200
+Search across all subjects
+
+3
+00:00:15,400 --> 00:00:21,700
+Grade 11 math: Learn, Practice, Final exam, Summative
+
+4
+00:00:21,900 --> 00:00:27,200
+Collapsible chapters
+
+5
+00:00:27,400 --> 00:00:37,700
+Lessons with formulas and worked examples
+
+6
+00:00:37,900 --> 00:00:43,200
+Practice quiz for each lesson
+
+7
+00:00:43,400 --> 00:00:49,700
+Instant feedback with an explanation
+
+8
+00:00:49,900 --> 00:00:56,200
+Wrong answers get a step-by-step breakdown
+
+9
+00:00:56,400 --> 00:01:02,700
+Switch the whole site between AZ, RU and EN

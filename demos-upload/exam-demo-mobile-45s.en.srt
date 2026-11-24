@@ -1,0 +1,31 @@
+1
+00:00:02,650 --> 00:00:06,900
+Home: subjects for grades 5 to 11 and university entrance
+
+2
+00:00:07,100 --> 00:00:11,350
+Search across all subjects
+
+3
+00:00:11,550 --> 00:00:16,350
+Grade 11 math: Learn and Practice
+
+4
+00:00:16,550 --> 00:00:24,650
+Lessons with formulas and worked examples
+
+5
+00:00:24,850 --> 00:00:29,100
+Practice quiz for each lesson
+
+6
+00:00:29,300 --> 00:00:35,750
+Feedback on every answer
+
+7
+00:00:35,950 --> 00:00:39,100
+Also in Russian
+
+8
+00:00:39,300 --> 00:00:42,450
+And in English
